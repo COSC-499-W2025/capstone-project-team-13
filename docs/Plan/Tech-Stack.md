@@ -7,9 +7,9 @@ For the development of our system we will use the following the following tech s
 Electron + React – Electron because it is a cross-platform desktop app shell that can access local files securely, and React because it has a huge library for interactive UI for our mined work artifacts and productivity insights.
 ### Backend: 
 Node.js – Node.js because it is good for building fast APIs, and it integrates seamlessly with Electron while offering strong support for file system operations, process management, and connecting to databases for storing mined artifact metadata.
-**Database:** postgresql\
-**Scanner engine** (?)
-**Deployment:**
+### Database: 
+Postgresql - Because it can store metadata, project info, file paths, and metrics, supports flexible JSON fields, and integrates easily with an API and front-end.
+
 
 ## Testing, Requirement Verification
 ### Test frameworks:
