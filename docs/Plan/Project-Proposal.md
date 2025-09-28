@@ -1,3 +1,4 @@
+We have embedded links to the Use-Cases and Tech-Stack to make our workflow more modular and ensure easy access and updates in the future. We know it asks for it under one file, but we thought this would be a more efficient way to structure our repository. 
 # Project Proposal 
 **Team Number:** 13\
 **Team Members:** Sana Shah 94945664, Jackson Wilson 11927753, Prina Mehta 87716874 , Maya Knutsvig 17950502, Ilina Islam 58189903, T’Olu Akinwande 69892271
