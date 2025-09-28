@@ -14,4 +14,4 @@ prinamehta -> Prina Mehta
 sshah-git -> Sana Shah
 
 ## Project board
-![alt text](../week1TeamLog.png)
+![alt text](teamLogImages/Week1TeamLog.png)
