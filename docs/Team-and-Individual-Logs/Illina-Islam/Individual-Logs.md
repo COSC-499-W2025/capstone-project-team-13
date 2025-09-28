@@ -14,4 +14,11 @@
 * must complete project proposal and architecture diagram for next sprint 
 
 
+## Week 4 - Sept 22-28, 2025
+<img width="1091" height="633" alt="Screenshot 2025-09-28 at 11 11 21 AM" src="https://github.com/user-attachments/assets/aa3e9ba5-3113-42da-8da1-58a38bedd390" />
+* worked on system architecture diagram
+* contributed to functional requirements section of project proposal
+* completed project proposal and system architecture diagram quiz
+* created md files for project proposal 
+
 
