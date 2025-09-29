@@ -15,3 +15,6 @@ sshah-git -> Sana Shah
 
 ## Project board
 ![alt text](teamLogImages/Week1TeamLog.png)
+
+## Week 4 - Sept 22-28, 2025
+The features for this week’s milestone was to revisit our project requirements, and construct our software architecture diagram. Collectively, each of our team members contributed to refining the requirements for our project, as well as discussing and suggesting ideas for the different components in our system architecture diagram. Additionally, our team worked on our project proposal/project plan document, in which we specified our tech stack, functional requirements, and assigned tasks to each of our team members. 

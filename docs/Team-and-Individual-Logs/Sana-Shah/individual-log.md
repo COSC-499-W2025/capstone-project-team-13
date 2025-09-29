@@ -9,3 +9,11 @@ Our group worked together on the project requirements document for this week. I 
 
 Our group also completed the project requirements surveys, and helped each other in the process.
 
+## Log 2:
+## Date Range: Weeks 4 - Sep 22-28, 2025
+
+## ![week 2 features](499-week2-log.png)
+
+### Which features were yours in the project plan for this milestone?
+
+This week our team worked on the System Architecture Diagram, as well as the project proposal/project plan document. Some features that I contributed to this week was constructing a template for the system architecture digram, and reviewing and adjusting it, following the System Architecture Design Checklist. Some feautures that I contributed to on the Project Proposal document was the project scope, proposed solution, use cases and the test frameworks. Additionally, I contributed to the team log for this week.
