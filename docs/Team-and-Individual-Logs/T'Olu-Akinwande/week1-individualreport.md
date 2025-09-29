@@ -13,9 +13,12 @@ For the non-functional requirements I emphasized that the system should remain s
 - Contributed to team discussion and documentation for project requirements  
 - Created dashboard functional requirements  
 - Got feedback from other teams and added useful suggestions to our project layout  
-- Drafted non-functional requirements for security and reliability  
+- Drafted non-functional requirements for security and reliability
+- 
+![Week 1 Screenshot](./weeklytasks-images/week1-screenshot.png)
 
-![Week 1 Screenshot](weeklytasks-images/week1-screenshot.png)
+
+
 
 ---
 
@@ -33,4 +36,6 @@ For the project plan and proposal diagram, I researched suitable tools and techn
 - Compared databases and came to a conclusion on the best fit  
 - Signed up for easy, medium, and hard tasks in the project proposal  
 
-![Week 2 Screenshot](weeklytasks-images/week2-screenshot.png)
+
+
+![Week 2 Screenshot](./weeklytasks-images/week2-screenshot.png)
