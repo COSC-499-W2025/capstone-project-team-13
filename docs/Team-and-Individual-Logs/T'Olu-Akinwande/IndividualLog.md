@@ -15,6 +15,7 @@ Created dashboard functional requirements.
 Got feedback from other teams and added useful suggestions to our project layout.
 Drafted non-functional requirements for security and reliability.
 
+![Week 1 Screenshot](./weeklytasks-images/week1-screenshot.png)
 
 #Week4 (Log 2)
 
@@ -30,3 +31,5 @@ Researched frontend tools (Electron, React).
 Researched testing tools (Jest, Playwright).
 Compared databases and came to a conclusion on the best fit.
 Signed up for easy, medium, and hard tasks in the project proposal.
+
+![Week 2 Screenshot](./weeklytasks-images/week2-screenshot.png)
