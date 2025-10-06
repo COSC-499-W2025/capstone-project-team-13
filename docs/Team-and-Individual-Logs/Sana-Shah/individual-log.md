@@ -18,6 +18,9 @@ Our group also completed the project requirements surveys, and helped each other
 
 This week our team worked on the System Architecture Diagram, as well as the project proposal/project plan document. Some features that I contributed to this week was constructing a template for the system architecture digram, and reviewing and adjusting it, following the System Architecture Design Checklist. Some feautures that I contributed to on the Project Proposal document was the project scope, proposed solution, use cases and the test frameworks. Additionally, I contributed to the team log for this week.
 
+## Log 3:
+## Date Range: Weeks 5 - Sep 29 - Oct 5, 2025
+
 ## ![week 3 features](499-week3-log.png)
 
 ### Which features were yours in the project plan for this milestone?
