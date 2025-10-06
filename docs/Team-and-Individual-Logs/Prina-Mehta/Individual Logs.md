@@ -15,3 +15,12 @@ During this period, our team discussed and refined the functional and non-functi
 ## Recap on your week's goals
 
 This week, I worked closely with my team on building the system architecture and developing the project proposal. My main contributions included identifying and listing all the use cases for our system, as well as creating the workload distribution table to ensure tasks were divided fairly and efficiently among team members. I also took part in every team meeting, where I actively contributed to discussions, shared ideas, and provided feedback.
+
+## Log 3:
+## Date Range: Week 5 - Sept 29-Oct 5, 2025
+
+## ![week 1 features](week3tasks.jpg)
+
+## Recap on your week's goals
+
+This week, I helped design the Data Flow Diagram by creating the processes and mapping out how data moves between them. I worked on building the diagram in Figma, making sure it was clear, well-organized, and visually consistent with our project standards.
