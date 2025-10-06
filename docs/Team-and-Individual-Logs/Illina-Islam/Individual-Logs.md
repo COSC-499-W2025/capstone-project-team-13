@@ -26,5 +26,17 @@
 * must complete DFD diagram for next week
 
 
+## Week 4 - Sept 22-28, 2025
+<img width="1071" height="542" alt="Screenshot 2025-10-05 at 11 40 31 PM" src="https://github.com/user-attachments/assets/1d179afe-21a9-4c7d-bc18-7be53d4ce00c" />
+
+* worked on dfd level 1 with Sana and Prina
+* completed dfd survey
+* there was not a lot of deliverables for this, so everything went smooth
+* no issues were faced this week
+* must complete and finalize these for next week: system architecture diagram, dfds, wbs, README file, explainations for everything, set up of environment  
+
+
+
+
 
 
