@@ -21,4 +21,17 @@ The features for this week’s milestone was to revisit our project requirements
 
 
 ## Week 5 - Sept 29 - Oct 5, 2025
-This week, our team revisited the project requirements and worked on developing our Data Flow Diagram (DFD) as part of clarifying the system design. We collaborated on refining the components, discussing how data, processes, and flows would be represented in the diagram. In addition, we continued drafting the project proposal and plan, where we outlined our tech stack, functional requirements, and assigned tasks to each member.
+T'olu Akinwande - DFD level 0, Sept 29 - Oct 5
+
+Jackson Wilson - DFD Level 0, Sept 29 - Oct 5
+
+Maya Knutsvig - DFD Level 0, Sept 29 - Oct 5
+
+Prina Mehta - - DFD Level 1, Sept 29 - Oct 5
+
+Illina Islam - DFD Level 1, Sept 29 - Oct 5
+
+Sana Shah - DFD Level 1, Sept 29 - Oct 5
+
+
+This week, our team revisited the project requirements and worked on developing our Data Flow Diagram (DFD) as part of clarifying the system design. We collaborated on refining the components, discussing how data, processes, and flows would be represented in the diagram. 
