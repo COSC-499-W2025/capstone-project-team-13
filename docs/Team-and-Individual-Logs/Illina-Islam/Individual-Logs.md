@@ -4,13 +4,9 @@
 <img width="1072" height="623" alt="Screenshot 2025-09-21 at 8 05 32 PM" src="https://github.com/user-attachments/assets/47e40adf-0d09-46cb-a923-c6f879e91522" />
 
 * joined capstone repo
-  
 * contributed to functional and non-functional requirements in the document
-  
 * completed project requirement quiz
-  
 * only deliverables required for this week were regarding the requirement doc
-  
 * must complete project proposal and architecture diagram for next sprint 
 
 
@@ -31,9 +27,10 @@
 
 * worked on dfd level 1 with Sana and Prina
 * completed dfd survey
-* there was not a lot of deliverables for this, so everything went smooth
+* there was not a lot of deliverables for this week, so everything went smooth
 * no issues were faced this week
 * must complete and finalize these for next week: system architecture diagram, dfds, wbs, README file, explainations for everything, set up of environment  
+
 
 
 
