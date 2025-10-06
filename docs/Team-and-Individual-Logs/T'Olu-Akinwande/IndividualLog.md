@@ -30,3 +30,21 @@ Researched frontend tools (Electron, React).
 Researched testing tools (Jest, Playwright).
 Compared databases and came to a conclusion on the best fit.
 Signed up for easy, medium, and hard tasks in the project proposal.
+
+
+#Week5 (Log 3)
+Date Range: Sept 29 – Oct 5, 2025
+
+This week, I focused primarily on the development and review of our Data Flow Diagrams (DFDs), system architecture refinements, and completing the final touches on our team’s project proposal.
+
+Tasks Worked On:
+- Collaborated with the team to build the Level 0 and Level 1 Data Flow Diagrams using Draw.io and Figma.
+-Double-checked formal notation and labelling to ensure that all inputs and outputs matched across levels, and referenced with DFD requirements.
+- Reviewed other teams’ DFDs during Wednesday’s class session provided feedback and also took some valuable insights. For example, I noted that our diagram explicitly showed distinct data stores and categories (Processed Data, Analytics Stores, Selected Filters), whereas another team focused on roles (e.g., Admin, Project Manager) instead of the actual flow of data. My feedback emphasized that our balanced approach aligned well with the purpose of a DFD — visually summarizing flows without overloading with explanations.
+-Supported final revisions of the System Architecture document, ensuring consistency between layers and communication flows.
+- Helped complete and submit the team’s project proposal.
+
+Recap of Goals / Progress:
+- Features assigned to me this milestone: Contributions to the DFD design and system architecture documentation.
+- Project board association: My work connects to tasks like “Submit DFD” (#4) and “Submit team’s project proposal” (#1).
+- Progress in last 2 weeks: The proposal task has been completed and submitted. The DFD diagram and reflection has also been successful completed and submitted. Everyone has been co-operating well with one another and has been communicating in a clear and timely manner.
