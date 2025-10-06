@@ -31,6 +31,13 @@ This week we were working on our project requirements, since we had to submit th
 
 This week our main focus was completing the System Architecture Diagram, as we were required to submit and bring printed copies to class for discussion. I focused on refining the diagram to ensure it aligned with the System Architecture Design Checklist, making sure all requirements were clearly addressed. As well, I contributed to the Project Proposal by researching and evaluating different technology stack options to determine the best fit for our project.
 
+## Log 3:
+## Date Range: Weeks 5 - Sep 29-Oct 05
 
+## (![week 3 features](weeklyfeaturesimages/week3features.png))
 
+## Recap on your week's goals 
 
+### Which features were yours in the project plan for this milestone?
+
+This week our main focus was completing the DFD , as we were required to submit and bring printed copies to class for discussion. We split the group into two, and I worked on the DFD level 0 diagram with Jackson and Tolu, while Prina, Illina, and Sana worked on Level 1. This week's workload was fairly light, as only the DFD was due, and so not much work was done this week. However, I also ensured that my group was keeping on top of deadlines, and organizing meetups to ensure work on the project is done.

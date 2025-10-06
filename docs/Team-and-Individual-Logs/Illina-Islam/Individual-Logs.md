@@ -21,6 +21,10 @@
 * contributed to functional requirements section of project proposal
 * completed project proposal and system architecture diagram quiz
 * created md files for project proposal
+* team's work was well distributed
+* so far no issues were faced
+* must complete DFD diagram for next week
+
 
 
 
