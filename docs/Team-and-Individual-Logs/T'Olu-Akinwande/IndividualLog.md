@@ -15,6 +15,7 @@ Created dashboard functional requirements.
 Got feedback from other teams and added useful suggestions to our project layout.
 Drafted non-functional requirements for security and reliability.
 
+![Week 1 Screenshot](./weeklytasks-images/week1-screenshot.png)
 
 #Week4 (Log 2)
 
@@ -31,6 +32,7 @@ Researched testing tools (Jest, Playwright).
 Compared databases and came to a conclusion on the best fit.
 Signed up for easy, medium, and hard tasks in the project proposal.
 
+![Week 2 screenshot](./weeklytasks-images/week2-screenshot.png)
 
 #Week5 (Log 3)
 Date Range: Sept 29 – Oct 5, 2025
@@ -48,3 +50,5 @@ Recap of Goals / Progress:
 - Features assigned to me this milestone: Contributions to the DFD design and system architecture documentation.
 - Project board association: My work connects to tasks like “Submit DFD” (#4) and “Submit team’s project proposal” (#1).
 - Progress in last 2 weeks: The proposal task has been completed and submitted. The DFD diagram and reflection has also been successful completed and submitted. Everyone has been co-operating well with one another and has been communicating in a clear and timely manner.
+
+![Week 3 screenshot](./weeklytasks-images/week3-screenshot.png)
