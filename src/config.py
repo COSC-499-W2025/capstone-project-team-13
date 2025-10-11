@@ -1,0 +1,1 @@
+ALLOWED_FORMATS = [".csv", ".json", ".py", ".txt"]
