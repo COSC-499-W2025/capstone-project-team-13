@@ -32,6 +32,7 @@
 * must complete and finalize these for next week: system architecture diagram, dfds, wbs, README file, explainations for everything, set up of environment  
 
 
+...
 
 
 
