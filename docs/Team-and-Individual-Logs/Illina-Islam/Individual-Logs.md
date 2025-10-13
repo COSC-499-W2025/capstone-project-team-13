@@ -22,7 +22,7 @@
 * must complete DFD diagram for next week
 
 
-## Week 4 - Sept 22-28, 2025
+## Week 5 - Sept 29-Oct 5, 2025
 <img width="1071" height="542" alt="Screenshot 2025-10-05 at 11 40 31 PM" src="https://github.com/user-attachments/assets/1d179afe-21a9-4c7d-bc18-7be53d4ce00c" />
 
 * worked on dfd level 1 with Sana and Prina
@@ -31,6 +31,16 @@
 * no issues were faced this week
 * must complete and finalize these for next week: system architecture diagram, dfds, wbs, README file, explainations for everything, set up of environment  
 
+
+## Week 6 - Oct 6-Oct 12, 2025
+<img width="1067" height="620" alt="Screenshot 2025-10-12 at 7 38 05 PM" src="https://github.com/user-attachments/assets/cdf70b96-d63b-4b2b-81ce-a470a6db5947" />
+
+* worked on revising dfd with T'olu
+* created code and pr for getting user's consent and storing user's answer
+* worked on WBS
+* team work was great this week, everything was distributed evenly
+* no issues were faced this week
+* for next week: continue project work, weekly logs, quiz 1
 
 
 
