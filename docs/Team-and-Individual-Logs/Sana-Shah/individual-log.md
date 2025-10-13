@@ -26,3 +26,12 @@ This week our team worked on the System Architecture Diagram, as well as the pro
 ### Which features were yours in the project plan for this milestone?
 
 This week our team worked on the level 0 and level 1 Data Flow diagrams. Some features that I contributed to this week was developing the level 1 data flow diagram. Our team split into 2 subgroups, with one group working on the level 0 data flow diagram and the other working on the level 1 diagram. Our group accidently made 2 level 1 data flow diagrams, so I reviewed both diagrams to spot differences and compare, which allowed me to gain a deeper understanding of components we should change, add, or remove. Additionally, I brought printed copies of the level 1 data flow diagram to class.
+
+## Log 4:
+## Date Range: Weeks 6 - Oct 6 - Oct 12, 2025
+
+## ![week 4 features](499-week4-log.png)
+
+### Which features were yours in the project plan for this milestone?
+
+This week, I worked on deciding on an official tech stack with the rest of my team, incorporating the finalized project requirements. Additionally, I uploaded the data flow diagram and software architecture diagram, as well as the descriptions in our github repository and linked them on the main readMe file, and worked on the team log for this week. My team and I also decided to divide setting up functions for the backend of our project. The python function that I developed requires the user to either allow or deny our system to use external services, such as artificial intelligence/LLM’s to analyze their data. The function starts by prompting the user with a description on why permissions are needed, and then allows the user to either enter “yes” or “no”, on which the system is exited. 
