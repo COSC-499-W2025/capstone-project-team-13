@@ -35,3 +35,21 @@ Sana Shah - DFD Level 1, Sept 29 - Oct 5
 
 
 This week, our team revisited the project requirements and worked on developing our Data Flow Diagram (DFD) as part of clarifying the system design. We collaborated on refining the components, discussing how data, processes, and flows would be represented in the diagram. 
+
+## Week 6 - Oct 6 - Oct 12, 2025
+
+GitHub Usernames:
+
+JacksonWilson99 -> Jackson Wilson, 
+MayaKnu7 -> Maya Knutsvig, 
+T’Olu Akinwande -> T’Olu Akinwande , 
+illinai -> Illina Islam, 
+prinamehta -> Prina Mehta, 
+sshah-git -> Sana Shah
+
+This week, our team revised and made changes to our system architecture diagram, and data flow diagrams, reflecting the finalized project requirements. We also divided up the first few functions of our backend that we needed to implement, and assigned them to each of our team members, as well as updated our github repository. Some functions that our team started developing are checking file formats, distinguishing individual projects from collaborative projects, adding permissions to collect and analyze the users data, as well as permissions to use external services for analysis. Our team also worked on developing a “testConsole” skeleton to test our functions.
+
+
+
+Project Board: ![alt text](teamLogImages/week6ProjectBoard.png)
+
