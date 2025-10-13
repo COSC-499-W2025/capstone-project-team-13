@@ -20,6 +20,6 @@ Please use the provided folder structure for your project. You are free to organ
 Please use a branching workflow, and once an item is ready, do remember to issue a PR, review, and merge it into the master branch.
 Be sure to keep your docs and README.md up-to-date.
 
- System Architecture Diagram [linked here](./docs/proposal/SystemArchitectureDiagram.md)
+ System Architecture Diagram [linked here](./docs/Proposal/SystemArchitectureDiagram.md)
 
-Data Flow Diagram Level 1 [linked here](./docs/proposal/DFD1.md)
+Data Flow Diagram Level 1 [linked here](./docs/Proposal/DFD1.md)
