@@ -52,3 +52,30 @@ Recap of Goals / Progress:
 - Progress in last 2 weeks: The proposal task has been completed and submitted. The DFD diagram and reflection has also been successful completed and submitted. Everyone has been co-operating well with one another and has been communicating in a clear and timely manner.
 
 ![Week 3 screenshot](./weeklytasks-images/week3-screenshot.png)
+
+
+#Week6 (Log 4)
+
+Date Range: Oct 6 – Oct 12, 2025
+
+This week, I focused on refining our system’s logic and verifying consistency between the Data Flow Diagram (DFD) and the corresponding class implementations. I also finalized outstanding lecture requirements, reviewed sections of the system architecture, and developed a key new function for our project’s data processing pipeline.
+
+Tasks Worked On:
+
+- Reviewed the Level 1 DFD against the finalized project requirements to ensure that the diagram accurately reflects implemented components.
+- Finalized and confirmeddocumentation requirements for this milestone.
+- Developed the projectCollabType function, which determines whether a project is individual or collaborative, based on project metadata and folder analysis (test data for now)
+-Conducted local testing to verify that the function correctly classifies projects and integrates smoothly with the existing data processing workflow.
+- Ensured that the System Architecture remains consistent with updated logic and that the feature aligns with the “Data Processing → Project Type Identification” flow.
+-Reviewed other teammates’ code contributions to maintain clarity, organization, and adherence to project standards.
+
+Recap of Goals / Progress:
+
+Feature(s) assigned this milestone: projectCollabType function implementation, DFD–class verification, and architecture review.
+
+Project board association: Tasks related to “Update Data Flow Diagram” (#4), Completely weekly log(#5), and “System Architecture Review” (#2).
+
+Progress summary: The project type identification function has been successfully implemented and tested locally. The DFD and architecture diagrams are up to date, and the system components are consistent across documentation and code. Team collaboration remains smooth and productive.
+
+
+![Week  6screenshot](./weeklytasks-images/week4-screenshot.png)
