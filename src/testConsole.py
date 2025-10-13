@@ -4,6 +4,8 @@ import sys
 # Import functions from getConsent.py
 try:
     from getConsent import get_user_consent, show_consent_status  # Example functions
+    from fileFormatCheck import check_file_format, InvalidFileFormatError
+    from zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
 except ImportError:
     print("Could not import functions from getConsent.py. Please check the file and function names.")
     sys.exit(1)
@@ -37,6 +39,85 @@ def dashboard():
         else:
             print("Invalid choice. Try again.")
             input("Press Enter to continue...")
+
+def test_file_format():
+    """Test file format validation with sample files"""
+    clear_console()
+    print("=== File Format Validation Test ===\n")
+    
+    # Test cases - mix of valid and invalid formats
+    test_files = [
+        "project_data.zip",
+        "document.txt",
+        "archive.tar.gz",
+        "MY_PROJECT.ZIP",
+        "data.json"
+    ]
+    
+    print("Testing file format validation:\n")
+    for file_path in test_files:
+        try:
+            if check_file_format(file_path):
+                print(f"✓ {file_path} - Valid format")
+        except InvalidFileFormatError as e:
+            print(f"✗ {file_path} - {e}")
+    
+    print("\nTest completed.")
+
+def test_zip_handling():
+    """Test ZIP file operations"""
+    clear_console()
+    print("=== ZIP File Handling Test ===\n")
+    
+    # get zip path from user
+    zip_path = input("Enter path to ZIP file (or press Enter to skip): ").strip()
+    
+    if not zip_path:
+        print("Skipping test.")
+        return
+    
+    if not os.path.exists(zip_path):
+        print(f"File {zip_path} does not exist.")
+        return
+    
+    try:
+        # validate
+        print("\n1. Validating ZIP file...")
+        if validate_zip_file(zip_path):
+            print("   ✓ ZIP file is valid")
+        
+        # count files
+        print("\n2. Counting files in ZIP...")
+        file_count = count_files_in_zip(zip_path)
+        print(f"   Found {file_count} files")
+        
+        # list contents
+        print("\n3. Listing ZIP contents...")
+        contents = get_zip_contents(zip_path)
+        print(f"   Total items: {len(contents)}")
+        if len(contents) <= 10:
+            for item in contents:
+                print(f"   - {item}")
+        else:
+            print("   (showing first 10)")
+            for item in contents[:10]:
+                print(f"   - {item}")
+        
+        # ask if user wants to extract
+        extract = input("\n4. Extract ZIP file? (yes/no): ").strip().lower()
+        if extract == 'yes':
+            print("   Extracting...")
+            extract_path = extract_zip(zip_path)
+            print(f"   ✓ Extracted to: {extract_path}")
+        
+        print("\nAll tests passed!")
+        
+    except InvalidFileFormatError as e:
+        print(f"Format error: {e}")
+    except ZipExtractionError as e:
+        print(f"ZIP error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
     dashboard()
