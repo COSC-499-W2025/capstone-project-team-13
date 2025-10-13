@@ -38,5 +38,28 @@ def dashboard():
             print("Invalid choice. Try again.")
             input("Press Enter to continue...")
 
+   
+
 if __name__ == "__main__":
     dashboard()
+
+         
+
+#Testing projectcollabtype.py
+
+def project_type_tester():
+    from projectcollabtype import identify_project_type
+
+    print("\n=== ProjectCollabType Tester ===")
+    print("This function tests identify_project_type() independently.")
+    print("Enter project contributor names (comma separated):")
+
+    contributors_input = input("Contributors: ").strip()
+    contributors = [c.strip() for c in contributors_input.split(",") if c.strip()]
+
+    project = {"name": "ManualTestProject", "contributors": contributors}
+    result = identify_project_type(project)
+
+    print(f"\n Project Type: {result}")
+
+project_type_tester() 
