@@ -24,3 +24,12 @@ This week, I worked closely with my team on building the system architecture and
 ## Recap on your week's goals
 
 This week, I helped design the Data Flow Diagram by creating the processes and mapping out how data moves between them. I worked on building the diagram in Figma, making sure it was clear, well-organized, and visually consistent with our project standards.
+
+## Log 4:
+## Date Range: Week 5 - Oct 5 - Oct 12, 2025
+
+## ![week 1 features](week4tasks.jpg)
+
+## Recap on your week's goals
+
+This week, I updated the Kanban board and, together with Maya, assigned tasks to everyone in the group. I also attended the team meeting on Monday. On the development side, I added a zip file handler and created as well as reviewed and approved pull requests on GitHub. I also researched which frameworks would be best suited for our project.
