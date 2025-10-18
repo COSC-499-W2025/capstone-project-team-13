@@ -3,6 +3,7 @@ import sys
 from getConsent import get_user_consent
 from fileFormatCheck import check_file_format, InvalidFileFormatError
 from fileParser import parse_file, FileParseError
+from zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
 
 def get_file_path():
     """
@@ -93,15 +94,33 @@ def main():
         print(f"\n✗ {e}")
         sys.exit(1)
     
-    # Parse file
-    try:
-        print("\nParsing file...")
-        results = parse_file(file_path)
-        display_parse_results(results)
-        print("\n✓ File parsed successfully!")
-    except FileParseError as e:
-        print(f"\n✗ Parsing error: {e}")
-        sys.exit(1)
+    # Check if it's a ZIP file
+    if file_path.lower().endswith('.zip'):
+        try:
+            validate_zip_file(file_path)
+            print("✓ Valid ZIP file detected")
+            
+            # Get and display contents
+            contents = get_zip_contents(file_path)
+            file_count = count_files_in_zip(file_path)
+            
+            print(f"\nZIP Summary:")
+            print(f"  Total items: {len(contents)}")
+            print(f"  Files: {file_count}")
+            print(f"  Folders: {len(contents) - file_count}")
+            
+            print("\nContents:")
+            for item in contents[:20]:  # Show first 20 items
+                item_type = "📁" if item.endswith('/') else "📄"
+                print(f"  {item_type} {item}")
+            if len(contents) > 20:
+                print(f"  ... and {len(contents) - 20} more items")
+            
+            print("\n✓ ZIP file parsed successfully!")
+            
+        except (InvalidFileFormatError, ZipExtractionError) as e:
+            print(f"\n✗ ZIP error: {e}")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()

@@ -1,1 +1,1 @@
-ALLOWED_FORMATS = [".csv", ".json", ".py", ".txt"]
+ALLOWED_FORMATS = [".csv", ".json", ".py", ".txt", ".zip"]
