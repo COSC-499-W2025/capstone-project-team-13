@@ -2,6 +2,7 @@ import os
 import sys
 from getConsent import get_user_consent
 from fileFormatCheck import check_file_format, InvalidFileFormatError
+from fileParser import parse_file, FileParseError
 
 def get_file_path():
     """
@@ -30,6 +31,44 @@ def get_file_path():
         
         return file_path
 
+def display_parse_results(results):
+    """
+    Display parsed file results in a readable format
+    
+    Args:
+        results (dict): Parsed file data
+    """
+    print("\n" + "="*50)
+    print("PARSE RESULTS")
+    print("="*50)
+    
+    file_type = results.get('type', 'unknown')
+    print(f"\nFile Type: {file_type.upper()}")
+    
+    if file_type == 'text':
+        print(f"Lines: {results['lines']}")
+        print(f"Characters: {results['characters']}")
+        print("\nContent Preview:")
+        preview = results['content'][:200]
+        print(preview + "..." if len(results['content']) > 200 else preview)
+    
+    elif file_type == 'json':
+        print(f"Size: {results['size']} bytes")
+        print("\nContent Preview:")
+        print(str(results['content'])[:300] + "...")
+    
+    elif file_type == 'csv':
+        print(f"Rows: {results['rows']}")
+        print(f"Columns: {', '.join(results['columns'])}")
+        if results['rows'] > 0:
+            print("\nFirst Row Preview:")
+            print(results['content'][0])
+    
+    elif file_type == 'python':
+        print(f"Lines: {results['lines']}")
+        print(f"Functions: {results['functions']}")
+        print(f"Classes: {results['classes']}")
+
 def main():
     """Main entry point for file upload system"""
     print("=== File Upload and Parsing System ===\n")
@@ -54,8 +93,15 @@ def main():
         print(f"\n✗ {e}")
         sys.exit(1)
     
-    print(f"\nFile ready for processing: {file_path}")
-    # TODO: Add parsing logic in next phase
+    # Parse file
+    try:
+        print("\nParsing file...")
+        results = parse_file(file_path)
+        display_parse_results(results)
+        print("\n✓ File parsed successfully!")
+    except FileParseError as e:
+        print(f"\n✗ Parsing error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
