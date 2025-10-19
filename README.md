@@ -76,8 +76,7 @@ Stores extracted information from scanned projects:
 - **Files** - File paths, types, sizes, created/modified dates
 - **Contributors** - Git contributor names, identifiers, commit counts
 
-#### Database 2: `projects_analysis.db` - Analysis Results
-- **Coming soon...*
+#### Database 2: Coming soon...
 
 ---
 
