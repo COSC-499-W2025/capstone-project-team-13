@@ -70,13 +70,13 @@ Our digital artifact mining software serves as a tool for new graduates and stud
 
 The system will use **two separate SQLite databases**:
 
-### Database 1: `projects_data.db` - Raw Project Data
+#### Database 1: `projects_data.db` - Raw Project Data
 Stores extracted information from scanned projects:
 - **Projects** - Basic info, dates, metrics, type, languages, frameworks
 - **Files** - File paths, types, sizes, created/modified dates
 - **Contributors** - Git contributor names, identifiers, commit counts
 
-### Database 2: `projects_analysis.db` - Analysis Results
+#### Database 2: `projects_analysis.db` - Analysis Results
 - **Coming soon...*
 
 ---
@@ -109,7 +109,7 @@ For questions or issues, please contact team members via the course management s
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Course:** COSC 499 - Capstone Project
 - **Institution:** UBC Okanagan
