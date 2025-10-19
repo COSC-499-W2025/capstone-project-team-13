@@ -4,11 +4,25 @@ Thank you for contributing! Please fill out this template to help us review your
 
 ## 📝 Description
 
-Refactored getConsent.py so that functions could be called independently. Created testConsole.py in order to give us a temporary "dashboard" to test functions. Once we have a framework set up, this file will be replaced with something more permanent. 
+As per some of our issues, we will need several forms of data extracted from files in order to attribute any values to them.
 
-Also added the PR template folder as we hadn't had that set up yet. It was more of an afterthought to this PR but felt it would be fine to just bundle together.
+For a starting point, I turned to RAKE in order to have a basic keyword extraction system for base level text files. RAKE is mostly automated, but is useful in extracting what is actually of value out of blocks of text, so I figured it would work just fine for the project.
 
-**Closes:** # 33
+Note that you will need to use pip to install RAKE as such:
+
+`pip install rake-nltk nltk`
+
+Running this in the terminal should set everything up properly. The program itself downloads any other relevant functions.
+
+Aside from this, testConsole.py is updated to guide through basic manual testing for the functionality, so:
+
+`python src/testConsole.py`
+
+Running this should be self explanatory, just choose option 3. 
+
+Test files are also in place, so run as required.
+
+**Closes:** # 52
 
 ---
 
@@ -19,7 +33,7 @@ Also added the PR template folder as we hadn't had that set up yet. It was more 
 - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] 📚 Documentation added/updated
 - [ ] ✅ Test added/updated
-- [x] ♻️ Refactoring
+- [ ] ♻️ Refactoring
 - [ ] ⚡ Performance improvement
 
 ---
@@ -28,8 +42,7 @@ Also added the PR template folder as we hadn't had that set up yet. It was more 
 
 Just manual testing as again, this is a file intended to be replaced. Tested all input options and seem to be working fine.
 
-- [ ] Test A
-- [ ] Test B
+- [✓] test_keywordExtractor_unittest.py
 
 ---
 
@@ -39,7 +52,7 @@ Just manual testing as again, this is a file intended to be replaced. Tested all
 - [x] 💬 I have commented my code where needed
 - [ ] 📖 I have made corresponding changes to the documentation
 - [x] ⚠️ My changes generate no new warnings
-- [ ] ✅ I have added tests that prove my fix is effective or that my feature works and tests are passing locally
+- [x] ✅ I have added tests that prove my fix is effective or that my feature works and tests are passing locally
 - [ ] 🔗 Any dependent changes have been merged and published in downstream modules
 - [ ] 📱 Any UI changes have been checked to work on desktop, tablet, and/or mobile
 
