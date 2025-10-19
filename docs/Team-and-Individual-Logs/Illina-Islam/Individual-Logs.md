@@ -43,6 +43,21 @@
 * for next week: continue project work, weekly logs, quiz 1
 
 
+## Week 7 - Oct 13-Oct 19, 2025
+<img width="1068" height="621" alt="Screenshot 2025-10-19 at 3 08 14 PM" src="https://github.com/user-attachments/assets/256a67cc-fa96-430c-a347-dfacc9d95af4" />
+
+* completed quiz 1 in class
+* had a team meeting on Wednesday
+* researched on database implementation for our project
+* worked on creating a rough database 1 according to our project proposal
+  * Database 1 is for storing projects and raw project data
+* updated the README file according to our current progress and plan
+* no issures were faced this week
+* for next: meet with team to discuss our project and contributions, plan out Database 2, upgrade Database 1 according to team's decisions, weekly logs
+  * Database 2 should store project analyses
+
+
+
 
 
 
