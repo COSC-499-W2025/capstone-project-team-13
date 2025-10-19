@@ -73,3 +73,4 @@ I also created tests to ensure this function would work appropriately.
 
 This task has now been moved to "done" on the project board, as it has been tested and is ready for implementation.
 
+For the next cycle, I think a team meeting needs to be held so we can decide on next individual steps. I believe after that, a specific task of mine will be clearer based on the needs of the project. Until then, I plan to work on some analyses (such as issue #5) or work on the database (issue #13)
