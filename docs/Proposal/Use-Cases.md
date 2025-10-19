@@ -120,8 +120,6 @@
 3. Summary displayed for user to copy or edit
 
 
-**Extensions:**
-1. User manually edits suggested points. (?)
 
 ## Use Case 8: Export Portfolio or Dashboard
 **Primary actor:** User\
@@ -150,7 +148,7 @@
 
 
 **Extensions:**
-1. User switches to “Anonymous Mode” → only aggregated data stored. (?)
+1. User switches to “Anonymous Mode” → no data is stored. (?)
 
 ## Use Case 10: Identify Skill Trends
 **Primary actor:** System\
