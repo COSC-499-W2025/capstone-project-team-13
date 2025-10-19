@@ -33,3 +33,12 @@ This week, I helped design the Data Flow Diagram by creating the processes and m
 ## Recap on your week's goals
 
 This week, I updated the Kanban board and, together with Maya, assigned tasks to everyone in the group. I also attended the team meeting on Monday. On the development side, I added a zip file handler and created as well as reviewed and approved pull requests on GitHub. I also researched which frameworks would be best suited for our project.
+
+## Log 5:
+## Date Range: Week 5 - Oct 13 - Oct 19, 2025
+
+## ![week 1 features](week5tasks.png)
+
+## Recap on your week's goals
+
+This week, I worked on issue #2 on the Kanban board. I focused on building the feature that prompts users to enter a file path and then processes the file based on its format. The system can now handle multiple file types including `.csv`, `.json`, `.txt`, `.py`, and `.zip`. It also automatically performs the correct parsing or reading operations for each. Additionally, I implemented detailed error handling to manage invalid inputs and potential edge cases, along with unit tests to verify that the feature behaves reliably across scenarios. For next week, I plan to implement functionality for storing user configurations and start analyzing project files to extract useful insights and support upcoming features.
