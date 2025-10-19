@@ -34,8 +34,8 @@ class Project(Base1):
     project_type = Column(String(50))  # 'visual/media', 'code', or 'text'
     
     # Languages & Frameworks (stored as JSON)
-    languages = Column(Text)  # JSON array: ["Python", "JavaScript"]
-    frameworks = Column(Text)  # JSON array: ["Django", "React"]
+    _languages = Column('languages', Text)  # JSON array: ["Python", "JavaScript"]
+    _frameworks = Column('frameworks', Text)  # JSON array: ["Django", "React"]
     
     # Relationships
     files = relationship('File', back_populates='project', cascade='all, delete-orphan')
@@ -45,6 +45,28 @@ class Project(Base1):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Properties for automatic JSON conversion
+    @property
+    def languages(self):
+        """Get languages as list"""
+        return json.loads(self._languages) if self._languages else []
+    
+    @languages.setter
+    def languages(self, value):
+        """Set languages from list"""
+        self._languages = json.dumps(value) if isinstance(value, list) else value
+    
+    @property
+    def frameworks(self):
+        """Get frameworks as list"""
+        return json.loads(self._frameworks) if self._frameworks else []
+    
+    @frameworks.setter
+    def frameworks(self, value):
+        """Set frameworks from list"""
+        self._frameworks = json.dumps(value) if isinstance(value, list) else value
+    
+
     def to_dict(self):
         """Convert to dictionary"""
         return {
@@ -56,8 +78,8 @@ class Project(Base1):
             'lines_of_code': self.lines_of_code,
             'file_count': self.file_count,
             'project_type': self.project_type,
-            'languages': json.loads(self.languages) if self.languages else [],
-            'frameworks': json.loads(self.frameworks) if self.frameworks else [],
+            'languages': self.languages,
+            'frameworks': self.frameworks,
         }
 
 
@@ -147,12 +169,7 @@ class DatabaseManager:
         """Create a new project in data database"""
         session = self.get_data_session()
         try:
-            # Convert lists to JSON strings
-            if 'languages' in project_data and isinstance(project_data['languages'], list):
-                project_data['languages'] = json.dumps(project_data['languages'])
-            if 'frameworks' in project_data and isinstance(project_data['frameworks'], list):
-                project_data['frameworks'] = json.dumps(project_data['frameworks'])
-            
+            # JSON conversion now handled by model properties
             project = Project(**project_data)
             session.add(project)
             session.commit()
@@ -183,9 +200,8 @@ class DatabaseManager:
         try:
             project = session.query(Project).filter(Project.id == project_id).first()
             if project:
+                # JSON conversion now handled by model properties
                 for key, value in updates.items():
-                    if key in ['languages', 'frameworks'] and isinstance(value, list):
-                        value = json.dumps(value)
                     setattr(project, key, value)
                 project.updated_at = datetime.utcnow()
                 session.commit()
