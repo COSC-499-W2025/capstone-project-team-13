@@ -1,5 +1,7 @@
 from rake_nltk import Rake
 import nltk
+from pathlib import Path
+from typing import Union
 
 # Ensure necessary NLTK data is available
 nltk.download('stopwords')
@@ -19,3 +21,4 @@ def extract_keywords_with_scores(text: str):
     r = Rake()  # Uses default English stopwords
     r.extract_keywords_from_text(text)
     return r.get_ranked_phrases_with_scores()
+

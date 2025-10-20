@@ -6,7 +6,7 @@ try:
     from getConsent import get_user_consent, show_consent_status  # Example functions
     from fileFormatCheck import check_file_format, InvalidFileFormatError
     from zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
-    from keywordExtractor import extract_keywords_with_scores
+    from keywordExtractorText import extract_keywords_with_scores
 except ImportError:
     print("Could not import functions from getConsent.py. Please check the file and function names.")
     sys.exit(1)
