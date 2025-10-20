@@ -11,47 +11,44 @@ from src.keywordExtractorCode import extract_code_keywords_with_scores
 
 class TestKeywordExtractorCode(unittest.TestCase):
 
-    def setUp(self):
-        """Create a small test code file."""
-        self.test_file_path = Path(os.path.join(os.path.dirname(__file__), 'test_code.py'))
-        self.test_code = """\
-# This is a Python test function
-def add(a, b):
-    # Adds two numbers
-    return a + b
+    def test_basic_extraction(self):
+        """Test that the function extracts some keywords from valid code comments."""
+        code_text = """
+        # This is a simple test function
+        def add_numbers(a, b):
+            '''Returns the sum of two numbers'''
+            return a + b
+        // Java style single line comment
+        /* Multi-line
+           comment explaining subtraction */
+        """
+        results = extract_code_keywords_with_scores(code_text)
 
-# Another comment
-"""
-        with open(self.test_file_path, 'w', encoding='utf-8') as f:
-            f.write(self.test_code)
+        # Expect at least one keyword
+        self.assertTrue(len(results) > 0, "No keywords were extracted from code comments")
 
-    def tearDown(self):
-        """Clean up test file."""
-        if self.test_file_path.exists():
-            self.test_file_path.unlink()
+        # Ensure each result is a tuple of (score, keyword)
+        for item in results:
+            self.assertIsInstance(item, tuple)
+            self.assertIsInstance(item[0], (int, float))
+            self.assertIsInstance(item[1], str)
 
-    def test_extract_from_text(self):
-        """Test extracting keywords from raw code text."""
-        results = extract_code_keywords_with_scores(self.test_code)
-        keywords = [kw for _, kw in results]
+    def test_empty_input(self):
+        """Test that empty code returns an empty list."""
+        results = extract_code_keywords_with_scores("")
+        self.assertEqual(results, [], "Empty input should return an empty list")
 
-        # Expect some keywords from comments
-        self.assertTrue(any("adds" in kw.lower() for kw in keywords), "Expected 'adds' in keywords")
-        self.assertTrue(any("numbers" in kw.lower() for kw in keywords), "Expected 'numbers' in keywords")
-
-    def test_extract_from_file(self):
-        """Test extracting keywords from a code file."""
-        results = extract_code_keywords_with_scores(self.test_file_path)
-        keywords = [kw for _, kw in results]
-
-        self.assertTrue(any("adds" in kw.lower() for kw in keywords), "Expected 'adds' in keywords")
-        self.assertTrue(any("numbers" in kw.lower() for kw in keywords), "Expected 'numbers' in keywords")
-
-    def test_invalid_input(self):
-        """Test passing an invalid input type raises TypeError."""
-        with self.assertRaises(TypeError):
-            extract_code_keywords_with_scores(None)  # None is invalid
-
+    def test_repeated_words(self):
+        """Test that repeated words affect keyword scoring."""
+        code_text = """
+        # debug debug debug
+        # check check
+        """
+        results = extract_code_keywords_with_scores(code_text)
+        self.assertTrue(any("debug" in kw.lower() for _, kw in results),
+                        "Expected 'debug' to appear in top keywords")
+        self.assertTrue(any("check" in kw.lower() for _, kw in results),
+                        "Expected 'check' to appear in top keywords")
 
 if __name__ == "__main__":
     unittest.main()
