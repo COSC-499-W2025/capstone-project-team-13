@@ -53,3 +53,51 @@ This week, our team revised and made changes to our system architecture diagram,
 
 Project Board: ![alt text](teamLogImages/week6ProjectBoard.png)
 
+
+## Week 7 Team Log  
+**Date Range:** Oct 13 – Oct 19, 2025  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T’Olu Akinwande** | Developed and tested the `extrapolate_individual_contributions()` function to estimate member contribution percentages across parsed projects (issue #16). Also revised the `projectCollabType` function (issue #14) to replace dummy data with real metadata fields and reviewed PRs for alignment and code consistency. | #14, #16 |
+| **Prina Mehta** | Implemented file-path input and parsing pipeline so the system automatically reads and processes CSV, JSON, TXT, PY, and ZIP formats. Enhanced directory-crawler logic for multi-file projects. | #2 |
+| **Maya Knutsvig** | Completed framework/language identifier module to detect project type based on codebase structure (e.g., Python vs web). Integrated detection with the file-parser output. | #8 |
+| **Jackson Wilson** | Built RAKE-based keyword extraction system for text files to summarize important phrases and skills. Updated `testConsole.py` for manual testing and added sample data for validation. | #52 |
+| **Illina Islam** | Implemented `projects` database schema for storing project and metadata entries using SQLAlchemy. Updated `README.md` and began connecting database to processing pipeline. | #13 |
+| **Sana Shah** | Created `visualMediaAnalyzer` function to scan media files and infer which design software was used, mapping outputs to associated skills. Initial implementation complete (no AI integration yet). | #54 |
+
+---
+<img width="1462" height="852" alt="Screenshot 2025-10-19 205419" src="https://github.com/user-attachments/assets/d98ae752-02aa-4347-984c-954a4af6b2f0" />
+
+
+
+Burnup Chart:
+<img width="995" height="498" alt="image" src="https://github.com/user-attachments/assets/ef5a91f6-1bc3-49d8-b720-de6990ccd191" />
+
+In-Progress Tasks: 
+<img width="1127" height="257" alt="image" src="https://github.com/user-attachments/assets/14c5c78f-d28a-47e1-80a6-70f37c317271" />
+
+Completed Tasks:
+<img width="917" height="487" alt="image" src="https://github.com/user-attachments/assets/8e3033f9-0273-4aef-bd17-a799e1500490" />
+
+
+
+# Test Report
+All tests were written in Python and executed successfully.  
+Unit tests were created for each major function (e.g., `extrapolate_individual_contributions()`, `fileParser`, `projectCollabType`).  
+Manual testing through `testConsole.py` also confirmed that all modules work as expected with sample project data.
+<img width="781" height="783" alt="image" src="https://github.com/user-attachments/assets/b0aadf72-3a1f-48f4-92ff-33b0ad365587" />
+
+
+### Reflection Points
+**What went well:**  
+- The new modular approach helped integrate multiple features smoothly.  
+- Each member worked independently on key components that connected successfully during testing.  
+- Collaboration during PR reviews improved overall code consistency.  
+
+**What didn’t go as planned:**  
+- Merge conflicts across multiple branches slowed integration.  
+- The database still isn’t fully connected to other system components.  
+- Some manual testing processes (like the console dashboard) remain time-intensive.  
+
+
