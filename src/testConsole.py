@@ -7,6 +7,7 @@ try:
     from fileFormatCheck import check_file_format, InvalidFileFormatError
     from zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
     from keywordExtractorText import extract_keywords_with_scores
+    from keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
 except ImportError:
     print("Could not import functions from getConsent.py. Please check the file and function names.")
     sys.exit(1)
@@ -131,7 +132,8 @@ def run_keyword_extraction_test():
 
     print("1. Enter text manually")
     print("2. Load text from a file")
-    mode = input("Choose input method (1 or 2): ").strip()
+    print("3. Load code from a file")
+    mode = input("Choose input method (1, 2, or 3): ").strip()
 
     text = ""
 
@@ -152,6 +154,32 @@ def run_keyword_extraction_test():
             return
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
+
+    elif mode == '3':
+        file_path = input("Enter path to code file: ").strip()
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return
+        with open(file_path, "r", encoding="utf-8") as f:
+            code_text = f.read()
+
+        # If a helper is available, prefer it (safe fallback to raw code_text)
+        try:
+            code_text = read_code_file(file_path)
+        except Exception:
+            pass
+
+        print("\nExtracting code keywords...\n")
+        code_results = extract_code_keywords_with_scores(code_text)
+
+        if not code_results:
+            print("No keywords found in code.")
+            return
+
+        print("Extracted Code Keywords (with scores):\n")
+        for score, phrase in code_results:
+            print(f"{score:.2f}  -  {phrase}")
+        return
 
     else:
         print("Invalid choice.")

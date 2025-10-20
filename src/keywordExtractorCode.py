@@ -2,6 +2,7 @@ from rake_nltk import Rake
 import nltk
 from pathlib import Path
 from typing import Union
+import re
 
 nltk.download('punkt')
 nltk.download('punkt_tab')
@@ -57,25 +58,70 @@ CODE_STOPWORDS = {
 }
 
 def read_code_file(filepath: str) -> str:
-    """Read the contents of a code file and return it as a string."""
-    with open(filepath, 'r', encoding='utf-8') as file:
-        code_text = file.read()
-    return code_text
+    """Read the contents of a code file and return it as a string, preserving newlines."""
+    with open(filepath, 'r', encoding='utf-8', newline='') as file:
+        return file.read()
 
-def extract_code_keywords_with_scores(filepath: Union[str, Path]) -> list[tuple[float, str]]:
+
+import re
+
+def extract_comments(code: str) -> str:
     """
-    Read code from a filepath and extract keywords and their scores using RAKE
-    with the custom CODE_STOPWORDS.
+    Extracts comments and docstrings from code (Python, JS, C, etc.).
+    Keeps each comment distinct to prevent RAKE from merging them.
+    """
+    matches_with_pos = []
+
+    # // single-line
+    for m in re.finditer(r'//(.*?)$', code, re.MULTILINE):
+        matches_with_pos.append((m.start(), m.group(1).strip()))
+
+    # /* ... */ multi-line
+    for m in re.finditer(r'/\*(.*?)\*/', code, re.DOTALL):
+        matches_with_pos.append((m.start(), m.group(1).strip()))
+
+    # # single-line (Python)
+    for m in re.finditer(r'#(.*?)$', code, re.MULTILINE):
+        matches_with_pos.append((m.start(), m.group(1).strip()))
+
+    # Triple-quoted docstrings
+    for m in re.finditer(r'(?:\"\"\"|\'\'\')(.*?)(?:\"\"\"|\'\'\')', code, re.DOTALL):
+        matches_with_pos.append((m.start(), m.group(1).strip()))
+
+    # Sort by appearance order
+    matches_with_pos.sort(key=lambda x: x[0])
+
+    # Join with ". " to separate distinct comments
+    comments = [text for _, text in matches_with_pos if text]
+    return ". ".join(comments)
+
+
+
+import os
+
+def extract_code_keywords_with_scores(filepath_or_text: Union[str, Path]) -> list[tuple[float, str]]:
+    """
+    Accepts either a file path or raw code text, and extracts keywords and their scores using RAKE.
 
     Args:
-        filepath (Union[str, Path]): Path to the code file.
+        filepath_or_text (Union[str, Path]): Either a valid file path or raw code text.
 
     Returns:
         list[tuple[float, str]]: A list of (score, keyword) pairs, sorted by importance.
     """
-    text = read_code_file(str(filepath))
+    # Detect whether the input is a path to an existing file
+    if isinstance(filepath_or_text, (str, Path)) and os.path.exists(filepath_or_text):
+        text = read_code_file(str(filepath_or_text))
+    else:
+        # Assume it's raw text (already read from file or pasted in)
+        text = str(filepath_or_text)
+
     r = Rake(stopwords=CODE_STOPWORDS)
+    text = extract_comments(text)
+    print("=== Extracted Comments ===")
+    print(text)
     r.extract_keywords_from_text(text)
     return r.get_ranked_phrases_with_scores()
+
 
 
