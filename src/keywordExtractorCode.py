@@ -59,41 +59,49 @@ CODE_STOPWORDS = {
 
 def read_code_file(filepath: str) -> str:
     """Read the contents of a code file and return it as a string, preserving newlines."""
-    with open(filepath, 'r', encoding='utf-8', newline='') as file:
-        return file.read()
+    try:
+        with open(filepath, 'r', encoding='utf-8', newline='') as file:
+            return file.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: {filepath}")
+    except PermissionError:
+        raise PermissionError(f"Permission denied: {filepath}")
+    except UnicodeDecodeError:
+        raise ValueError(f"File is not readable as UTF-8 text: {filepath}")
 
 
-import re
+
 
 def extract_comments(code: str) -> str:
     """
-    Extracts comments and docstrings from code (Python, JS, C, etc.).
+    Extracts comments from code 
     Keeps each comment distinct to prevent RAKE from merging them.
     """
-    matches_with_pos = []
+    if not isinstance(code, str):
+        raise TypeError(f"Expected a string of code, got {type(code).__name__}")
 
-    # // single-line
-    for m in re.finditer(r'//(.*?)$', code, re.MULTILINE):
-        matches_with_pos.append((m.start(), m.group(1).strip()))
+    try:
+        matches_with_pos = []
 
-    # /* ... */ multi-line
-    for m in re.finditer(r'/\*(.*?)\*/', code, re.DOTALL):
-        matches_with_pos.append((m.start(), m.group(1).strip()))
+        for m in re.finditer(r'//(.*?)$', code, re.MULTILINE):
+            matches_with_pos.append((m.start(), m.group(1).strip()))
 
-    # # single-line (Python)
-    for m in re.finditer(r'#(.*?)$', code, re.MULTILINE):
-        matches_with_pos.append((m.start(), m.group(1).strip()))
+        for m in re.finditer(r'/\*(.*?)\*/', code, re.DOTALL):
+            matches_with_pos.append((m.start(), m.group(1).strip()))
 
-    # Triple-quoted docstrings
-    for m in re.finditer(r'(?:\"\"\"|\'\'\')(.*?)(?:\"\"\"|\'\'\')', code, re.DOTALL):
-        matches_with_pos.append((m.start(), m.group(1).strip()))
+        for m in re.finditer(r'#(.*?)$', code, re.MULTILINE):
+            matches_with_pos.append((m.start(), m.group(1).strip()))
 
-    # Sort by appearance order
-    matches_with_pos.sort(key=lambda x: x[0])
+        for m in re.finditer(r'(?:\"\"\"|\'\'\')(.*?)(?:\"\"\"|\'\'\')', code, re.DOTALL):
+            matches_with_pos.append((m.start(), m.group(1).strip()))
 
-    # Join with ". " to separate distinct comments
-    comments = [text for _, text in matches_with_pos if text]
-    return ". ".join(comments)
+        matches_with_pos.sort(key=lambda x: x[0])
+        comments = [text for _, text in matches_with_pos if text]
+        return ". ".join(comments)
+
+    except re.error as e:
+        raise RuntimeError(f"Regex error during comment extraction: {e}")
+
 
 
 
@@ -118,8 +126,6 @@ def extract_code_keywords_with_scores(filepath_or_text: Union[str, Path]) -> lis
 
     r = Rake(stopwords=CODE_STOPWORDS)
     text = extract_comments(text)
-    print("=== Extracted Comments ===")
-    print(text)
     r.extract_keywords_from_text(text)
     return r.get_ranked_phrases_with_scores()
 
