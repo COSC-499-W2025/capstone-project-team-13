@@ -36,7 +36,7 @@ in class.
 This week was primarily the System Architecture Diagram considering it was the focus of class with the exercise in which we compared with classmates. I created the revised version of the diagram after said class, cleaning up the looks and encompassing more of the project rather than the more streamlined list we had before. Outside of this, I contributed with the rest of the group to the project proposal, creating the use case diagram and providing input for the written content.
 
 ## Log 3:
-## Date Range: Weeks 4 - Sep 29-Oct 5, 2025
+## Date Range: Weeks 5 - Sep 29-Oct 5, 2025
 
 ## ![week 3 features](weeklyfeaturesimages/week3features.png)
 
@@ -47,7 +47,7 @@ This week was primarily the System Architecture Diagram considering it was the f
 This week the main deliverable was the DFD, once again the primary focus for the class where we shared with other groups. We had accidentally created two level 1 diagrams, as we split into 2 groups each to create one of the levels not being clear on what each entailed. We brought one copy into class for show, then realized the second version was a bit closer to what the description seemed to be asking for. Aside from this, we should soon be starting on setting up the framework for the project (which I believe we have agreed upon Electron) as well as other deliverables for the week. As for code contributions, we do not have our framework set up quite yet and I'm in the middle of midterms, so I don't have anything for this particular cycle. Over the next week and what should be before the next log cycle, I should have contributions being made.
 
 ## Log 4:
-## Date Range: Weeks 5 - Oct 6-12, 2025
+## Date Range: Weeks 6 - Oct 6-12, 2025
 
 ## ![week 4 features](weeklyfeaturesimages/week4features.png)
 
@@ -56,6 +56,17 @@ This week the main deliverable was the DFD, once again the primary focus for the
 ### Which features were yours in the project plan for this milestone?
 
 Here the main focus was getting code onto the repository. My responsibility was to make a rudimentary dashboard for us to start building functions off of. With this being thanksgiving weekend, that was all I was really able to get done for personal work. I also approved 1 PR and worked on revising the diagrams with the stated improvements.
+
+## Log 5:
+## Date Range: Weeks 7 - Oct13-19, 2025
+
+## ![week 7 features](weeklyfeaturesimages/week7features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+My primary focus this week was getting some base level metrics in place to build off of for data analysis. To start, I used RAKE as well as code-to-text in order to create some basic keyword extraction. Now, when provided with text it will preform a RAKE evaluation and return keywords and scores attached to each. For code, it first scrapes for specifically comments and then conducts another RAKE evaluation with distinct stopwords this time. This wasn't any of the specific requirements, but I listed these as 12.1 and 12.2 as they are building blocks up to the larger issue. There are intentions to meet at some point this week to both assign priority ratings to issues as well as sub-issues to avoid this in the future.
 
 
 
