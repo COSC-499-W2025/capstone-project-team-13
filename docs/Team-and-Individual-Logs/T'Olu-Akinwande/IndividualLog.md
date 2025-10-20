@@ -52,3 +52,25 @@ Recap of Goals / Progress:
 - Progress in last 2 weeks: The proposal task has been completed and submitted. The DFD diagram and reflection has also been successful completed and submitted. Everyone has been co-operating well with one another and has been communicating in a clear and timely manner.
 
 ![Week 3 screenshot](./weeklytasks-images/week3-screenshot.png)
+
+#Week7 (Log 5)
+Date Range: Oct 13 – Oct 19, 2025
+
+This week, I focused on expanding our system’s analysis capabilities and improving the connection between project metadata and contribution insights. My primary tasks involved implementing a new data-processing function for individual contribution analysis, refactoring an existing module to integrate real parsed data, and performing code reviews to ensure system consistency and maintainability.
+
+Tasks Worked On:
+
+- Developed the extrapolate_individual_contributions() function, which estimates contribution percentages for each collaborator based on file ownership, edit history, and line count metrics (Issue #16).
+- Refactored the existing identify_project_type() function to use real parsed metadata instead of dummy input, improving accuracy when classifying projects as individual or collaborative (Issue #14).
+-Created dedicated unit test files (test_projectcollabtype.py and test_indivcontributions.py) to validate both new and updated functions through multiple scenarios.
+-Reviewed teammates’ pull requests to verify code clarity, consistency, and integration across branches.
+-Conducted light research on data-driven contribution tracking approaches to better understand how similar systems quantify individual effort.
+-Ensured all new code followed team structure conventions, including creating independent test files within the /tests directory and integrating functions with the existing project data pipeline.
+
+Recap of Goals / Progress:
+
+-Feature(s) assigned this milestone: Contribution analysis implementation (extrapolate_individual_contributions()), project type refactor (identify_project_type()), and test coverage expansion.
+-Project board association: Tasks related to “Extrapolate Individual Contributions” (#16), “Update Project Collaboration Type Function” (#14), “Write Unit Tests” (#18), general review of teammate pull requests, and completion of team log.
+-Progress summary: Both functions have been successfully implemented, tested, and pushed to their respective branches. Each feature aligns with our system’s data processing and analysis pipeline. Team coordination and review cycles remain strong, and the project’s analytical components are becoming increasingly robust and well-integrated.
+
+![Week 7 screenshot](./weeklytasks-images/week7-screenshot.png)
