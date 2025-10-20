@@ -8,6 +8,8 @@ Similarly to keywordExtractorText, this is to create a very quick evaluation of 
 
 `pip install code-to-text`
 
+Also created unit test, but it is admittedly not the most extensive. Checks for no repeats, empty text, and any text.
+
 **Closes:** # 66
 
 ---
@@ -18,7 +20,7 @@ Similarly to keywordExtractorText, this is to create a very quick evaluation of 
 - [x] ✨ New feature (non-breaking change that adds functionality)
 - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] 📚 Documentation added/updated
-- [ ] ✅ Test added/updated
+- [x] ✅ Test added/updated
 - [ ] ♻️ Refactoring
 - [ ] ⚡ Performance improvement
 
@@ -28,7 +30,7 @@ Similarly to keywordExtractorText, this is to create a very quick evaluation of 
 
 Just manual testing as again, this is a file intended to be replaced. Tested all input options and seem to be working fine.
 
-- [✓] test_keywordExtractor_unittest.py
+- [✓] test_keywordExtractorCode.py
 
 ---
 
