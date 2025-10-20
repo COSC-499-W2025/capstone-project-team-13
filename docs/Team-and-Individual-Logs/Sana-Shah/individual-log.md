@@ -35,3 +35,16 @@ This week our team worked on the level 0 and level 1 Data Flow diagrams. Some fe
 ### Which features were yours in the project plan for this milestone?
 
 This week, I worked on deciding on an official tech stack with the rest of my team, incorporating the finalized project requirements. Additionally, I uploaded the data flow diagram and software architecture diagram, as well as the descriptions in our github repository and linked them on the main readMe file, and worked on the team log for this week. My team and I also decided to divide setting up functions for the backend of our project. The python function that I developed requires the user to either allow or deny our system to use external services, such as artificial intelligence/LLM’s to analyze their data. The function starts by prompting the user with a description on why permissions are needed, and then allows the user to either enter “yes” or “no”, on which the system is exited. 
+
+# Log 5:
+## Date Range: Weeks 6 - Oct 7 - Oct 19, 2025
+
+## ![week 5 features](499-week5-log.png)
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team and I continued to implement different functions for parts of our system. I worked on coding the function that analyzes a given media project containing graphics, images or other visual digital artifacts, and extracts insights from each of the files in the folder. The function outputs the number of files, top skills such as 3d rendering, photoshop, etc, as well as different softwares that were used. 
+I am currently in progress of conducting research on the best ways for our team to implement the database for our system.
+For this upcoming week, my focus will be to implement the database for our system to store processed metadata, and files. 
+
+Link to Contribution on Project Board: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/55
