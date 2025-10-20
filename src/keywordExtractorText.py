@@ -4,9 +4,12 @@ from pathlib import Path
 from typing import Union
 
 # Ensure necessary NLTK data is available
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('punkt_tab')
+try:
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+except Exception as e:
+    print(f"NLTK download failed — {e}")
 
 def extract_keywords_with_scores(text: str):
     """
