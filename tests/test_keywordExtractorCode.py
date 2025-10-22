@@ -6,7 +6,7 @@ from pathlib import Path
 # Ensure the src folder is on the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from src.keywordExtractorCode import extract_code_keywords_with_scores
+from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
 
 
 class TestKeywordExtractorCode(unittest.TestCase):

@@ -1,5 +1,5 @@
 import unittest
-from src.projectcollabtype import identify_project_type
+from src.Analysis.projectcollabtype import identify_project_type
 
 class TestProjectCollabType(unittest.TestCase):
     def setUp(self):
