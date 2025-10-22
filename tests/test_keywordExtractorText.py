@@ -5,7 +5,7 @@ import unittest
 # Ensure the src folder is on the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from keywordExtractor import extract_keywords_with_scores
+from src.keywordExtractorText import extract_keywords_with_scores
 
 
 class TestKeywordExtractor(unittest.TestCase):

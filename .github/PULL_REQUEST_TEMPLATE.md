@@ -4,25 +4,13 @@ Thank you for contributing! Please fill out this template to help us review your
 
 ## 📝 Description
 
-As per some of our issues, we will need several forms of data extracted from files in order to attribute any values to them.
+Similarly to keywordExtractorText, this is to create a very quick evaluation of code by analyzing comments and extracting important keywords of it. The functionality is roughly the same, and testing manually can be done through testConsole.py. To properly run, install code-to-text with:
 
-For a starting point, I turned to RAKE in order to have a basic keyword extraction system for base level text files. RAKE is mostly automated, but is useful in extracting what is actually of value out of blocks of text, so I figured it would work just fine for the project.
+`pip install code-to-text`
 
-Note that you will need to use pip to install RAKE as such:
+Also created unit test, but it is admittedly not the most extensive. Checks for no repeats, empty text, and any text.
 
-`pip install rake-nltk nltk`
-
-Running this in the terminal should set everything up properly. The program itself downloads any other relevant functions.
-
-Aside from this, testConsole.py is updated to guide through basic manual testing for the functionality, so:
-
-`python src/testConsole.py`
-
-Running this should be self explanatory, just choose option 3. 
-
-Test files are also in place, so run as required.
-
-**Closes:** # 52
+**Closes:** # 66
 
 ---
 
@@ -32,7 +20,7 @@ Test files are also in place, so run as required.
 - [x] ✨ New feature (non-breaking change that adds functionality)
 - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] 📚 Documentation added/updated
-- [ ] ✅ Test added/updated
+- [x] ✅ Test added/updated
 - [ ] ♻️ Refactoring
 - [ ] ⚡ Performance improvement
 
@@ -42,7 +30,7 @@ Test files are also in place, so run as required.
 
 Just manual testing as again, this is a file intended to be replaced. Tested all input options and seem to be working fine.
 
-- [✓] test_keywordExtractor_unittest.py
+- [✓] test_keywordExtractorCode.py
 
 ---
 

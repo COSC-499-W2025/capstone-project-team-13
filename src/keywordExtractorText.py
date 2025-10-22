@@ -1,10 +1,15 @@
 from rake_nltk import Rake
 import nltk
+from pathlib import Path
+from typing import Union
 
 # Ensure necessary NLTK data is available
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('punkt_tab')
+try:
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
+except Exception as e:
+    print(f"NLTK download failed — {e}")
 
 def extract_keywords_with_scores(text: str):
     """
@@ -19,3 +24,4 @@ def extract_keywords_with_scores(text: str):
     r = Rake()  # Uses default English stopwords
     r.extract_keywords_from_text(text)
     return r.get_ranked_phrases_with_scores()
+
