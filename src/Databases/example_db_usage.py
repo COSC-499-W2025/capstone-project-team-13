@@ -1,5 +1,5 @@
 # src/example_db_usage.py
-from database import db_manager
+from src.Databases.database import db_manager
 from datetime import datetime
 
 # ============ DATABASE 1: Store Project Data ============

@@ -1,7 +1,7 @@
 import os
 import zipfile
 import tempfile
-from fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 
 class ZipExtractionError(Exception):
     """Exception raised when zip extraction fails"""
