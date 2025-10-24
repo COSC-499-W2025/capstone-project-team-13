@@ -2,7 +2,7 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Allow tests to import from src folder
 
 import unittest
-from src.indivcontributions import extrapolate_individual_contributions
+from src.Analysis.indivcontributions import extrapolate_individual_contributions
 
 class TestExtrapolateContributions(unittest.TestCase):
     def setUp(self):

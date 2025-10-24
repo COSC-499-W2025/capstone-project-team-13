@@ -1,7 +1,8 @@
-import os
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import zipfile
 import tempfile
-from fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 
 class ZipExtractionError(Exception):
     """Exception raised when zip extraction fails"""

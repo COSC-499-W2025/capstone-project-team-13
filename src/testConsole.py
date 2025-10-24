@@ -1,15 +1,15 @@
-import os
-import sys
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
 try:
-    from getConsent import get_user_consent, show_consent_status  # Example functions
-    from fileFormatCheck import check_file_format, InvalidFileFormatError
-    from zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
-    from keywordExtractorText import extract_keywords_with_scores
-    from keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
+    from src.UserPrompts.getConsent import get_user_consent, show_consent_status  # Example functions
+    from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+    from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
+    from src.Extraction.keywordExtractorText import extract_keywords_with_scores
+    from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
 except ImportError:
-    print("Could not import functions from getConsent.py. Please check the file and function names.")
+    print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
     sys.exit(1)
 
 # Simple clear command, specifies by OS

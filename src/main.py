@@ -1,9 +1,10 @@
-import os
-import sys
-from getConsent import get_user_consent
-from fileFormatCheck import check_file_format, InvalidFileFormatError
-from fileParser import parse_file, FileParseError
-from zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.UserPrompts.getConsent import get_user_consent
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileParser import parse_file, FileParseError
+from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
 
 def get_file_path():
     """
