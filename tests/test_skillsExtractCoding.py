@@ -1,10 +1,13 @@
 import unittest
 import os
 import sys
+from pathlib import Path
+import tempfile
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "analysis")))
 
 from skillsExtractCoding import extract_skills_with_scores
+from skillsExtractCoding import extract_skills_from_folder
 
 
 class TestSkillExtraction(unittest.TestCase):
@@ -42,6 +45,18 @@ class TestSkillExtraction(unittest.TestCase):
         self.assertIn("3D Rendering", result)
 
     # --- Edge Cases ---
+    def test_web_project_folder(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # create multiple files
+            file1 = Path(tmpdir) / "index.html"
+            file1.write_text("<html><head></head><body>Hello</body></html>")
+
+            file2 = Path(tmpdir) / "app.py"
+            file2.write_text("from flask import Flask")
+            result = extract_skills_from_folder(tmpdir, file_extensions=[".py", ".html"])
+            self.assertIn("Web Development", result)
+            self.assertIn("Frontend Development", result)
+            self.assertIn("Backend Development", result)
     def test_empty_text_returns_empty_dict(self):
         result = extract_skills_with_scores("")
         self.assertEqual(result, {})

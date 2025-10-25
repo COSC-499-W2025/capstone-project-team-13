@@ -1,4 +1,5 @@
 from collections import defaultdict
+from pathlib import Path
 import re
 
 # Skill categories and keywords 
@@ -93,6 +94,22 @@ SKILL_KEYWORDS = {
     ],
    
 }
+# Extract skills from all text files in a folder
+def extract_skills_from_folder(folder_path, file_extensions=None):
+    
+    folder = Path(folder_path)
+    if not folder.is_dir():
+        raise NotADirectoryError(f"{folder_path} is not a valid folder")
+
+    all_text = ""
+    for file in folder.rglob("*"):  # recursively include subfolders
+        if file.is_file() and (file_extensions is None or file.suffix in file_extensions):
+            try:
+                all_text += file.read_text(encoding="utf-8") + "\n"
+            except UnicodeDecodeError:
+                pass  # skip non-text files
+
+    return extract_skills_with_scores(all_text)
 
 # weighted skill scoring
 def extract_skills_with_scores(text):
