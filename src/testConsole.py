@@ -186,11 +186,13 @@ def run_keyword_extraction_test():
 
         if not code_results:
             print("No keywords found in code.")
+            input("\nPress Enter to return to the dashboard...")
             return
 
         print("Extracted Code Keywords (with scores):\n")
         for score, phrase in code_results:
             print(f"{score:.2f}  -  {phrase}")
+        input("\nPress Enter to return to the dashboard...")
         return
         
 
