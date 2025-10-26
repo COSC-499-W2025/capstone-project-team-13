@@ -26,11 +26,11 @@ def technical_density(file_path):
     total_keywords_score = sum(keyword_results)
 
     # Calculate technical density
-    technical_density = total_keywords / file_size_kb    
+    technical_density = total_keywords_score / file_size    
 
     return {
         "file_path": file_path,
-        "file_size_kb": round(file_size_kb, 2),
-        "total_keywords": total_keywords,
+        "file_size_kb": round(file_size, 2),
+        "total_keywords": total_keywords_score,
         "technical_density": round(technical_density, 3)
     }
