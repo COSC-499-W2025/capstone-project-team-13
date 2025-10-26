@@ -74,3 +74,36 @@ Recap of Goals / Progress:
 -Progress summary: Both functions have been successfully implemented, tested, and pushed to their respective branches. Each feature aligns with our system’s data processing and analysis pipeline. Team coordination and review cycles remain strong, and the project’s analytical components are becoming increasingly robust and well-integrated.
 
 ![Week 7 screenshot](./weeklytasks-images/week7-screenshot.png)
+
+
+**#Week 8 Log (Log 6)**
+Date Range: October 13 – October 19, 2025
+
+**Tasks Worked On:**
+- Implemented summarize_projects() function: Built a new analysis module to extract key project metadata (e.g., time spent, success score, contribution score) and compute a balanced ranking of top projects. The function integrates normalization, weighted scoring, and diversity-aware selection to ensure summaries capture both depth and breadth of skill coverage.
+-Connected summarizer to project  database: Integrated the function with the existing database.py schema to automatically pull real project data (from the Project, File, and Contributor tables) and generate summaries without requiring mock data.
+-Created test files-
+- Reviewed and merged team pull requests: Checked and tested integration of the contribution and project-type analysis to maintain consistency across project.
+-Code organization and cleanup: Ensured the new files followed the established structure and consistent standards. Added safeguards and normalization logic to handle edge cases (e.g., missing scores or empty project sets).
+
+**Recap of Goals / Progress**
+
+Feature(s) assigned this milestone:
+-Implementation of the project summarization module (summarize_projects)
+-Integration of real metadata retrieval from database.py
+-Comprehensive testing for al modules
+-Reviewed teammate code and merged updates to maintain system coherence.
+
+**Project board association:**
+#24  Summarize the top ranked projects
+
+**Progress summary:**
+The new summarization component is fully functional and capable of generating high-level insights directly from the database. This marks a key step toward building the system’s automated analytics layer.
+
+**Reflection:**
+This week’s work helped bridge the gap between raw project metadata and analytical output. The summarizer not only improves interpretability but also sets the foundation for personalized summaries (e.g., skill diversity or top-performance views). I also reinforced my understanding of how to design modular analysis functions that align with the larger system pipeline.
+Next week's tasks will involve creating a function to summarixe projects in chronological order (Issue 26)
+
+
+
+<img width="1007" height="584" alt="image" src="https://github.com/user-attachments/assets/712b8a7b-c93f-488c-a40d-0c3aec981d9e" />
