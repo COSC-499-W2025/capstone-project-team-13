@@ -77,7 +77,7 @@ def keyword_clustering(file_path):
     return df_sorted
 
 
-# TODO: Once PR containing SKILL_KEYWORDS is merged, import from there instead
+# TODO: Once PR containing SKILL_KEYWORDS is merged (#82), import from there instead
 SKILL_KEYWORDS = {
     # --- Web and App Development ---
     "Web Development": [
