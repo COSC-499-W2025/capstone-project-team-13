@@ -32,7 +32,7 @@ def test_cases():
 
         actual = sniff_supertype(fpath)                # based on content
 
-        # Check #1: extension mapping is what we expect this test assumes
+        # Check #1: see if what is in the content is equal to what we classified it as above
         if actual != expected_content_supertype:
             errs.append(f"[EXT MISMATCH in mapping] {fname}: test expects {expected_content_supertype}")
 
