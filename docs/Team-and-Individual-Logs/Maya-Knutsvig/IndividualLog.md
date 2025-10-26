@@ -74,3 +74,24 @@ I also created tests to ensure this function would work appropriately.
 This task has now been moved to "done" on the project board, as it has been tested and is ready for implementation.
 
 For the next cycle, I think a team meeting needs to be held so we can decide on next individual steps. I believe after that, a specific task of mine will be clearer based on the needs of the project. Until then, I plan to work on some analyses (such as issue #5) or work on the database (issue #13)
+
+
+## Log 6:
+## Date Range: Weeks 8 - Oct 20-26, 2025
+
+## ![week 6 features](weeklyfeaturesimages/week6features.png)
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+I focused on issue #8.2, which was a subissue to the task I worked on last week
+
+This week, after discussion with the Professor on Wednesday, I decided that instead of working on the backend it was important to ensure that the extension of the file matched the content of the file. I decided to make 2 functions, one that would determine its extension, and another that would sniff the content of the file to classify it. I tested this function, and added it to our pipeline on main, so that it is ready for use.
+
+My feature was a function that determined if the content and the extension matched, which was a subissue of issue #8: 
+https://github.com/COSC-499-W2025/capstone-project-team-13/issues/80
+
+I also created tests to ensure this function would work appropriately.
+
+This task has now been moved to "in review" on the project board, as it has been tested and is ready for implementation.
+
+For the next cycle, I want to focus on more analyses or on the backend, so this would be issue #6 or #5.
