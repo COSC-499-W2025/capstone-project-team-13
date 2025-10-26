@@ -68,5 +68,13 @@ Here the main focus was getting code onto the repository. My responsibility was 
 
 My primary focus this week was getting some base level metrics in place to build off of for data analysis. To start, I used RAKE as well as code-to-text in order to create some basic keyword extraction. Now, when provided with text it will preform a RAKE evaluation and return keywords and scores attached to each. For code, it first scrapes for specifically comments and then conducts another RAKE evaluation with distinct stopwords this time. This wasn't any of the specific requirements, but I listed these as 12.1 and 12.2 as they are building blocks up to the larger issue. There are intentions to meet at some point this week to both assign priority ratings to issues as well as sub-issues to avoid this in the future.
 
+## Log 6:
+## Date Range: Weeks 8 - Oct20-26, 2025
 
+## ![week 8 features](weeklyfeaturesimages/week8features.png)
 
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+This week was expanding on the comment keyword functionality. Also to note, it looks like the work falls into monday to sunday as the date range and the PR I had for the code keyword extraction falls into that date range this week, not last week, hence why I had less work for week 7. So on top of keywords extraction from comments, I now have two forms of evaluation. First compares the total score (combination of quality and quantity) of keywords in relation to the file size, giving a score on the technical density of a file. For the other metric, I evaluate what categories the comments talk about. This alone isn't a metric, but as I described in its PR, it is designed to be used with what was a pending PR that evaluates skills used within a file. It will compare the commented skills to the used skills to see what percentage of the document is explained in the comments. The plan is to take one more metric and then create a sort of "comprehension score" that we will later use as a factor in evaluating the total score of a specific file. The goal is to use these total scores to evaluate the total quality of files and further projects so we have a ranking in place before potentially doing further analysis with an LLM. 
