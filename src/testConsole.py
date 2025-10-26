@@ -8,6 +8,7 @@ try:
     from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
     from src.Extraction.keywordExtractorText import extract_keywords_with_scores
     from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
+    from src.Analysis.keywordAnalytics import technical_density
 except ImportError:
     print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
     sys.exit(1)
@@ -23,7 +24,7 @@ def dashboard():
         print("=== Console Testing Dashboard ===")
         print("1. Get User Consent")
         print("2. Show Consent Status")
-        print("3. Test Keyword Extraction")
+        print("3. Keywords")
         print("4. Exit")
         choice = input("Select an option (1-4): ").strip()
 
@@ -37,8 +38,14 @@ def dashboard():
             print(f"Consent status: {status}")
             input("Press Enter to continue...")
         elif choice == '3':
-            run_keyword_extraction_test()  # <-- new function call
-            input("Press Enter to continue...")
+            clear_console()
+            print("1. Get Keywords")
+            print("2. Get Keywords Analytics")
+            choice = input("Select an option (1-2): ").strip()
+            if choice == '1':
+                run_keyword_extraction_test()
+            elif choice == '2':
+                run_keyword_analytics()
         elif choice == '4':
             print("Exiting dashboard.")
             break
@@ -199,6 +206,17 @@ def run_keyword_extraction_test():
     print("Extracted Keywords (with scores):\n")
     for score, phrase in results:
         print(f"{score:.2f}  -  {phrase}")
+
+def run_keyword_analytics():
+    file_path = input("Enter path to text file: ").strip()
+    try:
+        results = technical_density(file_path)
+        print("\nKeyword Analytics Results:\n")
+        for key, value in results.items():
+            print(f"{key}: {value}")
+    except Exception as e:
+        print(f"Error: {e}")
+    input("\nPress Enter to return to the dashboard...")
 
 if __name__ == "__main__":
     dashboard()
