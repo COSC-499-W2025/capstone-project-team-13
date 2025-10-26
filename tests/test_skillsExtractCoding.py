@@ -44,6 +44,13 @@ class TestSkillExtraction(unittest.TestCase):
         self.assertIn("Game Development", result)
         self.assertIn("3D Rendering", result)
 
+    # --- New: Multi-word Keyword Handling ---
+    def test_multiword_skill_ruby_on_rails(self):
+        text = "This portfolio was developed using Ruby on Rails for the backend."
+        result = extract_skills_with_scores(text)
+        self.assertIn("Web Development", result)
+        self.assertTrue(result["Web Development"] > 0)
+
     # --- Edge Cases ---
     def test_web_project_folder(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -53,10 +60,12 @@ class TestSkillExtraction(unittest.TestCase):
 
             file2 = Path(tmpdir) / "app.py"
             file2.write_text("from flask import Flask")
+
             result = extract_skills_from_folder(tmpdir, file_extensions=[".py", ".html"])
             self.assertIn("Web Development", result)
             self.assertIn("Frontend Development", result)
             self.assertIn("Backend Development", result)
+
     def test_empty_text_returns_empty_dict(self):
         result = extract_skills_with_scores("")
         self.assertEqual(result, {})
@@ -81,8 +90,9 @@ class TestSkillExtraction(unittest.TestCase):
     def test_normalized_scores_sum_to_one(self):
         text = "Flask, Django, and PostgreSQL used together."
         result = extract_skills_with_scores(text)
-        total = sum(result.values())
-        self.assertAlmostEqual(total, 1.0, places=2)
+        total = round(sum(result.values()), 2)
+        # Should always sum exactly to 1.00 after rounding adjustment
+        self.assertEqual(total, 1.00)
 
 
 if __name__ == '__main__':

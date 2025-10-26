@@ -128,8 +128,19 @@ def extract_skills_with_scores(text):
 
     # normalizing score
     total = sum(scores.values())
-    if total > 0:
-        for skill in scores:
-            scores[skill] = round(scores[skill] / total, 2)
+    if total == 0:
+        return {}
 
-    return dict(sorted(scores.items(), key=lambda x: x[1], reverse=True))
+    if total > 0:
+        normalized = {k: (v / total) for k, v in scores.items()}
+
+        # Round to 2 decimals and ensure total = 1.00
+        rounded = {k: round(v, 2) for k, v in normalized.items()}
+        diff = round(1.0 - sum(rounded.values()), 2)
+
+        if diff != 0:
+            # Adjust the skill with the largest score to absorb rounding drift
+            max_key = max(rounded, key=rounded.get)
+            rounded[max_key] = round(rounded[max_key] + diff, 2)
+
+    return dict(sorted(rounded.items(), key=lambda x: x[1], reverse=True))
