@@ -42,3 +42,16 @@ This week, I updated the Kanban board and, together with Maya, assigned tasks to
 ## Recap on your week's goals
 
 This week, I worked on issue #2 on the Kanban board. I focused on building the feature that prompts users to enter a file path and then processes the file based on its format. The system can now handle multiple file types including `.csv`, `.json`, `.txt`, `.py`, and `.zip`. It also automatically performs the correct parsing or reading operations for each. Additionally, I implemented detailed error handling to manage invalid inputs and potential edge cases, along with unit tests to verify that the feature behaves reliably across scenarios. For next week, I plan to implement functionality for storing user configurations and start analyzing project files to extract useful insights and support upcoming features.
+
+## Log 6:
+## Date Range: Week 6 - Oct 20 - Oct 26, 2025
+
+## ![week 1 features](week6tasks.png)
+
+## Recap on your week's goals
+
+### What I Worked On This Week
+This week, I completed a major database refactor. I expanded the Project model with 15+ new fields (importance scoring, featured flags, skills/tags, user customization), enhanced the File and Contributor models with additional metadata and contribution tracking, and introduced a new Keyword model for skill extraction. I also added thorough test coverage for all changes.
+
+### Plan for Next Week
+Next week, I will research AI/LLM integration opportunities for our system, focusing on how we can use AI-driven analysis in our artifact mining workflow while preserving user privacy and consent.
