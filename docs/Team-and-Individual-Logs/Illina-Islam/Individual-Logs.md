@@ -57,6 +57,19 @@
   * Database 2 should store project analyses
 
 
+## Week 8 - Oct 20-Oct 26, 2025
+<img width="1070" height="542" alt="Screenshot 2025-10-26 at 9 27 42 PM" src="https://github.com/user-attachments/assets/9d0621df-05ad-47b7-92f6-3cb4269cc7e4" />
+
+* had our first check-in with the TA
+* had a team meeting on Wednesday
+* worked on codingProjectScanner.py + test_codingProjectScanner.py
+  * this function deals with code projects specifically and extracts, analyzes, and stores data into the database
+* added to testConsole for manually testing codingProjectScanner
+* updated README.md as well
+* no issues were faced this week
+* for next week: meet with the team and discuss our contributions so far, create scanners for media projects and text projects, 
+
+
 
 
 
