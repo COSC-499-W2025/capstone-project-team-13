@@ -13,7 +13,7 @@ from pathlib import Path
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.Analysis.codePrjScanner import CodingProjectScanner, scan_coding_project
+from src.Analysis.codingProjectScanner import CodingProjectScanner, scan_coding_project
 from src.Databases.database import db_manager
 
 
