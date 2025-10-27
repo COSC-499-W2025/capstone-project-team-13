@@ -1,4 +1,6 @@
 import sys, os
+from Analysis.summarizeProjects import summarize_projects
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
@@ -24,9 +26,10 @@ def dashboard():
         print("=== Console Testing Dashboard ===")
         print("1. Get User Consent")
         print("2. Show Consent Status")
-        print("3. Keywords")
-        print("4. Exit")
-        choice = input("Select an option (1-4): ").strip()
+        print("3. Test Keyword Extraction")
+        print("4. Test Project Summarizer") 
+        print("5. Exit")
+        choice = input("Select an option (1-5): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
         if choice == '1':
@@ -50,11 +53,66 @@ def dashboard():
             elif choice == '3':
                 run_keyword_clustering()
         elif choice == '4':
+            test_project_summarizer()
+            input("Press Enter to continue...")
+        elif choice == '5':
             print("Exiting dashboard.")
             break
         else:
             print("Invalid choice. Try again.")
             input("Press Enter to continue...")
+def test_project_summarizer():
+    """Manual test for summarize_projects"""
+    clear_console()
+    print("=== Project Summarizer Test ===\n")
+
+    # Sample project data (mocked)
+    sample_projects = [
+        {
+            "project_name": "Portfolio Website",
+            "time_spent": 80,
+            "success_score": 0.9,
+            "contribution_score": 0.7,
+            "skills": ["HTML", "CSS", "JavaScript"]
+        },
+        {
+            "project_name": "Machine Learning Model",
+            "time_spent": 200,
+            "success_score": 0.85,
+            "contribution_score": 0.95,
+            "skills": ["Python", "TensorFlow", "Data Analysis"]
+        },
+        {
+            "project_name": "Capstone Dashboard",
+            "time_spent": 150,
+            "success_score": 0.8,
+            "contribution_score": 0.85,
+            "skills": ["Python", "Flask", "SQL"]
+        },
+        {
+            "project_name": "Unity Game Demo",
+            "time_spent": 50,
+            "success_score": 0.7,
+            "contribution_score": 0.6,
+            "skills": ["C#", "Unity", "3D Design"]
+        }
+    ]
+
+    # Run the summarizer
+    result = summarize_projects(sample_projects, top_k=3)
+    
+    # Print results
+    print("\nSelected Top Projects:")
+    for p in result["selected_projects"]:
+        print(f" - {p['project_name']} (score: {p['overall_score']}) | Skills: {', '.join(p['skills'])}")
+
+    print("\nUnique Skills Covered:")
+    print(", ".join(result["unique_skills"]))
+
+    print("\nGenerated Summary:")
+    print(result["summary"])
+
+
 
 def test_file_format():
     """Test file format validation with sample files"""
