@@ -92,7 +92,10 @@ def extract_comments(code: str) -> str:
         for m in re.finditer(r'#(.*?)$', code, re.MULTILINE):
             matches_with_pos.append((m.start(), m.group(1).strip()))
 
-        for m in re.finditer(r'(?:\"\"\"|\'\'\')(.*?)(?:\"\"\"|\'\'\')', code, re.DOTALL):
+        for m in re.finditer(r'"""(.*?)"""', code, re.DOTALL):
+            matches_with_pos.append((m.start(), m.group(1).strip()))
+
+        for m in re.finditer(r"'''(.*?)'''", code, re.DOTALL):
             matches_with_pos.append((m.start(), m.group(1).strip()))
 
         matches_with_pos.sort(key=lambda x: x[0])
