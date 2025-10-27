@@ -1,10 +1,10 @@
 import sys, os
-from Analysis.summarizeProjects import summarize_projects
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
 try:
+    from src.Analysis.summarizeProjects import summarize_projects
     from src.UserPrompts.getConsent import get_user_consent, show_consent_status  # Example functions
     from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
     from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
