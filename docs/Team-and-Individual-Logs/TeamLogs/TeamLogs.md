@@ -101,3 +101,50 @@ Manual testing through `testConsole.py` also confirmed that all modules work as 
 - Some manual testing processes (like the console dashboard) remain time-intensive.  
 
 
+## Week 8 Team Log  
+**Date Range:** Oct 20 – Oct 26, 2025  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T'Olu Akinwande** | Implemented summarize_projects.py function + required tests | # 24 |
+| **Prina Mehta** | Major database refractor + required tests | # 13 |
+| **Maya Knutsvig** | Added sniffer for codeIdentifier + thorough testing | # 8.2 |
+| **Jackson Wilson** | Expanded on comment keyword functionality | # 12.2 |
+| **Illina Islam** | Implemented codingProjectScanner.py + required tests | # 13 |
+| **Sana Shah** | Implemented skillsExtractCoding.py + required tests | # 81 |
+
+---
+<img width="1789" height="693" alt="Screenshot 2025-10-26 at 9 59 40 PM" src="https://github.com/user-attachments/assets/797fc796-9ee0-4434-b201-7f9336e261a5" />
+
+Burnup Chart:
+
+<img width="1013" height="521" alt="Screenshot 2025-10-26 at 9 18 42 PM" src="https://github.com/user-attachments/assets/1402a240-4198-424f-9d7a-6ee93ad5eb32" />
+
+In-Progress Tasks:
+
+<img width="852" height="663" alt="Screenshot 2025-10-26 at 9 21 47 PM" src="https://github.com/user-attachments/assets/db022e84-b36b-4023-9cc5-9d0a261c5ece" />
+
+
+Completed Tasks:
+
+<img width="837" height="540" alt="Screenshot 2025-10-26 at 9 21 30 PM" src="https://github.com/user-attachments/assets/900e2546-b515-4296-a413-49485762a1dd" />
+
+# Test Report
+All tests were written in Python and executed successfully when they were written. At the moment some of our old tests don't run due to our repository clean up. We will make sure to fix these problems by next week. The errors mainly generate because of the changed file paths.
+Manual testing can be done through `testConsole.py` and it confirms that all modules work as expected with sample project data.
+<img width="259" height="130" alt="image" src="https://github.com/user-attachments/assets/44867371-4375-4dd4-bd04-d501488cbc86" />
+
+
+
+### Reflection Points
+
+**What went well:**  
+- During our meeting this week we decided to clean up our repository
+  - organized our functions and classes under category folders
+- Team members worked independantly
+- Lots of ideas were shared and agreed upon over the week
+
+**What didn't go as planned:**  
+- Our older tests don't run due to repo clean up
+  - file paths have changed so they needed to be updated in the older test folders
+
