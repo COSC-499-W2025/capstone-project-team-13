@@ -1,4 +1,6 @@
 import sys, os
+from Analysis.summarizeProjects import summarize_projects
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
@@ -8,6 +10,7 @@ try:
     from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
     from src.Extraction.keywordExtractorText import extract_keywords_with_scores
     from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
+    from src.Analysis.keywordAnalytics import technical_density, keyword_clustering
 except ImportError:
     print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
     sys.exit(1)
@@ -24,8 +27,9 @@ def dashboard():
         print("1. Get User Consent")
         print("2. Show Consent Status")
         print("3. Test Keyword Extraction")
-        print("4. Exit")
-        choice = input("Select an option (1-4): ").strip()
+        print("4. Test Project Summarizer") 
+        print("5. Exit")
+        choice = input("Select an option (1-5): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
         if choice == '1':
@@ -37,14 +41,78 @@ def dashboard():
             print(f"Consent status: {status}")
             input("Press Enter to continue...")
         elif choice == '3':
-            run_keyword_extraction_test()  # <-- new function call
-            input("Press Enter to continue...")
+            clear_console()
+            print("1. Get Keywords")
+            print("2. Get Keywords Analytics")
+            print("3. Get Keyword Clustering")
+            choice = input("Select an option (1-2): ").strip()
+            if choice == '1':
+                run_keyword_extraction_test()
+            elif choice == '2':
+                run_keyword_analytics()
+            elif choice == '3':
+                run_keyword_clustering()
         elif choice == '4':
+            test_project_summarizer()
+            input("Press Enter to continue...")
+        elif choice == '5':
             print("Exiting dashboard.")
             break
         else:
             print("Invalid choice. Try again.")
             input("Press Enter to continue...")
+def test_project_summarizer():
+    """Manual test for summarize_projects"""
+    clear_console()
+    print("=== Project Summarizer Test ===\n")
+
+    # Sample project data (mocked)
+    sample_projects = [
+        {
+            "project_name": "Portfolio Website",
+            "time_spent": 80,
+            "success_score": 0.9,
+            "contribution_score": 0.7,
+            "skills": ["HTML", "CSS", "JavaScript"]
+        },
+        {
+            "project_name": "Machine Learning Model",
+            "time_spent": 200,
+            "success_score": 0.85,
+            "contribution_score": 0.95,
+            "skills": ["Python", "TensorFlow", "Data Analysis"]
+        },
+        {
+            "project_name": "Capstone Dashboard",
+            "time_spent": 150,
+            "success_score": 0.8,
+            "contribution_score": 0.85,
+            "skills": ["Python", "Flask", "SQL"]
+        },
+        {
+            "project_name": "Unity Game Demo",
+            "time_spent": 50,
+            "success_score": 0.7,
+            "contribution_score": 0.6,
+            "skills": ["C#", "Unity", "3D Design"]
+        }
+    ]
+
+    # Run the summarizer
+    result = summarize_projects(sample_projects, top_k=3)
+    
+    # Print results
+    print("\nSelected Top Projects:")
+    for p in result["selected_projects"]:
+        print(f" - {p['project_name']} (score: {p['overall_score']}) | Skills: {', '.join(p['skills'])}")
+
+    print("\nUnique Skills Covered:")
+    print(", ".join(result["unique_skills"]))
+
+    print("\nGenerated Summary:")
+    print(result["summary"])
+
+
 
 def test_file_format():
     """Test file format validation with sample files"""
@@ -146,6 +214,7 @@ def run_keyword_extraction_test():
                 break
             lines.append(line)
         text = "\n".join(lines)
+        input("\nPress Enter to return to the dashboard...")
 
     elif mode == '2':
         file_path = input("Enter path to text file: ").strip()
@@ -154,6 +223,7 @@ def run_keyword_extraction_test():
             return
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
+        input("\nPress Enter to return to the dashboard...")
 
     elif mode == '3':
         file_path = input("Enter path to code file: ").strip()
@@ -174,12 +244,15 @@ def run_keyword_extraction_test():
 
         if not code_results:
             print("No keywords found in code.")
+            input("\nPress Enter to return to the dashboard...")
             return
 
         print("Extracted Code Keywords (with scores):\n")
         for score, phrase in code_results:
             print(f"{score:.2f}  -  {phrase}")
+        input("\nPress Enter to return to the dashboard...")
         return
+        
 
     else:
         print("Invalid choice.")
@@ -199,6 +272,34 @@ def run_keyword_extraction_test():
     print("Extracted Keywords (with scores):\n")
     for score, phrase in results:
         print(f"{score:.2f}  -  {phrase}")
+    input("\nPress Enter to return to the dashboard...")
+
+def run_keyword_analytics():
+    file_path = input("Enter path to text file: ").strip()
+    try:
+        results = technical_density(file_path)
+        print("\nKeyword Analytics Results:\n")
+        for key, value in results.items():
+            print(f"{key}: {value}")
+    except Exception as e:
+        print(f"Error: {e}")
+    input("\nPress Enter to return to the dashboard...")
+
+def run_keyword_clustering():
+    file_path = input("Enter path to text file: ").strip()
+    try:
+        df = keyword_clustering(file_path)  # use the count-summary function
+        if df.empty:
+            print("\nNo keywords found.")
+        else:
+            print("\nKeyword Analytics Results:\n")
+            # Print a clean table
+            print(df.to_string(index=False))
+    except Exception as e:
+        print(f"Error: {e}")
+
+    input("\nPress Enter to return to the dashboard...")
+
 
 if __name__ == "__main__":
     dashboard()
