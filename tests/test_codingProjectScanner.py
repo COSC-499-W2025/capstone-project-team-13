@@ -118,7 +118,7 @@ def calculate(a, b):
     
     def test_initialization_file_not_directory(self):
         """Test scanner initialization with file instead of directory"""
-        test_file = self.test_dir / "test.txt"
+        test_file = Path(self.test_dir) / "test.txt"
         test_file.write_text("test")
         
         with self.assertRaises(ValueError):

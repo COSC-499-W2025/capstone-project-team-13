@@ -266,7 +266,6 @@ class CodingProjectScanner:
                     'project_id': project.id,
                     'keyword': keyword,
                     'score': float(score),
-                    'category': 'code'
                 })
         
         return project.id
