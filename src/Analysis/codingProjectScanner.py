@@ -1,4 +1,3 @@
-# src/Analysis/codingProjectScanner.py
 """
 Coding Project Scanner
 Scans code projects, analyzes them using existing functions, and stores in database
