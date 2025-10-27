@@ -8,14 +8,10 @@ EXT_SUPERTYPES = {
     ".txt": "text", ".md": "text", ".html": "text", ".css": "text",
     ".xml": "text",
 
-    # --- data files ---
-    ".json": "data", ".csv": "data", ".xlsx": "data", ".sql": "data",
 
     # --- media ---
     ".png": "media", ".jpg": "media", ".jpeg": "media",
     ".gif": "media", ".mp4": "media", ".mov": "media", ".wav": "media",
 
-    # --- archives ---
-    ".zip": "archive", ".rar": "archive", ".7z": "archive",
 }
 ALLOWED_FORMATS = list(EXT_SUPERTYPES.keys())
