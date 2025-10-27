@@ -1,16 +1,18 @@
 import sys, os
-from Analysis.summarizeProjects import summarize_projects
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
 try:
+    from src.Analysis.summarizeProjects import summarize_projects
     from src.UserPrompts.getConsent import get_user_consent, show_consent_status  # Example functions
     from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
     from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
     from src.Extraction.keywordExtractorText import extract_keywords_with_scores
     from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
     from src.Analysis.keywordAnalytics import technical_density, keyword_clustering
+    from src.Analysis.codingProjectScanner import scan_coding_project, CodingProjectScanner
+    from src.Databases.database import db_manager
 except ImportError:
     print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
     sys.exit(1)
@@ -27,9 +29,10 @@ def dashboard():
         print("1. Get User Consent")
         print("2. Show Consent Status")
         print("3. Test Keyword Extraction")
-        print("4. Test Project Summarizer") 
-        print("5. Exit")
-        choice = input("Select an option (1-5): ").strip()
+        print("4. Test Project Summarizer")
+        print("5. Test Coding Project Scanner")
+        print("6. Exit")
+        choice = input("Select an option (1-6): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
         if choice == '1':
@@ -56,6 +59,8 @@ def dashboard():
             test_project_summarizer()
             input("Press Enter to continue...")
         elif choice == '5':
+            test_coding_project_scanner()
+        elif choice == '6':
             print("Exiting dashboard.")
             break
         else:
@@ -299,6 +304,252 @@ def run_keyword_clustering():
         print(f"Error: {e}")
 
     input("\nPress Enter to return to the dashboard...")
+
+def test_coding_project_scanner():
+    """Test the coding project scanner"""
+    while True:
+        clear_console()
+        print("=== Coding Project Scanner Test ===\n")
+        print("1. Scan a Coding Project")
+        print("2. View All Scanned Projects")
+        print("3. View Project Details")
+        print("4. Delete a Project")
+        print("5. View Database Stats")
+        print("6. Back to Main Menu")
+        
+        choice = input("\nSelect an option (1-6): ").strip()
+        
+        if choice == '1':
+            scan_new_project()
+        elif choice == '2':
+            view_all_projects()
+        elif choice == '3':
+            view_project_details()
+        elif choice == '4':
+            delete_project()
+        elif choice == '5':
+            view_database_stats()
+        elif choice == '6':
+            break
+        else:
+            print("Invalid choice. Try again.")
+            input("Press Enter to continue...")
+
+
+def scan_new_project():
+    """Scan a new coding project"""
+    clear_console()
+    print("=== Scan New Coding Project ===\n")
+    
+    project_path = input("Enter path to coding project directory: ").strip()
+    
+    if not project_path:
+        print("No path provided.")
+        input("\nPress Enter to continue...")
+        return
+    
+    if not os.path.exists(project_path):
+        print(f"❌ Path does not exist: {project_path}")
+        input("\nPress Enter to continue...")
+        return
+    
+    if not os.path.isdir(project_path):
+        print(f"❌ Path is not a directory: {project_path}")
+        input("\nPress Enter to continue...")
+        return
+    
+    print("\nScanning project...\n")
+    
+    try:
+        project_id = scan_coding_project(project_path)
+        
+        if project_id:
+            print(f"\n✅ Successfully scanned project!")
+            print(f"Project ID: {project_id}")
+            
+            # Show project details
+            project = db_manager.get_project(project_id)
+            if project:
+                print(f"\nProject Summary:")
+                print(f"  Name: {project.name}")
+                print(f"  Languages: {', '.join(project.languages)}")
+                print(f"  Frameworks: {', '.join(project.frameworks) if project.frameworks else 'None'}")
+                print(f"  Lines of Code: {project.lines_of_code:,}")
+                print(f"  Files: {project.file_count}")
+        else:
+            print("\n❌ Failed to scan project or no code files found.")
+    
+    except Exception as e:
+        print(f"\n❌ Error scanning project: {e}")
+    
+    input("\nPress Enter to continue...")
+
+
+def view_all_projects():
+    """View all scanned projects"""
+    clear_console()
+    print("=== All Scanned Projects ===\n")
+    
+    try:
+        projects = db_manager.get_all_projects()
+        
+        if not projects:
+            print("No projects found in database.")
+            input("\nPress Enter to continue...")
+            return
+        
+        print(f"Total Projects: {len(projects)}\n")
+        
+        # Display in a table format
+        print(f"{'ID':<5} {'Name':<30} {'Type':<10} {'Languages':<30} {'LOC':<10}")
+        print("-" * 90)
+        
+        for project in projects:
+            languages = ', '.join(project.languages[:3])  # Show first 3 languages
+            if len(project.languages) > 3:
+                languages += f" (+{len(project.languages) - 3})"
+            
+            print(f"{project.id:<5} {project.name[:28]:<30} {project.project_type:<10} {languages:<30} {project.lines_of_code:<10,}")
+        
+    except Exception as e:
+        print(f"❌ Error retrieving projects: {e}")
+    
+    input("\nPress Enter to continue...")
+
+
+def view_project_details():
+    """View detailed information about a specific project"""
+    clear_console()
+    print("=== View Project Details ===\n")
+    
+    try:
+        project_id = input("Enter project ID: ").strip()
+        
+        if not project_id.isdigit():
+            print("Invalid project ID.")
+            input("\nPress Enter to continue...")
+            return
+        
+        project_id = int(project_id)
+        project = db_manager.get_project(project_id)
+        
+        if not project:
+            print(f"❌ Project with ID {project_id} not found.")
+            input("\nPress Enter to continue...")
+            return
+        
+        # Display detailed information
+        print(f"\n{'='*60}")
+        print(f"Project: {project.name}")
+        print(f"{'='*60}")
+        print(f"\nBasic Information:")
+        print(f"  ID: {project.id}")
+        print(f"  Path: {project.file_path}")
+        print(f"  Type: {project.project_type}")
+        print(f"  Date Scanned: {project.date_scanned.strftime('%Y-%m-%d %H:%M:%S') if project.date_scanned else 'N/A'}")
+        
+        print(f"\nMetrics:")
+        print(f"  Lines of Code: {project.lines_of_code:,}")
+        print(f"  File Count: {project.file_count}")
+        print(f"  Total Size: {project.total_size_bytes / (1024*1024):.2f} MB")
+        
+        print(f"\nTechnologies:")
+        print(f"  Languages: {', '.join(project.languages) if project.languages else 'None'}")
+        print(f"  Frameworks: {', '.join(project.frameworks) if project.frameworks else 'None'}")
+        print(f"  Skills: {', '.join(project.skills[:10]) if project.skills else 'None'}")
+        
+        # Show top keywords
+        keywords = db_manager.get_keywords_for_project(project_id)
+        if keywords:
+            print(f"\nTop Keywords:")
+            for i, kw in enumerate(keywords[:10], 1):
+                print(f"  {i}. {kw.keyword} (score: {kw.score:.2f})")
+        
+        print(f"\n{'='*60}")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+    
+    input("\nPress Enter to continue...")
+
+
+def delete_project():
+    """Delete a project from the database"""
+    clear_console()
+    print("=== Delete Project ===\n")
+    
+    try:
+        project_id = input("Enter project ID to delete: ").strip()
+        
+        if not project_id.isdigit():
+            print("Invalid project ID.")
+            input("\nPress Enter to continue...")
+            return
+        
+        project_id = int(project_id)
+        project = db_manager.get_project(project_id)
+        
+        if not project:
+            print(f"❌ Project with ID {project_id} not found.")
+            input("\nPress Enter to continue...")
+            return
+        
+        print(f"\nProject to delete:")
+        print(f"  ID: {project.id}")
+        print(f"  Name: {project.name}")
+        print(f"  Path: {project.file_path}")
+        
+        confirm = input("\n⚠️  Are you sure you want to delete this project? (yes/no): ").strip().lower()
+        
+        if confirm == 'yes':
+            if db_manager.delete_project(project_id):
+                print(f"\n✅ Project {project_id} deleted successfully.")
+            else:
+                print(f"\n❌ Failed to delete project.")
+        else:
+            print("\nDeletion cancelled.")
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+    
+    input("\nPress Enter to continue...")
+
+
+def view_database_stats():
+    """View database statistics"""
+    clear_console()
+    print("=== Database Statistics ===\n")
+    
+    try:
+        stats = db_manager.get_stats()
+        
+        print(f"Total Projects: {stats['total_projects']}")
+        print(f"Featured Projects: {stats['featured_projects']}")
+        print(f"Total Files: {stats['total_files']}")
+        print(f"Total Contributors: {stats['total_contributors']}")
+        print(f"Total Keywords: {stats['total_keywords']}")
+        
+        # Additional stats
+        projects = db_manager.get_all_projects()
+        if projects:
+            total_loc = sum(p.lines_of_code for p in projects)
+            print(f"\nAggregate Metrics:")
+            print(f"  Total Lines of Code: {total_loc:,}")
+            print(f"  Average LOC per Project: {total_loc / len(projects):,.0f}")
+            
+            # Count by project type
+            type_counts = {}
+            for p in projects:
+                type_counts[p.project_type] = type_counts.get(p.project_type, 0) + 1
+            
+            print(f"\nProjects by Type:")
+            for ptype, count in type_counts.items():
+                print(f"  {ptype}: {count}")
+    
+    except Exception as e:
+        print(f"❌ Error: {e}")
+    
+    input("\nPress Enter to continue...")
 
 
 if __name__ == "__main__":
