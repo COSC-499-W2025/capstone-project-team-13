@@ -263,7 +263,7 @@ def calculate(a, b):
         # Mock user input to not rescan
         # (In actual use, this would prompt the user)
         # For testing, we just verify it detects existing project
-        existing = db_manager.get_project_by_path(str(self.project_dir))
+        existing = db_manager.get_project_by_path(str(scanner1.project_path))
         self.assertIsNotNone(existing)
         self.assertEqual(existing.id, project_id1)
 
