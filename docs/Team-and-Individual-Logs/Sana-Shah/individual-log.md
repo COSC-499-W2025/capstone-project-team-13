@@ -37,7 +37,7 @@ This week our team worked on the level 0 and level 1 Data Flow diagrams. Some fe
 This week, I worked on deciding on an official tech stack with the rest of my team, incorporating the finalized project requirements. Additionally, I uploaded the data flow diagram and software architecture diagram, as well as the descriptions in our github repository and linked them on the main readMe file, and worked on the team log for this week. My team and I also decided to divide setting up functions for the backend of our project. The python function that I developed requires the user to either allow or deny our system to use external services, such as artificial intelligence/LLM’s to analyze their data. The function starts by prompting the user with a description on why permissions are needed, and then allows the user to either enter “yes” or “no”, on which the system is exited. 
 
 # Log 5:
-## Date Range: Weeks 6 - Oct 7 - Oct 19, 2025
+## Date Range: Weeks 6 - Oct 13 - Oct 19, 2025
 
 ## ![week 5 features](499-week5-log.png)
 
@@ -47,4 +47,24 @@ This week my team and I continued to implement different functions for parts of 
 I am currently in progress of conducting research on the best ways for our team to implement the database for our system.
 For this upcoming week, my focus will be to implement the database for our system to store processed metadata, and files. 
 
-Link to Contribution on Project Board: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/55
+Link to Contribution on Project Board: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/55 
+
+# Log 6:
+## Date Range: Weeks 7 - Oct 20 - Oct 26, 2025
+
+## ![week 6 features](499-week6-log.png)
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team and I continued to work on different backend functions of our system. This past week, I worked on researching and implementing a function that would intake coding project folders with files, and somehow, output an ordered list of skills exercised/practiced in their project. The way my function works is by iterating through each file in the given project folder, reading the source code, and analyzing its contents using predefined keyword mappings related to programming languages, frameworks, and technical domains. It then calculates a relevance score for each detected skill, normalizes the results, and returns a structured list ranking the most prominent skills demonstrated in the project.
+I also added test cases that test different parts of the function, such as different keywords in different projects, the normalizing scores part of the function, and also iterating through files in a folder. 
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/81)
+
+### In-Progress Tasks
+
+Currently a function that I am working on implementing is a function that takes in a folder of files for a document project, that analyzes the files, and results in a list of skills exercised/practiced in the project. 
+
+### Upcoming cycle
+
+For this upcoming cycle, I plan on completing my function that produces a list of skills for a document project. Additionally, I plan to start working on 1 of 3 more functions that analyzes different project types (media, code, and documents), and produce contribution metrics, depending on whether the projects are a solo vs collaborative projects.
