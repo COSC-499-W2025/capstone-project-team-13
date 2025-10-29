@@ -8,7 +8,7 @@ import csv
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from fileParser import (
+from Helpers.fileParser import (
     parse_txt, parse_json, parse_csv, parse_py, 
     parse_file, FileParseError
 )

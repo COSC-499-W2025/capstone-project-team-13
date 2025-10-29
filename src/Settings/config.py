@@ -14,4 +14,4 @@ EXT_SUPERTYPES = {
     ".gif": "media", ".mp4": "media", ".mov": "media", ".wav": "media",
 
 }
-ALLOWED_FORMATS = list(EXT_SUPERTYPES.keys())
+ALLOWED_FORMATS = list(EXT_SUPERTYPES.keys()) + [".zip"]

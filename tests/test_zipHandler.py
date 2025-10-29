@@ -8,11 +8,11 @@ import shutil
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from zipHandler import (
+from Extraction.zipHandler import (
     validate_zip_file, extract_zip, get_zip_contents, 
     count_files_in_zip, ZipExtractionError
 )
-from fileFormatCheck import InvalidFileFormatError
+from Helpers.fileFormatCheck import InvalidFileFormatError
 
 
 class TestZipValidation(unittest.TestCase):
