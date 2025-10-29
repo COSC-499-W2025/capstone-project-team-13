@@ -9,7 +9,7 @@ import sys
 # Ensure the project's src directory is on sys.path so tests can import codeIdentifier
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "src")))
 
-from codeIdentifier import identify_language_and_framework
+from Analysis.codeIdentifier import identify_language_and_framework
 
 
 def test_write_temp(text, ext):
