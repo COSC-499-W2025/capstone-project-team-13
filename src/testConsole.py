@@ -69,13 +69,18 @@ def dashboard():
             print("2. Get Keywords Analytics")
             print("3. Get Keyword Clustering")
             print("4. Get Comprehension Score")
-            choice = input("Select an option (1-4): ").strip()
+            print("5. Exit")
+            choice = input("Select an option (1-5): ").strip()
             if choice == '1':
                 run_keyword_extraction_test()
             elif choice == '2':
                 run_keyword_analytics()
             elif choice == '3':
                 run_keyword_clustering()
+            elif choice == '4':
+                run_comprehension_score()
+            elif choice == '5':
+                return
         elif choice == '4':
             test_project_summarizer()
             input("Press Enter to continue...")
@@ -324,6 +329,15 @@ def run_keyword_clustering():
     except Exception as e:
         print(f"Error: {e}")
 
+    input("\nPress Enter to return to the dashboard...")
+
+def run_comprehension_score():
+    file_path = input("Enter path to code file: ").strip()
+    try:
+        result = calculate_final_score(file_path)
+        print(f"\nComprehension Score: {result['final_score']:.2f}%")
+    except Exception as e:
+        print(f"Error: {e}")
     input("\nPress Enter to return to the dashboard...")
 
 def test_coding_project_scanner():
