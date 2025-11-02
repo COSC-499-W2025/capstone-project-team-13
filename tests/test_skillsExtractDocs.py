@@ -4,7 +4,7 @@ import unittest
 
 # Add your analysis folder to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "analysis")))
-from skillsExtractDocs import analyze_folder_for_skills
+from src.Analysis.skillsExtractDocs import analyze_folder_for_skills
 
 class TestSkillExtraction(unittest.TestCase):
 
