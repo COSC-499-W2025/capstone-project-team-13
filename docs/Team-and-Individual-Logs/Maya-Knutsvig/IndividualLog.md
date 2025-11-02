@@ -95,3 +95,25 @@ I also created tests to ensure this function would work appropriately.
 This task has now been moved to "in review" on the project board, as it has been tested and is ready for implementation.
 
 For the next cycle, I want to focus on more analyses or on the backend, so this would be issue #6 or #5.
+
+
+## Log 7:
+## Date Range: Weeks 9 - Oct 27-Nov 02, 2025
+
+## ![week 7 features](weeklyfeaturesimages/week7features.png)
+The peer evaluations were not open so I could not complete them
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+I focused on issue #13, as there are 3 parts to this issue. Last week Illina worked on the codingProjectScanner, but we still needed 2 more scanners. I handled the textDocumentScanner portion of this issue.
+
+This week, I worked on the textDocumentScanner. I was working on it before the textSkillsExtractor was pulled to main, so I will need to implement that and update the Scanner within the following sprint. This sprint I tested my scanner, and ensured it was working so that it can be implemented to the pipeline.
+
+My feature uses the previously created functions and added them all to one area so that when there is a text file needing to be scanned the analysis can be performed fully with the scanner: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/20
+
+
+I also created tests to ensure this scanner worked appropriately.
+
+This task is in progress as there are 3 components to it, but after updating it in the following sprint it will be moved to Done.
+
+For the next cycle, a team-meeting will be held so we can decide what is most pressing in the group and what has to be accomplished before reading break. I will most likely work on an issue such as issue [COSC-499-W2025/capstone-project-team-13#17](https://github.com/COSC-499-W2025/capstone-project-team-13/issues/17)
