@@ -2,10 +2,12 @@ import os
 import sys
 import pandas as pd
 import re
+from math import sqrt
+import numpy as np
 from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
-
+from src.Analysis.skillsExtractCoding import extract_skills_with_scores
 
 def technical_density(file_path):
     """
@@ -75,6 +77,79 @@ def keyword_clustering(file_path):
     df_sorted = pd.concat([categorized, uncategorized], ignore_index=True)
 
     return df_sorted
+
+def calculate_final_score(file_path, folder_path=None, weight_density=0.5, weight_alignment=0.5):
+    """
+    Calculates a final technical quality score (1-100%) for a code file.
+
+    Combines:
+        - Technical density (complexity/effort measure)
+        - Skill alignment (how well keyword clusters match detected skills)
+    
+    Args:
+        file_path (str): Path to the target code file.
+        folder_path (str, optional): Folder for global skill extraction.
+        weight_density (float): Weight for technical density (default=0.5)
+        weight_alignment (float): Weight for skill alignment (default=0.5)
+
+    Returns:
+        dict: {
+            "file_path": str,
+            "technical_density": float,
+            "alignment_score": float,
+            "final_score": float
+        }
+    """
+    # --- Step 1: Compute Technical Density ---
+    density_result = technical_density(file_path)
+    tech_density = density_result["technical_density"]
+
+    # Normalize technical density to a 0–1 scale (capped)
+    density_norm = min(tech_density / 10, 1.0)
+
+    # --- Step 2: Get Keyword Clusters ---
+    cluster_df = keyword_clustering(file_path)
+    cluster_dict = dict(zip(cluster_df["Cluster"], cluster_df["Keywords"]))
+    
+    # Normalize keyword cluster frequencies
+    total_keywords = sum(cluster_dict.values())
+    if total_keywords == 0:
+        return {
+            "file_path": file_path,
+            "technical_density": round(tech_density, 3),
+            "alignment_score": 0,
+            "final_score": 0
+        }
+    cluster_norm = {k: v / total_keywords for k, v in cluster_dict.items()}
+
+    # --- Step 3: Compute Skill Scores ---
+    if folder_path:
+        skill_scores = extract_skills_from_folder(folder_path)
+    else:
+        # fallback: extract from same file
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            text = f.read()
+        skill_scores = extract_skills_with_scores(text)
+
+    # --- Step 4: Compute Alignment (Cosine Similarity) ---
+    all_keys = set(cluster_norm.keys()).union(skill_scores.keys())
+    v1 = np.array([cluster_norm.get(k, 0.0) for k in all_keys])
+    v2 = np.array([skill_scores.get(k, 0.0) for k in all_keys])
+
+    if np.linalg.norm(v1) == 0 or np.linalg.norm(v2) == 0:
+        alignment_score = 0.0
+    else:
+        alignment_score = float(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
+    # --- Step 5: Combine into Final Score ---
+    final_score = (density_norm * weight_density + alignment_score * weight_alignment) * 100
+
+    return {
+        "file_path": file_path,
+        "technical_density": round(tech_density, 3),
+        "alignment_score": round(alignment_score, 3),
+        "final_score": round(final_score, 2)
+    }
 
 
 # TODO: Once PR containing SKILL_KEYWORDS is merged (#82), import from there instead
