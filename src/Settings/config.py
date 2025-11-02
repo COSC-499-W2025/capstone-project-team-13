@@ -3,10 +3,11 @@ EXT_SUPERTYPES = {
     ".py": "code", ".js": "code", ".ts": "code", ".java": "code",
     ".cpp": "code", ".c": "code", ".rb": "code", ".php": "code",
     ".go": "code", ".rs": "code", ".cs": "code", ".swift": "code",
+    ".html": "code", ".css": "code",
     
     # --- text / markup ---
-    ".txt": "text", ".md": "text", ".html": "text", ".css": "text",
-    ".xml": "text",
+    ".txt": "text", ".md": "text", ".xml": "text", ".pdf": "text", ".doc": "text", ".docx": "text",
+
 
 
     # --- media ---

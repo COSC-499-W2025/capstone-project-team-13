@@ -31,6 +31,7 @@ class Project(Base):
     
     # Metrics
     lines_of_code = Column(Integer, default=0)
+    word_count = Column(Integer, default=0) #for text documents
     file_count = Column(Integer, default=0)
     total_size_bytes = Column(Integer, default=0)
     
@@ -130,6 +131,7 @@ class Project(Base):
             'date_modified': self.date_modified.isoformat() if self.date_modified else None,
             'date_scanned': self.date_scanned.isoformat() if self.date_scanned else None,
             'lines_of_code': self.lines_of_code,
+            'word_count': self.word_count,  
             'file_count': self.file_count,
             'total_size_bytes': self.total_size_bytes,
             'project_type': self.project_type,
