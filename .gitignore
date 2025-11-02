@@ -8,3 +8,6 @@ __pycache__/
 # Ignore dummy test folders for visual analyzer
 PortfolioTest/
 tests/PortfolioTest/
+
+# Environment files
+*.env

@@ -13,6 +13,7 @@ try:
     from src.Analysis.keywordAnalytics import technical_density, keyword_clustering
     from src.Analysis.codingProjectScanner import scan_coding_project, CodingProjectScanner
     from src.Databases.database import db_manager
+    from src.AI.ai_service import get_ai_service
 except ImportError:
     print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
     sys.exit(1)
@@ -20,6 +21,39 @@ except ImportError:
 # Simple clear command, specifies by OS
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
+
+def test_ai_generation():
+        """Test AI generation capabilities"""
+        clear_console()
+        print("=== AI Service Test ===\n")
+        
+        ai = get_ai_service()
+        
+        print("1. Generate text from prompt")
+        print("2. View usage statistics")
+        print("3. Clear cache")
+        print("4. Run all examples")
+        print("5. Back to main menu")
+        
+        choice = input("\nSelect option (1-5): ").strip()
+        
+        if choice == '1':
+            prompt = input("\nEnter your prompt: ")
+            print("\nGenerating...\n")
+            response = ai.generate_text(prompt, max_tokens=200)
+            if response:
+                print(f"Response:\n{response}\n")
+            else:
+                print("❌ Generation failed\n")
+        
+        elif choice == '2':
+            ai.print_usage_report()
+        
+        elif choice == '3':
+            ai.clear_cache()
+            print("✓ Cache cleared")
+        
+        input("\nPress Enter to continue...")
 
 # Console-based dashboard to test initial functions
 def dashboard():
@@ -31,8 +65,9 @@ def dashboard():
         print("3. Test Keyword Extraction")
         print("4. Test Project Summarizer")
         print("5. Test Coding Project Scanner")
-        print("6. Exit")
-        choice = input("Select an option (1-6): ").strip()
+        print("6. Test AI Service")  
+        print("7. Exit")
+        choice = input("Select an option (1-7): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
         if choice == '1':
@@ -61,6 +96,8 @@ def dashboard():
         elif choice == '5':
             test_coding_project_scanner()
         elif choice == '6':
+            test_ai_generation()        
+        elif choice == '7':
             print("Exiting dashboard.")
             break
         else:
