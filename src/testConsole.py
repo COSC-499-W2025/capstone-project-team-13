@@ -335,7 +335,11 @@ def run_comprehension_score():
     file_path = input("Enter path to code file: ").strip()
     try:
         result = calculate_final_score(file_path)
-        print(f"\nComprehension Score: {result['final_score']:.2f}%")
+        print("\n--- Comprehension Score Summary ---")
+        print(f"File Path: {result['file_path']}")
+        print(f"Technical Density: {result['technical_density']}")
+        print(f"Alignment Score: {result['alignment_score']:.2f}")
+        print(f"Final Score: {result['final_score']:.2f}%")
     except Exception as e:
         print(f"Error: {e}")
     input("\nPress Enter to return to the dashboard...")
