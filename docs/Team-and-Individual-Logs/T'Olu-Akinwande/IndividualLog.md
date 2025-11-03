@@ -53,6 +53,26 @@ Recap of Goals / Progress:
 
 ![Week 3 screenshot](./weeklytasks-images/week3-screenshot.png)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #Week7 (Log 5)
 Date Range: Oct 13 – Oct 19, 2025
 
@@ -107,3 +127,44 @@ Next week's tasks will involve creating a function to summarixe projects in chro
 
 
 <img width="1007" height="584" alt="image" src="https://github.com/user-attachments/assets/712b8a7b-c93f-488c-a40d-0c3aec981d9e" />
+
+
+
+
+# Week 9 Log (Log 7)
+Date Range: October 27 – November 2 2025
+
+Tasks Worked On:
+
+Implemented rank_projects_by_date() function: Developed a new module to organize projects in chronological order based on creation and update timestamps. This feature enhances the system’s analytical depth by providing insight into user progress and project evolution.
+
+Integrated with database schema: Connected the ranking function to database.py to pull real project metadata directly from the Project table (using fields like date_created and date_modified). Ensured compatibility with existing database operations and error-handling logic.
+
+Created unit and console-based tests: Built a unit test file (test_project_ranking.py) to verify correct sorting behavior, handling of malformed/missing dates, and consistent formatting of project timelines. Also implemented a manual testing interface in testConsole.py to allow interactive evaluation of the ranking function.
+
+Resolved merge conflicts and maintained compatibility: Addressed conflicts arising from recent refactors and ensured the ranking feature integrated smoothly with other modules such as summarizeProjects, getConsent, and fileFormatCheck.
+
+Debugged import path and module loading issues: Identified and resolved several path inconsistencies that prevented proper import of database and analysis modules during test execution.
+
+During my next sprint, I plan to continue working on this and ensure it integrates smoothly with the summarization and contribution analysis modules, creating a unified and consistent project insights workflow.
+
+<img width="864" height="516" alt="image" src="https://github.com/user-attachments/assets/5b3e47c5-9898-4168-ba33-681aae3332b2" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
