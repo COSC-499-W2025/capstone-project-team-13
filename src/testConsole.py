@@ -13,6 +13,7 @@ imports = [
     ("src.Analysis.keywordAnalytics", ["technical_density", "keyword_clustering", "calculate_final_score"]),
     ("src.Analysis.codingProjectScanner", ["scan_coding_project", "CodingProjectScanner"]),
     ("src.Databases.database", ["db_manager"]),
+   ("src.Analysis.rank_projects_by_date", ["rank_projects_chronologically", "format_project_timeline"]), 
 ]
 
 for module_name, symbols in imports:
@@ -36,6 +37,7 @@ if any(
     sys.exit(1)
 else:
     print("✅ All imports succeeded.")
+
 
 # Simple clear command, specifies by OS
 def clear_console():
@@ -74,6 +76,22 @@ def test_ai_generation():
         
         input("\nPress Enter to continue...")
 
+def run_project_ranking_test():
+    """Rank projects by creation/update date and display"""
+    clear_console()
+    print("=== Project Timeline ===\n")
+
+    # Sample project data — replace with real DB fetch later
+    projects = [
+        {"name": "Capstone Project", "created_at": "2023-10-03", "updated_at": "2024-05-15"},
+        {"name": "Project 1", "created_at": "2024-02-01", "updated_at": "2024-09-20"},
+        {"name": "Project 2", "created_at": "2025-01-12", "updated_at": "2025-03-02"},
+    ]
+
+    sorted_projects = rank_projects_chronologically(projects)
+    output = format_project_timeline(sorted_projects)
+    print(output)
+
 # Console-based dashboard to test initial functions
 def dashboard():
     while True:
@@ -85,8 +103,10 @@ def dashboard():
         print("4. Test Project Summarizer")
         print("5. Test Coding Project Scanner")
         print("6. Test AI Service")  
-        print("7. Exit")
-        choice = input("Select an option (1-7): ").strip()
+        print("7. Show Project Timeline")
+        print("8. Exit")
+
+        choice = input("Select an option (1-8): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
         if choice == '1':
@@ -121,8 +141,11 @@ def dashboard():
         elif choice == '5':
             test_coding_project_scanner()
         elif choice == '6':
-            test_ai_generation()        
+            test_ai_generation()   
         elif choice == '7':
+            run_project_ranking_test()
+            input("Press Enter to continue...")
+        elif choice == '8':
             print("Exiting dashboard.")
             break
         else:
@@ -259,6 +282,8 @@ def test_zip_handling():
         print(f"ZIP error: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
+
+
 
 def run_keyword_extraction_test():
     """Test keyword extraction with user-provided text or a file"""
