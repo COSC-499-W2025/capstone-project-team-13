@@ -1,10 +1,14 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from src.Analysis import codeIdentifier, visualMediaAnalyzer
 from src.UserPrompts.getConsent import get_user_consent
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileParser import parse_file, FileParseError
 from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
+from src.Helpers.fileDataCheck import sniff_supertype
+from src.Helpers.classifier import supertype_from_extension
+
 
 def get_file_path():
     """
@@ -86,15 +90,15 @@ def main():
     if file_path is None:
         print("\nOperation cancelled.")
         sys.exit(0)
-    
     # Validate file format
     try:
         check_file_format(file_path)
         print(f"\n✓ File format validated: {os.path.basename(file_path)}")
+            
     except InvalidFileFormatError as e:
         print(f"\n✗ {e}")
         sys.exit(1)
-    
+
     # Check if it's a ZIP file
     if file_path.lower().endswith('.zip'):
         try:
@@ -122,6 +126,40 @@ def main():
         except (InvalidFileFormatError, ZipExtractionError) as e:
             print(f"\n✗ ZIP error: {e}")
             sys.exit(1)
+        
+    # Sniff file type
+    try:
+        # --- Determine declared and inferred file type ---
+        extension_type = supertype_from_extension(file_path)
+        print(extension_type)
+        sniffed_type = sniff_supertype(file_path)
+        print(sniffed_type)
+
+        # --- Detect mismatch ---
+        if extension_type and sniffed_type and extension_type != sniffed_type:
+            print(f"\n✗ Content mismatch: extension suggests '{extension_type}', "
+                f"but content looks like '{sniffed_type}'. Please verify the file, and update the extension if necessary.")
+            sys.exit(1)
+
+        print(f"✓ Type check passed — {extension_type or 'unknown'} (content agrees)")
+    except Exception as e:
+        print(f"\n✗ Type detection error: {e}")
+        sys.exit(1)
+
+    # if sniffed_type == "code":
+    #     analyzedData = codeIdentifier(file_path)
+
+    # elif sniffed_type == "media":
+    #     analyzedData = visualMediaAnalyzer(file_path)
+
+    # elif sniffed_type == "text":
+    #     analyzedData = parse_file(file_path)
+
+    # else:
+    #     print("Unknown type"); sys.exit(1)
+
+
+
 
 if __name__ == "__main__":
     main()

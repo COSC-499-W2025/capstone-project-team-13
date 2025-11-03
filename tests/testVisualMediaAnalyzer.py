@@ -3,7 +3,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "src")))
 
-from visualMediaAnalyzer import analyze_visual_project
+from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 
 # Create dummy test folder
 TEST_FOLDER = "PortfolioTest"
