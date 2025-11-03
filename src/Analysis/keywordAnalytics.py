@@ -122,12 +122,9 @@ def calculate_final_score(file_path, folder_path=None, weight_density=0.2, weigh
     cluster_dict = dict(zip(cluster_df["Cluster"], cluster_df["Keywords"]))
 
     # Step 3: Skill Extraction (from folder or same file)
-    if folder_path:
-        skill_scores = extract_skills_from_folder(folder_path)
-    else:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            text = f.read()
-        skill_scores = extract_skills_with_scores(text)
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        text = f.read()
+    skill_scores = extract_skills_with_scores(text)
 
     # Step 4: Alignment Score Calculation
     cluster_keys = list(cluster_dict.keys())
