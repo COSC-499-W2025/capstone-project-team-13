@@ -68,3 +68,24 @@ Currently a function that I am working on implementing is a function that takes 
 ### Upcoming cycle
 
 For this upcoming cycle, I plan on completing my function that produces a list of skills for a document project. Additionally, I plan to start working on 1 of 3 more functions that analyzes different project types (media, code, and documents), and produce contribution metrics, depending on whether the projects are a solo vs collaborative projects.
+
+# Log 7:
+## Date Range: Weeks 8 - Oct 27 - Nov 2, 2025
+
+## ![week 7 features](499-week7-log.png)
+The peer evaluation was not available so I could not complete them, and provide a screenshot.
+
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team and I continued to work on different backend functions of our system, this time focusing on more of the analyses functions for artifact types. This past week, I mainly focused on developing a function that extracts skills from document/word projects. The way my function works is by scaning an entire folder of text-based files, including .txt, .docx, and .pdf, and extracts their content for analysis. Once the text is extracted, the function searches for keywords associated with a comprehensive set of writing skills, such as research writing, creative writing, technical writing, etc. The output of the function is a ranked list of skills along with their occurrence counts, providing a clear picture of the most practiced skills within the analyzed documents. I also added test cases that test different parts of the function, ensuring that the function correctly identifies skills across a variety of document formats and project types. Aside from implementing functions, I also wrote and submitted the team log for this week. 
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/18)
+
+### In-Progress Tasks
+
+Currently, I am working on a function that measures contribution metrics for collaborative projects across different artifact types. This week, I focused on researching various approaches to implement this function effectively, and I plan to complete the implementation this week.
+
+### Upcoming cycle
+
+For this upcoming cycle, I plan to complete implementation of the function that measure contribution metrics for collaborative projects. Additionally, I will work on a function that produces a chronological list of skills exercised for coding, visual media, and document/word projects. Since majority of our systems' functions that manually analyze, extract and output summaries/metrics are nearly complete, I will also start working on functions using LLM's for our system.
