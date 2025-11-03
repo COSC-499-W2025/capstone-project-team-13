@@ -3,23 +3,40 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
-try:
-    from src.Analysis.summarizeProjects import summarize_projects
-    from src.UserPrompts.getConsent import get_user_consent, show_consent_status  # Example functions
-    from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
-    from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
-    from src.Extraction.keywordExtractorText import extract_keywords_with_scores
-    from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
-    from src.Analysis.keywordAnalytics import technical_density, keyword_clustering
-    from src.Analysis.codingProjectScanner import scan_coding_project, CodingProjectScanner
-    from src.Databases.database import db_manager
-    from src.AI.ai_service import get_ai_service
-    from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
+imports = [
+    ("src.Analysis.summarizeProjects", ["summarize_projects"]),
+    ("src.UserPrompts.getConsent", ["get_user_consent", "show_consent_status"]),
+    ("src.Helpers.fileFormatCheck", ["check_file_format", "InvalidFileFormatError"]),
+    ("src.Extraction.zipHandler", ["validate_zip_file", "extract_zip", "get_zip_contents", "count_files_in_zip", "ZipExtractionError"]),
+    ("src.Extraction.keywordExtractorText", ["extract_keywords_with_scores"]),
+    ("src.Extraction.keywordExtractorCode", ["extract_code_keywords_with_scores", "read_code_file", "CODE_STOPWORDS"]),
+    ("src.Analysis.keywordAnalytics", ["technical_density", "keyword_clustering", "calculate_final_score"]),
+    ("src.Analysis.codingProjectScanner", ["scan_coding_project", "CodingProjectScanner"]),
+    ("src.Databases.database", ["db_manager"]),
+   ("src.Analysis.rank_projects_by_date", ["rank_projects_chronologically", "format_project_timeline"]), 
+]
 
+for module_name, symbols in imports:
+    try:
+        module = __import__(module_name, fromlist=symbols)
+        globals().update({name: getattr(module, name) for name in symbols})
+    except ImportError as e:
+        print(f"ImportError in '{module_name}': {e}")
+    except AttributeError as e:
+        print(f"AttributeError in '{module_name}' (missing symbol): {e}")
+    except Exception as e:
+        print(f"Unexpected error importing '{module_name}': {e}")
 
-except ImportError:
-    print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
+# Optional: exit if any import failed
+if any(
+    name not in globals()
+    for _, symbols in imports
+    for name in symbols
+):
+    print("\nSome imports failed. Please check the messages above.")
     sys.exit(1)
+else:
+    print("✅ All imports succeeded.")
 
 
 # Simple clear command, specifies by OS
@@ -82,7 +99,7 @@ def dashboard():
         print("=== Console Testing Dashboard ===")
         print("1. Get User Consent")
         print("2. Show Consent Status")
-        print("3. Test Keyword Extraction")
+        print("3. Test Keywords/Comprehension")
         print("4. Test Project Summarizer")
         print("5. Test Coding Project Scanner")
         print("6. Test AI Service")  
@@ -105,13 +122,19 @@ def dashboard():
             print("1. Get Keywords")
             print("2. Get Keywords Analytics")
             print("3. Get Keyword Clustering")
-            choice = input("Select an option (1-2): ").strip()
+            print("4. Get Comprehension Score")
+            print("5. Exit")
+            choice = input("Select an option (1-5): ").strip()
             if choice == '1':
                 run_keyword_extraction_test()
             elif choice == '2':
                 run_keyword_analytics()
             elif choice == '3':
                 run_keyword_clustering()
+            elif choice == '4':
+                run_comprehension_score()
+            elif choice == '5':
+                return
         elif choice == '4':
             test_project_summarizer()
             input("Press Enter to continue...")
@@ -367,6 +390,19 @@ def run_keyword_clustering():
     except Exception as e:
         print(f"Error: {e}")
 
+    input("\nPress Enter to return to the dashboard...")
+
+def run_comprehension_score():
+    file_path = input("Enter path to code file: ").strip()
+    try:
+        result = calculate_final_score(file_path)
+        print("\n--- Comprehension Score Summary ---")
+        print(f"File Path: {result['file_path']}")
+        print(f"Technical Density: {result['technical_density']}")
+        print(f"Alignment Score: {result['alignment_score']:.2f}")
+        print(f"Final Score: {result['final_score']:.2f}%")
+    except Exception as e:
+        print(f"Error: {e}")
     input("\nPress Enter to return to the dashboard...")
 
 def test_coding_project_scanner():
