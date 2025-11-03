@@ -148,3 +148,45 @@ Manual testing can be done through `testConsole.py` and it confirms that all mod
 - Our older tests don't run due to repo clean up
   - file paths have changed so they needed to be updated in the older test folders
 
+  ## Week 9 Team Log  
+**Date Range:** Oct 27 – Nov 2, 2025  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T'Olu Akinwande** | Implemented rank_projects_by_date.py + required tests | # 26 |
+| **Prina Mehta** | Implemented ai_service.py + required tests | # 21 |
+| **Maya Knutsvig** | Implemented textDocumentScanner.py + required tests| # 13 |
+| **Jackson Wilson** | Implemented test_comprehension_score.py | # 100 |
+| **Illina Islam** | Implemented mediaProjectScanner.py + required tests | # 13 |
+| **Sana Shah** | Implemented skillsExtractDocs.py + required tests | # 18 |
+
+---
+![Backlog](teamLogImages/backlogW8.png)
+
+Burnup Chart:
+![Burnup Chart](teamLogImages/burnupW8.png)
+
+In Progress Tasks:
+![In Progress](teamLogImages/inProgressW8.png)
+
+Completed Tasks:
+![Completed](teamLogImages/completedW8.png)
+
+# Test Report
+All tests were written in Python and executed successfully when they were written. This week, during our meeting, we decided to automate our unit testing, so we had to refactor some test files that were made prior to this week.
+Manual testing can be done through `testConsole.py` and it confirms that all modules work as expected with sample project data.
+<img width="259" height="130" alt="image" src="https://github.com/user-attachments/assets/44867371-4375-4dd4-bd04-d501488cbc86" />
+
+
+### Reflection Points
+
+**What went well:**  
+- During our team meeting this week, all team members, collectively revised our systems pipeline, in order to clarify and review progress on our functions, and the system as a whole. This allowed us to proritize which functions needed to be implemented first, moving forward.
+- Team members worked independently on different functions of the system.
+- Lots of ideas were shared and agreed upon over the week, collectively.
+
+**What didn't go as planned:**  
+- Our team decided that it would be more efficient for us to automate tests for our functions, so some of our older test files had to be refactored. 
+
+
+
