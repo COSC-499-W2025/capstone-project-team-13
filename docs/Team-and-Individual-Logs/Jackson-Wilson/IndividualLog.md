@@ -78,3 +78,16 @@ My primary focus this week was getting some base level metrics in place to build
 ### Which features were yours in the project plan for this milestone?
 
 This week was expanding on the comment keyword functionality. Also to note, it looks like the work falls into monday to sunday as the date range and the PR I had for the code keyword extraction falls into that date range this week, not last week, hence why I had less work for week 7. So on top of keywords extraction from comments, I now have two forms of evaluation. First compares the total score (combination of quality and quantity) of keywords in relation to the file size, giving a score on the technical density of a file. For the other metric, I evaluate what categories the comments talk about. This alone isn't a metric, but as I described in its PR, it is designed to be used with what was a pending PR that evaluates skills used within a file. It will compare the commented skills to the used skills to see what percentage of the document is explained in the comments. The plan is to take one more metric and then create a sort of "comprehension score" that we will later use as a factor in evaluating the total score of a specific file. The goal is to use these total scores to evaluate the total quality of files and further projects so we have a ranking in place before potentially doing further analysis with an LLM. 
+
+## Log 7:
+## Date Range: Weeks 9 - Oct27-Nov2, 2025
+
+## ![week 9 features](weeklyfeaturesimages/week9features.png)
+
+Please note that at the time of creation, the weekly quiz is not available so I cannot provide the screenshot of the checklist for now.
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+This week started off with polishing off how our repository handles tests. We were at a point where people were using both pytest and unittest and it got a little annoying to test the repository as a whole. So early in the week I worked on getting all of the tests into one unittest format where a single line of code can run all tests and confirm the entire system is working properly. Past that, I finalized my work on comprehension scores. I took the metrics I had created before (with a few more tweaks) and got it to a point I have a percentage score on the user's comprehension and documentation of a file based on how well the comments are formatted. The formula has 80% of the weight on wether or not the comments reflect the categories retrieved by the skills extraction module and 20% on the sheer quantity of the code in comparison to the file size. My intent was to put emphasis on quality over quantity by emphasizing wether identified skills are actually adressed, but not completely ignore quantity as that would at least allow some weight for the unidentified skills to have a pull on the final result.
