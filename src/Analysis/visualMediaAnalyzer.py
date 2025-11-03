@@ -9,7 +9,7 @@ def analyze_visual_project(folder_path):
     Supports: Images (including RAW), Design files, 3D models, Videos, Audio
     """
 
-    # Expanded supported formats matching mediaProjectScanner
+    # supported formats 
     supported_formats = (
         # Raster images
         '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.ico',
