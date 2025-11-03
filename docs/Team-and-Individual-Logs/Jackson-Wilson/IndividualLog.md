@@ -84,6 +84,8 @@ This week was expanding on the comment keyword functionality. Also to note, it l
 
 ## ![week 9 features](weeklyfeaturesimages/week9features.png)
 
+Please note that at the time of creation, the weekly quiz is not available so I cannot provide the screenshot of the checklist for now.
+
 ## Recap on your week's goals 
 
 ### Which features were yours in the project plan for this milestone?
