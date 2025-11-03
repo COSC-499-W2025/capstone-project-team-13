@@ -3,6 +3,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import functions from getConsent.py
+<<<<<<< HEAD
 imports = [
     ("src.Analysis.summarizeProjects", ["summarize_projects"]),
     ("src.UserPrompts.getConsent", ["get_user_consent", "show_consent_status"]),
@@ -33,6 +34,21 @@ if any(
     for name in symbols
 ):
     print("\nSome imports failed. Please check the messages above.")
+=======
+try:
+    from src.Analysis.summarizeProjects import summarize_projects
+    from src.UserPrompts.getConsent import get_user_consent, show_consent_status  # Example functions
+    from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+    from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
+    from src.Extraction.keywordExtractorText import extract_keywords_with_scores
+    from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
+    from src.Analysis.keywordAnalytics import technical_density, keyword_clustering
+    from src.Analysis.codingProjectScanner import scan_coding_project, CodingProjectScanner
+    from src.Databases.database import db_manager
+    from src.AI.ai_service import get_ai_service
+except ImportError:
+    print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
+>>>>>>> main
     sys.exit(1)
 else:
     print("✅ All imports succeeded.")
@@ -40,6 +56,39 @@ else:
 # Simple clear command, specifies by OS
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
+
+def test_ai_generation():
+        """Test AI generation capabilities"""
+        clear_console()
+        print("=== AI Service Test ===\n")
+        
+        ai = get_ai_service()
+        
+        print("1. Generate text from prompt")
+        print("2. View usage statistics")
+        print("3. Clear cache")
+        print("4. Run all examples")
+        print("5. Back to main menu")
+        
+        choice = input("\nSelect option (1-5): ").strip()
+        
+        if choice == '1':
+            prompt = input("\nEnter your prompt: ")
+            print("\nGenerating...\n")
+            response = ai.generate_text(prompt, max_tokens=200)
+            if response:
+                print(f"Response:\n{response}\n")
+            else:
+                print("❌ Generation failed\n")
+        
+        elif choice == '2':
+            ai.print_usage_report()
+        
+        elif choice == '3':
+            ai.clear_cache()
+            print("✓ Cache cleared")
+        
+        input("\nPress Enter to continue...")
 
 # Console-based dashboard to test initial functions
 def dashboard():
@@ -51,8 +100,9 @@ def dashboard():
         print("3. Test Keywords/Comprehension")
         print("4. Test Project Summarizer")
         print("5. Test Coding Project Scanner")
-        print("6. Exit")
-        choice = input("Select an option (1-6): ").strip()
+        print("6. Test AI Service")  
+        print("7. Exit")
+        choice = input("Select an option (1-7): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
         if choice == '1':
@@ -87,6 +137,8 @@ def dashboard():
         elif choice == '5':
             test_coding_project_scanner()
         elif choice == '6':
+            test_ai_generation()        
+        elif choice == '7':
             print("Exiting dashboard.")
             break
         else:
