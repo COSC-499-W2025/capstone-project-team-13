@@ -8,14 +8,18 @@ try:
     from src.Extraction.zipHandler import validate_zip_file, extract_zip, get_zip_contents, count_files_in_zip, ZipExtractionError
     from src.Extraction.keywordExtractorText import extract_keywords_with_scores
     from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores, read_code_file, CODE_STOPWORDS
+    from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
+
 except ImportError:
     print("Could not import functions from either getConsent, zipHandler, fileFormatCheck, or keywordExtractor. Please check the file and function names.")
     sys.exit(1)
+
 
 # Simple clear command, specifies by OS
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+    
 # Console-based dashboard to test initial functions
 def dashboard():
     while True:
@@ -24,7 +28,8 @@ def dashboard():
         print("1. Get User Consent")
         print("2. Show Consent Status")
         print("3. Test Keyword Extraction")
-        print("4. Exit")
+        print("4. Show Project Timeline")
+        print("5. Exit")
         choice = input("Select an option (1-4): ").strip()
 
         # Basic input selection. Runs corresponding functions when called
@@ -37,9 +42,12 @@ def dashboard():
             print(f"Consent status: {status}")
             input("Press Enter to continue...")
         elif choice == '3':
-            run_keyword_extraction_test()  # <-- new function call
+            run_keyword_extraction_test() 
             input("Press Enter to continue...")
         elif choice == '4':
+            run_project_ranking_test()
+            input("Press Enter to continue...")
+        elif choice == '5':
             print("Exiting dashboard.")
             break
         else:
@@ -125,6 +133,8 @@ def test_zip_handling():
     except Exception as e:
         print(f"Unexpected error: {e}")
 
+
+
 def run_keyword_extraction_test():
     """Test keyword extraction with user-provided text or a file"""
     clear_console()
@@ -200,5 +210,23 @@ def run_keyword_extraction_test():
     for score, phrase in results:
         print(f"{score:.2f}  -  {phrase}")
 
+
+def run_project_ranking_test():
+    """Rank projects by creation/update date and display"""
+    clear_console()
+    print("=== Project Timeline ===\n")
+
+    # Sample project data
+    projects = [
+        {"name": "HealthyEats Platform", "created_at": "2023-10-03", "updated_at": "2024-05-15"},
+        {"name": "Capstone Analyzer", "created_at": "2024-02-01", "updated_at": "2024-09-20"},
+        {"name": "Social Insights Dashboard", "created_at": "2025-01-12", "updated_at": "2025-03-02"},
+    ]
+
+    from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
+
+    sorted_projects = rank_projects_chronologically(projects)
+    output = format_project_timeline(sorted_projects)
+    print(output)
 if __name__ == "__main__":
     dashboard()
