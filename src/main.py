@@ -6,6 +6,7 @@ Integrates all components for a complete workflow
 import sys
 import os
 from pathlib import Path
+import re
 
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -25,6 +26,7 @@ from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
 from src.Databases.database import db_manager
 from src.Analysis.summarizeProjects import summarize_projects
+from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
 
 def clear_screen():
@@ -58,7 +60,7 @@ def detect_project_type(folder_path):
     
     # Scan folder and count file types
     for root, dirs, files in os.walk(folder_path):
-        # Skip excluded directories
+        # Remove skip directories from dirs list
         dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
         
         for filename in files:
@@ -116,34 +118,31 @@ def detect_project_type(folder_path):
 
 def check_if_collaborative(project_path):
     """
-    Check if a project is collaborative by looking for git repository
+    Check if a project is collaborative
     
+    TODO: Implement proper collaboration detection using:
+    - Git history analysis (git log --format=%aN)
+    - File metadata analysis (@author tags, file ownership)
+    - Database contributor records
+    
+    For now, returns 'Unknown' as placeholder.
+    
+    Args:
+        project_path: Path to project directory
+        
     Returns:
-        bool: True if collaborative indicators found
+        str: 'Individual Project', 'Collaborative Project', or 'Unknown'
     """
-    git_dir = os.path.join(project_path, '.git')
+    # Placeholder - check database if project already exists
+    existing = db_manager.get_project_by_path(str(project_path))
+    if existing:
+        contributors = db_manager.get_contributors_for_project(existing.id)
+        if len(contributors) > 1:
+            return 'Collaborative Project'
+        elif len(contributors) == 1:
+            return 'Individual Project'
     
-    # Check for .git directory
-    if os.path.isdir(git_dir):
-        # Try to get git log to check for multiple contributors
-        try:
-            import subprocess
-            result = subprocess.run(
-                ['git', 'log', '--format=%an'],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            
-            if result.returncode == 0:
-                authors = set(result.stdout.strip().split('\n'))
-                return len(authors) > 1
-        except:
-            # If git command fails, just assume it might be collaborative
-            return True
-    
-    return False
+    return 'Unknown (no contributor data found)'
 
 def get_user_choice():
     """Get user's choice for what to analyze"""
@@ -284,10 +283,16 @@ def handle_coding_project():
         print("\n⏳ Deleting old data and re-scanning...")
         db_manager.delete_project(existing.id)
     
-    # Check if collaborative before scanning
-    is_collab = check_if_collaborative(path)
-    if is_collab:
-        print("\n🤝 Detected: This appears to be a collaborative project (git repository found)")
+    # Check if collaborative
+    print("\n🔍 Analyzing collaboration type...")
+    collab_type = check_if_collaborative(path)
+    
+    if collab_type == 'Collaborative Project':
+        print(f"🤝 Collaborative Project Detected")
+    elif collab_type == 'Individual Project':
+        print(f"👤 Individual Project Detected")
+    else:
+        print(f"❓ Collaboration Type: Unknown")
     
     # The scanner handles all the analysis and display internally
     project_id = scan_coding_project(path)
@@ -297,8 +302,8 @@ def handle_coding_project():
         return
     
     # Update collaboration type if detected
-    if is_collab:
-        db_manager.update_project(project_id, {'collaboration_type': 'Collaborative Project'})
+    if collab_type != 'Unknown (no contributor data found)':
+        db_manager.update_project(project_id, {'collaboration_type': collab_type})
 
 def handle_visual_project():
     """Handle analyzing a visual/media project"""
@@ -460,16 +465,18 @@ def handle_zip_archive():
         print(f"✅ {detection_result['details']}")
         
         # Check if collaborative
-        is_collab = check_if_collaborative(extract_path)
-        if is_collab:
-            print("🤝 Collaborative project detected (git repository found)")
+        collab_type = check_if_collaborative(extract_path)
+        if collab_type == 'Collaborative Project':
+            print("🤝 Collaborative project detected")
+        elif collab_type == 'Individual Project':
+            print("👤 Individual project detected")
         
         # Handle based on project type
         if project_type == 'code':
             print("\n⏳ Scanning as coding project...")
             project_id = scan_coding_project(extract_path)
-            if project_id and is_collab:
-                db_manager.update_project(project_id, {'collaboration_type': 'Collaborative Project'})
+            if project_id and collab_type != 'Unknown (no contributor data found)':
+                db_manager.update_project(project_id, {'collaboration_type': collab_type})
                 
         elif project_type == 'media':
             print("\n⏳ Analyzing as visual project...")
@@ -504,8 +511,8 @@ def handle_zip_archive():
             print("\n⏳ Analyzing code files...")
             code_project_id = scan_coding_project(extract_path)
             if code_project_id:
-                if is_collab:
-                    db_manager.update_project(code_project_id, {'collaboration_type': 'Collaborative Project'})
+                if collab_type != 'Unknown (no contributor data found)':
+                    db_manager.update_project(code_project_id, {'collaboration_type': collab_type})
                 print(f"✅ Code analysis complete (Project ID: {code_project_id})")
             
             # Analyze media files
@@ -569,17 +576,19 @@ def handle_auto_detect():
     print(f"   Type: {project_type}")
     
     # Check if collaborative
-    is_collab = check_if_collaborative(path)
-    if is_collab:
-        print("   🤝 Collaborative project (git repository found)")
+    collab_type = check_if_collaborative(path)
+    if collab_type == 'Collaborative Project':
+        print("   🤝 Collaborative project")
+    elif collab_type == 'Individual Project':
+        print("   👤 Individual project")
     
     # Proceed based on type
     if project_type == 'code':
         proceed = input("\n📝 Proceed with code analysis? (yes/no): ").strip().lower()
         if proceed == 'yes':
             project_id = scan_coding_project(path)
-            if project_id and is_collab:
-                db_manager.update_project(project_id, {'collaboration_type': 'Collaborative Project'})
+            if project_id and collab_type != 'Unknown (no contributor data found)':
+                db_manager.update_project(project_id, {'collaboration_type': collab_type})
                 
     elif project_type == 'media':
         proceed = input("\n📝 Proceed with media analysis? (yes/no): ").strip().lower()
@@ -606,8 +615,8 @@ def handle_auto_detect():
         if choice in ['1', '3']:
             print("\n⏳ Analyzing code files...")
             project_id = scan_coding_project(path)
-            if project_id and is_collab:
-                db_manager.update_project(project_id, {'collaboration_type': 'Collaborative Project'})
+            if project_id and collab_type != 'Unknown (no contributor data found)':
+                db_manager.update_project(project_id, {'collaboration_type': collab_type})
         
         if choice in ['2', '3']:
             print("\n⏳ Analyzing media files...")
@@ -666,34 +675,21 @@ def view_all_projects():
             display_project_details(project)
 
 def generate_summary():
-    """Generate summary of all projects"""
+    """Generate summary of all projects using existing module"""
     print_header("Generate Project Summary")
     
-    projects = db_manager.get_all_projects()
+    # Use existing fetch function instead of duplicating logic
+    project_dicts = fetch_projects_for_summary()
     
-    if not projects:
+    if not project_dicts:
         print("📭 No projects found in database.")
         print("\nTip: Scan some projects first!")
         return
     
-    print(f"Found {len(projects)} project(s). Generating summary...\n")
-    
-    # Convert database projects to summarizer format
-    project_dicts = []
-    for p in projects:
-        contributors = db_manager.get_contributors_for_project(p.id)
-        total_commits = sum(c.commit_count or 0 for c in contributors)
-        
-        project_dicts.append({
-            "project_name": p.name,
-            "time_spent": max(p.lines_of_code or 0, 1),
-            "success_score": min(1.0, (p.file_count or 0) / 50),
-            "contribution_score": min(1.0, total_commits / 20) if contributors else 0.5,
-            "skills": list(set(p.languages + p.frameworks + p.skills))
-        })
+    print(f"Found {len(project_dicts)} project(s). Generating summary...\n")
     
     # Generate summary
-    result = summarize_projects(project_dicts, top_k=min(5, len(projects)))
+    result = summarize_projects(project_dicts, top_k=min(5, len(project_dicts)))
     
     print("="*70)
     print("  📊 PROJECT PORTFOLIO SUMMARY")
