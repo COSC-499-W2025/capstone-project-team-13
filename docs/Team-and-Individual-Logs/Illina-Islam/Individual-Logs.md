@@ -67,7 +67,23 @@
 * added to testConsole for manually testing codingProjectScanner
 * updated README.md as well
 * no issues were faced this week
-* for next week: meet with the team and discuss our contributions so far, create scanners for media projects and text projects, 
+* for next week: meet with the team and discuss our contributions so far, create scanners for media projects and text projects
+
+
+## Week 9 - Oct 27-Nov 2, 2025
+<img width="1070" height="542" alt="Screenshot 2025-10-26 at 9 27 42 PM" src="https://github.com/user-attachments/assets/9d0621df-05ad-47b7-92f6-3cb4269cc7e4" />
+
+* had our second check-in with the TA
+* had a team meeting on Wednesday
+  * As a team we established a pipline to follow, as we are almost at the part of connecting everything together (Special thanks to Maya for designing majority of the pipeline)
+* worked on mediaProjectScanner.py + test_mediaProjectScanner.py
+  * this fuction deals with visual/media projects specifically and extracts, analyzes, and stores data into the database
+* updated visualMediaAnalyzer.py + test_visualMediaAnalyzer.py
+  * this update allow visual Media Analyzer to handle more media types
+  * this update also tests for more cases
+* no issues were faced this week
+* for next week: meet with team and disscuss our contributions so far, maybe update fileFormatCheck.py to check for more file types, start working the front-end portion (from the command line)
+
 
 
 
