@@ -1,6 +1,8 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from src.Helpers.installDependencies import install_requirements
+install_requirements()
 from src.Analysis import codeIdentifier, visualMediaAnalyzer
 from src.UserPrompts.getConsent import get_user_consent
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
