@@ -1,4 +1,4 @@
-from Databases import db_manager
+from src.Databases.database import db_manager
 from Analysis.summarizeProjects import summarize_projects
 
 def fetch_projects_for_summary():
