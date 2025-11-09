@@ -117,3 +117,24 @@ I also created tests to ensure this scanner worked appropriately.
 This task is in progress as there are 3 components to it, but after updating it in the following sprint it will be moved to Done.
 
 For the next cycle, a team-meeting will be held so we can decide what is most pressing in the group and what has to be accomplished before reading break. I will most likely work on an issue such as issue [COSC-499-W2025/capstone-project-team-13#17](https://github.com/COSC-499-W2025/capstone-project-team-13/issues/17)
+
+
+# Log 8:
+## Date Range: Weeks 10 - Nov 03-Nov 09, 2025
+
+## ![week 8 features](weeklyfeaturesimages/week7features.png)
+The peer evaluations were not open so I could not complete them
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+I focused on issue #13 again, as the previous week I was not able to fully finish all the implementation due to the fact that I had begun working on it before the skills analyzer was pulled to main. Now it is ingrated and can be used.
+
+This week, I worked on the above and updated the test to ensure the skills analyzer was working.
+
+My feature uses the previously created functions and added them all to one area so that when there is a text file needing to be scanned the analysis can be performed fully with the scanner: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/20
+
+
+
+This task is in progress as there are 3 components to it, but now that it is updated it should be moved to DONE.
+
+For the next cycle, a team-meeting will be held so we can decide what is most pressing in the group and what has to be accomplished before the demo deadline. Most likely [COSC-499-W2025/capstone-project-team-13#17](https://github.com/COSC-499-W2025/capstone-project-team-13/issues/17)
