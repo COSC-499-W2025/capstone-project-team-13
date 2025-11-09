@@ -68,3 +68,18 @@ This week, I focused on implementing the basic AI integration for our system thr
 
 ### Plan for Next Week
 Next week, my goal is to build upon the current AI foundation and implement AI-generated project descriptions and enhance the existing "summarizeProjects.py" (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/111). On the content generation side, I will work on developing professional project descriptions, resume bullet points, and skill highlight summaries using template-based prompt engineering for consistency (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/112).    
+
+## Log 8:
+## Date Range: Week 6 - Nov 3 - Nov 9, 2025
+
+## ![week 1 features](week8tasks.png)
+
+## Recap on your week's goals
+
+### What I Worked On This Week
+This week, I worked on issues https://github.com/COSC-499-W2025/capstone-project-team-13/issues/111, https://github.com/COSC-499-W2025/capstone-project-team-13/issues/112, https://github.com/COSC-499-W2025/capstone-project-team-13/issues/113. I focused on building the complete AI analysis infrastructure. I implemented the ai_project_analyzer — a module capable of conducting technical project evaluations by detecting OOP principles, design patterns, algorithmic complexity, and data structures. This analyzer also identifies demonstrable skills and supports batch processing with smart caching to minimize API costs. To ensure robustness, I developed a comprehensive test suite with detailed test cases covering skill extraction, OOP detection, caching, and error handling. I also extended the database schema to support AI-generated analysis data by adding new fields.
+
+Overall, this week was about laying down the backbone for intelligent project analysis and ensuring the system performs reliably under real workloads.
+
+### Plan for Next Week
+Next week, I plan to begin work on issue https://github.com/COSC-499-W2025/capstone-project-team-13/issues/114 — AI-assisted project ranking, along with whichever tasks the team prioritizes following our next meeting.   
