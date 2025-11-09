@@ -1,0 +1,5 @@
+rake-nltk
+nltk
+pandas
+sqlalchemy
+Pillow

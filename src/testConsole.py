@@ -2,6 +2,9 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from src.Helpers.installDependencies import install_requirements
+install_requirements()
+
 # Import functions from getConsent.py
 imports = [
     ("src.Analysis.summarizeProjects", ["summarize_projects"]),
