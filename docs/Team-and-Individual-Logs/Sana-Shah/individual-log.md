@@ -73,7 +73,6 @@ For this upcoming cycle, I plan on completing my function that produces a list o
 ## Date Range: Weeks 8 - Oct 27 - Nov 2, 2025
 
 ## ![week 7 features](499-week7-log.png)
-The peer evaluation was not available so I could not complete them, and provide a screenshot.
 
 
 ### Which features were yours in the project plan for this milestone?
@@ -91,10 +90,9 @@ Currently, I am working on a function that measures contribution metrics for col
 For this upcoming cycle, I plan to complete implementation of the function that measure contribution metrics for collaborative projects. Additionally, I will work on a function that produces a chronological list of skills exercised for coding, visual media, and document/word projects. Since majority of our systems' functions that manually analyze, extract and output summaries/metrics are nearly complete, I will also start working on functions using LLM's for our system.
 
 # Log 8:
-## Date Range: Weeks 8 - Oct 27 - Nov 2, 2025
+## Date Range: Weeks 8 - Nov 3 - Nov 9, 2025
 
 ## ![week 8 features](499-week8-log.png)
-The peer evaluation was not available so I could not complete them, and provide a screenshot.
 
 
 ### Which features were yours in the project plan for this milestone?
