@@ -31,6 +31,11 @@ from src.Databases.database import db_manager
 from src.Analysis.summarizeProjects import summarize_projects
 from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
+from src.AI.ai_project_analyzer import AIProjectAnalyzer
+from src.AI.ai_enhanced_summarizer import (
+    summarize_projects_with_ai,
+    generate_resume_bullets
+)
 
 def clear_screen():
     """Clear console screen"""
@@ -158,9 +163,10 @@ def get_user_choice():
     print("5. Any Folder (auto-detect type)")
     print("6. View All Projects in Database")
     print("7. Generate Project Summary")
-    print("8. Exit")
+    print("8. AI Project Analysis")  
+    print("9. Exit")
     
-    choice = input("\nEnter your choice (1-8): ").strip()
+    choice = input("\nEnter your choice (1-9): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -499,8 +505,9 @@ def handle_zip_archive():
                     project_data = {
                         'name': os.path.basename(extract_path),
                         'file_path': extract_path,
+                        'project_type': 'mixed',  # Not 'code' or 'media'
+                        'description': 'Mixed project with code and media files',
                         'file_count': result['num_files'],
-                        'project_type': 'media',
                         'skills': result['skills_detected'],
                         'tags': result['software_used']
                     }
@@ -716,6 +723,533 @@ def generate_summary():
     print(f"{'='*70}")
     print(f"{', '.join(result['unique_skills'])}\n")
 
+def ai_project_analysis_menu():
+    """AI Project Analysis submenu"""
+    # Optional AI service consent (not required for basic functionality)
+    print("\n" + "="*70)
+    ai_consent = request_ai_consent()
+    
+    if not ai_consent:
+        print("\n⚠️  AI features require consent to proceed.")
+        print("   Returning to main menu...\n")
+        input("Press Enter to continue...")
+        return
+    
+    print("\n✅ AI consent granted. Proceeding with AI features...")
+    input("Press Enter to continue...")
+    clear_screen()
+
+    while True:
+        print_header("AI Project Analysis")
+        
+        print("Choose an analysis option:\n")
+        print("1. Analyze Single Project")
+        print("2. Generate AI Summaries for All Projects")
+        print("3. Generate Resume Bullets")
+        print("4. Batch Analyze All Projects")
+        print("5. View AI Analysis Statistics")
+        print("6. Back to Main Menu")
+        
+        choice = input("\nEnter your choice (1-6): ").strip()
+        
+        if choice == '1':
+            analyze_single_project_ai()
+        elif choice == '2':
+            generate_ai_summaries_all()
+        elif choice == '3':
+            generate_resume_bullets_menu()
+        elif choice == '4':
+            batch_analyze_all_projects()
+        elif choice == '5':
+            view_ai_statistics()
+        elif choice == '6':
+            break
+        else:
+            print("❌ Invalid choice. Please try again.")
+            input("\nPress Enter to continue...")
+
+def analyze_single_project_ai():
+    """Analyze a single project with AI - provides deep technical insights"""
+    print_header("AI Project Analysis")
+    
+    # Get all projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\nTip: Scan some projects first using options 1-5!")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display available projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Type':<10}")
+    print("-" * 60)
+    for project in projects[:20]:  # Show first 20
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        print(f"{project.id:<5} {name:<40} {project.project_type:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter project ID to analyze (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project:
+        print(f"❌ Project with ID {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm analysis
+    print(f"\n📁 Selected: {project.name}")
+    
+    # Run AI analysis
+    print(f"\n{'='*70}")
+    print(f"🤖 Running AI Analysis...")
+    print(f"{'='*70}\n")
+    print("This may take 10-30 seconds...\n")
+    
+    try:
+        analyzer = AIProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_id)
+        
+        # Display results
+        print(f"{'='*70}")
+        print(f"📊 AI Analysis Results")
+        print(f"{'='*70}\n")
+        
+        print(f"📁 Project: {results['project_name']}\n")
+        
+        # Overview
+        if results.get('overview'):
+            print("📝 Project Overview:")
+            print(f"{results['overview']}\n")
+        
+        # Technical depth
+        if results.get('technical_depth'):
+            print("🔬 Technical Analysis:")
+            tech_text = results['technical_depth'].get('raw_analysis', 'Not available')
+            # Print first 800 characters
+            if len(tech_text) > 800:
+                print(f"{tech_text[:800]}...\n")
+                print("(Analysis truncated for display)\n")
+            else:
+                print(f"{tech_text}\n")
+        
+        # Skills
+        if results.get('skills'):
+            print(f"💡 Demonstrated Skills ({len(results['skills'])}):")
+            for i, skill in enumerate(results['skills'][:10], 1):
+                print(f"   {i}. {skill['skill']} ({skill['evidence']})")
+                if skill.get('justification'):
+                    print(f"      → {skill['justification']}")
+            if len(results['skills']) > 10:
+                print(f"   ... and {len(results['skills']) - 10} more skills")
+            print()
+        
+        # Statistics
+        stats = results.get('cache_stats', {})
+        print(f"📊 Analysis Statistics:")
+        print(f"   API calls made: {stats.get('analyses_run', 0)}")
+        print(f"   Cache hits: {stats.get('cache_hits', 0)}")
+        
+        # Offer to save
+        print(f"\n{'='*70}")
+        save = input("💾 Save AI description to database? (yes/no): ").strip().lower()
+        if save == 'yes':
+            success = analyzer.update_database_with_analysis(project_id, results)
+            if success:
+                print("✅ AI description saved to database!")
+            else:
+                print("⚠️  Could not update database")
+        
+    except Exception as e:
+        print(f"\n❌ Error during analysis: {e}")
+        print("\nPossible issues:")
+        print("  • Check your GEMINI_API_KEY is set")
+        print("  • Verify you have internet connection")
+        print("  • Check API quota limits")
+    
+    input("\nPress Enter to continue...")
+
+def generate_ai_summaries_all():
+    """Generate AI-enhanced summaries for all projects"""
+    print_header("Generate AI Project Summaries")
+    
+    # Import needed function
+    from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
+    
+    # Fetch projects
+    try:
+        projects = fetch_projects_for_summary()
+    except Exception as e:
+        print(f"❌ Error fetching projects: {e}")
+        input("\nPress Enter to continue...")
+        return
+    
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\nTip: Scan some projects first!")
+        input("\nPress Enter to continue...")
+        return
+    
+    print(f"Found {len(projects)} project(s)\n")
+    
+    # Options
+    print("Enhancement Options:")
+    print("1. Quick Summary (Top 3 projects, overview only)")
+    print("   • Fast")
+    print("   • Good for quick portfolio view")
+    print()
+    print("2. Standard Summary (Top 5 projects, overview + skills)")
+    print("   • Moderate")
+    print("   • Good for resume building")
+    print()
+    print("3. Deep Analysis (All projects, complete analysis)")
+    print("   • Thorough")
+    print("   • Best for comprehensive portfolio")
+    print()
+    print("4. Cancel")
+    
+    choice = input("\nChoice (1-4): ").strip()
+    
+    # Configure based on choice
+    if choice == '1':
+        top_k, enhance_all, include_tech = 3, False, False
+    elif choice == '2':
+        top_k, enhance_all, include_tech = 5, False, True
+    elif choice == '3':
+        top_k, enhance_all, include_tech = min(10, len(projects)), True, True
+    elif choice == '4':
+        return
+    else:
+        print("Invalid choice")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm
+    confirm = input("Proceed with AI enhancement? (yes/no): ").strip().lower()
+    
+    if confirm != 'yes':
+        print("Cancelled.")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Process
+    print(f"\n{'='*70}")
+    print("🤖 Generating AI Summaries...")
+    print(f"{'='*70}\n")
+    print("This may take 30-60 seconds...\n")
+    
+    try:
+        result = summarize_projects_with_ai(
+            projects=projects,
+            top_k=top_k,
+            use_ai=True,
+            enhance_all=enhance_all,
+            include_technical_depth=include_tech
+        )
+        
+        # Display results
+        print(f"\n{'='*70}")
+        print("📊 AI Summary Results")
+        print(f"{'='*70}\n")
+        
+        # Portfolio summary
+        if 'ai_summary' in result:
+            print("🤖 AI-Generated Portfolio Summary:")
+            print(f"{result['ai_summary']}\n")
+        else:
+            print("📝 Standard Summary:")
+            print(f"{result['summary']}\n")
+        
+        # Top projects
+        print(f"{'='*70}")
+        print(f"🏆 Top {len(result['selected_projects'])} Projects")
+        print(f"{'='*70}\n")
+        
+        for i, proj in enumerate(result['selected_projects'], 1):
+            print(f"{i}. {proj['project_name']} (Score: {proj['overall_score']:.3f})")
+            print(f"   Skills: {', '.join(proj['skills'][:5])}")
+            
+            if 'ai_description' in proj:
+                print(f"   📝 {proj['ai_description']}")
+            
+            if 'technical_insights' in proj:
+                print(f"   🔬 {proj['technical_insights']}")
+            
+            print()
+        
+        print(f"{'='*70}")
+        
+    except Exception as e:
+        print(f"\n❌ Error generating summaries: {e}")
+    
+    input("\nPress Enter to continue...")
+
+def generate_resume_bullets_menu():
+    """Generate professional resume bullets for a project"""
+    print_header("Generate Resume Bullets")
+    
+    # Import needed function
+    from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
+    from src.Analysis.summarizeProjects import summarize_projects
+    
+    # Fetch and rank projects
+    try:
+        projects = fetch_projects_for_summary()
+    except Exception as e:
+        print(f"❌ Error fetching projects: {e}")
+        input("\nPress Enter to continue...")
+        return
+    
+    if not projects:
+        print("📭 No projects found in database.")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Get top projects
+    result = summarize_projects(projects, top_k=min(10, len(projects)))
+    
+    print(f"Top {len(result['selected_projects'])} Projects:\n")
+    for i, proj in enumerate(result['selected_projects'], 1):
+        print(f"{i}. {proj['project_name']} (Score: {proj['overall_score']:.3f})")
+        print(f"   Skills: {', '.join(proj['skills'][:4])}")
+    
+    # Get choice
+    print()
+    choice = input(f"Select project (1-{len(result['selected_projects'])}) or Enter to cancel: ").strip()
+    
+    if not choice:
+        return
+    
+    if not choice.isdigit() or int(choice) < 1 or int(choice) > len(result['selected_projects']):
+        print("❌ Invalid choice")
+        input("\nPress Enter to continue...")
+        return
+    
+    selected_project = result['selected_projects'][int(choice) - 1]
+    
+    # Confirm
+    print(f"\n📁 Selected: {selected_project['project_name']}")
+    confirm = input("Generate resume bullets? (yes/no): ").strip().lower()
+    
+    if confirm != 'yes':
+        return
+    
+    # Generate bullets
+    print(f"\n{'='*70}")
+    print("🤖 Generating Resume Bullets...")
+    print(f"{'='*70}\n")
+    
+    try:
+        bullets = generate_resume_bullets(selected_project, num_bullets=3)
+        
+        print(f"📋 Resume Bullets for: {selected_project['project_name']}\n")
+        print("Copy these to your resume:\n")
+        for bullet in bullets:
+            print(f"• {bullet}\n")
+        
+        print(f"{'='*70}")
+        
+    except Exception as e:
+        print(f"❌ Error generating bullets: {e}")
+    
+    input("\nPress Enter to continue...")
+
+def batch_analyze_all_projects():
+    """Batch analyze all projects in database"""
+    print_header("Batch Analyze All Projects")
+    
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects in database")
+        input("\nPress Enter to continue...")
+        return
+    
+    print(f"Found {len(projects)} projects in database\n")
+    
+    # Options
+    print("Analysis Options:")
+    print("1. Overview only (Fast")
+    print("2. Overview + Skills (Moderate")
+    print("3. Complete analysis (Thorough")
+    print("4. Cancel")
+    
+    choice = input("\nChoice (1-4): ").strip()
+    
+    # Configure
+    if choice == '1':
+        analysis_types = ['overview']
+    elif choice == '2':
+        analysis_types = ['overview', 'skills']
+    elif choice == '3':
+        analysis_types = ['overview', 'technical_depth', 'skills']
+    elif choice == '4':
+        return
+    else:
+        print("Invalid choice")
+        input("\nPress Enter to continue...")
+        return
+    
+    confirm = input("\nProceed with batch analysis? (yes/no): ").strip().lower()
+    if confirm != 'yes':
+        print("Cancelled.")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Analyze
+    print(f"\n{'='*70}")
+    print("🤖 Batch Analyzing Projects...")
+    print(f"{'='*70}\n")
+    print("This may take several minutes...\n")
+    
+    try:
+        analyzer = AIProjectAnalyzer()
+        project_ids = [p.id for p in projects]
+        results = analyzer.batch_analyze_projects(project_ids, analysis_types)
+        
+        # Display summary
+        print(f"\n{'='*70}")
+        print("📊 Batch Analysis Complete")
+        print(f"{'='*70}\n")
+        print(f"✅ Analyzed {len(results)} projects")
+        
+        successful = sum(1 for r in results if 'error' not in r)
+        failed = len(results) - successful
+        
+        print(f"   Successful: {successful}")
+        if failed > 0:
+            print(f"   Failed: {failed}")
+        
+        # Offer to update database
+        print()
+        update = input("💾 Update all projects in database with AI descriptions? (yes/no): ").strip().lower()
+        if update == 'yes':
+            updated = 0
+            for result in results:
+                if 'error' not in result and 'overview' in result:
+                    if analyzer.update_database_with_analysis(result['project_id'], result):
+                        updated += 1
+            print(f"✅ Updated {updated} projects in database")
+        
+    except Exception as e:
+        print(f"\n❌ Error during batch analysis: {e}")
+    
+    input("\nPress Enter to continue...")
+
+def view_ai_statistics():
+    """View AI analysis statistics and cached analyses"""
+    print_header("AI Analysis Statistics")
+    
+    import json
+    from pathlib import Path
+    
+    # Check cache directory
+    cache_dir = Path("data/ai_project_analysis_cache")
+    
+    if not cache_dir.exists():
+        print("📊 No AI analyses have been run yet.\n")
+        print("Tip: Run 'Analyze Single Project' to start using AI features!")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Get cache files
+    cache_files = list(cache_dir.glob("*.json"))
+    
+    if not cache_files:
+        print("📊 No cached analyses found.\n")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Analyze cache
+    total_analyses = len(cache_files)
+    analysis_types = {'overview': 0, 'technical_depth': 0, 'skills': 0}
+    project_ids = set()
+    
+    print(f"📊 AI Analysis Statistics\n")
+    print(f"{'='*70}\n")
+    
+    for cache_file in cache_files:
+        try:
+            with open(cache_file, 'r') as f:
+                data = json.load(f)
+            
+            analysis_type = data.get('analysis_type', 'unknown')
+            if analysis_type in analysis_types:
+                analysis_types[analysis_type] += 1
+            
+            project_id = data.get('project_id')
+            if project_id:
+                project_ids.add(project_id)
+        except:
+            pass
+    
+    print(f"Total cached analyses: {total_analyses}")
+    print(f"Unique projects analyzed: {len(project_ids)}")
+    print()
+    
+    print("Analysis breakdown:")
+    print(f"  • Overviews: {analysis_types['overview']}")
+    print(f"  • Technical depth: {analysis_types['technical_depth']}")
+    print(f"  • Skills: {analysis_types['skills']}")
+    print()
+    
+    # Show recent analyses
+    print("Recent analyses:")
+    recent = sorted(cache_files, key=lambda x: x.stat().st_mtime, reverse=True)[:10]
+    
+    for cache_file in recent:
+        try:
+            with open(cache_file, 'r') as f:
+                data = json.load(f)
+            
+            project_id = data.get('project_id', 'unknown')
+            analysis_type = data.get('analysis_type', 'unknown')
+            timestamp = data.get('timestamp', 'unknown')
+            
+            # Get project name
+            try:
+                project = db_manager.get_project(int(project_id))
+                project_name = project.name if project else f"Project {project_id}"
+            except:
+                project_name = f"Project {project_id}"
+            
+            print(f"  • {project_name} - {analysis_type}")
+            if timestamp != 'unknown':
+                print(f"    {timestamp[:19]}")
+        except:
+            pass
+    
+    print(f"\n{'='*70}")
+    
+    # Option to clear cache
+    print()
+    clear = input("🗑️  Clear all cached analyses? (yes/no): ").strip().lower()
+    if clear == 'yes':
+        import shutil
+        confirm = input("⚠️  This cannot be undone. Confirm? (yes/no): ").strip().lower()
+        if confirm == 'yes':
+            try:
+                shutil.rmtree(cache_dir)
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                print("✅ Cache cleared!")
+            except Exception as e:
+                print(f"❌ Error clearing cache: {e}")
+    
+    input("\nPress Enter to continue...")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -728,17 +1262,6 @@ def main():
     if consent != 'allow':
         print("\n❌ Device access denied. Cannot proceed.")
         sys.exit(0)
-    
-    # Step 2: Optional AI service consent (not required for basic functionality)
-    print("\n" + "="*70)
-    ai_consent = request_ai_consent()
-    
-    if not ai_consent:
-        print("\n⚠️  Note: AI features disabled. Basic analysis will still work.")
-        input("Press Enter to continue...")
-    else:
-        print("\n✅ AI features enabled.")
-        input("Press Enter to continue...")
     
     clear_screen()
     
@@ -760,12 +1283,16 @@ def main():
             view_all_projects()
         elif choice == '7':
             generate_summary()
-        elif choice == '8':
+        elif choice == '8':                      
+            ai_project_analysis_menu()           
+        elif choice == '9':                      
+            print("Goodbye!")
+            break
             print("\n👋 Thank you for using Digital Artifact Mining Software!")
             print("   All your data has been saved to the database.\n")
             sys.exit(0)
         else:
-            print("\n❌ Invalid choice. Please enter 1-8.")
+            print("\n❌ Invalid choice. Please enter 1-9.")
         
         input("\n⏸️  Press Enter to continue...")
         clear_screen()
