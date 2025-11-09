@@ -1,6 +1,8 @@
-import unittest
-from src.projectcollabtype import identify_project_type
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+import unittest
+from src.Analysis.projectcollabtype import identify_project_type
 class TestProjectCollabType(unittest.TestCase):
     def setUp(self):
         # This mimics the real structure from fileParser output

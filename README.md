@@ -40,7 +40,7 @@ Our digital artifact mining software serves as a tool for new graduates and stud
 - **Framework Detection** 
 - **Keyword Extraction** 
 - **Visual Media Analysis**
-- **Dual Database System**
+- **Database System**
 - **Contribution Metrics**
 
 ### Coming Soon (Milestones 2 & 3)...
@@ -70,13 +70,13 @@ Our digital artifact mining software serves as a tool for new graduates and stud
 
 The system will use **two separate SQLite databases**:
 
-#### Database 1: `projects_data.db` - Raw Project Data
+#### Database 1: `projects_data.db` - Project Data
 Stores extracted information from scanned projects:
 - **Projects** - Basic info, dates, metrics, type, languages, frameworks
 - **Files** - File paths, types, sizes, created/modified dates
 - **Contributors** - Git contributor names, identifiers, commit counts
+- **Keywords** - Store keywords
 
-#### Database 2: Coming soon...
 
 ---
 

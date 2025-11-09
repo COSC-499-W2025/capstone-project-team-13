@@ -1,6 +1,13 @@
+# Python cache
+__pycache__/
+*.pyc
+
 # macOS system files
 .DS_Store
 
 # Ignore dummy test folders for visual analyzer
 PortfolioTest/
 tests/PortfolioTest/
+
+# Environment files
+*.env
