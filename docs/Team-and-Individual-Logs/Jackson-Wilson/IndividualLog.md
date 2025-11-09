@@ -91,3 +91,15 @@ Please note that at the time of creation, the weekly quiz is not available so I 
 ### Which features were yours in the project plan for this milestone?
 
 This week started off with polishing off how our repository handles tests. We were at a point where people were using both pytest and unittest and it got a little annoying to test the repository as a whole. So early in the week I worked on getting all of the tests into one unittest format where a single line of code can run all tests and confirm the entire system is working properly. Past that, I finalized my work on comprehension scores. I took the metrics I had created before (with a few more tweaks) and got it to a point I have a percentage score on the user's comprehension and documentation of a file based on how well the comments are formatted. The formula has 80% of the weight on wether or not the comments reflect the categories retrieved by the skills extraction module and 20% on the sheer quantity of the code in comparison to the file size. My intent was to put emphasis on quality over quantity by emphasizing wether identified skills are actually adressed, but not completely ignore quantity as that would at least allow some weight for the unidentified skills to have a pull on the final result.
+
+
+## Log 8:
+## Date Range: Weeks 10 - Nov3-9, 2025
+
+## ![week 10 features](weeklyfeaturesimages/IMG_2675.jpeg)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+unfortunately this week lined up with a handful of other projects and midterms so I wasn't able to contribute as much as I'd have liked to the project this week. I did some housekeeping earlier with getting dependencies set up, but wasn't able to get any PRs up before Friday as I was leaving and unable to do work past the date. It was something I'd warned the team about prior and plan o. picking up the slack once back in Kelowna.
