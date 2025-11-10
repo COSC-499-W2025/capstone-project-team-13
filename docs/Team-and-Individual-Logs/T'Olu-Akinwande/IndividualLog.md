@@ -54,22 +54,25 @@ Recap of Goals / Progress:
 ![Week 3 screenshot](./weeklytasks-images/week3-screenshot.png)
 
 
+#Week6  (Log 4)
+Date Range: Oct 6 – Oct 12, 2025
+
+This week, I worked on implementing and testing the ProjectCollabType function, which determines whether a project is individual or collaborative based on folder and metadata analysis.
+
+Tasks Worked On:
+-Created the identify_project_type() function to check contributor and editor information from parsed files.
+-Used manual and automated testing to confirm that the function correctly classifies projects in different scenarios (solo projects, group projects, and empty data).
+-Adjusted the logic to make sure contributor detection stays accurate even if files have mixed editors.
+-Thoroughly reviewed and tested peer's code contributions.
+
+Recap of Goals / Progress:
+Feature assigned: Project Collaboration Type Detection.
+Project board association: Task #14 – Determine Project Collaboration Classification.
+
+Progress summary: Completed and tested the feature successfully. Future improvements could include linking Git-based contributor data for more precise results.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<img width="869" height="503" alt="image" src="https://github.com/user-attachments/assets/2be7573d-e628-404e-b5d9-9da63b424a7c" />
 
 
 
@@ -152,10 +155,28 @@ During my next sprint, I plan to continue working on this and ensure it integrat
 
 
 
+# Week 10 Log (Log 8)
+Date Range: Nov 3 – Nov 9, 2025
 
+Tasks Worked On:
+This week, I focused on improving my ProjectCollabType feature by introducing Git analysis to make project identification more accurate and detailed. The goal was to move beyond simple metadata and use actual Git contributor information to detect collaboration patterns more reliably.
 
+Tasks Worked On:
 
+-Integrated Git-based analysis to read commit histories and contributor usernames directly from project folders.
+-Updated the identify_project_type() function to cross-check Git contributors with file metadata for more precise classification.
+-Double-checked testing and ensure it still ran smoothly with refactoring.
+-Reviewed output accuracy and adjusted logic to handle edge cases where Git data wasn’t available or contributors had overlapping commits.
+-Cleaned up and refactored the function for clarity and better modular design before committing the changes.
+-Thoroughly reviewed and tested teammates code to ensure precise functionality.
 
+Recap of Goals / Progress:
+Feature focus: Project Collaboration Type Detection with Git Integration.
+Project board association: Task #14
+
+Progress summary: Successfully extended the function to include Git-based data. The feature now provides deeper and more reliable insight into whether a project is individual or collaborative, aligning with the milestone goal of analyzing work artifacts beyond surface-level metadata.
+
+<img width="857" height="497" alt="image" src="https://github.com/user-attachments/assets/1aad06b5-3305-4340-a493-8345131cd334" />
 
 
 
