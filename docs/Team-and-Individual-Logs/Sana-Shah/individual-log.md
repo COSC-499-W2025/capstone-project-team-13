@@ -73,7 +73,6 @@ For this upcoming cycle, I plan on completing my function that produces a list o
 ## Date Range: Weeks 8 - Oct 27 - Nov 2, 2025
 
 ## ![week 7 features](499-week7-log.png)
-The peer evaluation was not available so I could not complete them, and provide a screenshot.
 
 
 ### Which features were yours in the project plan for this milestone?
@@ -89,3 +88,20 @@ Currently, I am working on a function that measures contribution metrics for col
 ### Upcoming cycle
 
 For this upcoming cycle, I plan to complete implementation of the function that measure contribution metrics for collaborative projects. Additionally, I will work on a function that produces a chronological list of skills exercised for coding, visual media, and document/word projects. Since majority of our systems' functions that manually analyze, extract and output summaries/metrics are nearly complete, I will also start working on functions using LLM's for our system.
+
+# Log 8:
+## Date Range: Weeks 8 - Nov 3 - Nov 9, 2025
+
+## ![week 8 features](499-week8-log.png)
+
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team continued to work on different backend functions of our system. My goal for this week was to implement/refactor the skills extracting functions for the different artifact types, in order to insert those results from those functions into the database, so that would be the source for producing a chronological list of skills exercised from the users' projects. However, my team members had already refactored those functions to do so. Instead this week, I began implementation of a function that analyzes a text project using AI. Unfortunetly, I was not able to merge my coding contribution for this week, as I had several exams and assignments/project milestones due before the break, and was unable to complete the function in time. However, to compensate, I helped some of my other team members by reviewing/merging their PR's for their functions, and logs.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/137)
+
+
+### Upcoming cycle
+
+For the upcoming cycle, I will continue working on my text project analyzer, using ai. After the break, once my function is complete, I plan to shift my focus towards implementing the remaining AI functions of our system, as majority of our manual analyses functions are complete.
