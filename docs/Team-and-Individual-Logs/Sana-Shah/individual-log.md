@@ -97,8 +97,11 @@ For this upcoming cycle, I plan to complete implementation of the function that 
 
 ### Which features were yours in the project plan for this milestone?
 
-This week my team continued to work on different backend functions of our system. My goal for this week was to implement/refactor the skills extracting functions for the different artifact types, in order to insert those results from those functions into the database, so that would be the source for producing a chronological list of skills exercised from the users' projects. However, my team members had already refactored those functions, to do so.Unfortunetly, I was not able to implement an alternative coding contribution for this week, as I had several exams and assignments/project milestones due before the break. However, to compensate, I helped some of my other team members by reviewing/merging their PR's for their functions, and logs.
+This week my team continued to work on different backend functions of our system. My goal for this week was to implement/refactor the skills extracting functions for the different artifact types, in order to insert those results from those functions into the database, so that would be the source for producing a chronological list of skills exercised from the users' projects. However, my team members had already refactored those functions to do so. Instead this week, I began implementation of a function that analyzes a text project using AI. Unfortunetly, I was not able to merge my coding contribution for this week, as I had several exams and assignments/project milestones due before the break, and was unable to complete the function in time. However, to compensate, I helped some of my other team members by reviewing/merging their PR's for their functions, and logs.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/137)
+
 
 ### Upcoming cycle
 
-For the upcoming cycle, after the break, I plan to shift my focus towards the AI implementation of our system, as majority of our manual analyses functions are complete.
+For the upcoming cycle, I will continue working on my text project analyzer, using ai. After the break, once my function is complete, I plan to shift my focus towards implementing the remaining AI functions of our system, as majority of our manual analyses functions are complete.
