@@ -85,9 +85,15 @@
 * for next week: meet with team and disscuss our contributions so far, maybe update fileFormatCheck.py to check for more file types, start working the front-end portion (from the command line)
 
 
+## Week 10 - Nov 3-Nov 9, 2025
+<img width="1068" height="545" alt="Screenshot 2025-11-09 at 4 19 28 PM" src="https://github.com/user-attachments/assets/64d44e3a-9111-491e-9879-26178c988ff6" />
 
-
-
+* had our third check-in with the TA
+* had a team meeting on Wednesday
+* updated config.py to allow more file formats
+  * this lets fileFormatCheck.py allow more media file types
+* no issues were face this week
+* for week 11: meet with team and disscuss our contributions so far and decide on what to contribute to moving forward
 
 
 
