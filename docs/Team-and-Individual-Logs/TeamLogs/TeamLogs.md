@@ -189,4 +189,49 @@ Manual testing can be done through `testConsole.py` and it confirms that all mod
 - Our team decided that it would be more efficient for us to automate tests for our functions, so some of our older test files had to be refactored. 
 
 
+#Week 10 Team Log 
+**Date Range:** Nov 2 – Nov 9, 2025  
+### Team Progress Log — Week of Nov 3 – Nov 9, 2025
 
+| **Team Member** | **Work Completed / Focus This Week** | **Related Issue #** |
+|------------------|--------------------------------------|---------------------|
+| **T’Olu Akinwande** | Improved the ProjectCollabType feature by adding Git-based contributor analysis and testing it for accuracy. | #18 |
+| **Prina Mehta** | Implemented new AI features, including the **Project Analyzer** for technical project evaluation. | #111, #112, #113 |
+| **Maya Knutsvig** | Combined existing text analysis functions into one unified **TextScanner** workflow. | #20 |
+| **Jackson Wilson** | Standardized tests under **unittest** and finalized the **comprehension score** feature. |#74|
+| **Illina Islam** | Updated **config.py** to support more file types in **fileFormatCheck.py**. | |
+| **Sana Shah** | Started implementing an **AI-based text project analysis** function and supported teammates with PR reviews. |#137|
+
+<img width="1535" height="803" alt="image" src="https://github.com/user-attachments/assets/4700f06d-19dc-49ed-8127-81f86df152d9" />
+
+#Burnup Chart:
+<img width="903" height="468" alt="image" src="https://github.com/user-attachments/assets/28892794-64ec-4fb6-9cdb-db780886f945" />
+
+#In-Progress Tasks:
+<img width="1197" height="653" alt="image" src="https://github.com/user-attachments/assets/dc70947f-607f-4384-aacd-0a8761f5692b" />
+<img width="1209" height="109" alt="image" src="https://github.com/user-attachments/assets/49c8e408-8c35-41ad-9b9c-80d00e5a6035" />
+
+#Completed Tasks:
+<img width="1203" height="566" alt="image" src="https://github.com/user-attachments/assets/eeeb2a02-8970-4c05-a3aa-af5d8579e535" />
+<img width="1201" height="241" alt="image" src="https://github.com/user-attachments/assets/5cdbbc7a-9752-4c9e-9cf7-66a0abe31daf" />
+
+**Test Report**
+All tests were written in Python and executed successfully. All unit testing is automated. Manual testing can be done through testConsole.py and is good for any debugging that may be reqwuired in the future.
+
+<img width="259" height="130" alt="image" src="https://github.com/user-attachments/assets/dd2f7e16-c5a1-475e-ba77-4b27a6c809fa" />
+<img width="278" height="564" alt="image" src="https://github.com/user-attachments/assets/0ccf3cc4-68b0-4843-b1d8-0208c26f748c" />
+
+
+
+**Reflection Points:**
+
+**What went well:**  
+- The team collaborated effectively and made steady progress in multiple areas, including AI integration, database expansion, and analysis module refinement.  
+- Testing across different features showed consistent outputs, confirming smooth communication between modules.  
+- Collaboration and code reviews helped maintain a unified structure across all functions.
+
+**What didn’t go as planned:**  
+- Some minor test import path issues occurred when switching branches - we just need to keep activitely updating the dependcies document so we know what to install before running our files to avoid errors. 
+- Running all project tests together took longer than expected, as some modules required large sample data to validate.
+
+---
