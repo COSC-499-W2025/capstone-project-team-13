@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Settings.config import EXT_SUPERTYPES
 from src.Databases.database import db_manager
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
-#from src.Analysis.skillsExtractText #TODO: when the function is created, add this import
+from src.Analysis.skillsExtractDocs import analyze_folder_for_skills
 
 class TextDocumentScanner:
     """Scans and analyzes text-based documents"""
@@ -105,14 +105,14 @@ class TextDocumentScanner:
         self._extract_keywords()
         print(f"  ✓ Extracted {len(self.all_keywords)} unique keywords")
         
-        # Step 4: Analyze skills #TODO: update when the function is created
-        # print("\nStep 4: Analyzing skills from content...")
-        # self._analyze_skills()
-        # if self.all_skills:
-        #     top_skills = sorted(self.all_skills.items(), key=lambda x: x[1], reverse=True)[:5]
-        #     print(f"  ✓ Top skills: {', '.join([s[0] for s in top_skills])}")
-        # else:
-        #     print("  ✓ No specific skills detected")
+        # Step 4: Analyze skills 
+        print("\nStep 4: Analyzing skills from content...")
+        self._analyze_skills()
+        if self.all_skills:
+            top_skills = sorted(self.all_skills.items(), key=lambda x: x[1], reverse=True)[:5]
+            print(f"  ✓ Top skills: {', '.join([s[0] for s in top_skills])}")
+        else:
+            print("  ✓ No specific skills detected")
         
         # Step 5: Calculate metrics
         print("\nStep 5: Calculating project metrics...")
@@ -203,26 +203,23 @@ class TextDocumentScanner:
             reverse=True
         )[:50]
     
-    # def _analyze_skills(self): #TODO: implement when the function is pulled to main
-    #     """Analyze skills from text files using existing skills extractor"""
-    #     try:
-    #         # Import the skills analysis function
-    #         from src.Analysis.skillsExtractText import analyze_folder_for_skills
+    def _analyze_skills(self): 
+        """Analyze skills from text files using existing skills extractor"""
+        try:            
+            # Analyze the entire folder for skills
+            # Returns list of tuples: [(skill, count), ...]
+            skill_results = analyze_folder_for_skills(str(self.document_path))
             
-    #         # Analyze the entire folder for skills
-    #         # Returns list of tuples: [(skill, count), ...]
-    #         skill_results = analyze_folder_for_skills(str(self.document_path))
+            # Convert to dictionary {skill: score}
+            self.all_skills = {skill: count for skill, count in skill_results}
             
-    #         # Convert to dictionary {skill: score}
-    #         self.all_skills = {skill: count for skill, count in skill_results}
-            
-    #     except ImportError:
-    #         # If the module doesn't exist yet, skip skill analysis
-    #         pass
-    #     except Exception as e:
-    #         # Log error but continue processing
-    #         print(f"  ⚠️  Error analyzing skills: {e}")
-    #         pass
+        except ImportError:
+            # If the module doesn't exist yet, skip skill analysis
+            pass
+        except Exception as e:
+            # Log error but continue processing
+            print(f"  ⚠️  Error analyzing skills: {e}")
+            pass
 
 
     def _read_file_content(self, file_path: Path) -> Optional[str]:
