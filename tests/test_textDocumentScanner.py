@@ -309,7 +309,7 @@ class TestTextDocumentScannerEdgeCases(unittest.TestCase):
         unicode_file.write_text("""
 Test document with unicode: café, naïve, 你好
 This is a multilingual document with 世界 characters.
-Writing samples include résumé and other professional documents.
+Writing samples include résumé and other professional documents. feedback
 """, encoding='utf-8')
         
         scanner = TextDocumentScanner(str(document_dir))
