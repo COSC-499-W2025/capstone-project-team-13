@@ -113,7 +113,12 @@ def summarize_projects(
                 "skills": p["skills"],
                 "time_spent": p["time_spent"],
                 "success_score": p["success_score"],
-                "contribution_score": p["contribution_score"]
+                "contribution_score": p["contribution_score"],
+                
+                "activity_type": p.get("activity_type"),
+                "duration_days": p.get("duration_days"),
+                "first_activity_date": p.get("first_activity_date"),
+                "last_activity_date": p.get("last_activity_date"),
             }
             for p in selected
         ],

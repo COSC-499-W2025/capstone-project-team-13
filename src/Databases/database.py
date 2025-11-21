@@ -463,6 +463,94 @@ class DatabaseManager:
         finally:
             session.close()
     
+        # ============ PROJECT ANALYSIS OPERATIONS ============
+
+    def get_project_duration(self, project_id: int):
+        """
+        Approximate project duration using project + file timestamps.
+        Returns (first_activity_date, last_activity_date, duration_days).
+        """
+        session = self.get_session()
+        try:
+            project = session.query(Project).options(
+                joinedload(Project.files)
+            ).filter(Project.id == project_id).first()
+            
+            if not project:
+                return None, None, 0
+
+            dates = []
+
+            # Project-level timestamps
+            for d in [project.date_created, project.date_modified, project.date_scanned]:
+                if d:
+                    dates.append(d)
+
+            # File timestamps
+            for f in project.files:
+                if f.file_created:
+                    dates.append(f.file_created)
+                if f.file_modified:
+                    dates.append(f.file_modified)
+
+            if not dates:
+                return None, None, 0
+
+            first_dt = min(dates)
+            last_dt = max(dates)
+
+            first_date = first_dt.date()
+            last_date = last_dt.date()
+
+            duration_days = (last_date - first_date).days + 1
+            return first_date, last_date, duration_days
+
+        finally:
+            session.close()
+
+    def get_project_activity_breakdown(self, project_id: int):
+        """
+        Categorize file activity by LOC into:
+        - code
+        - test
+        - docs
+        - design
+        """
+        session = self.get_session()
+        try:
+            files = session.query(File).filter(File.project_id == project_id).all()
+
+            if not files:
+                return {"code": 0, "test": 0, "docs": 0, "design": 0}
+
+            counts = {"code": 0, "test": 0, "docs": 0, "design": 0}
+
+            for f in files:
+                loc = f.lines_of_code or 1
+                path = (f.relative_path or f.file_path or "").lower()
+                name = (f.file_name or "").lower()
+                ext = os.path.splitext(name)[1]
+
+                # Default bucket
+                bucket = "code"
+
+                # Tests
+                if "test" in path or "tests" in path or name.endswith("_test") or ext in [".test", ".spec"]:
+                    bucket = "test"
+                # Docs
+                elif "docs" in path or "doc" in path or name.startswith("readme") or ext in [".md", ".rst", ".txt"]:
+                    bucket = "docs"
+                # Design / config
+                elif any(k in path for k in ["design", "config", "infra", "docker"]) or ext in [".json", ".yaml", ".yml"]:
+                    bucket = "design"
+
+                counts[bucket] += loc
+
+            return counts
+
+        finally:
+            session.close()
+
     # ============ UTILITY OPERATIONS ============
     
     def clear_all_data(self):
