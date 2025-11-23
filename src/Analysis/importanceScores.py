@@ -30,9 +30,9 @@ def calculate_importance_score(project):
     # -----------------------------
     # 2. Size / Depth
     # -----------------------------
-    loc_score = min(project.lines_of_code / 10000, 1) * 100
-    word_score = min(project.word_count / 5000, 1) * 100
-    file_score = min(project.file_count / 100, 1) * 100
+    loc_score = min(project.lines_of_code / 5000, 1) * 100
+    word_score = min(project.word_count / 1000, 1) * 100
+    file_score = min(project.file_count / 20, 1) * 100
     size_score = (loc_score * 0.4 + word_score * 0.3 + file_score * 0.3)
 
     # -----------------------------
