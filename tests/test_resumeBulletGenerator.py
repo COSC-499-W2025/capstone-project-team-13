@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.Export.resumeBulletGenerator import (
+from src.Resume.resumeBulletGenerator import (
     ResumeBulletGenerator,
     generate_resume_bullets_for_all_projects,
     print_resume_component
