@@ -1,6 +1,4 @@
 """
-test_resumeBulletGenerator.py
-------------------------------------
 Comprehensive test suite for resume bullet generator
 
 Tests:
