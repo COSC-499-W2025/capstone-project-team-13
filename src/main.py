@@ -7,6 +7,7 @@ import sys
 import os
 from pathlib import Path
 import re
+import math
 
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -36,6 +37,7 @@ from src.AI.ai_enhanced_summarizer import (
     summarize_projects_with_ai,
     generate_resume_bullets
 )
+from src.Analysis.rank_projects_by_importance import calculate_importance_score
 
 def clear_screen():
     """Clear console screen"""
@@ -1249,6 +1251,28 @@ def view_ai_statistics():
                 print(f"❌ Error clearing cache: {e}")
     
     input("\nPress Enter to continue...")
+
+def run_importance_test():
+    print("=== Running Importance Score Test ===")
+
+    projects = db_manager.get_all_projects()
+
+    if not projects:
+        print("No projects found in the database.")
+        return
+
+    for p in projects:
+        score = calculate_importance_score(p)
+
+        # Save score back to DB
+        db_manager.update_project(
+            p.id,
+            {"importance_score": score}
+        )
+
+        print(f"[{p.id}] {p.name} → {score}")
+
+    print("\nDone.")
 
 def main():
     """Main application loop"""
