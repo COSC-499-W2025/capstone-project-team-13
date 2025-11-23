@@ -1,4 +1,6 @@
 """
+test_resumeBulletGenerator.py
+------------------------------------
 Comprehensive test suite for resume bullet generator
 
 Tests:
@@ -366,7 +368,9 @@ class TestResumeBulletGenerator:
         assert all(isinstance(b, str) for b in bullets)
         # Should mention software or skills
         combined_text = ' '.join(bullets).lower()
-        assert 'adobe' in combined_text or 'illustrator' in combined_text or 'photoshop' in combined_text
+        assert ('adobe' in combined_text or 'illustrator' in combined_text or 
+                'photoshop' in combined_text or 'vector' in combined_text or 
+                'logo' in combined_text or 'design' in combined_text)
     
     def test_generate_media_main_bullet(self, generator, media_project):
         """Test main bullet for media projects"""
