@@ -93,7 +93,21 @@
 * updated config.py to allow more file formats
   * this lets fileFormatCheck.py allow more media file types
 * no issues were face this week
-* for week 11: meet with team and disscuss our contributions so far and decide on what to contribute to moving forward
+* for week 12: meet with team and disscuss our contributions so far and decide on what to contribute to moving forward
+
+
+## Week 12 - Nov 17-Nov 23, 2025
+<img width="1069" height="534" alt="Screenshot 2025-11-23 at 12 54 57 PM" src="https://github.com/user-attachments/assets/6a856f92-8ae9-4956-b948-bc6e714d04c4" />
+
+* missed our fourth check-in with the TA
+* created resumeBulletGenerator.py + test_resumeBulletGenerator.py
+  * resumeBulletGenerator.py generates resume components for all project types
+  * resumeBulletGenerator.py creates a header containing the project title and skills
+  * resumeBulletGenerator.py also produces 2/3 bullet point describing the project and the user's contributions
+  * test_resumeBulletGenerator.py throughly tests resumeBulletGenerator.py
+* no issues were faced this week
+* for week 13: have a team meeting, create a pdf/html/md export function for resume bullets and project summaries, complete quiz 2 
+
 
 
 
