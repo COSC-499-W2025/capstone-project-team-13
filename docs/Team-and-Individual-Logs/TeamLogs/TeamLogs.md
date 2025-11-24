@@ -235,3 +235,43 @@ All tests were written in Python and executed successfully. All unit testing is 
 - Running all project tests together took longer than expected, as some modules required large sample data to validate.
 
 ---
+
+## Week 12 Team Log  
+**Date Range:** Nov 17 – Nov 23, 2025  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T'Olu Akinwande** | Updated projectcollabtype.py + required tests | # 14 |
+| **Prina Mehta** | Expanded/reconfigured user_config.py + config_integration.py + required tests  | # 13 |
+| **Maya Knutsvig** | Expanded/reconfigured summarizeProjects.py + related database functions + fileParser.py| # 17 |
+| **Jackson Wilson** | Implemented importanceRanking.py + importantScores.py + required tests| # 23 |
+| **Illina Islam** | Implemented resumeBulletGenerator.py + required tests | # 112 |
+| **Sana Shah** | Implemented ai_text_project_analyzer.py + required tests | # 137 |
+
+---
+![Backlog](teamLogImages/backlogW12.png)
+
+Burnup Chart:
+![Burnup Chart](teamLogImages/burnupW12.png)
+
+In Progress Tasks:
+![In Progress](teamLogImages/inProgressW12.png)
+
+Completed Tasks:
+![Completed](teamLogImages/completedW12.png)
+
+# Test Report
+All tests were written in Python and executed successfully when they were written. For each of the functions of our system, we have implemented unit tests. Manual testing can be done through `testConsole.py` and it confirms that all modules work as expected with sample project data.
+<img width="259" height="130" alt="image" src="https://github.com/user-attachments/assets/44867371-4375-4dd4-bd04-d501488cbc86" />
+
+
+### Reflection Points
+
+**What went well:**  
+- The team collaborated effectively and made steady progress in multiple areas, including our final few manual analysis and extraction functions, AI integration, and updating/refactoring existing functions.
+- Testing across different features showed consistent outputs, confirming smooth communication between modules.  
+- Team members worked independently on different functions of the system.
+
+**What didn't go as planned:**  
+- Due to this week being our first week back from the break, we weren't able to hold a team meeting due to conflicting schedules. 
+
