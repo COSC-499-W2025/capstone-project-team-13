@@ -20,6 +20,18 @@ from pathlib import Path
 from collections import deque
 from dataclasses import dataclass, asdict
 from dotenv import load_dotenv
+from pathlib import Path
+
+# Find .env in project root (go up from src/AI/)
+env_path = Path(__file__).parent.parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# DEBUG: Check if key loaded
+api_key_check = os.getenv('GEMINI_API_KEY')
+if api_key_check:
+    print(f"✅ API key loaded: {api_key_check[:10]}...")
+else:
+    print("❌ API key NOT loaded from .env")
 
 try:
     import google.generativeai as genai
@@ -302,7 +314,7 @@ class AIService:
             if use_cache and self.cache:
                 self.cache.set(prompt, temperature, max_tokens, result_text)
             
-            print(f"✓ Response received (~{output_tokens} tokens, ${cost:.4f})")
+            print(f"✓ Response received (~{output_tokens} tokens")
             
             return result_text
             

@@ -2,6 +2,9 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from src.Helpers.installDependencies import install_requirements
+install_requirements()
+
 # Import functions from getConsent.py
 imports = [
     ("src.Analysis.summarizeProjects", ["summarize_projects"]),
@@ -203,6 +206,9 @@ def test_project_summarizer():
     print(result["summary"])
 
 
+
+
+   
 
 def test_file_format():
     """Test file format validation with sample files"""
@@ -654,3 +660,27 @@ def view_database_stats():
 
 if __name__ == "__main__":
     dashboard()
+
+         
+
+#Testing projectcollabtype.py
+
+def project_type_tester():
+    from projectcollabtype import identify_project_type
+
+    print("\n=== ProjectCollabType Tester ===")
+    print("This function tests identify_project_type() independently.")
+    print("Enter project contributor names (comma separated):")
+
+    contributors_input = input("Contributors: ").strip()
+    contributors = [c.strip() for c in contributors_input.split(",") if c.strip()]
+
+    project = {"name": "ManualTestProject", "contributors": contributors}
+    result = identify_project_type(project)
+
+    print(f"\n Project Type: {result}")
+    
+# Uncomment the line below to manually test the projectcollabtype function
+#project_type_tester()
+
+

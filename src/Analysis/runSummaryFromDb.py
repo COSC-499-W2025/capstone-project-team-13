@@ -1,5 +1,5 @@
 from src.Databases.database import db_manager
-from Analysis.summarizeProjects import summarize_projects
+from src.Analysis.summarizeProjects import summarize_projects
 
 def fetch_projects_for_summary():
     """Convert database Project objects into summarizer-ready dicts."""
