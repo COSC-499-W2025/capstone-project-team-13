@@ -703,26 +703,88 @@ def generate_summary():
     
     print(f"Found {len(project_dicts)} project(s). Generating summary...\n")
     
-    # Generate summary
     result = summarize_projects(project_dicts, top_k=min(5, len(project_dicts)))
+    all_scored = result.get("all_projects_scored", [])
+   
+    avg_success = (
+        sum(p.get("success_score", 0.0) for p in all_scored) / len(all_scored)
+        if all_scored else 0.0
+    )
+    avg_contrib = (
+        sum(p.get("contribution_score", 0.0) for p in all_scored) / len(all_scored)
+        if all_scored else 0.0
+    )
+    # Generate summary
     
     print("="*70)
     print("  📊 PROJECT PORTFOLIO SUMMARY")
     print("="*70)
     print(f"\n{result['summary']}\n")
     
+    print(f"Average Success Score:  {avg_success * 100:5.1f}%")
+    print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
+    
     print(f"{'='*70}")
     print(f"  🏆 Top {len(result['selected_projects'])} Projects")
     print(f"{'='*70}\n")
     
     for i, proj in enumerate(result['selected_projects'], 1):
+        activity_type = proj.get("activity_type")
+        time_spent = proj.get("time_spent")
+        success_score = proj.get("success_score")
+        contrib_score = proj.get("contribution_score")
+        first_dt = proj.get("first_activity_date")
+        last_dt = proj.get("last_activity_date")
+        duration_days = proj.get("duration_days")
+
+        # Convert datetime objects → date only for cleaner printing
+        if hasattr(first_dt, "date"):
+            start_date = first_dt.date()
+        else:
+            start_date = first_dt
+
+        if hasattr(last_dt, "date"):
+            end_date = last_dt.date()
+        else:
+            end_date = last_dt
+
+        # Compute duration if needed
+        if (duration_days is None or duration_days == 0) and start_date and end_date:
+            duration_days = (end_date - start_date).days + 1
+        
         print(f"{i}. {proj['project_name']}")
         print(f"   Overall Score: {proj['overall_score']:.3f}")
-        print(f"   Skills: {', '.join(proj['skills'][:5])}")
+        
+        # Human-friendly time spent per type
+        if activity_type == "code":
+            print(f"   Time Spent:          {time_spent:,} lines of code")
+        elif activity_type == "text":
+            print(f"   Time Spent:          {time_spent:,} words written")
+        elif activity_type == "media":
+            print(f"   Time Spent:          {time_spent / (1024*1024):.2f} MB of media")
+        else:
+            print(f"   Time Spent:          {time_spent:,} units (unspecified)")
+
+        # Activity window printing
+        if start_date:
+            print(f"   Start Date:          {start_date}")
+
+        if end_date:
+            print(f"   End Date:            {end_date}")
+
+        if duration_days:
+            print(f"   Total Duration:      {duration_days} day(s)")
+
+
+        if success_score is not None:
+            print(f"   Success Score:       {success_score * 100:5.1f}%")
+        if contrib_score is not None:
+            print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
+
         if len(proj['skills']) > 5:
             print(f"           {', '.join(proj['skills'][5:])}")
         print()
-    
+        
     print(f"{'='*70}")
     print(f"  🎯 All Unique Skills ({len(result['unique_skills'])} total)")
     print(f"{'='*70}")
