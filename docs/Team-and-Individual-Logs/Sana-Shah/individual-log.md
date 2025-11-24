@@ -105,3 +105,20 @@ Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project
 ### Upcoming cycle
 
 For the upcoming cycle, I will continue working on my text project analyzer, using ai. After the break, once my function is complete, I plan to shift my focus towards implementing the remaining AI functions of our system, as majority of our manual analyses functions are complete.
+
+# Log 9:
+## Date Range: Weeks 12 - Nov 17 - Nov 23, 2025
+
+## ![week 12 features](499-week12-log.png)
+
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team continued to work on different backend functions of our system. Prior to the reading break, I began implementation of a function that analyzes a text project using AI. This week, I completed implementation, as well as the required unit tests for the function. I am currently also in the process of writing the manual testing for my function to be accessible and tested through main.py.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/137)
+
+
+### Upcoming cycle
+
+For the upcoming cycle, I will begin and complete implementation of a function that analyzes media projects, using AI. 
