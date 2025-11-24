@@ -122,7 +122,7 @@ For the next cycle, a team-meeting will be held so we can decide what is most pr
 # Log 8:
 ## Date Range: Weeks 10 - Nov 03-Nov 09, 2025
 
-## ![week 8 features](weeklyfeaturesimages/week7features.png)
+## ![week 8 features](weeklyfeaturesimages/week8features.png)
 The peer evaluations were not open so I could not complete them
 
 ## Recap on your week's goals 
@@ -138,3 +138,20 @@ My feature uses the previously created functions and added them all to one area 
 This task is in progress as there are 3 components to it, but now that it is updated it should be moved to DONE.
 
 For the next cycle, a team-meeting will be held so we can decide what is most pressing in the group and what has to be accomplished before the demo deadline. Most likely [COSC-499-W2025/capstone-project-team-13#17](https://github.com/COSC-499-W2025/capstone-project-team-13/issues/17)
+
+# Log 9:
+## Date Range: Weeks 12 - Nov 17-Nov 23, 2025
+
+## ![week 8 features](weeklyfeaturesimages/week9features.png)
+The peer evaluations were not open so I could not complete them
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+I focused on issue #17, which was to extract + display key contribution metrics in a project. As there was already a function for generating the summary, I added on to it metrics that were required, such as: duration of the project (start date, end date, duration), and activity type. I also updated the file parser, as when I was doing manual testing with a .docx file it did not work, and therefore was not aligned with the config.py file we had in our Settings folder. The config.py file determines the allowed extensions that can be analyzed, so the parser needs to follow that list, and so I updated it to do so. 
+
+My feature updated the previously create functions, adding the required metrics, and with manual testing on my end determined what I needed to update within main/other files. https://github.com/COSC-499-W2025/capstone-project-team-13/issues/17
+
+
+This task should be in progress, as I have yet to finish the "other important information" aspect of the task.
+
+For the next cycle, a team-meeting will be held so we can decide what is most pressing in the group and what has to be accomplished before the demo deadline. As it is soon approaching, whatever is urgent will be what is accomplished during the following week.
