@@ -103,3 +103,20 @@ This week started off with polishing off how our repository handles tests. We we
 ### Which features were yours in the project plan for this milestone?
 
 unfortunately this week lined up with a handful of other projects and midterms so I wasn't able to contribute as much as I'd have liked to the project this week. I did some housekeeping earlier with getting dependencies set up, but wasn't able to get any PRs up before Friday as I was leaving and unable to do work past the date. It was something I'd warned the team about prior and plan o. picking up the slack once back in Kelowna.
+
+
+
+## Log 9:
+## Date Range: Week 12 - Nov 17-23, 2025
+
+## ![week 12 features](weeklyfeaturesimages/week12features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+This week was first week back from reading break. My main focus for this week was getting the ranking scores (importance scores) in place for the database. There was a fair bit of work off-repository to try and figure out how to properly weigh things in a way that the final score would most accurately reflect the quality of a project. As of right now, I've split them into four categories, each with weights. I put most of the weight onto metadata seeing as this is supposed to be a resume tool as the category covered skills and languages used.
+
+Outside of this, it was a little hard to get momentum going again coming back from reading break, but I think the team did a pretty good job. We were missing a good chunk at the check-in but with communication through our chats I feel we are still on good pace to finish what is needed before milestone 1. 
+
+This next week I'd imagine will be a lot of scrap cleaning across the board. Our kanban board has a handful of tasks still to be completed so leading up to the milestone due date we will be meeting after Monday's class to divide up the work as best we can. 
