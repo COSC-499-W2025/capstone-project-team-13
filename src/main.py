@@ -7,6 +7,7 @@ import sys
 import os
 from pathlib import Path
 import re
+import math
 
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -36,6 +37,9 @@ from src.AI.ai_enhanced_summarizer import (
     summarize_projects_with_ai,
     generate_resume_bullets
 )
+from src.Analysis.importanceScores import assign_importance_scores
+from src.Analysis.importanceRanking import get_ranked_projects
+
 
 def clear_screen():
     """Clear console screen"""
@@ -163,10 +167,11 @@ def get_user_choice():
     print("5. Any Folder (auto-detect type)")
     print("6. View All Projects in Database")
     print("7. Generate Project Summary")
-    print("8. AI Project Analysis")  
-    print("9. Exit")
+    print("8. AI Project Analysis")
+    print("9. Rank Projects")  
+    print("10. Exit")
     
-    choice = input("\nEnter your choice (1-9): ").strip()
+    choice = input("\nEnter your choice (1-10): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -1312,6 +1317,25 @@ def view_ai_statistics():
     
     input("\nPress Enter to continue...")
 
+def run_importance_test():
+    print("=== Running Importance Score Test ===")
+
+    # Step 1 — assign importance scores to all projects
+    assign_importance_scores()
+    print("Assigned importance scores.\n")
+
+    # Step 2 — fetch ranked list
+    ranked_projects = get_ranked_projects()
+
+    # Step 3 — display results
+    print("=== Ranked Projects ===")
+    i=1
+    for p in ranked_projects:
+        print(f"[{i}] {p.name} → {p.importance_score}")
+        i += 1
+    i=0
+    print("\nDone.")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1346,8 +1370,10 @@ def main():
         elif choice == '7':
             generate_summary()
         elif choice == '8':                      
-            ai_project_analysis_menu()           
+            ai_project_analysis_menu()
         elif choice == '9':                      
+            run_importance_test()            
+        elif choice == '10':                      
             print("Goodbye!")
             break
             print("\n👋 Thank you for using Digital Artifact Mining Software!")
