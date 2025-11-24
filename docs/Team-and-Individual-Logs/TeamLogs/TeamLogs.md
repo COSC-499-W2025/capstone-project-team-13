@@ -249,16 +249,16 @@ All tests were written in Python and executed successfully. All unit testing is 
 | **Sana Shah** | Implemented ai_text_project_analyzer.py + required tests | # 137 |
 
 ---
-![Backlog](teamLogImages/week12/backlogW12.png)
+![Backlog](teamLogImages/backlogW12.png)
 
 Burnup Chart:
-![Burnup Chart](teamLogImages/week12/burnupW12.png)
+![Burnup Chart](teamLogImages/burnupW12.png)
 
 In Progress Tasks:
-![In Progress](teamLogImages/week12/inProgressW12.png)
+![In Progress](teamLogImages/inProgressW12.png)
 
 Completed Tasks:
-![Completed](teamLogImages/week12/completedW12.png)
+![Completed](teamLogImages/completedW12.png)
 
 # Test Report
 All tests were written in Python and executed successfully when they were written. For each of the functions of our system, we have implemented unit tests. Manual testing can be done through `testConsole.py` and it confirms that all modules work as expected with sample project data.
