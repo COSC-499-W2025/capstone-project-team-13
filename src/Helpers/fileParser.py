@@ -1,6 +1,9 @@
 import os
 import json
 import csv
+from src.Settings.config import EXT_SUPERTYPES
+from docx import Document # for .docx
+import PyPDF2 # for PDFs
 
 class FileParseError(Exception):
     """Exception raised when file parsing fails"""
@@ -29,6 +32,45 @@ def parse_txt(file_path):
     except Exception as e:
         raise FileParseError(f"Failed to parse text file: {str(e)}")
 
+def parse_docx(file_path):
+    """Parse Microsoft Word documents as TEXT."""
+    try:
+        doc = Document(file_path)
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        words = full_text.split()
+        lines = full_text.splitlines()
+        return {
+            "type": "text",
+            "content": full_text,
+            "line_count": len(lines),
+            "word_count": len(words),
+            "char_count": len(full_text),
+        }
+    except Exception as e:
+        raise FileParseError(f"Failed to parse DOCX: {e}")
+    
+def parse_pdf(file_path):
+    """Parse PDF files as TEXT (best-effort)."""
+    text = ""
+    try:
+        with open(file_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            for page in reader.pages:
+                text += page.extract_text() or ""
+
+        lines = text.splitlines()
+        words = text.split()
+
+        return {
+            "type": "text",
+            "content": text,
+            "line_count": len(lines),
+            "word_count": len(words),
+            "char_count": len(text),
+        }
+    except Exception as e:
+        raise FileParseError(f"Failed to parse PDF: {e}")
+    
 def parse_json(file_path):
     """
     Parse JSON file
@@ -77,7 +119,7 @@ def parse_csv(file_path):
     except Exception as e:
         raise FileParseError(f"Failed to parse CSV file: {str(e)}")
 
-def parse_py(file_path):
+def parse_code(file_path):
     """
     Parse Python file (as text with basic analysis)
     
@@ -103,6 +145,15 @@ def parse_py(file_path):
     except Exception as e:
         raise FileParseError(f"Failed to parse Python file: {str(e)}")
 
+def parse_media(file_path):
+    """Media is never parsed; only metadata returned."""
+    size = os.path.getsize(file_path)
+    return {
+        "type": "media",
+        "content": None,
+        "size_bytes": size,
+    }
+
 def parse_file(file_path):
     """
     Main parser that routes to appropriate parser based on extension
@@ -115,15 +166,26 @@ def parse_file(file_path):
     """
     _, ext = os.path.splitext(file_path)
     ext = ext.lower()
+    category = EXT_SUPERTYPES.get(ext)
+
+    if category is None:
+        raise FileParseError(f"No parser for extension: {ext}")
     
-    parsers = {
-        '.txt': parse_txt,
-        '.json': parse_json,
-        '.csv': parse_csv,
-        '.py': parse_py
-    }
+    # --- TEXT ---
+    if category == "text":
+        if ext == ".docx":
+            return parse_docx(file_path)
+        if ext == ".pdf":
+            return parse_pdf(file_path)
+        return parse_txt(file_path)
+
+    # --- CODE ---
+    if category == "code":
+        return parse_code(file_path)
+   
+    # --- MEDIA ---
+    if category == "media":
+        return parse_media(file_path)
     
-    if ext not in parsers:
-        raise FileParseError(f"No parser available for {ext} files")
     
-    return parsers[ext](file_path)
+    raise FileParseError(f"Unknown category '{category}' for extension {ext}")
