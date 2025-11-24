@@ -57,7 +57,7 @@ This week, I completed a major database refactor. I expanded the Project model w
 Next week, I will research AI/LLM integration opportunities for our system, focusing on how we can use AI-driven analysis in our artifact mining workflow while preserving user privacy and consent.
 
 ## Log 7:
-## Date Range: Week 6 - Oct 27 - Nov 2, 2025
+## Date Range: Week 7 - Oct 27 - Nov 2, 2025
 
 ## ![week 1 features](week7tasks.png)
 
@@ -70,7 +70,7 @@ This week, I focused on implementing the basic AI integration for our system thr
 Next week, my goal is to build upon the current AI foundation and implement AI-generated project descriptions and enhance the existing "summarizeProjects.py" (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/111). On the content generation side, I will work on developing professional project descriptions, resume bullet points, and skill highlight summaries using template-based prompt engineering for consistency (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/112).    
 
 ## Log 8:
-## Date Range: Week 6 - Nov 3 - Nov 9, 2025
+## Date Range: Week 8 - Nov 3 - Nov 9, 2025
 
 ## ![week 1 features](week8tasks.png)
 
@@ -83,3 +83,16 @@ Overall, this week was about laying down the backbone for intelligent project an
 
 ### Plan for Next Week
 Next week, I plan to begin work on issue https://github.com/COSC-499-W2025/capstone-project-team-13/issues/114 — AI-assisted project ranking, along with whichever tasks the team prioritizes following our next meeting.   
+
+## Log 9:
+## Date Range: Week 9 - Nov 17 - Nov 23, 2025
+
+## ![week 1 features](week9tasks.png)
+
+## Recap on your week's goals
+
+### What I Worked On This Week
+This week, I focused on expanding our system’s ability to manage and persist user-specific configurations (issue https://github.com/COSC-499-W2025/capstone-project-team-13/issues/13). I added full functionality to store consent tracking, privacy settings, scanning preferences, AI configuration, analysis toggles, output preferences. 
+
+### Plan for Next Week
+Next week, I plan to ensure that the end-to-end user flow works smoothly and that the system behaves as intended across all major steps. Alongside that, I will take on any additional tasks the team decides to prioritize during our meeting.
