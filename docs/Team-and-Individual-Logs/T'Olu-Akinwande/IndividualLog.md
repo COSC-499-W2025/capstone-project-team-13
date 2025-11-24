@@ -178,6 +178,21 @@ Progress summary: Successfully extended the function to include Git-based data. 
 
 <img width="857" height="497" alt="image" src="https://github.com/user-attachments/assets/1aad06b5-3305-4340-a493-8345131cd334" />
 
+# Week 11 Log (Log 10)
+Date Range: Nov 16 – Nov 23, 2025
+
+Tasks Worked On:
+
+This week, I continued strengthening the ProjectCollabType feature by refining and expanding the Git-based analysis logic. I improved the integration of commit history parsing and contributor extraction, ensuring the feature produces more accurate collaboration classifications. I also updated the corresponding test suite to reflect the new logic and verified that all tests passed after the refactor. In addition, I added the required dependencies for Git analysis to the project’s requirements.txt file to ensure consistent setup across the team. Finally, I spent time reviewing and running my teammate’s resume-bullet generator code and test file to confirm functionality and integration compatibility.
+
+Recap of Goals / Progress:
+
+Feature focus: Project Collaboration Type Detection (Git Integration)
+Project board association: Task #14
+
+Progress summary:
+This week, I refined the Git analysis functionality by improving contributor parsing, updating the classification logic, and ensuring test coverage aligned with the new behavior. I also ensured proper project setup by updating dependencies and validated teammate code through manual testing. The feature is now more stable, more accurate, and better integrated into the overall pipeline, continuing to push our artifact-analysis system beyond surface-level metadata.
+<img width="1084" height="627" alt="Screenshot 2025-11-23 151909" src="https://github.com/user-attachments/assets/68f3d491-68ff-49d1-b355-d3b1cf8ea8d5" />
 
 
 
