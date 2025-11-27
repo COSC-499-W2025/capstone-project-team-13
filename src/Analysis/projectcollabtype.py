@@ -31,4 +31,7 @@ def identify_project_type(project_path, project_data):
     elif len(contributors) == 1:
         return "Individual Project"
     else:
-        return "Unknown (no contributor data found)"
+         # If project has files but no contributor signals, it's likely individual.
+     if len(project_data.get("files", [])) > 0:
+         return "Individual Project"
+         return "Unknown (no contributor data found)"
