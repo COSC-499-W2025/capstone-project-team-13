@@ -1,89 +1,36 @@
-# src/tests/test_code_efficiency.py
 import sys
 import os
-import tempfile
 
-# Add src folder to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 from Analysis.codeEfficiency import grade_efficiency
 
-# --------------------------
-# Python snippets (interpreted)
-# --------------------------
-python_simple_code = """
-for i in range(10):
-    print(i)
-"""
+def run_tests_from_sample_file():
+    """
+    Loads the contents of sample_test_code.py and runs grade_efficiency on it.
+    """
+    sample_path = os.path.join(
+        os.path.dirname(__file__),
+        "sample_test_code.py"
+    )
 
-python_nested_code = """
-for i in range(10):
-    for j in range(10):
-        print(i, j)
-"""
+    # Read code
+    with open(sample_path, "r", encoding="utf-8") as f:
+        code = f.read()
 
-# --------------------------
-# JavaScript snippet (interpreted)
-# --------------------------
-js_react_code = """
-import React from 'react';
+    print("\n--- Running Code Efficiency Test ---")
+    print(f"Analyzing: {sample_path}")
 
-for (let i = 0; i < 10; i++) {
-    console.log(i);
-}
-"""
+    results = grade_efficiency(code, sample_path)
 
-# --------------------------
-# C snippet (compiled)
-# --------------------------
-c_simple_code = """
-#include <stdio.h>
+    print("\n--- Results ---")
+    for key, value in results.items():
+        if key == "notes":
+            print(f"{key}:")
+            for note in value:
+                print(f"  - {note}")
+        else:
+            print(f"{key}: {value}")
 
-int main() {
-    for (int i = 0; i < 10; i++) {
-        printf("%d\\n", i);
-    }
-    return 0;
-}
-"""
-
-# --------------------------
-# HTML snippet (static)
-# --------------------------
-html_code = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Test</title>
-</head>
-<body>
-    <p>Hello World</p>
-</body>
-</html>
-"""
-
-def run_tests():
-    test_cases = [
-        # Interpreted
-        ("Python Simple loop", python_simple_code, ".py"),
-        ("Python Nested loops", python_nested_code, ".py"),
-        ("JavaScript React snippet", js_react_code, ".js"),
-        # Compiled
-        ("C Simple loop", c_simple_code, ".c"),
-        # Static
-        ("HTML snippet", html_code, ".html"),
-    ]
-
-    for name, code, ext in test_cases:
-        with tempfile.NamedTemporaryFile(mode="w", suffix=ext, delete=False) as tmp:
-            tmp.write(code)
-            tmp_path = tmp.name
-
-        result = grade_efficiency(code, tmp_path)
-        print(f"Test: {name}")
-        print(f"Time score: {result['time_score']}")
-        print(f"Notes: {result['notes']}")
-        print("-" * 50)
 
 if __name__ == "__main__":
-    run_tests()
+    run_tests_from_sample_file()

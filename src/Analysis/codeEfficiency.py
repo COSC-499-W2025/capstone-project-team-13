@@ -1,454 +1,311 @@
 # src/Analysis/code_efficiency.py
 
 import ast
-import subprocess
-import tempfile
-import time
-import os
 import re
 from typing import Dict, Optional
-from Analysis.codeIdentifier import identify_language_and_framework
+from .codeIdentifier import identify_language_and_framework
 
+# ===============================
+# Main grading function
+# ===============================
 def grade_efficiency(code: str, file_path: str) -> Dict[str, Optional[float]]:
     """
     Grades a piece of code for time and space complexity.
     Returns a dictionary with:
-        - 'time_score': 0-100
-        - 'space_score': 0-100
-        - 'notes': optional textual notes about detected issues
+        - time_score: 0-100
+        - space_score: 0-100
+        - efficiency_score: weighted combination
+        - max_loop_depth: maximum nesting depth of loops
+        - total_loops: total number of loops
+        - notes: textual notes about detected issues
     """
-    # Identify language using the existing module
     result = identify_language_and_framework(file_path)
-
-    # Handle error dicts
     if isinstance(result, dict):
         notes = [result.get("error", "Unknown error")]
-        return {"time_score": None, "space_score": None, "notes": notes}
+        return {"time_score": None, "space_score": None, "efficiency_score": None,
+                "max_loop_depth": None, "total_loops": None, "notes": notes}
 
-    # Unpack tuple safely
     language, framework = result
-        
     if not language:
-        return {"time_score": None, "space_score": None, "notes": ["Unknown language"]}
+        return {"time_score": None, "space_score": None, "efficiency_score": None,
+                "max_loop_depth": None, "total_loops": None, "notes": ["Unknown language"]}
 
-    time_score = None
-    space_score = None
-    result = timeScore(code, file_path)
-    time_score = result.get("time_score")
-    space_score = 80  # placeholder
-    notes = result.get("notes", [])
+    time_result = timeScore(code, file_path)
+    space_result = spaceScore(code, file_path)
+
+    time_score = time_result.get("time_score", 0)
+    space_score = space_result.get("space_score", 0)
+    max_loop_depth = time_result.get("max_loop_depth", 0)
+    total_loops = time_result.get("total_loops", 0)
+    notes = time_result.get("notes", []) + space_result.get("notes", [])
+
+    efficiency_score = (time_score * 0.65 + space_score * 0.35) if time_score is not None and space_score is not None else None
 
     return {
         "time_score": time_score,
         "space_score": space_score,
+        "efficiency_score": efficiency_score,
+        "max_loop_depth": max_loop_depth,
+        "total_loops": total_loops,
         "notes": notes
     }
 
+# ===============================
+# Time Score Dispatcher
+# ===============================
 def timeScore(code: str, file_path: str) -> dict:
     language, _ = identify_language_and_framework(file_path)
-
     if language in ["Python", "Ruby", "PHP", "R", "JavaScript", "TypeScript"]:
         return timeScore_interpreted(code, file_path)
-
     elif language in ["C", "C++", "Java", "Go", "Rust", "Kotlin", "Swift", "C#"]:
         return timeScore_compiled(code, file_path)
-
     elif language in ["HTML", "CSS", "SQL"]:
         return timeScore_static(code, file_path)
-
     else:
-        return {"time_score": None, "notes": ["Unknown language"]}
+        return {"time_score": 0, "notes": ["Unknown language"], "max_loop_depth": 0, "total_loops": 0}
 
-
-def timeScore_interpreted(code: str, file_path: str, max_runtime: float = 2.0) -> Dict[str, Optional[float]]:
-    """
-    Grades time efficiency for interpreted languages (Python, JS, Ruby, etc.)
-    Combines static analysis with optional runtime measurement.
-    Returns a dict with 'time_score' (0-100) and 'notes'.
-    """
-
+# ===============================
+# Space Score Dispatcher
+# ===============================
+def spaceScore(code: str, file_path: str) -> dict:
     language, _ = identify_language_and_framework(file_path)
+    if language in ["Python", "Ruby", "PHP", "R", "JavaScript", "TypeScript"]:
+        return spaceScore_interpreted(code, file_path)
+    elif language in ["C", "C++", "Java", "Go", "Rust", "Kotlin", "Swift", "C#"]:
+        return spaceScore_compiled(code, file_path)
+    elif language in ["HTML", "CSS", "SQL"]:
+        return spaceScore_static(code, file_path)
+    else:
+        return {"space_score": 0, "notes": ["Unknown language"], "max_loop_depth": 0, "total_loops": 0}
+
+# ===============================
+# Utility: decaying penalty
+# ===============================
+def decaying_penalty(base: float, count: int, line_count: int = 100, decay: float = 0.75, ref_lines: int = 200) -> float:
+    """
+    Apply decaying penalty for 'count' occurrences.
+    Scale penalty inversely by line count, but gently.
+    """
+    scale_factor = (ref_lines / max(line_count, ref_lines)) ** 0.5
+    penalty = sum(base * (decay ** n) * scale_factor for n in range(count))
+    return penalty
+
+# ===============================
+# Interpreted Language Scores
+# ===============================
+def timeScore_interpreted(code: str, file_path: str) -> dict:
     notes = []
+    score = 100
+    file_lines = len(code.splitlines())
+    max_depth = 0
+    total_loops = 0
 
-    # -----------------------
-    # STATIC ANALYSIS (AST)
-    # -----------------------
-    static_score = 100
-
-    if language == "Python":
-        try:
-            tree = ast.parse(code)
-
-            # Count nested loops
-            class LoopVisitor(ast.NodeVisitor):
-                def __init__(self):
-                    self.max_depth = 0
-                    self.stack = 0
-
-                def visit_For(self, node):
-                    self.stack += 1
-                    self.max_depth = max(self.max_depth, self.stack)
-                    self.generic_visit(node)
-                    self.stack -= 1
-
-                visit_While = visit_For
-
-            loops = LoopVisitor()
-            loops.visit(tree)
-
-            if loops.max_depth >= 3:
-                static_score -= 30
-                notes.append("Deeply nested loops (3+)")
-
-            elif loops.max_depth == 2:
-                static_score -= 15
-                notes.append("Nested loops (2 deep)")
-
-            # Count recursive functions
-            class RecursionVisitor(ast.NodeVisitor):
-                def __init__(self):
-                    self.recursive_count = 0
-
-                def visit_FunctionDef(self, node):
-                    func_name = node.name
-                    for n in ast.walk(node):
-                        if isinstance(n, ast.Call) and getattr(n.func, 'id', None) == func_name:
-                            self.recursive_count += 1
-                    self.generic_visit(node)
-
-            rec = RecursionVisitor()
-            rec.visit(tree)
-
-            if rec.recursive_count > 0:
-                static_score -= min(20, rec.recursive_count * 5)
-                notes.append(f"{rec.recursive_count} recursive function(s) detected")
-
-        except Exception as e:
-            notes.append(f"AST parsing failed: {e}")
-            static_score -= 20
-
-    # -----------------------
-    # RUNTIME MEASUREMENT
-    # -----------------------
-    runtime_score = 100
-
-    if language == "Python":
-        try:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as tmp:
-                tmp.write(code)
-                tmp_path = tmp.name
-
-            start = time.time()
-            subprocess.run(["python", tmp_path], timeout=max_runtime, capture_output=True)
-            elapsed = time.time() - start
-
-            runtime_score -= min(50, (elapsed / max_runtime) * 50)
-            notes.append(f"Executed Python code in {elapsed:.2f}s")
-
-        except subprocess.TimeoutExpired:
-            runtime_score = 10
-            notes.append("Execution timed out")
-
-        except Exception as e:
-            runtime_score = 50
-            notes.append(f"Execution failed: {e}")
-
-    # -----------------------
-    # FINAL SCORE
-    # -----------------------
-    final_score = max(0, min(100, (static_score + runtime_score) / 2))
-    return {"time_score": final_score, "notes": notes}
-
-def timeScore_compiled(code: str, file_path: str, max_runtime: float = 2.0) -> Dict[str, Optional[float]]:
-    """
-    Grades time efficiency for compiled languages (C, C++, Java, Rust, Go, etc.)
-    Combines simple static checks with runtime measurement.
-    Returns a dict with 'time_score' (0-100) and 'notes'.
-    """
-    language, _ = identify_language_and_framework(file_path)
-    notes = []
-    static_score = 100
-    runtime_score = 100
-
-    # -----------------------
-    # STATIC ANALYSIS (approximate via regex)
-    # -----------------------
-    try:
-        import re
-        # Count nested loops roughly
-        loop_keywords = {
-            "C": r"\b(for|while)\b",
-            "C++": r"\b(for|while)\b",
-            "Java": r"\b(for|while)\b",
-            "C#": r"\b(for|while|foreach)\b",
-            "Rust": r"\b(loop|for|while)\b",
-            "Go": r"\b(for)\b",
-            "Kotlin": r"\b(for|while)\b",
-            "Swift": r"\b(for|while)\b",
-        }
-        pattern = loop_keywords.get(language)
-        if pattern:
-            loops = re.findall(pattern, code)
-            if len(loops) >= 5:
-                static_score -= 30
-                notes.append("Many loops detected (5+)")
-            elif len(loops) >= 3:
-                static_score -= 15
-                notes.append("Some loops detected (3+)")
-
-        # Simple recursion detection: function calls its own name
-        func_defs = re.findall(r'\b(?:def|func|void|int|double|char)\s+(\w+)\s*\(', code)
-        recursion_count = 0
-        for f in func_defs:
-            if re.search(rf'\b{f}\s*\(', code):
-                recursion_count += 1
-        if recursion_count > 0:
-            static_score -= min(20, recursion_count * 5)
-            notes.append(f"{recursion_count} recursive function(s) detected")
-
-    except Exception as e:
-        notes.append(f"Static analysis failed: {e}")
-        static_score -= 20
-
-    # -----------------------
-    # RUNTIME MEASUREMENT
-    # -----------------------
-    try:
-        import shutil
-        import platform
-
-        # Temporary directory to hold files
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_file = os.path.join(tmp_dir, os.path.basename(file_path))
-
-            # Determine file extension
-            _, ext = os.path.splitext(file_path)
-            with open(tmp_file, "w") as f:
-                f.write(code)
-
-            run_cmd = None
-
-            if ext in [".c"]:
-                exe_file = os.path.join(tmp_dir, "program")
-                subprocess.run(["gcc", tmp_file, "-o", exe_file], check=True)
-                run_cmd = [exe_file]
-
-            elif ext in [".cpp"]:
-                exe_file = os.path.join(tmp_dir, "program")
-                subprocess.run(["g++", tmp_file, "-o", exe_file], check=True)
-                run_cmd = [exe_file]
-
-            elif ext in [".java"]:
-                subprocess.run(["javac", tmp_file], check=True)
-                class_file = os.path.join(tmp_dir, os.path.splitext(os.path.basename(file_path))[0])
-                run_cmd = ["java", "-cp", tmp_dir, class_file]
-
-            elif ext in [".rs"]:
-                exe_file = os.path.join(tmp_dir, "program")
-                subprocess.run(["rustc", tmp_file, "-o", exe_file], check=True)
-                run_cmd = [exe_file]
-
-            elif ext in [".go"]:
-                exe_file = os.path.join(tmp_dir, "program")
-                subprocess.run(["go", "build", "-o", exe_file, tmp_file], check=True)
-                run_cmd = [exe_file]
-
-            elif ext in [".cs"]:
-                exe_file = os.path.join(tmp_dir, "program.exe")
-                subprocess.run(["csc", tmp_file], check=True)  # Windows only
-                run_cmd = [exe_file]
-
-            elif ext in [".kt"]:
-                exe_file = os.path.join(tmp_dir, "program.jar")
-                subprocess.run(["kotlinc", tmp_file, "-include-runtime", "-d", exe_file], check=True)
-                run_cmd = ["java", "-jar", exe_file]
-
-            elif ext in [".swift"]:
-                exe_file = os.path.join(tmp_dir, "program")
-                subprocess.run(["swiftc", tmp_file, "-o", exe_file], check=True)
-                run_cmd = [exe_file]
-
-            # Run the compiled binary
-            if run_cmd:
-                start = time.time()
-                subprocess.run(run_cmd, timeout=max_runtime, capture_output=True)
-                elapsed = time.time() - start
-                runtime_score -= min(50, (elapsed / max_runtime) * 50)
-                notes.append(f"Executed {language} code in {elapsed:.2f}s")
-            else:
-                notes.append(f"No runtime measurement implemented for {language}")
-
-    except subprocess.TimeoutExpired:
-        runtime_score = 10
-        notes.append("Execution timed out")
-    except subprocess.CalledProcessError as e:
-        runtime_score = 50
-        notes.append(f"Compilation or execution failed: {e}")
-    except Exception as e:
-        runtime_score = 50
-        notes.append(f"Runtime measurement failed: {e}")
-
-    # -----------------------
-    # FINAL SCORE
-    # -----------------------
-    final_score = max(0, min(100, (static_score + runtime_score) / 2))
-    return {"time_score": final_score, "notes": notes}
-
-def timeScore_interpreted(code: str, file_path: str, max_runtime: float = 2.0) -> Dict[str, Optional[float]]:
-    """
-    Grades time efficiency for interpreted languages (Python, JS, TS, Ruby, etc.)
-    Combines static analysis with optional runtime measurement.
-    Returns a dict with 'time_score' (0-100) and 'notes'.
-    """
-
-    language, _ = identify_language_and_framework(file_path)
-    notes = []
-
-    # -----------------------
-    # STATIC ANALYSIS (Python only)
-    # -----------------------
-    static_score = 100
-    if language == "Python":
-        try:
-            tree = ast.parse(code)
-
-            # Count nested loops
-            class LoopVisitor(ast.NodeVisitor):
-                def __init__(self):
-                    self.max_depth = 0
-                    self.stack = 0
-
-                def visit_For(self, node):
-                    self.stack += 1
-                    self.max_depth = max(self.max_depth, self.stack)
-                    self.generic_visit(node)
-                    self.stack -= 1
-
-                visit_While = visit_For
-
-            loops = LoopVisitor()
-            loops.visit(tree)
-
-            if loops.max_depth >= 3:
-                static_score -= 30
-                notes.append("Deeply nested loops (3+)")
-            elif loops.max_depth == 2:
-                static_score -= 15
-                notes.append("Nested loops (2 deep)")
-
-            # Count recursive functions
-            class RecursionVisitor(ast.NodeVisitor):
-                def __init__(self):
-                    self.recursive_count = 0
-
-                def visit_FunctionDef(self, node):
-                    func_name = node.name
-                    for n in ast.walk(node):
-                        if isinstance(n, ast.Call) and getattr(n.func, 'id', None) == func_name:
-                            self.recursive_count += 1
-                    self.generic_visit(node)
-
-            rec = RecursionVisitor()
-            rec.visit(tree)
-            if rec.recursive_count > 0:
-                static_score -= min(20, rec.recursive_count * 5)
-                notes.append(f"{rec.recursive_count} recursive function(s) detected")
-
-        except Exception as e:
-            notes.append(f"AST parsing failed: {e}")
-            static_score -= 20
-
-    # -----------------------
-    # RUNTIME MEASUREMENT
-    # -----------------------
-    runtime_score = 100
-    try:
-        # Determine command based on language
-        if language == "Python":
-            cmd = ["python", file_path]
-        elif language in ["JavaScript", "TypeScript"]:
-            cmd = ["node", file_path]
-        else:
-            # Other interpreted languages could be added here
-            cmd = None
-
-        if cmd:
-            start = time.time()
-            subprocess.run(cmd, timeout=max_runtime, capture_output=True)
-            elapsed = time.time() - start
-            runtime_score -= min(50, (elapsed / max_runtime) * 50)
-            notes.append(f"Executed {language} code in {elapsed:.2f}s")
-        else:
-            notes.append(f"No runtime execution implemented for {language}")
-
-    except subprocess.TimeoutExpired:
-        runtime_score = 10
-        notes.append("Execution timed out")
-
-    except Exception as e:
-        runtime_score = 50
-        notes.append(f"Execution failed: {e}")
-
-    # -----------------------
-    # FINAL SCORE
-    # -----------------------
-    final_score = max(0, min(100, (static_score + runtime_score) / 2))
-    return {"time_score": final_score, "notes": notes}
-
-
-def timeScore_static(code: str, file_path: str) -> Dict[str, Optional[float]]:
-    """
-    Grades time efficiency for static languages (HTML, CSS, SQL).
-    Mostly placeholder since static files don't execute.
-    Returns a dict with 'time_score' (0-100) and 'notes'.
-    """
-    language, _ = identify_language_and_framework(file_path)
-    notes = []
-
-    static_score = 100
+    # Time-focused base penalties
+    base_loop_penalty = max(3, min(20, 0.1 * file_lines))
+    base_nested_penalty = max(7, min(30, 0.2 * file_lines))
+    base_recursion_penalty = max(10, min(35, 0.25 * file_lines))
 
     try:
-        # File size penalty: larger static files could be slower to process
-        num_lines = len(code.splitlines())
-        if num_lines > 500:
-            static_score -= 20
-            notes.append(f"Large file ({num_lines} lines), may impact performance")
-        elif num_lines > 200:
-            static_score -= 10
-            notes.append(f"Moderately large file ({num_lines} lines)")
+        tree = ast.parse(code)
 
-        # Simple complexity check (HTML: many tags, CSS: many selectors, SQL: many statements)
-        if language == "HTML":
-            num_tags = len(re.findall(r"<\w+", code))
-            if num_tags > 100:
-                static_score -= 20
-                notes.append(f"Many HTML tags ({num_tags})")
-            elif num_tags > 50:
-                static_score -= 10
-                notes.append(f"Moderate number of HTML tags ({num_tags})")
+        # Loop detection
+        class LoopVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.max_depth = 0
+                self.current_depth = 0
+                self.total_loops = 0
+            def visit_For(self, node): self._enter_loop(node)
+            def visit_While(self, node): self._enter_loop(node)
+            def _enter_loop(self, node):
+                self.total_loops += 1
+                self.current_depth += 1
+                self.max_depth = max(self.max_depth, self.current_depth)
+                self.generic_visit(node)
+                self.current_depth -= 1
 
-        elif language == "CSS":
-            num_selectors = len(re.findall(r"{", code))
-            if num_selectors > 100:
-                static_score -= 20
-                notes.append(f"Many CSS selectors ({num_selectors})")
-            elif num_selectors > 50:
-                static_score -= 10
-                notes.append(f"Moderate number of CSS selectors ({num_selectors})")
+        lv = LoopVisitor()
+        lv.visit(tree)
+        total_loops = lv.total_loops
+        max_depth = lv.max_depth
 
-        elif language == "SQL":
-            num_statements = len(re.findall(r";", code))
-            if num_statements > 50:
-                static_score -= 20
-                notes.append(f"Many SQL statements ({num_statements})")
-            elif num_statements > 20:
-                static_score -= 10
-                notes.append(f"Moderate number of SQL statements ({num_statements})")
+        # Recursion detection
+        class RecVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.count = 0
+            def visit_FunctionDef(self, node):
+                func_name = node.name
+                for n in ast.walk(node):
+                    if isinstance(n, ast.Call) and getattr(n.func, "id", None) == func_name:
+                        self.count += 1
+                self.generic_visit(node)
+
+        rv = RecVisitor()
+        rv.visit(tree)
+
+        # Apply decaying penalties
+        score -= decaying_penalty(base_loop_penalty, total_loops, file_lines)
+        if max_depth > 1:
+            score -= decaying_penalty(base_nested_penalty, max_depth - 1, file_lines)
+        score -= decaying_penalty(base_recursion_penalty, rv.count, file_lines)
+
+        if rv.count > 0:
+            notes.append(f"{rv.count} recursive function(s) detected")
 
     except Exception as e:
-        notes.append(f"Static analysis failed: {e}")
-        static_score -= 20
+        score -= 30
+        notes.append(f"AST parse failed: {e}")
 
-    final_score = max(0, min(100, static_score))
-    notes.append(f"{language} static analysis applied")
-    return {"time_score": final_score, "notes": notes}
+    notes.append(f"Detected {total_loops} loops with depth {max_depth}")
+    score = max(0, min(100, score))
+    return {"time_score": score, "notes": notes, "max_loop_depth": max_depth, "total_loops": total_loops}
+
+def spaceScore_interpreted(code: str, file_path: str) -> dict:
+    notes = []
+    score = 100
+    file_lines = len(code.splitlines())
+    max_depth = 0
+    total_loops = 0
+
+    # Space-focused base penalties
+    base_loop_penalty = max(5, min(25, 0.15 * file_lines))
+    base_nested_penalty = max(3, min(20, 0.1 * file_lines))
+    base_recursion_penalty = max(5, min(25, 0.2 * file_lines))
+
+    try:
+        tree = ast.parse(code)
+
+        # Loop detection
+        class LoopVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.max_depth = 0
+                self.current_depth = 0
+                self.total_loops = 0
+            def visit_For(self, node): self._enter_loop(node)
+            def visit_While(self, node): self._enter_loop(node)
+            def _enter_loop(self, node):
+                self.total_loops += 1
+                self.current_depth += 1
+                self.max_depth = max(self.max_depth, self.current_depth)
+                self.generic_visit(node)
+                self.current_depth -= 1
+
+        lv = LoopVisitor()
+        lv.visit(tree)
+        total_loops = lv.total_loops
+        max_depth = lv.max_depth
+
+        # Recursion detection
+        class RecVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.count = 0
+            def visit_FunctionDef(self, node):
+                func_name = node.name
+                for n in ast.walk(node):
+                    if isinstance(n, ast.Call) and getattr(n.func, "id", None) == func_name:
+                        self.count += 1
+                self.generic_visit(node)
+
+        rv = RecVisitor()
+        rv.visit(tree)
+
+        # Apply decaying penalties
+        score -= decaying_penalty(base_loop_penalty, total_loops, file_lines)
+        if max_depth > 1:
+            score -= decaying_penalty(base_nested_penalty, max_depth - 1, file_lines)
+        score -= decaying_penalty(base_recursion_penalty, rv.count, file_lines)
+
+        if rv.count > 0:
+            notes.append(f"{rv.count} recursive function(s) detected")
+
+    except Exception as e:
+        score -= 30
+        notes.append(f"AST parse failed: {e}")
+
+    notes.append(f"Detected {total_loops} loops with depth {max_depth}")
+    score = max(0, min(100, score))
+    return {"space_score": score, "notes": notes}
+
+# ===============================
+# Compiled Language Scores
+# ===============================
+def timeScore_compiled(code: str, file_path: str) -> dict:
+    notes = []
+    score = 100
+    max_depth = 0
+    total_loops = 0
+
+    loop_patterns = [r"\bfor\b", r"\bwhile\b", r"\bdo\b", r"\bforeach\b"]
+    for pat in loop_patterns:
+        total_loops += len(re.findall(pat, code))
+
+    depth = 0
+    for line in code.splitlines():
+        if any(re.search(pat, line) for pat in loop_patterns):
+            depth += 1
+            max_depth = max(max_depth, depth)
+        depth = max(0, depth - line.count("}"))
+
+    file_lines = len(code.splitlines())
+    base_loop_penalty = max(5, min(25, 0.15 * file_lines))
+    base_nested_penalty = max(5, min(30, 0.2 * file_lines))
+    score -= decaying_penalty(base_loop_penalty, total_loops)
+    if max_depth > 1:
+        score -= decaying_penalty(base_nested_penalty, max_depth - 1)
+
+    notes.append(f"Detected {total_loops} loops with depth {max_depth}")
+    score = max(0, min(100, score))
+    return {"time_score": score, "notes": notes, "max_loop_depth": max_depth, "total_loops": total_loops}
+
+def spaceScore_compiled(code: str, file_path: str) -> dict:
+    notes = []
+    score = 100
+    max_depth = 0
+    total_loops = 0
+
+    loop_patterns = [r"\bfor\b", r"\bwhile\b", r"\bdo\b", r"\bforeach\b"]
+    for pat in loop_patterns:
+        total_loops += len(re.findall(pat, code))
+
+    depth = 0
+    for line in code.splitlines():
+        if any(re.search(pat, line) for pat in loop_patterns):
+            depth += 1
+            max_depth = max(max_depth, depth)
+        depth = max(0, depth - line.count("}"))
+
+    file_lines = len(code.splitlines())
+    base_loop_penalty = max(5, min(25, 0.15 * file_lines))
+    base_nested_penalty = max(3, min(20, 0.1 * file_lines))
+    score -= decaying_penalty(base_loop_penalty, total_loops)
+    if max_depth > 1:
+        score -= decaying_penalty(base_nested_penalty, max_depth - 1)
+
+    score = max(0, min(100, score))
+    return {"space_score": score, "notes": notes}
+
+# ===============================
+# Static Language Scores
+# ===============================
+def timeScore_static(code: str, file_path: str) -> dict:
+    notes = []
+    score = 100
+    lines = len(code.splitlines())
+    if lines > 500:
+        score -= 40
+    elif lines > 200:
+        score -= 20
+    notes.append("Static analysis applied")
+    score = max(0, min(100, score))
+    return {"time_score": score, "notes": notes, "max_loop_depth": 0, "total_loops": 0}
+
+def spaceScore_static(code: str, file_path: str) -> dict:
+    notes = []
+    score = 100
+    size = len(code.encode("utf-8"))
+    if size > 200_000:
+        score -= 30
+    elif size > 100_000:
+        score -= 15
+    notes.append("Static analysis applied")
+    score = max(0, min(100, score))
+    return {"space_score": score, "notes": notes}
