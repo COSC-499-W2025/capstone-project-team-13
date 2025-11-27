@@ -16,6 +16,7 @@ imports = [
     ("src.Analysis.keywordAnalytics", ["technical_density", "keyword_clustering", "calculate_final_score"]),
     ("src.Analysis.codingProjectScanner", ["scan_coding_project", "CodingProjectScanner"]),
     ("src.Databases.database", ["db_manager"]),
+    ("src.Analysis.projectcollabtype", ["identify_project_type"]),
    ("src.Analysis.rank_projects_by_date", ["rank_projects_chronologically", "format_project_timeline"]), 
 ]
 
@@ -666,8 +667,7 @@ if __name__ == "__main__":
 #Testing projectcollabtype.py
 
 def project_type_tester():
-    from projectcollabtype import identify_project_type
-
+    from src.Analysis.projectcollabtype import identify_project_type
     print("\n=== ProjectCollabType Tester ===")
     print("This function tests identify_project_type() independently.")
     print("Enter project contributor names (comma separated):")
