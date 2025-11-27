@@ -6,5 +6,5 @@ Pillow
 GitPython==3.1.43
 dotenv
 python-docx
-pypdf2
+PyPDF2
 google-generativeai

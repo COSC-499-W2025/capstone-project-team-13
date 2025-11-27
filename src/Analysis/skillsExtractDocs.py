@@ -1,9 +1,9 @@
 import os
 import re
 from collections import defaultdict
-from docx import Document
-import PyPDF2
 from PyPDF2 import PdfReader
+from docx import Document
+
 
 
 # Skill dictionary
@@ -55,8 +55,6 @@ SKILL_KEYWORDS = {
     ]
 }
 
-# File Text Extraction
-
 def extract_text(file_path):
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".txt":
@@ -85,7 +83,46 @@ def extract_text(file_path):
         return ""
 
 
-# Skill Analysis
+# Skill Analysis - Single Document
+
+def analyze_document_for_skills(file_path):
+    """
+    Analyze a single document and return ranked skill list.
+    
+    Args:
+        file_path: Path to a single document file
+    
+    Returns:
+        List of tuples: [(skill, count), ...] sorted by count descending
+    """
+    skill_counts = defaultdict(int)
+    
+    # Extract text from the document
+    text = extract_text(file_path)
+    
+    if not text:
+        return []
+    
+    words = re.findall(r"\b[a-z]+\b", text.lower())
+    
+    # Count matches for each skill
+    for skill, keywords in SKILL_KEYWORDS.items():
+        lower_keywords = [k.lower() for k in keywords]
+        matches = sum(word in lower_keywords for word in words)
+        if matches > 0:
+            skill_counts[skill] = matches
+    
+    # Filter zero-count skills and sort
+    final_skills = sorted(
+        [(s, c) for s, c in skill_counts.items() if c > 0],
+        key=lambda x: x[1],
+        reverse=True
+    )
+    
+    return final_skills
+
+
+# Skill Analysis - Folder
 
 def analyze_folder_for_skills(folder_path):
     """
