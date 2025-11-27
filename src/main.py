@@ -40,7 +40,7 @@ from src.AI.ai_enhanced_summarizer import (
 from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
 from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
-
+from src.Analysis.codeEfficiency import grade_efficiency
 
 def clear_screen():
     """Clear console screen"""
@@ -154,16 +154,17 @@ def get_user_choice():
     """Get user's choice for what to analyze"""
     print_header("Digital Artifact Mining Software")
     print("What would you like to analyze?\n")
-    print("1. Coding Project (folder containing code files)")
-    print("2. Visual/Media Project (folder containing design/media files)")
-    print("3. Single Document (text file for keyword extraction)")
-    print("4. ZIP Archive (extract and analyze)")
-    print("5. Any Folder (auto-detect type)")
-    print("6. View All Projects in Database")
-    print("7. Generate Project Summary")
-    print("8. AI Project Analysis")
-    print("9. Rank Projects")  
-    print("10. Exit")
+    print("1.  Coding Project (folder containing code files)")
+    print("2.  Visual/Media Project (folder containing design/media files)")
+    print("3.  Single Document (text file for keyword extraction)")
+    print("4.  ZIP Archive (extract and analyze)")
+    print("5.  Any Folder (auto-detect type)")
+    print("6.  View All Projects in Database")
+    print("7.  Generate Project Summary")
+    print("8.  AI Project Analysis")
+    print("9.  Rank Projects")  
+    print("10. Code Efficiency Analysis")
+    print("11. Exit")
     
     choice = input("\nEnter your choice (1-10): ").strip()
     return choice
@@ -1345,6 +1346,48 @@ def run_project_ranking_test():
     output = format_project_timeline(sorted_projects)
     print(output)
 
+def run_code_efficiency_test():
+    """
+    Prompt the user for a file or directory path and analyze code efficiency.
+    Prints results for each code file found.
+    """
+    path_input = input("Enter the path to a code file or directory: ").strip()
+    target = Path(path_input)
+
+    if not target.exists():
+        print(f"Error: '{path_input}' does not exist.")
+        return
+
+    files_to_scan = []
+    if target.is_file():
+        files_to_scan.append(target)
+    elif target.is_dir():
+        # Recursively grab common code files
+        for ext in ["*.py", "*.js", "*.java", "*.cpp", "*.c", "*.ts"]:
+            files_to_scan.extend(target.rglob(ext))
+    else:
+        print(f"Error: '{path_input}' is neither a file nor a directory.")
+        return
+
+    if not files_to_scan:
+        print("No code files found to analyze.")
+        return
+
+    for file_path in files_to_scan:
+        try:
+            code = file_path.read_text(encoding="utf-8")
+        except Exception as e:
+            print(f"Could not read '{file_path}': {e}")
+            continue
+
+        result = grade_efficiency(code, str(file_path))
+        print(f"\n=== Efficiency Analysis for {file_path} ===")
+        print(f"Time Score: {result['time_score']}")
+        print(f"Space Score: {result['space_score']}")
+        print(f"Overall Efficiency Score: {result['efficiency_score']}")
+        print(f"Max Loop Depth: {result['max_loop_depth']}")
+        print(f"Total Loops: {result['total_loops']}")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1392,7 +1435,9 @@ def main():
                 run_importance_test()
             else:
                 print("Invalid choice. Returning to main menu.")
-        elif choice == '10':                      
+        elif choice == '10':
+            run_code_efficiency_test()
+        elif choice == '11':                      
             print("Goodbye!")
             break
             print("\n👋 Thank you for using Digital Artifact Mining Software!")
