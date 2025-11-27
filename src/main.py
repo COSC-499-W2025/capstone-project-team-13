@@ -1389,8 +1389,8 @@ def main():
             ai_project_analysis_menu()
         elif choice == '9':
             print("\n--- Importance Score Menu ---")
-            print("1. Sort projects by importance")
-            print("2. Compute/grade importance scores")
+            print("1. Compute/grade importance scores")
+            print("2. Sort projects by importance")
             sub = input("Select an option (1 or 2): ").strip()
 
             if sub == '1':
