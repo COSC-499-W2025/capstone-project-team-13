@@ -45,35 +45,35 @@ FRAMEWORKS = {
 
 def identify_language_and_framework(file_path: str):
     """
-        Identifies the programming language and framework used in the provided code file.
-        Args:
-            file_path (str): Path to the code file
-        Returns:
-            dict: Dictionary containing 'language', 'framework', and 'confidence' keys
+    Identifies the programming language and framework used in the provided code file.
+    Args:
+        file_path (str): Path to the code file
+    Returns:
+        tuple: (language, list of frameworks detected) or dict with error
     """
     if not os.path.exists(file_path):
         return {"error": "File not found"}
 
-    #Get the file extension    
     _, ext = os.path.splitext(file_path)
     
-    # see if extension is within the above language extensions list
     if ext not in LANGUAGE_BY_EXTENSION:
-        return(None,None)
-    language = LANGUAGE_BY_EXTENSION.get(ext)
+        return (None, None)
+    
+    language = LANGUAGE_BY_EXTENSION[ext]
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
-        return{"error": str(e)}
+        return {"error": str(e)}
     
     detected_frameworks = []
-    for frameworkFound, pattern in FRAMEWORKS[language]:
+
+    # Only check frameworks if the language is in FRAMEWORKS
+    if language in FRAMEWORKS:
+        for frameworkFound, pattern in FRAMEWORKS[language]:
             if re.search(pattern, content):
                 detected_frameworks.append(frameworkFound)
                 break
 
-
-    return(language, detected_frameworks)
-
+    return (language, detected_frameworks)
