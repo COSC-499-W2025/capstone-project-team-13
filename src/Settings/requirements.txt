@@ -6,3 +6,4 @@ Pillow
 GitPython==3.1.43
 dotenv
 python-docx
+PyPDF2

@@ -26,6 +26,7 @@ from src.Extraction.zipHandler import (
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
 from src.Analysis.codingProjectScanner import scan_coding_project
+from src.Analysis.textDocumentScanner import scan_text_document
 from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
 from src.Databases.database import db_manager
@@ -380,10 +381,10 @@ def handle_visual_project():
         print(f"\n❌ Error analyzing project: {e}")
 
 def handle_document():
-    """Handle single document keyword extraction"""
-    print_header("Extract Keywords from Document")
+    """Handle scanning a single text document"""
+    print_header("Scan Text Document")
     
-    path = get_path_input("Enter path to text document: ")
+    path = get_path_input("Enter path to document: ")
     if not path:
         return
     
@@ -391,41 +392,35 @@ def handle_document():
         print("❌ Path must be a file")
         return
     
-    print("\n⏳ Extracting keywords...")
+    # Normalize path to absolute for consistent comparison
+    path = os.path.abspath(path)
     
-    try:
-        # Validate format
-        check_file_format(path)
+    # Check if already exists BEFORE scanning
+    existing = db_manager.get_project_by_path(path)
+    if existing:
+        print(f"\n⚠️  This document already exists in the database!")
+        print(f"   Project: {existing.name}")
+        print(f"   Database ID: {existing.id}") 
+        if existing.date_scanned:
+            from datetime import timezone
+            local_time = existing.date_scanned.replace(tzinfo=timezone.utc).astimezone()
+            print(f"   Last scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
         
-        # Parse file
-        parsed = parse_file(path)
+        rescan = input("\n   Would you like to re-scan and update? (yes/no): ").strip().lower()
+        if rescan != 'yes':
+            print("\n✅ Using existing project data.")
+            return
         
-        # Extract keywords from content
-        if parsed.get('content'):
-            content = parsed['content']
-            if isinstance(content, dict):
-                content = str(content)
-            
-            keywords = extract_keywords_with_scores(content)
-            
-            print(f"\n✅ Keyword Extraction Complete!")
-            print(f"\n📊 Document Analysis:")
-            print(f"   File: {os.path.basename(path)}")
-            print(f"   Type: {parsed['type']}")
-            
-            if keywords:
-                print(f"\n   Top Keywords (score, phrase):")
-                for score, phrase in keywords[:15]:
-                    print(f"      {score:5.2f}  →  {phrase}")
-            else:
-                print("\n   No keywords extracted.")
-        else:
-            print("❌ Could not extract text content from file.")
+        # Delete old project to re-scan
+        print("\n⏳ Deleting old data and re-scanning...")
+        db_manager.delete_project(existing.id)
+        
+    # The scanner handles all the analysis and display internally
+    project_id = scan_text_document(path, single_file=True)
     
-    except (InvalidFileFormatError, FileParseError) as e:
-        print(f"\n❌ Error: {e}")
-    except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+    if not project_id:
+        print("\n❌ Failed to scan document.")
+        return
 
 def handle_zip_archive():
     """Handle ZIP archive extraction and analysis"""
