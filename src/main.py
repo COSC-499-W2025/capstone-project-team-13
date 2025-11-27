@@ -130,31 +130,24 @@ def detect_project_type(folder_path):
 
 def check_if_collaborative(project_path):
     """
-    Check if a project is collaborative
-    
-    TODO: Implement proper collaboration detection using:
-    - Git history analysis (git log --format=%aN)
-    - File metadata analysis (@author tags, file ownership)
-    - Database contributor records
-    
-    For now, returns 'Unknown' as placeholder.
-    
-    Args:
-        project_path: Path to project directory
-        
-    Returns:
-        str: 'Individual Project', 'Collaborative Project', or 'Unknown'
+    Determine if a project is collaborative by using:
+    - metadata (owners, editors)
+    - git analysis (if .git exists)
+    - file-level contributor extraction
     """
-    # Placeholder - check database if project already exists
-    existing = db_manager.get_project_by_path(str(project_path))
-    if existing:
-        contributors = db_manager.get_contributors_for_project(existing.id)
-        if len(contributors) > 1:
-            return 'Collaborative Project'
-        elif len(contributors) == 1:
-            return 'Individual Project'
-    
-    return 'Unknown (no contributor data found)'
+
+    try:
+        from src.Analysis.projectcollabtype import identify_project_type
+
+        # Minimal metadata so the function can still run
+        project_data = {"files": []}
+
+        collab_type = identify_project_type(project_path, project_data)
+        return collab_type
+
+    except Exception as e:
+        print("Collaboration detection error:", e)
+        return "Unknown"
 
 def get_user_choice():
     """Get user's choice for what to analyze"""
