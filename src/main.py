@@ -39,6 +39,7 @@ from src.AI.ai_enhanced_summarizer import (
 )
 from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
+from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
 
 
 def clear_screen():
@@ -1336,6 +1337,21 @@ def run_importance_test():
     i=0
     print("\nDone.")
 
+def run_project_ranking_test():
+    """Rank projects by creation/update date and display"""
+    print("=== Project Timeline ===\n")
+
+    # Sample project data — replace with real DB fetch later
+    projects = [
+        {"name": "Capstone Project", "created_at": "2023-10-03", "updated_at": "2024-05-15"},
+        {"name": "Project 1", "created_at": "2024-02-01", "updated_at": "2024-09-20"},
+        {"name": "Project 2", "created_at": "2025-01-12", "updated_at": "2025-03-02"},
+    ]
+
+    sorted_projects = rank_projects_chronologically(projects)
+    output = format_project_timeline(sorted_projects)
+    print(output)
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1371,8 +1387,18 @@ def main():
             generate_summary()
         elif choice == '8':                      
             ai_project_analysis_menu()
-        elif choice == '9':                      
-            run_importance_test()            
+        elif choice == '9':
+            print("\n--- Importance Score Menu ---")
+            print("1. Sort projects by date")
+            print("2. Compute/grade importance scores")
+            sub = input("Select an option (1 or 2): ").strip()
+
+            if sub == '1':
+                run_project_ranking_test()
+            elif sub == '2':
+                run_importance_test()
+            else:
+                print("Invalid choice. Returning to main menu.")
         elif choice == '10':                      
             print("Goodbye!")
             break
