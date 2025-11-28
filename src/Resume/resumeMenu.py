@@ -30,7 +30,8 @@ from src.Resume.mediaBulletGenerator import MediaBulletGenerator
 from src.Resume.textBulletGenerator import TextBulletGenerator
 from src.Resume.resumeAnalytics import (
     calculate_ats_score, generate_before_after_comparison,
-    generate_role_context, get_role_appropriate_verb, score_all_bullets
+    generate_role_context, get_role_appropriate_verb, score_all_bullets,
+    improve_all_bullets_for_role, generate_all_improved_bullets
 )
 from src.Resume.codeResumeAnalytics import analyze_code_project_comprehensive
 from src.Resume.mediaResumeAnalytics import analyze_media_project_comprehensive
@@ -385,32 +386,19 @@ def improve_with_role_level(project: Project, old_bullets: List[str]):
         input("Press Enter to continue...")
         return
     
-    print(f"\nGenerating {role_level}-level bullets...")
+    print(f"\nEnhancing bullets for {role_level}-level positions...")
     
     try:
-        generator = get_generator_for_project(project)
-        
-        # Generate new bullets with role-level context
-        role_context = generate_role_context(project, role_level)
-        new_bullets = []
-        
-        for i in range(len(old_bullets)):
-            # Use role-appropriate verb
-            verb = get_role_appropriate_verb(role_level, project.project_type)
-            
-            # Generate bullet with role context
-            bullets_temp = generator.generate_resume_bullets(project, 1)
-            if bullets_temp:
-                bullet = bullets_temp[0]
-                # Replace verb with role-appropriate one
-                words = bullet.split()
-                if words:
-                    words[0] = verb
-                    bullet = ' '.join(words)
-                new_bullets.append(bullet)
+        # Use the new function that properly enhances each bullet
+        new_bullets = improve_all_bullets_for_role(old_bullets, project, role_level)
         
         # Show comparison
         show_side_by_side_comparison(old_bullets, new_bullets)
+        
+        # Show ATS scores for new bullets
+        new_scoring = score_all_bullets(new_bullets, project.project_type)
+        old_scoring = score_all_bullets(old_bullets, project.project_type)
+        print(f"ATS Score: {old_scoring['overall_score']:.1f} → {new_scoring['overall_score']:.1f}")
         
         # Ask to replace
         if confirm_action("Keep new role-targeted bullets?"):
@@ -438,25 +426,65 @@ def improve_with_ats(project: Project, old_bullets: List[str]):
     # Overall scoring
     scoring = score_all_bullets(old_bullets, project.project_type)
     print(f"Overall ATS Score: {scoring['overall_score']:.1f}/100")
-    print(f"Grade Distribution: {scoring['grade_distribution']}")
+    
+    # Show grade distribution
+    grade_dist = scoring.get('grade_distribution', {})
+    if grade_dist:
+        dist_str = ", ".join([f"{grade}: {count}" for grade, count in grade_dist.items() if count > 0])
+        print(f"Grade Distribution: {dist_str}")
+    
+    print(f"Bullets with metrics: {scoring['bullets_with_metrics']}/{len(old_bullets)}")
+    print(f"Unique keywords found: {scoring['total_keywords']}")
     
     input("\nPress Enter to continue...")
 
 
 def show_before_after(project: Project, old_bullets: List[str]):
-    """Show before/after comparison"""
-    print("\nGenerating before/after comparisons...\n")
+    """Show before/after comparison with option to save improvements"""
+    print("\nGenerating improved versions of your bullets...\n")
     
-    for i, bullet in enumerate(old_bullets, 1):
-        comparison = generate_before_after_comparison(project, bullet)
+    # Generate improved bullets (tracking used additions)
+    improved_bullets = generate_all_improved_bullets(project, old_bullets)
+    
+    # Show each comparison (we need to regenerate comparisons for display)
+    used_additions = {}
+    for i, (current, improved) in enumerate(zip(old_bullets, improved_bullets), 1):
+        comparison, used_additions = generate_before_after_comparison(project, current, used_additions)
         
         print(f"Bullet {i}:")
-        print(f"BEFORE: {comparison['before']['bullet']}")
-        print(f"AFTER:  {comparison['after']['bullet']}")
-        print(f"Improvement: +{comparison['improvement_percentage']:.0f}%")
-        print(f"Changes: {', '.join(comparison['improvements'])}\n")
+        print(f"  CURRENT: {comparison['before']['bullet']}")
+        print(f"           Score: {comparison['before']['ats_score']}/100 ({comparison['before']['grade']})")
+        print(f"  IMPROVED: {comparison['after']['bullet']}")
+        print(f"            Score: {comparison['after']['ats_score']}/100 ({comparison['after']['grade']})")
+        
+        if comparison['improvement_percentage'] > 0:
+            print(f"  ⬆️  Improvement: +{comparison['improvement_percentage']:.0f}%")
+        
+        if comparison['improvements']:
+            print(f"  Changes: {', '.join(comparison['improvements'])}")
+        print()
     
-    input("Press Enter to continue...")
+    # Show overall improvement
+    old_scoring = score_all_bullets(old_bullets, project.project_type)
+    new_scoring = score_all_bullets(improved_bullets, project.project_type)
+    
+    print("-" * 60)
+    print(f"Overall ATS Score: {old_scoring['overall_score']:.1f} → {new_scoring['overall_score']:.1f}")
+    
+    if new_scoring['overall_score'] > old_scoring['overall_score']:
+        improvement = new_scoring['overall_score'] - old_scoring['overall_score']
+        print(f"✅ Total improvement: +{improvement:.1f} points")
+    elif new_scoring['overall_score'] == old_scoring['overall_score']:
+        print("ℹ️  Bullets already well-optimized")
+    
+    # Ask to save improved bullets
+    if new_scoring['overall_score'] >= old_scoring['overall_score']:
+        if confirm_action("\nReplace current bullets with improved versions?"):
+            replace_bullets(project, improved_bullets)
+        else:
+            print("Keeping current bullets.")
+    
+    input("\nPress Enter to continue...")
 
 
 def improve_type_specific(project: Project, old_bullets: List[str]):
@@ -468,52 +496,100 @@ def improve_type_specific(project: Project, old_bullets: List[str]):
             analysis = analyze_code_project_comprehensive(project)
             
             print("CODE ANALYSIS RESULTS:")
+            print("-" * 40)
+            
+            # Efficiency analysis
             if analysis['efficiency'].get('efficiency_available'):
                 eff = analysis['efficiency']
-                print(f"  Efficiency: {eff['efficiency_level']} ({eff['avg_efficiency_score']:.1f}/100)")
-                print(f"  Suggestion: {eff['bullet_phrase']}")
+                print(f"  ✅ Efficiency: {eff['efficiency_level']} ({eff['avg_efficiency_score']:.1f}/100)")
+                print(f"     Suggestion: Use \"{eff['bullet_phrase']}\" in your bullets")
+            else:
+                print(f"  ⚠️  Efficiency: {analysis['efficiency'].get('message', 'Not available')}")
             
+            # Technical density
             if analysis['technical_density'].get('density_available'):
                 density = analysis['technical_density']
-                print(f"  Technical Depth: {density['density_level']}")
-                print(f"  Suggestion: {density['bullet_phrase']}")
+                print(f"  ✅ Technical Depth: {density['density_level']}")
+                print(f"     Suggestion: Emphasize \"{density['bullet_phrase']}\"")
+            else:
+                print(f"  ⚠️  Technical Density: {analysis['technical_density'].get('message', 'Not available')}")
             
+            # Skills
             if analysis['skills'].get('skills_available'):
                 skills = analysis['skills']
-                print(f"  Top Skills: {', '.join(skills['top_skills'][:3])}")
+                print(f"  ✅ Top Skills: {', '.join(skills['top_skills'][:3])}")
+            else:
+                print(f"  ⚠️  Skills: {analysis['skills'].get('message', 'Not available')}")
         
         elif project.project_type == 'visual_media':
             analysis = analyze_media_project_comprehensive(project)
             
             print("MEDIA ANALYSIS RESULTS:")
+            print("-" * 40)
+            
+            # Portfolio impact
             if analysis['portfolio_impact'].get('impact_available'):
                 impact = analysis['portfolio_impact']
-                print(f"  Portfolio Impact: {impact['grade']} ({impact['impact_score']}/100)")
+                print(f"  ✅ Portfolio Impact: {impact['grade']} ({impact['impact_score']}/100)")
                 for insight in impact['insights']:
-                    print(f"    {insight}")
+                    print(f"     {insight}")
+            else:
+                print(f"  ⚠️  Portfolio Impact: {analysis['portfolio_impact'].get('message', 'Not available')}")
             
-            if analysis['software_proficiency'].get('proficiency_available'):
-                prof = analysis['software_proficiency']
-                print(f"  Software Skill: {prof['skill_tier']}")
-                print(f"  Recommended verb: {prof['recommended_verb']}")
+            # Software skill level (fixed key name)
+            if analysis['skill_level'].get('skill_level_available'):
+                skill = analysis['skill_level']
+                print(f"  ✅ Software Skill Tier: {skill['skill_tier'].title()}")
+                print(f"     Recommended verb: {skill['recommended_verb']}")
+                print(f"     Emphasis: {skill['emphasis']}")
+            else:
+                print(f"  ⚠️  Software Skills: {analysis['skill_level'].get('message', 'Not available')}")
+            
+            # Portfolio readiness
+            if analysis['portfolio_readiness'].get('readiness_available'):
+                ready = analysis['portfolio_readiness']
+                status = "✅" if ready['is_job_ready'] else "⚠️"
+                print(f"  {status} Portfolio Readiness: {ready['readiness_level']} ({ready['readiness_score']}/100)")
         
         elif project.project_type == 'text':
             analysis = analyze_text_project_comprehensive(project)
             
             print("TEXT ANALYSIS RESULTS:")
+            print("-" * 40)
+            
+            # Writing quality
             if analysis['writing_quality'].get('quality_available'):
                 quality = analysis['writing_quality']
-                print(f"  Writing Quality: {quality['quality_level']} ({quality['quality_score']}/100)")
+                print(f"  ✅ Writing Quality: {quality['quality_level']} ({quality['quality_score']}/100)")
+                for insight in quality.get('insights', []):
+                    print(f"     {insight}")
+            else:
+                print(f"  ⚠️  Writing Quality: {analysis['writing_quality'].get('message', 'Not available')}")
             
+            # Publication readiness
             if analysis['publication_readiness'].get('readiness_available'):
                 ready = analysis['publication_readiness']
-                print(f"  Publication Ready: {ready['is_job_ready']}")
-                print(f"  Readiness Score: {ready['readiness_score']}/100")
+                status = "✅" if ready.get('is_publication_ready') else "⚠️"
+                print(f"  {status} Publication Ready: {ready['readiness_level']} ({ready['readiness_score']}/100)")
+            else:
+                print(f"  ⚠️  Publication Readiness: {analysis['publication_readiness'].get('message', 'Not available')}")
+            
+            # Writing style
+            if analysis['writing_style'].get('style_available'):
+                style = analysis['writing_style']
+                print(f"  ✅ Writing Style: {style['primary_style'].title()}")
+                print(f"     Emphasis: {style['emphasis']}")
+            else:
+                print(f"  ⚠️  Writing Style: {analysis['writing_style'].get('message', 'Not available')}")
         
-        print("\nUse this analysis to manually improve your bullets.")
+        print("\n" + "-" * 40)
+        print("Use this analysis to manually improve your bullets,")
+        print("or try the Before/After comparison (option c) for automatic improvements.")
     
     except Exception as e:
         print(f"❌ Error analyzing project: {e}")
+        import traceback
+        traceback.print_exc()
     
     input("\nPress Enter to continue...")
 

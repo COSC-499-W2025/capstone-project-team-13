@@ -10,6 +10,7 @@ Features:
 
 import os
 import sys
+import re
 import json
 from typing import List, Dict, Any, Optional
 
@@ -157,12 +158,28 @@ def score_all_bullets(bullets: List[str], project_type: str = 'code') -> Dict[st
     for score_data in individual_scores:
         all_keywords.extend(score_data['keywords'])
     
+    # Calculate grade distribution
+    grade_counts = {'A+': 0, 'A': 0, 'B': 0, 'C': 0, 'D': 0}
+    for score_data in individual_scores:
+        grade = score_data['grade']
+        if 'A+' in grade:
+            grade_counts['A+'] += 1
+        elif 'A ' in grade or grade.startswith('A'):
+            grade_counts['A'] += 1
+        elif 'B' in grade:
+            grade_counts['B'] += 1
+        elif 'C' in grade:
+            grade_counts['C'] += 1
+        else:
+            grade_counts['D'] += 1
+    
     return {
         'overall_score': round(avg_score, 1),
         'individual_scores': individual_scores,
         'total_keywords': len(set(all_keywords)),
         'unique_keywords': list(set(all_keywords)),
-        'bullets_with_metrics': sum(1 for s in individual_scores if s['has_metrics'])
+        'bullets_with_metrics': sum(1 for s in individual_scores if s['has_metrics']),
+        'grade_distribution': grade_counts
     }
 
 
@@ -170,87 +187,333 @@ def score_all_bullets(bullets: List[str], project_type: str = 'code') -> Dict[st
 # BEFORE/AFTER COMPARISON
 # ============================================
 
-def generate_before_after_comparison(project: Project, optimized_bullet: str) -> Dict[str, Any]:
+def improve_bullet(bullet: str, project: Project, used_additions: Dict[str, bool] = None) -> tuple:
     """
-    Generate before/after comparison showing bullet transformation
+    Improve a single bullet point based on ATS analysis.
+    Tracks what additions have been used to avoid repetition.
+    
+    Args:
+        bullet: Current bullet text
+        project: Project object for context
+        used_additions: Dictionary tracking what's been added already
+            Keys: 'loc', 'files', 'size', 'words', 'tech_0', 'tech_1', etc.
+        
+    Returns:
+        Tuple of (improved bullet text, updated used_additions dict)
+    """
+    if used_additions is None:
+        used_additions = {}
+    
+    score_data = calculate_ats_score(bullet, project.project_type)
+    improved = bullet
+    
+    # Get first word (verb)
+    words = improved.split()
+    if not words:
+        return improved, used_additions
+    
+    current_verb = words[0]
+    
+    # 1. Upgrade weak action verb (only if not already strong)
+    if current_verb not in STRONG_ACTION_VERBS:
+        if project.project_type == 'code':
+            new_verb = 'Developed'
+        elif project.project_type == 'visual_media':
+            new_verb = 'Designed'
+        else:
+            new_verb = 'Authored'
+        words[0] = new_verb
+        improved = ' '.join(words)
+    
+    # 2. Add metrics if missing (use different metrics for each bullet)
+    if not score_data['has_metrics']:
+        metric_added = False
+        
+        if project.project_type == 'code':
+            # Try LOC first
+            if not used_additions.get('loc') and project.lines_of_code and project.lines_of_code > 0:
+                loc = project.lines_of_code
+                if loc >= 1000:
+                    metric = f"comprising {loc//1000}K+ lines of code"
+                else:
+                    metric = f"comprising {loc}+ lines of code"
+                improved = improved.rstrip('.,') + f", {metric}"
+                used_additions['loc'] = True
+                metric_added = True
+            # Try file count
+            elif not used_additions.get('files') and project.file_count and project.file_count > 0:
+                improved = improved.rstrip('.,') + f", spanning {project.file_count}+ files"
+                used_additions['files'] = True
+                metric_added = True
+            # Try size
+            elif not used_additions.get('size') and project.total_size_bytes and project.total_size_bytes > 0:
+                size_kb = project.total_size_bytes / 1024
+                if size_kb >= 1000:
+                    improved = improved.rstrip('.,') + f", totaling {size_kb/1024:.1f} MB of code"
+                else:
+                    improved = improved.rstrip('.,') + f", totaling {size_kb:.0f} KB of code"
+                used_additions['size'] = True
+                metric_added = True
+                
+        elif project.project_type == 'visual_media':
+            # Try file count first
+            if not used_additions.get('files') and project.file_count and project.file_count > 0:
+                improved = improved.rstrip('.,') + f", delivering {project.file_count}+ assets"
+                used_additions['files'] = True
+                metric_added = True
+            # Try size
+            elif not used_additions.get('size') and project.total_size_bytes and project.total_size_bytes > 0:
+                size_mb = project.total_size_bytes / (1024 * 1024)
+                if size_mb >= 1000:
+                    improved = improved.rstrip('.,') + f", totaling {size_mb/1024:.1f} GB of content"
+                else:
+                    improved = improved.rstrip('.,') + f", totaling {size_mb:.0f} MB of content"
+                used_additions['size'] = True
+                metric_added = True
+                
+        else:  # text
+            # Try word count first
+            if not used_additions.get('words') and project.word_count and project.word_count > 0:
+                wc = project.word_count
+                if wc >= 1000:
+                    improved = improved.rstrip('.,') + f", totaling {wc//1000}K+ words"
+                else:
+                    improved = improved.rstrip('.,') + f", totaling {wc}+ words"
+                used_additions['words'] = True
+                metric_added = True
+            # Try document count
+            elif not used_additions.get('files') and project.file_count and project.file_count > 0:
+                improved = improved.rstrip('.,') + f", comprising {project.file_count}+ documents"
+                used_additions['files'] = True
+                metric_added = True
+    
+    # 3. Add technical keywords if missing (use different keywords for each bullet)
+    if len(score_data['keywords']) < 2:
+        if project.languages:
+            # Find an unused language/tech
+            for i, tech in enumerate(project.languages):
+                tech_key = f'tech_{i}'
+                if not used_additions.get(tech_key) and tech.lower() not in improved.lower():
+                    if project.project_type == 'code':
+                        improved = improved.rstrip('.,') + f" using {tech}"
+                    else:
+                        improved = improved.rstrip('.,') + f" with {tech}"
+                    used_additions[tech_key] = True
+                    break
+    
+    return improved, used_additions
+
+
+def generate_before_after_comparison(project: Project, current_bullet: str, 
+                                      used_additions: Dict[str, bool] = None) -> tuple:
+    """
+    Generate before/after comparison showing bullet transformation.
+    Takes the current bullet and generates an improved version.
     
     Args:
         project: Project object from database
-        optimized_bullet: The professional bullet generated
+        current_bullet: The current bullet to improve
+        used_additions: Dictionary tracking what's been added (for batch processing)
         
     Returns:
-        Dictionary with before/after bullets and improvement analysis
+        Tuple of (comparison dict, updated used_additions)
     """
-    # Generate "basic" bullet (what amateur might write)
-    if project.project_type == 'code':
-        tech = project.languages[0] if project.languages else "code"
-        basic_bullet = f"Made a {tech} project"
-    elif project.project_type == 'visual_media':
-        software = project.languages[0] if project.languages else "design software"
-        basic_bullet = f"Made graphics with {software}"
-    else:  # text
-        basic_bullet = "Wrote some articles"
+    if used_additions is None:
+        used_additions = {}
     
-    # Score both bullets
-    basic_score = calculate_ats_score(basic_bullet, project.project_type)
-    optimized_score = calculate_ats_score(optimized_bullet, project.project_type)
+    # Score current bullet
+    current_score = calculate_ats_score(current_bullet, project.project_type)
+    
+    # Generate improved bullet (tracking used additions)
+    improved_bullet, used_additions = improve_bullet(current_bullet, project, used_additions)
+    improved_score = calculate_ats_score(improved_bullet, project.project_type)
     
     # Calculate improvements
     improvements = []
     
-    if optimized_score['score'] > basic_score['score']:
-        improvement_points = optimized_score['score'] - basic_score['score']
-        improvements.append(f"ATS score improved from {basic_score['score']} to {optimized_score['score']} (+{improvement_points} points)")
+    # Check verb improvement
+    current_verb = current_bullet.split()[0] if current_bullet else ""
+    improved_verb = improved_bullet.split()[0] if improved_bullet else ""
+    if improved_verb != current_verb and improved_verb in STRONG_ACTION_VERBS:
+        improvements.append(f"Upgraded action verb: '{current_verb}' → '{improved_verb}'")
     
-    if optimized_score['has_metrics'] and not basic_score['has_metrics']:
+    # Check metrics added
+    if improved_score['has_metrics'] and not current_score['has_metrics']:
         improvements.append("Added quantifiable metrics")
     
-    basic_verb = basic_bullet.split()[0]
-    optimized_verb = optimized_bullet.split()[0]
-    if optimized_verb in STRONG_ACTION_VERBS and basic_verb not in STRONG_ACTION_VERBS:
-        improvements.append(f"Upgraded action verb: '{basic_verb}' → '{optimized_verb}'")
+    # Check keywords added
+    new_keywords = set(improved_score['keywords']) - set(current_score['keywords'])
+    if new_keywords:
+        improvements.append(f"Added technical keywords: {', '.join(list(new_keywords)[:3])}")
     
-    if optimized_score['word_count'] > basic_score['word_count'] * 1.5:
-        improvements.append(f"Added technical detail ({basic_score['word_count']} → {optimized_score['word_count']} words)")
+    # Check word count change
+    if improved_score['word_count'] > current_score['word_count']:
+        improvements.append(f"Added detail ({current_score['word_count']} → {improved_score['word_count']} words)")
     
-    if len(optimized_score['keywords']) > len(basic_score['keywords']):
-        new_keywords = set(optimized_score['keywords']) - set(basic_score['keywords'])
-        if new_keywords:
-            improvements.append(f"Added technical keywords: {', '.join(list(new_keywords)[:3])}")
+    # Check score improvement
+    if improved_score['score'] > current_score['score']:
+        improvement_points = improved_score['score'] - current_score['score']
+        improvements.append(f"ATS score improved by +{improvement_points} points")
+    
+    # If no improvements were made
+    if not improvements:
+        improvements.append("Bullet already well-optimized")
     
     # Calculate improvement percentage
-    improvement_percentage = round(
-        ((optimized_score['score'] - basic_score['score']) / basic_score['score']) * 100, 1
-    ) if basic_score['score'] > 0 else 0
+    if current_score['score'] > 0:
+        improvement_percentage = round(
+            ((improved_score['score'] - current_score['score']) / current_score['score']) * 100, 1
+        )
+    else:
+        improvement_percentage = 0
     
-    return {
+    comparison = {
         'before': {
-            'bullet': basic_bullet,
-            'ats_score': basic_score['score'],
-            'grade': basic_score['grade'],
-            'word_count': basic_score['word_count']
+            'bullet': current_bullet,
+            'ats_score': current_score['score'],
+            'grade': current_score['grade'],
+            'word_count': current_score['word_count']
         },
         'after': {
-            'bullet': optimized_bullet,
-            'ats_score': optimized_score['score'],
-            'grade': optimized_score['grade'],
-            'word_count': optimized_score['word_count']
+            'bullet': improved_bullet,
+            'ats_score': improved_score['score'],
+            'grade': improved_score['grade'],
+            'word_count': improved_score['word_count']
         },
         'improvements': improvements,
         'improvement_percentage': improvement_percentage
     }
+    
+    return comparison, used_additions
+
+
+def generate_all_improved_bullets(project: Project, current_bullets: List[str]) -> List[str]:
+    """
+    Generate improved versions of all bullets with unique additions.
+    
+    Args:
+        project: Project object
+        current_bullets: List of current bullets
+        
+    Returns:
+        List of improved bullets
+    """
+    improved_bullets = []
+    used_additions = {}  # Track what's been added across all bullets
+    
+    for bullet in current_bullets:
+        improved, used_additions = improve_bullet(bullet, project, used_additions)
+        improved_bullets.append(improved)
+    
+    return improved_bullets
 
 
 # ============================================
 # ROLE-LEVEL TARGETED BULLETS
 # ============================================
 
-# Role-specific action verbs
+# Role-specific action verbs (universal - work for any profession)
 ROLE_SPECIFIC_VERBS = {
-    'junior': ['Developed', 'Built', 'Implemented', 'Created', 'Contributed', 'Assisted'],
-    'mid': ['Designed', 'Engineered', 'Architected', 'Optimized', 'Delivered', 'Developed'],
-    'senior': ['Architected', 'Led', 'Spearheaded', 'Established', 'Pioneered', 'Drove'],
-    'lead': ['Directed', 'Orchestrated', 'Championed', 'Strategized', 'Transformed', 'Scaled']
+    'junior': ['Developed', 'Built', 'Created', 'Produced', 'Contributed', 'Assisted'],
+    'mid': ['Designed', 'Delivered', 'Managed', 'Executed', 'Implemented', 'Developed'],
+    'senior': ['Led', 'Established', 'Spearheaded', 'Drove', 'Pioneered', 'Oversaw'],
+    'lead': ['Directed', 'Orchestrated', 'Championed', 'Transformed', 'Strategized', 'Scaled']
+}
+
+# Role-specific emphasis phrases (5 unique options per role level - UNIVERSAL for any profession)
+ROLE_EMPHASIS = {
+    'junior': {
+        'code': [
+            'while building practical skills and technical foundation',
+            'contributing to team deliverables and project milestones',
+            'gaining hands-on experience with industry tools',
+            'following established standards and best practices',
+            'collaborating with senior team members on implementation'
+        ],
+        'visual_media': [
+            'while developing creative and technical abilities',
+            'contributing to project deliverables and deadlines',
+            'gaining hands-on experience with professional tools',
+            'following brand guidelines and design standards',
+            'collaborating with senior creatives on production'
+        ],
+        'text': [
+            'while developing professional writing capabilities',
+            'contributing to publication deadlines and content goals',
+            'gaining hands-on experience with editorial workflows',
+            'following style guides and quality standards',
+            'collaborating with senior editors on final drafts'
+        ]
+    },
+    'mid': {
+        'code': [
+            'ensuring quality and long-term maintainability',
+            'delivering polished solutions within project timelines',
+            'owning end-to-end development of key features',
+            'implementing thorough testing and documentation',
+            'optimizing performance and resource efficiency'
+        ],
+        'visual_media': [
+            'ensuring consistency and professional quality',
+            'delivering polished work within project timelines',
+            'owning creative direction for key deliverables',
+            'implementing feedback from stakeholder reviews',
+            'optimizing workflows for improved output quality'
+        ],
+        'text': [
+            'ensuring clarity, accuracy, and audience engagement',
+            'delivering publication-ready content on deadline',
+            'owning editorial direction for key pieces',
+            'implementing rigorous fact-checking and revision',
+            'optimizing content for target audience and platform'
+        ]
+    },
+    'senior': {
+        'code': [
+            'establishing standards and best practices for the team',
+            'mentoring junior team members on technical skills',
+            'driving key decisions and quality improvements',
+            'ensuring scalability and long-term sustainability',
+            'leading technical initiatives and process improvements'
+        ],
+        'visual_media': [
+            'establishing creative standards and style guidelines',
+            'mentoring junior designers on professional skills',
+            'driving creative vision and quality benchmarks',
+            'ensuring consistency across all project deliverables',
+            'leading creative initiatives and process improvements'
+        ],
+        'text': [
+            'establishing editorial standards and style guidelines',
+            'mentoring junior writers on professional craft',
+            'driving content strategy and quality benchmarks',
+            'ensuring consistency across all publications',
+            'leading editorial initiatives and process improvements'
+        ]
+    },
+    'lead': {
+        'code': [
+            'driving alignment with organizational objectives',
+            'scaling team capabilities and operational excellence',
+            'transforming processes and technical infrastructure',
+            'defining strategic roadmap and long-term vision',
+            'building high-performing teams and culture'
+        ],
+        'visual_media': [
+            'driving alignment with brand and business objectives',
+            'scaling creative operations and team capabilities',
+            'transforming creative processes and workflows',
+            'defining creative strategy and long-term vision',
+            'building high-performing creative teams and culture'
+        ],
+        'text': [
+            'driving alignment with communication objectives',
+            'scaling editorial operations and team capabilities',
+            'transforming content strategy and distribution',
+            'defining editorial roadmap and long-term vision',
+            'building high-performing editorial teams and culture'
+        ]
+    }
 }
 
 
@@ -313,6 +576,106 @@ def generate_role_context(project: Project, role_level: str) -> Dict[str, str]:
     }
     
     return contexts.get(role_level, contexts['mid'])
+
+
+def improve_bullet_for_role(bullet: str, project: Project, role_level: str, 
+                            used_verbs: List[str] = None, used_emphasis_indices: List[int] = None) -> tuple:
+    """
+    Enhance a bullet for a specific role level.
+    
+    Args:
+        bullet: Current bullet text
+        project: Project object for context
+        role_level: Target role level ('junior', 'mid', 'senior', 'lead')
+        used_verbs: List of already used verbs to avoid repetition
+        used_emphasis_indices: List of already used emphasis indices to avoid repetition
+        
+    Returns:
+        Tuple of (enhanced bullet text, used verb, used emphasis index)
+    """
+    if used_verbs is None:
+        used_verbs = []
+    if used_emphasis_indices is None:
+        used_emphasis_indices = []
+    
+    if role_level not in ROLE_SPECIFIC_VERBS:
+        role_level = 'mid'
+    
+    words = bullet.split()
+    if not words:
+        return bullet, None, None
+    
+    project_type = project.project_type or 'code'
+    
+    # 1. Select role-appropriate verb (avoid repetition)
+    available_verbs = [v for v in ROLE_SPECIFIC_VERBS[role_level] if v not in used_verbs]
+    if not available_verbs:
+        available_verbs = ROLE_SPECIFIC_VERBS[role_level]
+    new_verb = available_verbs[0]
+    
+    # 2. Extract the core content (remove old verb)
+    core_content = ' '.join(words[1:])
+    
+    # 3. Select unique emphasis phrase (avoid repetition)
+    emphasis_options = ROLE_EMPHASIS.get(role_level, {}).get(project_type, [
+        'delivering quality solutions',
+        'meeting project objectives',
+        'supporting team goals',
+        'ensuring successful outcomes',
+        'achieving key milestones'
+    ])
+    
+    # Find an unused emphasis index
+    available_indices = [i for i in range(len(emphasis_options)) if i not in used_emphasis_indices]
+    if not available_indices:
+        # All used, reset but try to pick different from last used
+        available_indices = list(range(len(emphasis_options)))
+    
+    emphasis_index = available_indices[0]
+    emphasis = emphasis_options[emphasis_index]
+    
+    # 4. Build role-enhanced bullet
+    # Remove trailing punctuation from core content for clean appending
+    core_content = core_content.rstrip('.,;')
+    enhanced = f"{new_verb} {core_content}, {emphasis}"
+    
+    # Clean up any double spaces or awkward punctuation
+    enhanced = re.sub(r'\s+', ' ', enhanced)
+    enhanced = re.sub(r',\s*,', ',', enhanced)
+    enhanced = enhanced.strip()
+    
+    return enhanced, new_verb, emphasis_index
+
+
+def improve_all_bullets_for_role(bullets: List[str], project: Project, role_level: str) -> List[str]:
+    """
+    Enhance all bullets for a specific role level with unique extensions.
+    
+    Args:
+        bullets: List of current bullets
+        project: Project object for context
+        role_level: Target role level
+        
+    Returns:
+        List of role-enhanced bullets
+    """
+    improved = []
+    used_verbs = []
+    used_emphasis_indices = []
+    
+    for bullet in bullets:
+        enhanced, used_verb, used_emphasis_idx = improve_bullet_for_role(
+            bullet, project, role_level, used_verbs, used_emphasis_indices
+        )
+        improved.append(enhanced)
+        
+        # Track used verb and emphasis
+        if used_verb:
+            used_verbs.append(used_verb)
+        if used_emphasis_idx is not None:
+            used_emphasis_indices.append(used_emphasis_idx)
+    
+    return improved
 
 
 # ============================================
@@ -384,8 +747,6 @@ def extract_metrics_from_bullet(bullet: str) -> List[str]:
     Returns:
         List of detected metrics (e.g., ['40%', '10K+', '5 GB'])
     """
-    import re
-    
     metrics = []
     
     # Percentage patterns
