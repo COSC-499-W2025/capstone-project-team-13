@@ -8,7 +8,7 @@ resume bullets for projects in the database.
 Features:
 - Generate bullets for any project type (code/media/text)
 - View stored bullets with metadata
-- Improve bullets with analytics (role-level, ATS, type-specific)
+- Improve bullets with analytics (role-level, ATS, before/after)
 - Side-by-side comparison before replacing
 - Delete stored bullets
 
@@ -30,12 +30,8 @@ from src.Resume.mediaBulletGenerator import MediaBulletGenerator
 from src.Resume.textBulletGenerator import TextBulletGenerator
 from src.Resume.resumeAnalytics import (
     calculate_ats_score, generate_before_after_comparison,
-    generate_role_context, get_role_appropriate_verb, score_all_bullets,
-    improve_all_bullets_for_role, generate_all_improved_bullets
+    score_all_bullets, improve_all_bullets_for_role, generate_all_improved_bullets
 )
-from src.Resume.codeResumeAnalytics import analyze_code_project_comprehensive
-from src.Resume.mediaResumeAnalytics import analyze_media_project_comprehensive
-from src.Resume.textResumeAnalytics import analyze_text_project_comprehensive
 
 
 # ============================================
@@ -336,15 +332,7 @@ def improve_bullets_menu():
     print("a) Role-level targeting (Junior/Mid/Senior/Lead)")
     print("b) ATS optimization & scoring")
     print("c) Before/After comparison")
-    
-    if project.project_type == 'code':
-        print("d) Code-specific: Efficiency & technical depth analysis")
-    elif project.project_type == 'visual_media':
-        print("d) Media-specific: Portfolio impact analysis")
-    elif project.project_type == 'text':
-        print("d) Text-specific: Writing quality analysis")
-    
-    print("e) Cancel")
+    print("d) Cancel")
     
     choice = input("\nSelect option: ").strip().lower()
     
@@ -355,8 +343,6 @@ def improve_bullets_menu():
     elif choice == 'c':
         show_before_after(project, old_bullets)
     elif choice == 'd':
-        improve_type_specific(project, old_bullets)
-    elif choice == 'e':
         return
     else:
         print("Invalid option.")
@@ -483,113 +469,6 @@ def show_before_after(project: Project, old_bullets: List[str]):
             replace_bullets(project, improved_bullets)
         else:
             print("Keeping current bullets.")
-    
-    input("\nPress Enter to continue...")
-
-
-def improve_type_specific(project: Project, old_bullets: List[str]):
-    """Improve with type-specific analytics"""
-    print(f"\nAnalyzing {project.project_type} project...\n")
-    
-    try:
-        if project.project_type == 'code':
-            analysis = analyze_code_project_comprehensive(project)
-            
-            print("CODE ANALYSIS RESULTS:")
-            print("-" * 40)
-            
-            # Efficiency analysis
-            if analysis['efficiency'].get('efficiency_available'):
-                eff = analysis['efficiency']
-                print(f"  ✅ Efficiency: {eff['efficiency_level']} ({eff['avg_efficiency_score']:.1f}/100)")
-                print(f"     Suggestion: Use \"{eff['bullet_phrase']}\" in your bullets")
-            else:
-                print(f"  ⚠️  Efficiency: {analysis['efficiency'].get('message', 'Not available')}")
-            
-            # Technical density
-            if analysis['technical_density'].get('density_available'):
-                density = analysis['technical_density']
-                print(f"  ✅ Technical Depth: {density['density_level']}")
-                print(f"     Suggestion: Emphasize \"{density['bullet_phrase']}\"")
-            else:
-                print(f"  ⚠️  Technical Density: {analysis['technical_density'].get('message', 'Not available')}")
-            
-            # Skills
-            if analysis['skills'].get('skills_available'):
-                skills = analysis['skills']
-                print(f"  ✅ Top Skills: {', '.join(skills['top_skills'][:3])}")
-            else:
-                print(f"  ⚠️  Skills: {analysis['skills'].get('message', 'Not available')}")
-        
-        elif project.project_type == 'visual_media':
-            analysis = analyze_media_project_comprehensive(project)
-            
-            print("MEDIA ANALYSIS RESULTS:")
-            print("-" * 40)
-            
-            # Portfolio impact
-            if analysis['portfolio_impact'].get('impact_available'):
-                impact = analysis['portfolio_impact']
-                print(f"  ✅ Portfolio Impact: {impact['grade']} ({impact['impact_score']}/100)")
-                for insight in impact['insights']:
-                    print(f"     {insight}")
-            else:
-                print(f"  ⚠️  Portfolio Impact: {analysis['portfolio_impact'].get('message', 'Not available')}")
-            
-            # Software skill level (fixed key name)
-            if analysis['skill_level'].get('skill_level_available'):
-                skill = analysis['skill_level']
-                print(f"  ✅ Software Skill Tier: {skill['skill_tier'].title()}")
-                print(f"     Recommended verb: {skill['recommended_verb']}")
-                print(f"     Emphasis: {skill['emphasis']}")
-            else:
-                print(f"  ⚠️  Software Skills: {analysis['skill_level'].get('message', 'Not available')}")
-            
-            # Portfolio readiness
-            if analysis['portfolio_readiness'].get('readiness_available'):
-                ready = analysis['portfolio_readiness']
-                status = "✅" if ready['is_job_ready'] else "⚠️"
-                print(f"  {status} Portfolio Readiness: {ready['readiness_level']} ({ready['readiness_score']}/100)")
-        
-        elif project.project_type == 'text':
-            analysis = analyze_text_project_comprehensive(project)
-            
-            print("TEXT ANALYSIS RESULTS:")
-            print("-" * 40)
-            
-            # Writing quality
-            if analysis['writing_quality'].get('quality_available'):
-                quality = analysis['writing_quality']
-                print(f"  ✅ Writing Quality: {quality['quality_level']} ({quality['quality_score']}/100)")
-                for insight in quality.get('insights', []):
-                    print(f"     {insight}")
-            else:
-                print(f"  ⚠️  Writing Quality: {analysis['writing_quality'].get('message', 'Not available')}")
-            
-            # Publication readiness
-            if analysis['publication_readiness'].get('readiness_available'):
-                ready = analysis['publication_readiness']
-                status = "✅" if ready.get('is_publication_ready') else "⚠️"
-                print(f"  {status} Publication Ready: {ready['readiness_level']} ({ready['readiness_score']}/100)")
-            else:
-                print(f"  ⚠️  Publication Readiness: {analysis['publication_readiness'].get('message', 'Not available')}")
-            
-            # Writing style
-            if analysis['writing_style'].get('style_available'):
-                style = analysis['writing_style']
-                print(f"  ✅ Writing Style: {style['primary_style'].title()}")
-                print(f"     Emphasis: {style['emphasis']}")
-            else:
-                print(f"  ⚠️  Writing Style: {analysis['writing_style'].get('message', 'Not available')}")
-        
-        print("\n" + "-" * 40)
-        print("Use this analysis to manually improve your bullets,")
-        print("or try the Before/After comparison (option c) for automatic improvements.")
-    
-    except Exception as e:
-        print(f"❌ Error analyzing project: {e}")
-        import traceback
-        traceback.print_exc()
     
     input("\nPress Enter to continue...")
 
