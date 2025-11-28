@@ -1,5 +1,4 @@
 """
-------------------------------------
 Generates professional resume bullet points for coding projects
 based on project analysis data from the database.
 
