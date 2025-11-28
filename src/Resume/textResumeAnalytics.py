@@ -1,469 +1,532 @@
 """
-Comprehensive test suite for text-specific resume analytics.
 
-Tests:
-- Writing skill extraction integration
+Text-specific resume analytics functions.
+
+Features:
+- Integration with skillsExtractDocs.py for writing skill detection
 - Writing quality assessment
 - Publication readiness validation
-- Content volume benchmarking
-- Writing style identification
+- Content volume analysis
 """
 
 import os
 import sys
-import pytest
-import tempfile
-from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.Resume.textResumeAnalytics import (
-    extract_writing_skills,
-    analyze_writing_quality,
-    validate_publication_readiness,
-    benchmark_content_volume,
-    identify_writing_style,
-    analyze_text_project_comprehensive,
-    get_writing_quality_phrase,
-    get_volume_descriptor,
-    should_emphasize_publication_ready
-)
 from src.Databases.database import db_manager, Project
+from src.Analysis.skillsExtractDocs import analyze_folder_for_skills, analyze_document_for_skills
 
 
-class TestTextResumeAnalytics:
-    """Test suite for text-specific resume analytics"""
+# ============================================
+# WRITING SKILL EXTRACTION INTEGRATION
+# ============================================
+
+def extract_writing_skills(project: Project) -> Dict[str, Any]:
+    """
+    Extract writing skills from text project using skillsExtractDocs.py
     
-    @pytest.fixture(autouse=True)
-    def setup_and_teardown(self):
-        """Setup and teardown for each test"""
-        db_manager.clear_all_data()
-        yield
-        db_manager.clear_all_data()
-    
-    @pytest.fixture
-    def temp_text_project(self):
-        """Create a temporary project with actual text files"""
-        temp_dir = tempfile.mkdtemp()
+    Args:
+        project: Project object from database
         
-        # Create sample text files
-        sample_text = """
-        Technical Writing Documentation
-        
-        This document demonstrates various writing skills including
-        grammar, syntax, and clear communication. Research shows that
-        good technical writing requires attention to detail and thorough
-        documentation practices.
-        """
-        
-        for i in range(3):
-            text_path = os.path.join(temp_dir, f'doc{i}.txt')
-            with open(text_path, 'w') as f:
-                f.write(sample_text)
-        
-        # Create project
-        project_data = {
-            'name': 'Documentation Project',
-            'file_path': temp_dir,
-            'project_type': 'text',
-            'word_count': 150,
-            'file_count': 3,
-            'skills': ['Technical Writing']
+    Returns:
+        Dictionary with detected writing skills
+    """
+    if project.project_type != 'text':
+        return {
+            'error': f'Project type is {project.project_type}, not text',
+            'skills_available': False
         }
-        project = db_manager.create_project(project_data)
-        
-        yield project
-        
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
     
-    @pytest.fixture
-    def beginner_text_project(self):
-        """Create a beginner-level text project"""
-        project_data = {
-            'name': 'Blog Posts',
-            'file_path': '/test/blog',
-            'project_type': 'text',
-            'word_count': 3000,
-            'file_count': 4,
-            'skills': ['Content Writing']
+    folder_path = project.file_path
+    
+    if not folder_path or not os.path.exists(folder_path):
+        return {
+            'skills_available': False,
+            'message': 'Project folder not found'
         }
-        return db_manager.create_project(project_data)
     
-    @pytest.fixture
-    def professional_text_project(self):
-        """Create a professional-level text project"""
-        project_data = {
-            'name': 'Technical Documentation',
-            'file_path': '/test/techdocs',
-            'project_type': 'text',
-            'word_count': 25000,
-            'file_count': 15,
-            'skills': ['Technical Writing', 'Documentation', 'Editing', 'Research']
+    try:
+        # Analyze folder for skills
+        skills_with_counts = analyze_folder_for_skills(folder_path)
+        
+        if not skills_with_counts:
+            return {
+                'skills_available': False,
+                'message': 'No writing skills detected'
+            }
+        
+        # Extract top skills
+        top_skills = [skill for skill, count in skills_with_counts[:5]]
+        skill_scores = {skill: count for skill, count in skills_with_counts}
+        
+        return {
+            'skills_available': True,
+            'top_skills': top_skills,
+            'skill_scores': skill_scores,
+            'primary_skill': top_skills[0] if top_skills else None
         }
-        return db_manager.create_project(project_data)
     
-    # ============================================
-    # WRITING SKILL EXTRACTION TESTS
-    # ============================================
-    
-    def test_extract_writing_skills_basic(self, temp_text_project):
-        """Test basic writing skill extraction"""
-        result = extract_writing_skills(temp_text_project)
-        
-        assert 'skills_available' in result
-    
-    def test_extract_writing_skills_wrong_type(self):
-        """Test skill extraction with wrong project type"""
-        project_data = {
-            'name': 'Code Project',
-            'file_path': '/test/code',
-            'project_type': 'code'
+    except Exception as e:
+        return {
+            'skills_available': False,
+            'message': f'Skill extraction failed: {str(e)}'
         }
-        project = db_manager.create_project(project_data)
-        
-        result = extract_writing_skills(project)
-        
-        assert result['skills_available'] is False
-        assert 'error' in result
+
+
+# ============================================
+# WRITING QUALITY ANALYSIS
+# ============================================
+
+def analyze_writing_quality(project: Project) -> Dict[str, Any]:
+    """
+    Assess writing quality based on portfolio metrics
     
-    def test_extract_writing_skills_invalid_path(self):
-        """Test skill extraction with invalid path"""
-        project_data = {
-            'name': 'Invalid Project',
-            'file_path': '/nonexistent/path',
-            'project_type': 'text'
+    Scoring based on:
+    - Word count (volume)
+    - Document diversity
+    - Writing skills demonstrated
+    
+    Args:
+        project: Project object from database
+        
+    Returns:
+        Dictionary with quality score and analysis
+    """
+    if project.project_type != 'text':
+        return {
+            'error': f'Project type is {project.project_type}, not text',
+            'quality_available': False
         }
-        project = db_manager.create_project(project_data)
-        
-        result = extract_writing_skills(project)
-        
-        assert result['skills_available'] is False
     
-    # ============================================
-    # WRITING QUALITY TESTS
-    # ============================================
+    quality_score = 0
+    insights = []
     
-    def test_analyze_writing_quality_beginner(self, beginner_text_project):
-        """Test writing quality for beginner"""
-        result = analyze_writing_quality(beginner_text_project)
+    # Word count analysis (30 points)
+    word_count = project.word_count or 0
+    if word_count >= 50000:
+        quality_score += 30
+        insights.append(f"✅ Extensive writing portfolio ({word_count//1000}K+ words) - book-length content")
+    elif word_count >= 20000:
+        quality_score += 25
+        insights.append(f"⚠️  Substantial content ({word_count//1000}K+ words)")
+    elif word_count >= 5000:
+        quality_score += 15
+        insights.append(f"📊 Moderate portfolio ({word_count//1000}K+ words)")
+    else:
+        insights.append(f"❌ Limited content ({word_count} words) - aim for 10K+ words")
+    
+    # Document diversity (35 points)
+    file_count = project.file_count or 0
+    if file_count >= 20:
+        quality_score += 35
+        insights.append(f"✅ Diverse portfolio with {file_count}+ documents")
+    elif file_count >= 10:
+        quality_score += 25
+        insights.append(f"⚠️  Good variety with {file_count}+ documents")
+    elif file_count >= 5:
+        quality_score += 15
+        insights.append(f"📊 Moderate variety with {file_count} documents")
+    else:
+        insights.append(f"❌ Limited variety ({file_count} documents) - aim for 10+")
+    
+    # Writing skills (35 points)
+    skills = extract_writing_skills(project)
+    if skills.get('skills_available'):
+        skill_count = len(skills.get('top_skills', []))
+        if skill_count >= 5:
+            quality_score += 35
+            insights.append(f"✅ Demonstrates {skill_count} writing competencies")
+        elif skill_count >= 3:
+            quality_score += 25
+            insights.append(f"⚠️  Shows {skill_count} writing skills")
+        else:
+            quality_score += 15
+            insights.append(f"📊 Basic skill demonstration ({skill_count} skills)")
+    else:
+        insights.append("❌ Writing skills not detected")
+    
+    # Determine quality level
+    if quality_score >= 80:
+        quality_level = "Professional"
+        writing_type = "professional-grade"
+    elif quality_score >= 60:
+        quality_level = "Intermediate"
+        writing_type = "competent"
+    elif quality_score >= 40:
+        quality_level = "Developing"
+        writing_type = "developing"
+    else:
+        quality_level = "Beginner"
+        writing_type = "foundational"
+    
+    return {
+        'quality_available': True,
+        'quality_score': quality_score,
+        'quality_level': quality_level,
+        'writing_type': writing_type,
+        'insights': insights
+    }
+
+
+# ============================================
+# PUBLICATION READINESS VALIDATION
+# ============================================
+
+def validate_publication_readiness(project: Project) -> Dict[str, Any]:
+    """
+    Check if writing portfolio meets publication standards
+    
+    Checklist:
+    - Minimum word count (5K+ for articles)
+    - Document variety (5+ pieces)
+    - Professional skills (3+ demonstrated)
+    - Editorial polish (editing skills present)
+    
+    Args:
+        project: Project object from database
         
-        assert result['quality_available'] is True
-        assert result['quality_score'] < 60
-        assert result['quality_level'] in ['Beginner', 'Developing']
-    
-    def test_analyze_writing_quality_professional(self, professional_text_project):
-        """Test writing quality for professional"""
-        result = analyze_writing_quality(professional_text_project)
-        
-        assert result['quality_available'] is True
-        assert result['quality_score'] >= 50  # 25 (words) + 25 (files) = 50
-        assert result['quality_level'] in ['Professional', 'Intermediate', 'Developing']
-    
-    def test_analyze_writing_quality_wrong_type(self):
-        """Test writing quality with wrong project type"""
-        project_data = {
-            'name': 'Media Project',
-            'file_path': '/test/media',
-            'project_type': 'visual_media'
+    Returns:
+        Dictionary with readiness assessment
+    """
+    if project.project_type != 'text':
+        return {
+            'error': f'Project type is {project.project_type}, not text',
+            'readiness_available': False
         }
-        project = db_manager.create_project(project_data)
-        
-        result = analyze_writing_quality(project)
-        
-        assert result['quality_available'] is False
-        assert 'error' in result
     
-    def test_analyze_writing_quality_insights(self, professional_text_project):
-        """Test that writing quality provides insights"""
-        result = analyze_writing_quality(professional_text_project)
-        
-        assert 'insights' in result
-        assert isinstance(result['insights'], list)
-        assert len(result['insights']) > 0
+    # Extract skills for editorial check
+    skills = extract_writing_skills(project)
+    skill_list = skills.get('top_skills', []) if skills.get('skills_available') else []
     
-    # ============================================
-    # PUBLICATION READINESS TESTS
-    # ============================================
+    # Check for editorial skills
+    editorial_skills = ['editing', 'proofreading', 'revising']
+    has_editorial = any(skill.lower() in ' '.join(skill_list).lower() for skill in editorial_skills)
     
-    def test_validate_publication_readiness_not_ready(self, beginner_text_project):
-        """Test publication readiness for beginner"""
-        result = validate_publication_readiness(beginner_text_project)
-        
-        assert result['readiness_available'] is True
-        assert result['publication_score'] < 75
-        assert result['is_publication_ready'] is False
-    
-    def test_validate_publication_readiness_ready(self, professional_text_project):
-        """Test publication readiness for professional"""
-        result = validate_publication_readiness(professional_text_project)
-        
-        assert result['readiness_available'] is True
-        # Professional should score well
-        assert result['publication_score'] >= 50
-    
-    def test_validate_publication_readiness_checklist(self, professional_text_project):
-        """Test that readiness provides checklist"""
-        result = validate_publication_readiness(professional_text_project)
-        
-        assert 'checklist' in result
-        checklist = result['checklist']
-        
-        assert 'sufficient_length' in checklist
-        assert 'document_variety' in checklist
-        assert 'professional_skills' in checklist
-        assert 'editorial_polish' in checklist
-    
-    def test_validate_publication_readiness_recommendations(self, beginner_text_project):
-        """Test that readiness provides recommendations"""
-        result = validate_publication_readiness(beginner_text_project)
-        
-        assert 'recommendations' in result
-        assert isinstance(result['recommendations'], list)
-        # Beginner should have recommendations
-        assert len(result['recommendations']) > 0
-    
-    def test_validate_publication_readiness_wrong_type(self):
-        """Test publication readiness with wrong project type"""
-        project_data = {
-            'name': 'Code Project',
-            'file_path': '/test/code',
-            'project_type': 'code'
+    checklist = {
+        'sufficient_length': {
+            'pass': (project.word_count or 0) >= 5000,
+            'current': project.word_count or 0,
+            'target': 5000,
+            'label': 'Minimum Word Count'
+        },
+        'document_variety': {
+            'pass': (project.file_count or 0) >= 5,
+            'current': project.file_count or 0,
+            'target': 5,
+            'label': 'Document Variety'
+        },
+        'professional_skills': {
+            'pass': len(skill_list) >= 3,
+            'current': len(skill_list),
+            'target': 3,
+            'label': 'Writing Skills'
+        },
+        'editorial_polish': {
+            'pass': has_editorial,
+            'current': 1 if has_editorial else 0,
+            'target': 1,
+            'label': 'Editorial Skills'
         }
-        project = db_manager.create_project(project_data)
-        
-        result = validate_publication_readiness(project)
-        
-        assert result['readiness_available'] is False
+    }
     
-    # ============================================
-    # CONTENT VOLUME BENCHMARK TESTS
-    # ============================================
+    # Calculate score (25% per item)
+    score = sum(25 for item in checklist.values() if item['pass'])
     
-    def test_benchmark_content_volume_blog(self, beginner_text_project):
-        """Test content benchmarking for blog portfolio"""
-        result = benchmark_content_volume(beginner_text_project)
+    # Generate recommendations
+    recommendations = []
+    if not checklist['sufficient_length']['pass']:
+        current = checklist['sufficient_length']['current']
+        needed = checklist['sufficient_length']['target'] - current
+        recommendations.append(f"📝 Add {needed} more words (currently: {current})")
+    
+    if not checklist['document_variety']['pass']:
+        current = checklist['document_variety']['current']
+        needed = checklist['document_variety']['target'] - current
+        recommendations.append(f"📄 Create {needed} more document{'s' if needed != 1 else ''} (currently: {current})")
+    
+    if not checklist['professional_skills']['pass']:
+        current = checklist['professional_skills']['current']
+        needed = checklist['professional_skills']['target'] - current
+        recommendations.append(f"✍️  Demonstrate {needed} more writing skill{'s' if needed != 1 else ''} (currently: {current})")
+    
+    if not checklist['editorial_polish']['pass']:
+        recommendations.append("📖 Include evidence of editing/proofreading skills")
+    
+    # Determine readiness
+    if score >= 100:
+        readiness_level = "Publication Ready"
+        status = "✅ Portfolio meets publication standards"
+    elif score >= 75:
+        readiness_level = "Nearly Ready"
+        status = "⚠️  Portfolio is strong, minor polish needed"
+    elif score >= 50:
+        readiness_level = "Developing"
+        status = "📊 Portfolio needs strengthening"
+    else:
+        readiness_level = "Not Ready"
+        status = "❌ Portfolio needs significant development"
+    
+    return {
+        'readiness_available': True,
+        'publication_score': score,
+        'readiness_level': readiness_level,
+        'status': status,
+        'is_publication_ready': score >= 75,
+        'checklist': checklist,
+        'recommendations': recommendations
+    }
+
+
+# ============================================
+# CONTENT VOLUME BENCHMARKING
+# ============================================
+
+def benchmark_content_volume(project: Project) -> Dict[str, Any]:
+    """
+    Benchmark writing volume against industry standards
+    
+    Benchmarks:
+    - Blog portfolio: 20-30 posts (500-1000 words each)
+    - Technical writing: 5-10 guides (3000+ words each)
+    - Academic: 3-5 papers (8000+ words each)
+    - Book: 1 manuscript (50,000-100,000 words)
+    
+    Args:
+        project: Project object from database
         
-        assert result['benchmark_available'] is True
-        assert 'benchmark_type' in result
-        assert 'completion_percentage' in result
-        assert 0 <= result['completion_percentage'] <= 100
-    
-    def test_benchmark_content_volume_technical(self, professional_text_project):
-        """Test content benchmarking for technical writing"""
-        result = benchmark_content_volume(professional_text_project)
-        
-        assert result['benchmark_available'] is True
-        assert result['current_words'] == 25000
-        assert result['current_docs'] == 15
-    
-    def test_benchmark_content_volume_wrong_type(self):
-        """Test benchmarking with wrong project type"""
-        project_data = {
-            'name': 'Media Project',
-            'file_path': '/test/media',
-            'project_type': 'visual_media'
+    Returns:
+        Dictionary with benchmark comparison
+    """
+    if project.project_type != 'text':
+        return {
+            'error': f'Project type is {project.project_type}, not text',
+            'benchmark_available': False
         }
-        project = db_manager.create_project(project_data)
-        
-        result = benchmark_content_volume(project)
-        
-        assert result['benchmark_available'] is False
     
-    def test_benchmark_content_volume_on_track(self):
-        """Test on_track indicator in benchmarking"""
-        project_data = {
-            'name': 'Large Project',
-            'file_path': '/test/large',
-            'project_type': 'text',
-            'word_count': 50000,
-            'file_count': 25
+    benchmarks = {
+        'blog_portfolio': {
+            'target_docs': 25,
+            'target_words': 20000,
+            'description': 'Blog/Article Portfolio'
+        },
+        'technical_portfolio': {
+            'target_docs': 8,
+            'target_words': 25000,
+            'description': 'Technical Writing Portfolio'
+        },
+        'academic_portfolio': {
+            'target_docs': 4,
+            'target_words': 35000,
+            'description': 'Academic Writing Portfolio'
+        },
+        'book_manuscript': {
+            'target_docs': 1,
+            'target_words': 60000,
+            'description': 'Book Manuscript'
         }
-        project = db_manager.create_project(project_data)
-        
-        result = benchmark_content_volume(project)
-        
-        assert 'on_track' in result
-        assert isinstance(result['on_track'], bool)
+    }
     
-    # ============================================
-    # WRITING STYLE IDENTIFICATION TESTS
-    # ============================================
+    current_docs = project.file_count or 0
+    current_words = project.word_count or 0
     
-    def test_identify_writing_style_basic(self, temp_text_project):
-        """Test basic writing style identification"""
-        result = identify_writing_style(temp_text_project)
+    # Find best matching benchmark
+    best_match = None
+    best_score = 0
+    
+    for name, bench in benchmarks.items():
+        doc_ratio = min(current_docs / bench['target_docs'], 1.0) if current_docs else 0
+        word_ratio = min(current_words / bench['target_words'], 1.0) if current_words else 0
+        score = (doc_ratio + word_ratio) / 2
         
-        assert 'style_available' in result
+        if score > best_score:
+            best_score = score
+            best_match = name
     
-    def test_identify_writing_style_wrong_type(self):
-        """Test style identification with wrong project type"""
-        project_data = {
-            'name': 'Code Project',
-            'file_path': '/test/code',
-            'project_type': 'code'
+    # Default to blog_portfolio if no match found
+    if best_match is None:
+        best_match = 'blog_portfolio'
+    
+    selected = benchmarks[best_match]
+    
+    return {
+        'benchmark_available': True,
+        'benchmark_type': selected['description'],
+        'completion_percentage': round(best_score * 100, 1),
+        'target_docs': selected['target_docs'],
+        'current_docs': current_docs,
+        'target_words': selected['target_words'],
+        'current_words': current_words,
+        'on_track': best_score >= 0.75
+    }
+
+
+# ============================================
+# WRITING STYLE IDENTIFICATION
+# ============================================
+
+def identify_writing_style(project: Project) -> Dict[str, Any]:
+    """
+    Identify writing style based on skills and content
+    
+    Styles: academic, technical, creative, business, journalistic
+    
+    Args:
+        project: Project object from database
+        
+    Returns:
+        Dictionary with identified style
+    """
+    if project.project_type != 'text':
+        return {
+            'error': f'Project type is {project.project_type}, not text',
+            'style_available': False
         }
-        project = db_manager.create_project(project_data)
-        
-        result = identify_writing_style(project)
-        
-        assert result['style_available'] is False
     
-    def test_identify_writing_style_with_skills(self, professional_text_project):
-        """Test style identification with skills"""
-        result = identify_writing_style(professional_text_project)
-        
-        if result.get('style_available'):
-            assert 'primary_style' in result
-            assert 'emphasis' in result
+    skills = extract_writing_skills(project)
     
-    def test_identify_writing_style_emphasis(self):
-        """Test that style identification provides emphasis"""
-        project_data = {
-            'name': 'Academic Papers',
-            'file_path': '/test/academic',
-            'project_type': 'text',
-            'word_count': 30000,
-            'file_count': 5,
-            'skills': ['Research Writing', 'Critical Thinking']
+    if not skills.get('skills_available'):
+        return {
+            'style_available': False,
+            'message': 'Cannot determine style without skills'
         }
-        project = db_manager.create_project(project_data)
-        
-        result = identify_writing_style(project)
-        
-        if result.get('style_available'):
-            assert 'emphasis' in result
-            assert isinstance(result['emphasis'], str)
     
-    # ============================================
-    # COMPREHENSIVE ANALYSIS TESTS
-    # ============================================
+    skill_list = skills.get('top_skills', [])
+    skill_text = ' '.join(skill_list).lower()
     
-    def test_analyze_text_project_comprehensive(self, professional_text_project):
-        """Test comprehensive text analysis"""
-        result = analyze_text_project_comprehensive(professional_text_project)
-        
-        assert 'writing_skills' in result
-        assert 'writing_quality' in result
-        assert 'publication_readiness' in result
-        assert 'content_benchmark' in result
-        assert 'writing_style' in result
+    # Detect style based on skills
+    styles = {
+        'academic': ['research_writing', 'critical_thinking'],
+        'technical': ['technical_writing'],
+        'creative': ['creative_writing'],
+        'business': ['content_writing', 'communication'],
+        'journalistic': ['journalistic_writing']
+    }
     
-    def test_comprehensive_analysis_structure(self, beginner_text_project):
-        """Test that comprehensive analysis returns proper structure"""
-        result = analyze_text_project_comprehensive(beginner_text_project)
-        
-        # All five analyses should be present
-        assert len(result) == 5
-        
-        # Each should be a dictionary
-        for analysis in result.values():
-            assert isinstance(analysis, dict)
+    style_scores = {}
+    for style, keywords in styles.items():
+        score = sum(1 for kw in keywords if kw in skill_text)
+        if score > 0:
+            style_scores[style] = score
     
-    # ============================================
-    # HELPER FUNCTION TESTS
-    # ============================================
+    if not style_scores:
+        primary_style = 'general'
+    else:
+        primary_style = max(style_scores, key=style_scores.get)
     
-    def test_get_writing_quality_phrase_beginner(self, beginner_text_project):
-        """Test quality phrase for beginner"""
-        phrase = get_writing_quality_phrase(beginner_text_project)
-        
-        assert isinstance(phrase, str)
-        assert 'writing' in phrase.lower()
+    # Style-specific emphasis
+    emphasis_map = {
+        'academic': 'rigorous research and scholarly writing',
+        'technical': 'clear, accessible technical documentation',
+        'creative': 'compelling narratives and storytelling',
+        'business': 'professional business communication',
+        'journalistic': 'informative, engaging journalism',
+        'general': 'versatile writing across formats'
+    }
     
-    def test_get_writing_quality_phrase_professional(self, professional_text_project):
-        """Test quality phrase for professional"""
-        phrase = get_writing_quality_phrase(professional_text_project)
-        
-        assert isinstance(phrase, str)
-        assert len(phrase) > 0
+    return {
+        'style_available': True,
+        'primary_style': primary_style,
+        'emphasis': emphasis_map[primary_style],
+        'style_scores': style_scores
+    }
+
+
+# ============================================
+# COMPREHENSIVE TEXT ANALYSIS
+# ============================================
+
+def analyze_text_project_comprehensive(project: Project) -> Dict[str, Any]:
+    """
+    Perform comprehensive analysis of text project
     
-    def test_get_volume_descriptor_various_sizes(self):
-        """Test volume descriptor for different word counts"""
-        small = {'name': 'Small', 'word_count': 5000, 'file_path': '/test/small', 'project_type': 'text'}
-        medium = {'name': 'Medium', 'word_count': 15000, 'file_path': '/test/medium', 'project_type': 'text'}
-        large = {'name': 'Large', 'word_count': 30000, 'file_path': '/test/large', 'project_type': 'text'}
-        huge = {'name': 'Huge', 'word_count': 60000, 'file_path': '/test/huge', 'project_type': 'text'}
-        
-        small_proj = db_manager.create_project(small)
-        medium_proj = db_manager.create_project(medium)
-        large_proj = db_manager.create_project(large)
-        huge_proj = db_manager.create_project(huge)
-        
-        assert get_volume_descriptor(small_proj) in ['focused', 'comprehensive']
-        assert get_volume_descriptor(medium_proj) in ['comprehensive', 'substantial']
-        assert get_volume_descriptor(large_proj) in ['substantial', 'extensive']
-        assert get_volume_descriptor(huge_proj) == 'extensive'
+    Combines all text-specific analyses.
     
-    def test_should_emphasize_publication_ready_not_ready(self, beginner_text_project):
-        """Test publication emphasis for not ready portfolio"""
-        result = should_emphasize_publication_ready(beginner_text_project)
+    Args:
+        project: Project object from database
         
-        assert isinstance(result, bool)
-        assert result is False
+    Returns:
+        Dictionary with all analysis results
+    """
+    return {
+        'writing_skills': extract_writing_skills(project),
+        'writing_quality': analyze_writing_quality(project),
+        'publication_readiness': validate_publication_readiness(project),
+        'content_benchmark': benchmark_content_volume(project),
+        'writing_style': identify_writing_style(project)
+    }
+
+
+# ============================================
+# BULLET ENHANCEMENT HELPERS
+# ============================================
+
+def get_writing_quality_phrase(project: Project) -> str:
+    """
+    Get a quality descriptor phrase for writing
     
-    def test_should_emphasize_publication_ready_ready(self, professional_text_project):
-        """Test publication emphasis for ready portfolio"""
-        result = should_emphasize_publication_ready(professional_text_project)
+    Args:
+        project: Project object
         
-        assert isinstance(result, bool)
-        # May or may not be ready depending on exact scoring
+    Returns:
+        Phrase describing writing quality
+    """
+    quality = analyze_writing_quality(project)
     
-    # ============================================
-    # INTEGRATION TESTS
-    # ============================================
+    if quality.get('quality_available'):
+        return quality.get('writing_type', 'competent') + ' writing'
     
-    def test_all_analyses_work_together(self, professional_text_project):
-        """Test that all text analytics work together"""
-        # Run each analysis
-        skills = extract_writing_skills(professional_text_project)
-        quality = analyze_writing_quality(professional_text_project)
-        readiness = validate_publication_readiness(professional_text_project)
-        benchmark = benchmark_content_volume(professional_text_project)
-        style = identify_writing_style(professional_text_project)
-        
-        # All should return dictionaries
-        assert isinstance(skills, dict)
-        assert isinstance(quality, dict)
-        assert isinstance(readiness, dict)
-        assert isinstance(benchmark, dict)
-        assert isinstance(style, dict)
-        
-        # Get helper values
-        quality_phrase = get_writing_quality_phrase(professional_text_project)
-        volume = get_volume_descriptor(professional_text_project)
-        emphasize = should_emphasize_publication_ready(professional_text_project)
-        
-        assert isinstance(quality_phrase, str)
-        assert isinstance(volume, str)
-        assert isinstance(emphasize, bool)
+    return 'written content'
+
+
+def get_volume_descriptor(project: Project) -> str:
+    """
+    Get a volume descriptor based on word count
     
-    def test_error_handling_graceful(self):
-        """Test that errors are handled gracefully"""
-        # Create project with invalid data
-        project_data = {
-            'name': 'Bad Project',
-            'file_path': '/nonexistent',
-            'project_type': 'text'
-        }
-        project = db_manager.create_project(project_data)
+    Args:
+        project: Project object
         
-        # All functions should handle errors gracefully
-        skills = extract_writing_skills(project)
-        quality = analyze_writing_quality(project)
-        readiness = validate_publication_readiness(project)
-        benchmark = benchmark_content_volume(project)
-        style = identify_writing_style(project)
+    Returns:
+        Phrase describing content volume
+    """
+    word_count = project.word_count or 0
+    
+    if word_count >= 50000:
+        return 'extensive'
+    elif word_count >= 20000:
+        return 'substantial'
+    elif word_count >= 10000:
+        return 'comprehensive'
+    else:
+        return 'focused'
+
+
+def should_emphasize_publication_ready(project: Project) -> bool:
+    """
+    Determine if publication readiness should be emphasized
+    
+    Args:
+        project: Project object
         
-        # Should not raise exceptions
-        assert 'skills_available' in skills
-        assert 'quality_available' in quality
-        assert 'readiness_available' in readiness
-        assert 'benchmark_available' in benchmark
-        assert 'style_available' in style
+    Returns:
+        True if portfolio is publication-ready
+    """
+    readiness = validate_publication_readiness(project)
+    
+    if readiness.get('readiness_available'):
+        return readiness.get('is_publication_ready', False)
+    
+    return False
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, '-v'])
+    print("Text Resume Analytics")
+    print("=" * 70)
+    print("\nThis module provides text-specific analytics:")
+    print("  - Writing Skill Extraction (skillsExtractDocs.py)")
+    print("  - Writing Quality Assessment")
+    print("  - Publication Readiness Validation")
+    print("  - Content Volume Benchmarking")
+    print("  - Writing Style Identification")
