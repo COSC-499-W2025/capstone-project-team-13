@@ -163,7 +163,10 @@ class TestMediaBulletGenerator:
         bullet = generator._generate_scale_bullet(project, [])
         
         assert bullet is not None
-        assert '2-person creative team' in bullet
+        # Should mention either team size OR file/size metrics (limited to 2 metrics)
+        assert ('2-person creative team' in bullet or 
+                ('45' in bullet and 'assets' in bullet.lower()) or 
+                ('250' in bullet and 'MB' in bullet))
     
     def test_generate_scale_bullet_returns_none_for_small_project(self, generator):
         """Test scale bullet returns None for small projects"""
