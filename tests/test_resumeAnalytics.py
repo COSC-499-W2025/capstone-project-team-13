@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from src.Analysis.resumeAnalytics import (
+from src.Resume.resumeAnalytics import (
     calculate_ats_score,
     score_all_bullets,
     generate_before_after_comparison,
