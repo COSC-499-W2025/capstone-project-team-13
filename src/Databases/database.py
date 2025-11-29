@@ -52,6 +52,7 @@ class Project(Base):
     
     # Success metrics
     success_evidence = Column(Text, nullable=True)
+    resume_bullets = Column(Text, nullable=True)
     thumbnail_path = Column(String(500), nullable=True)
     
     # User customizations
@@ -114,6 +115,14 @@ class Project(Base):
     def success_metrics(self, value: Dict[str, Any]):
         self.success_evidence = json.dumps(value) if isinstance(value, dict) else value
     
+    @property
+    def bullets(self) -> Optional[Dict[str, Any]]:
+        return json.loads(self.resume_bullets) if self.resume_bullets else None
+    
+    @bullets.setter
+    def bullets(self, value: Optional[Dict[str, Any]]):
+        self.resume_bullets = json.dumps(value) if value else None
+    
     def to_dict(self, include_counts=False) -> Dict[str, Any]:
         """
         Convert to dictionary for API responses
@@ -144,6 +153,7 @@ class Project(Base):
             'skills': self.skills,
             'tags': self.tags,
             'success_metrics': self.success_metrics,
+            'bullets': self.bullets,
             'thumbnail_path': self.thumbnail_path,
             'custom_description': self.custom_description,
             'user_role': self.user_role,
@@ -460,6 +470,49 @@ class DatabaseManager:
             return session.query(Keyword).filter(
                 Keyword.project_id == project_id
             ).order_by(Keyword.score.desc()).all()
+        finally:
+            session.close()
+    
+    # ============ RESUME BULLETS OPERATIONS ============
+    
+    def save_resume_bullets(self, project_id: int, bullets: List[str], header: str, ats_score: Optional[float] = None) -> bool:
+        """Save resume bullets to project"""
+        session = self.get_session()
+        try:
+            project = session.query(Project).filter(Project.id == project_id).first()
+            if project:
+                project.bullets = {
+                    'bullets': bullets,
+                    'header': header,
+                    'generated_at': datetime.now(timezone.utc).isoformat(),
+                    'num_bullets': len(bullets),
+                    'ats_score': ats_score
+                }
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+    
+    def get_resume_bullets(self, project_id: int) -> Optional[Dict[str, Any]]:
+        """Get resume bullets for project"""
+        session = self.get_session()
+        try:
+            project = session.query(Project).filter(Project.id == project_id).first()
+            return project.bullets if project else None
+        finally:
+            session.close()
+    
+    def delete_resume_bullets(self, project_id: int) -> bool:
+        """Delete resume bullets from project"""
+        session = self.get_session()
+        try:
+            project = session.query(Project).filter(Project.id == project_id).first()
+            if project:
+                project.resume_bullets = None
+                session.commit()
+                return True
+            return False
         finally:
             session.close()
     

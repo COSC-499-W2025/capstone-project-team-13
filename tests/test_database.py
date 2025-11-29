@@ -440,8 +440,57 @@ class TestDatabaseEnhanced(unittest.TestCase):
         # Database should be closed automatically
         # Verify we can still access the file
         self.assertTrue(os.path.exists(test_path))
+    
+    def test_resume_bullets_operations(self):
+        """Test saving, retrieving, and deleting resume bullets"""
+        # Create project
+        project = self.db.create_project({
+            'name': 'Test Project',
+            'file_path': '/test/bullets',
+            'project_type': 'code',
+            'languages': ['Python'],
+            'frameworks': ['Django']
+        })
+        
+        # Save bullets
+        bullets = [
+            'Developed REST API using Python and Django',
+            'Implemented CI/CD pipeline reducing deployment time by 40%',
+            'Architected scalable backend handling 10K+ requests'
+        ]
+        header = 'Test Project | Python, Django'
+        ats_score = 85.5
+        
+        success = self.db.save_resume_bullets(project.id, bullets, header, ats_score)
+        self.assertTrue(success)
+        
+        # Retrieve bullets via db_manager
+        bullets_data = self.db.get_resume_bullets(project.id)
+        self.assertIsNotNone(bullets_data)
+        self.assertEqual(bullets_data['num_bullets'], 3)
+        self.assertEqual(bullets_data['header'], header)
+        self.assertEqual(bullets_data['ats_score'], ats_score)
+        self.assertEqual(len(bullets_data['bullets']), 3)
+        
+        # Retrieve via project
+        project = self.db.get_project(project.id)
+        self.assertIsNotNone(project.bullets)
+        self.assertEqual(project.bullets['num_bullets'], 3)
+        
+        # Check to_dict includes bullets
+        project_dict = project.to_dict()
+        self.assertIn('bullets', project_dict)
+        self.assertIsNotNone(project_dict['bullets'])
+        
+        # Delete bullets
+        success = self.db.delete_resume_bullets(project.id)
+        self.assertTrue(success)
+        
+        # Verify deletion
+        bullets_data = self.db.get_resume_bullets(project.id)
+        self.assertIsNone(bullets_data)
 
 
 if __name__ == '__main__':
     # Run with verbose output
-    unittest.main(verbosity=2)  
+    unittest.main(verbosity=2)
