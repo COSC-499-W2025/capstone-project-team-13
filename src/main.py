@@ -27,6 +27,7 @@ from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
 from src.Analysis.codingProjectScanner import scan_coding_project
 from src.Analysis.textDocumentScanner import scan_text_document
+from src.Analysis.mediaProjectScanner import scan_media_project
 from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
 from src.Databases.database import db_manager
@@ -327,53 +328,36 @@ def handle_visual_project():
         print("❌ Path must be a directory (folder)")
         return
     
-    # Normalize path
+    # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
     
-    # Check if already exists
+    # Check if already exists BEFORE scanning
     existing = db_manager.get_project_by_path(path)
-    if existing and existing.project_type == 'media':
-        print(f"\n⚠️  This media project already exists in database (ID: {existing.id})")
-        display_project_details(existing)
+    if existing:
+        print(f"\n⚠️  This media project already exists in the database!")
+        print(f"   Project: {existing.name}")
+        print(f"   Database ID: {existing.id}") 
+        if existing.date_scanned:
+            from datetime import timezone
+            local_time = existing.date_scanned.replace(tzinfo=timezone.utc).astimezone()
+            print(f"   Last scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        
+        rescan = input("\n   Would you like to re-scan and update? (yes/no): ").strip().lower()
+        if rescan != 'yes':
+            print("\n✅ Using existing project data.")
+            display_project_details(existing)
+            return
+        
+        # Delete old project to re-scan
+        print("\n⏳ Deleting old data and re-scanning...")
+        db_manager.delete_project(existing.id)
+    
+    # The scanner handles all the analysis and display internally
+    project_id = scan_media_project(path)
+    
+    if not project_id:
+        print("\n❌ Failed to scan project or no media files found.")
         return
-    
-    print("\n⏳ Analyzing visual project...")
-    
-    try:
-        result = analyze_visual_project(path)
-        
-        print(f"\n✅ Analysis Complete!")
-        print(f"\n📊 Visual Project Analysis:")
-        print(f"   Type: {result['type']}")
-        print(f"   Files Found: {result['num_files']}")
-        
-        if result['software_used']:
-            print(f"\n   Software Detected:")
-            for software in result['software_used']:
-                print(f"      • {software}")
-        
-        if result['skills_detected']:
-            print(f"\n   Skills Detected:")
-            for skill in result['skills_detected']:
-                print(f"      • {skill}")
-        
-        # Optionally store in database
-        if result['num_files'] > 0:
-            store = input("\n💾 Would you like to store this in the database? (yes/no): ").strip().lower()
-            if store == 'yes':
-                project_data = {
-                    'name': os.path.basename(path),
-                    'file_path': path,
-                    'file_count': result['num_files'],
-                    'project_type': 'media',
-                    'skills': result['skills_detected'],
-                    'tags': result['software_used']
-                }
-                project = db_manager.create_project(project_data)
-                print(f"✅ Stored in database with ID: {project.id}")
-    
-    except Exception as e:
-        print(f"\n❌ Error analyzing project: {e}")
 
 def handle_document():
     """Handle scanning a single text document"""
