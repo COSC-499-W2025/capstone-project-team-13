@@ -142,7 +142,7 @@ For the next cycle, a team-meeting will be held so we can decide what is most pr
 # Log 9:
 ## Date Range: Weeks 12 - Nov 17-Nov 23, 2025
 
-## ![week 8 features](weeklyfeaturesimages/week9features.png)
+## ![week 9 features](weeklyfeaturesimages/week9features.png)
 The peer evaluations were not open so I could not complete them
 
 ## Recap on your week's goals 
@@ -155,3 +155,17 @@ My feature updated the previously create functions, adding the required metrics,
 This task should be in progress, as I have yet to finish the "other important information" aspect of the task.
 
 For the next cycle, a team-meeting will be held so we can decide what is most pressing in the group and what has to be accomplished before the demo deadline. As it is soon approaching, whatever is urgent will be what is accomplished during the following week.
+
+# Log 10:
+## Date Range: Weeks 13 - Nov 24-Nov 30, 2025
+
+## ![week 10 features](weeklyfeaturesimages/week10features.png)
+
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+There was no specific issue # I was fixing, I was just updating main to use our functions and fixing any errors I saw along the way. For example, main was not using the textDocumentScanner or the visualMediaScanner, so I updated the respective functions to use them. As well, I updated the textDocumentScanner and codingProjectScanner to use fileFormatCheck and fileDataCheck, as they were being used previously but in recent updates had not been reincorporated.
+
+As this was updating main, there was no specific issue #
+
+For the following week, we will be working on fixing any other issues, so we can provide a proper video demo on Sunday
