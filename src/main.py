@@ -44,6 +44,19 @@ from src.Analysis.importanceRanking import get_ranked_projects
 from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
 from src.Analysis.codeEfficiency import grade_efficiency
 
+# Import deletion management features
+try:
+    from src.deletion_manager import DeletionManager
+    from src.enhanced_deletion import (
+        delete_project_enhanced,
+        bulk_delete_projects,
+        view_shared_files_report
+    )
+    DELETION_FEATURES_AVAILABLE = True
+except ImportError:
+    DELETION_FEATURES_AVAILABLE = False
+    print("⚠️  Deletion features not available (modules not found)")
+
 def clear_screen():
     """Clear console screen"""
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -166,9 +179,11 @@ def get_user_choice():
     print("8.  AI Project Analysis")
     print("9.  Rank Projects")  
     print("10. Code Efficiency Analysis")
-    print("11. Exit")
+    print("11. Delete Project")
+    print("12. Delete AI Insights Only")
+    print("13. Exit")
     
-    choice = input("\nEnter your choice (1-10): ").strip()
+    choice = input("\nEnter your choice (1-13): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -232,6 +247,11 @@ def display_project_details(project):
             if len(project.skills) > 10:
                 print(f"                    ... and {len(project.skills) - 10} more")
         
+        # Show AI insights if available
+        if hasattr(project, 'ai_description') and project.ai_description:
+            print(f"\n🤖 AI-Generated Description:")
+            print(f"   {project.ai_description}")
+        
         # Show contributors if any
         contributors = db_manager.get_contributors_for_project(project.id)
         if contributors:
@@ -255,6 +275,17 @@ def display_project_details(project):
             print(f"   Skills: {', '.join(project.skills)}")
         if project.tags:
             print(f"   Software: {', '.join(project.tags)}")
+    
+    # Show if files are shared with other projects
+    if DELETION_FEATURES_AVAILABLE:
+        try:
+            manager = DeletionManager()
+            shared_files = manager.get_shared_files(project.id)
+            if shared_files:
+                print(f"\n⚠️  Shared Files:")
+                print(f"   {len(shared_files)} file(s) are used in other projects")
+        except:
+            pass
     
     print(f"\n{'='*70}")
 
@@ -1123,9 +1154,9 @@ def batch_analyze_all_projects():
     
     # Options
     print("Analysis Options:")
-    print("1. Overview only (Fast")
-    print("2. Overview + Skills (Moderate")
-    print("3. Complete analysis (Thorough")
+    print("1. Overview only (Fast)")
+    print("2. Overview + Skills (Moderate)")
+    print("3. Complete analysis (Thorough)")
     print("4. Cancel")
     
     choice = input("\nChoice (1-4): ").strip()
@@ -1367,6 +1398,204 @@ def run_code_efficiency_test():
         print(f"Max Loop Depth: {result['max_loop_depth']}")
         print(f"Total Loops: {result['total_loops']}")
 
+# ============================================
+# DELETION MANAGEMENT FUNCTIONS
+# ============================================
+
+def deletion_management_menu():
+    """Deletion management submenu"""
+    if not DELETION_FEATURES_AVAILABLE:
+        print("\n❌ Deletion features are not available.")
+        print("   Please ensure deletion_manager.py and enhanced_deletion.py are in src/")
+        input("\nPress Enter to continue...")
+        return
+    
+    while True:
+        clear_screen()
+        print_header("Deletion Management")
+        
+        print("Choose an option:\n")
+        print("1. Delete Project (Safe - protects shared files)")
+        print("2. Delete AI Insights (Single Project)")
+        print("3. Delete ALL AI Insights")
+        print("4. Bulk Delete Projects")
+        print("5. View Shared Files Report")
+        print("6. View Cache Statistics")
+        print("7. Back to Main Menu")
+        
+        choice = input("\nEnter your choice (1-7): ").strip()
+        
+        if choice == '1':
+            delete_project_enhanced()
+        elif choice == '2':
+            delete_single_project_insights()
+        elif choice == '3':
+            delete_all_insights_confirm()
+        elif choice == '4':
+            bulk_delete_projects()
+        elif choice == '5':
+            view_shared_files_report()
+        elif choice == '6':
+            view_deletion_cache_stats()
+        elif choice == '7':
+            break
+        else:
+            print("❌ Invalid choice. Please try again.")
+            input("\nPress Enter to continue...")
+
+def delete_single_project_insights():
+    """Delete AI insights for a single project"""
+    print_header("Delete AI Insights (Single Project)")
+    
+    # Get all projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Has AI':<10}")
+    print("-" * 60)
+    
+    for project in projects[:20]:
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        has_ai = 'Yes' if (hasattr(project, 'ai_description') and project.ai_description) else 'No'
+        print(f"{project.id:<5} {name:<40} {has_ai:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter project ID (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project:
+        print(f"❌ Project {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Get deletion preview
+    manager = DeletionManager()
+    preview = manager.get_deletion_preview(project_id)
+    
+    print(f"\n📁 Project: {preview['project_name']}")
+    print(f"   AI insights in database: {'Yes' if preview['has_ai_insights'] else 'No'}")
+    print(f"   Cached analysis files: {preview['cache_files_found']}")
+    
+    if not preview['has_ai_insights'] and preview['cache_files_found'] == 0:
+        print("\n✅ No AI insights to delete")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm deletion
+    confirm = input("\n⚠️  Delete AI insights? (yes/no): ").strip().lower()
+    
+    if confirm == 'yes':
+        print("\n🔄 Deleting AI insights...")
+        results = manager.delete_ai_insights_for_project(project_id)
+        
+        print(f"\n✅ Deletion complete!")
+        print(f"  Database updated: {'Yes' if results['db_updated'] else 'No'}")
+        print(f"  Cache files deleted: {results['cache_files_deleted']}")
+        
+        if results['errors']:
+            print("\n⚠️  Errors:")
+            for error in results['errors']:
+                print(f"  • {error}")
+    else:
+        print("\nDeletion cancelled")
+    
+    input("\nPress Enter to continue...")
+
+def delete_all_insights_confirm():
+    """Delete ALL AI insights with confirmation"""
+    print_header("Delete ALL AI Insights")
+    
+    print("⚠️⚠️⚠️  WARNING  ⚠️⚠️⚠️")
+    print("\nThis will delete ALL AI-generated insights from:")
+    print("  • Project descriptions in database")
+    print("  • All cached AI analyses")
+    print("\nThis action affects ALL projects in the system.")
+    
+    confirm = input("\nAre you absolutely sure? (yes/no): ").strip().lower()
+    
+    if confirm != 'yes':
+        print("\nDeletion cancelled")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Double confirmation
+    confirm2 = input("⚠️  Type 'DELETE ALL' to confirm: ").strip()
+    
+    if confirm2 != 'DELETE ALL':
+        print("\nDeletion cancelled")
+        input("\nPress Enter to continue...")
+        return
+    
+    print("\n🔄 Deleting all AI insights...")
+    
+    manager = DeletionManager()
+    results = manager.delete_all_ai_insights()
+    
+    print(f"\n✅ Deletion complete!")
+    print(f"  Projects updated: {results['projects_updated']}")
+    print(f"  Cache files deleted: {results['cache_files_deleted']}")
+    
+    if results['errors']:
+        print(f"\n⚠️  Errors encountered ({len(results['errors'])}):")
+        for error in results['errors'][:5]:
+            print(f"  • {error}")
+        if len(results['errors']) > 5:
+            print(f"  ... and {len(results['errors']) - 5} more")
+    
+    input("\nPress Enter to continue...")
+
+def view_deletion_cache_stats():
+    """View cache statistics"""
+    print_header("Cache Statistics")
+    
+    manager = DeletionManager()
+    stats = manager.get_cache_statistics()
+    
+    print(f"📊 Cache Information:")
+    print(f"  Total cache files: {stats['total_cache_files']}")
+    print(f"  Total cache size: {stats['total_cache_size_bytes'] / 1024:.2f} KB")
+    
+    if stats['cache_by_type']:
+        print(f"\n📋 Cache by type:")
+        for cache_type, count in stats['cache_by_type'].items():
+            print(f"  • {cache_type}: {count}")
+    
+    if stats['oldest_cache']:
+        print(f"\n📅 Cache age:")
+        print(f"  Oldest: {stats['oldest_cache']}")
+        print(f"  Newest: {stats['newest_cache']}")
+    
+    # Option to clear cache
+    if stats['total_cache_files'] > 0:
+        print()
+        clear = input("🗑️  Clear all cache? (yes/no): ").strip().lower()
+        if clear == 'yes':
+            confirm = input("⚠️  This cannot be undone. Confirm? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                results = manager.delete_all_ai_insights()
+                print(f"\n✅ Deleted {results['cache_files_deleted']} cache file(s)")
+    
+    input("\nPress Enter to continue...")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1416,14 +1645,25 @@ def main():
                 print("Invalid choice. Returning to main menu.")
         elif choice == '10':
             run_code_efficiency_test()
-        elif choice == '11':                      
+        if choice == "11":
+            delete_project_enhanced()
+
+        elif choice == "12":
+            manager = DeletionManager()
+            pid = input("Enter project ID: ").strip()
+
+            if pid.isdigit():
+                ok = manager.delete_ai_insights_for_project(int(pid))
+                print("AI insights deleted." if ok else "Invalid project ID.")
+            else:
+                print("Invalid ID.")
+
+        elif choice == "13":
             print("Goodbye!")
             break
-            print("\n👋 Thank you for using Digital Artifact Mining Software!")
-            print("   All your data has been saved to the database.\n")
-            sys.exit(0)
+
         else:
-            print("\n❌ Invalid choice. Please enter 1-9.")
+            print("Invalid choice.")
         
         input("\n⏸️  Press Enter to continue...")
         clear_screen()
