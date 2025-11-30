@@ -106,7 +106,25 @@
   * resumeBulletGenerator.py also produces 2/3 bullet point describing the project and the user's contributions
   * test_resumeBulletGenerator.py throughly tests resumeBulletGenerator.py
 * no issues were faced this week
-* for week 13: have a team meeting, create a pdf/html/md export function for resume bullets and project summaries, complete quiz 2 
+* for week 13: have a team meeting, create a pdf/html/md export function for resume bullets and project summaries, complete quiz 2
+
+
+## Week 13 - Nov 24-Nov 30, 2025
+<img width="1069" height="544" alt="Screenshot 2025-11-29 at 8 52 52 PM" src="https://github.com/user-attachments/assets/7a15460d-ea29-48a2-babd-678c8b567fb9" />
+
+* there was no check-in this week
+* had multiple team meetings this week
+* worked on presentation slides
+* completed quiz 2
+* worked on multiple features this week
+* worked on seperating resumeBulletGenerator.py + test_resumeBulletGenerator.py into 3 different files: codeBulletGenerator.py + tests, mediaBulletGenerator.py + tests, textBulletGenerator.py
+  * seperating the universal resume bullets generator based on project types allows the code to be more modifiable as we deepen our analyses for the different project types
+* worked on resumeAnalytics.py + test_resumeAnalytics.py and resumeMenu.py
+  * resumeAnalytics.py offers ATS scoring on the bullets, general bullet improvements and comparison, and improvements based on the target role level
+  * resumeMenu.py is a sub menu that will be added to main.py
+  * the sub menu allows the user to generate new bullets, retrieve old bullets, improve bullets and delete existing bullets
+* for week 14: present for milestone 1, complete team contract, complete milestone 1 self reflection + peer eval, submit demo video 
+ 
 
 
 
