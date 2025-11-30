@@ -96,3 +96,16 @@ This week, I focused on expanding our system’s ability to manage and persist u
 
 ### Plan for Next Week
 Next week, I plan to ensure that the end-to-end user flow works smoothly and that the system behaves as intended across all major steps. Alongside that, I will take on any additional tasks the team decides to prioritize during our meeting.
+
+## Log 10:
+## Date Range: Week 10 - Nov 24 - Nov 30, 2025
+
+## ![week 1 features](week10tasks.png)
+
+## Recap on your week's goals
+
+### What I Worked On This Week
+This week, I worked on the deletion module(issue https://github.com/COSC-499-W2025/capstone-project-team-13/issues/25). Specifically, I implemented safe deletion features for AI-generated insights, added automatic detection for files used across multiple projects, and set up default protection for shared files with an option to force-delete when needed. I also added clearer warnings and previews to help users understand what will be removed. Alongside this, I spent time preparing for our Milestone 1 presentation next week.
+
+### Plan for Next Week
+Next week, I am planning to do some refactoring and take on whatever other tasks the team prioritizes during our meeting.
