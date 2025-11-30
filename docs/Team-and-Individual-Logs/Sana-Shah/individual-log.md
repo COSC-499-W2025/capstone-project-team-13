@@ -122,3 +122,22 @@ Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project
 ### Upcoming cycle
 
 For the upcoming cycle, I will begin and complete implementation of a function that analyzes media projects, using AI. 
+
+# Log 10:
+## Date Range: Weeks 12 - Nov 24 - Nov 30, 2025
+
+## ![week 13 features](499-week13-log.png)
+
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team and I wrapped up the final implementation of functions and refactored main.py, so that our demo performs as expected. This week, I focused on finishing implementing the last analyses function, which analyzes a media project, using LLM/AI. I also helped my team members refactor some of their functions, as well as went through main.py to ensure that all functions are being called, in the correct order, for the correct project type.
+
+Aside from coding features, I also began working on our presentation slides, focusing on non-LLM skills analysis.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/140)
+
+## Upcoming Cycle
+
+Despite our backend being pretty much complete, in terms of implementation, my team and I will continue to refactor and make small changes to increase performance, modularity, and uniformity across our system functions.
+
