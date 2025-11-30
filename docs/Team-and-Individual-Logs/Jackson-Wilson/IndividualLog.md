@@ -122,7 +122,7 @@ This week was first week back from reading break. My main focus for this week wa
 ## Log 10:
 ## Date Range: Week 13 - Nov 24-30, 2025
 
-## ![week 13 features](weeklyfeaturesimages/week13features.png)
+## ![week 13 features](weeklyfeaturesimages/week13features.jpg)
 
 ## Recap on your week's goals 
 
