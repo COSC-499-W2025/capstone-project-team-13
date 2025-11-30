@@ -42,12 +42,12 @@ def grade_efficiency(code: str, file_path: str) -> Dict[str, Optional[float]]:
     efficiency_score = (time_score * 0.65 + space_score * 0.35) if time_score is not None and space_score is not None else None
 
     return {
-        "time_score": time_score,
-        "space_score": space_score,
-        "efficiency_score": efficiency_score,
+        "time_score": round(time_score, 2) if isinstance(time_score, (int, float)) else time_score,
+        "space_score": round(space_score, 2) if isinstance(space_score, (int, float)) else space_score,
+        "efficiency_score": round(efficiency_score, 2) if isinstance(efficiency_score, (int, float)) else efficiency_score,
         "max_loop_depth": max_loop_depth,
         "total_loops": total_loops,
-        "notes": notes
+        "notes": notes,
     }
 
 # ===============================
