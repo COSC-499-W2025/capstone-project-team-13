@@ -19,6 +19,10 @@ from src.Settings.config import EXT_SUPERTYPES
 from src.Databases.database import db_manager
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
 from src.Analysis.skillsExtractDocs import analyze_folder_for_skills, analyze_document_for_skills, extract_text
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileDataCheck import sniff_supertype
+from src.Helpers.classifier import supertype_from_extension
+
 class TextDocumentScanner:
     """Scans and analyzes text-based documents"""
 
@@ -138,26 +142,53 @@ class TextDocumentScanner:
     
     def _find_text_files(self):
         """Find all text files - either single file or entire directory"""
+
+        def _maybe_add_text_file(path: Path):
+            """Validate a path as a 'text' file and add to self.text_files if valid."""
+            path_str = str(path)
+
+            # Extension-level validation (allowed formats)
+            try:
+                check_file_format(path_str)
+            except InvalidFileFormatError as e:
+                # Unsupported extension → skip
+                print(f"Skipping unsupported file: {path_str} — {e}")
+                return
+
+            # Map extension → supertype ("text" / "code" / "media" / etc)
+            ext_supertype = supertype_from_extension(path_str)
+            if ext_supertype != "text":
+                # Not configured as a text file
+                return
+
+            # Content sniffing → make sure the file actually *looks* like text
+            sniffed_supertype = sniff_supertype(path_str)
+            if sniffed_supertype != "text":
+                # e.g. binary file with .txt extension, or code pretending to be text
+                print(f"Skipping {path_str}: ext says 'text' but content is '{sniffed_supertype}'")
+                return
+
+            # All checks passed → track it
+            self.text_files.append(path)
+
+        # --- Single file mode ---
         if self.single_file:
-            # Just add the single file
-            self.text_files.append(self.document_path)
-        else:
-            # Scan entire directory
-            for root, dirs, files in os.walk(self.document_path):
-                # Remove skip directories from dirs list
-                dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
-                
-                for filename in files:
-                    # Skip hidden files
-                    if filename.startswith('.'):
-                        continue
-                    
-                    file_path = Path(root) / filename
-                    file_ext = file_path.suffix.lower()
-                    
-                    # Check if it's a text file using EXT_SUPERTYPES
-                    if EXT_SUPERTYPES.get(file_ext) == "text":
-                        self.text_files.append(file_path)
+            _maybe_add_text_file(self.document_path)
+            return
+
+        # --- Directory mode ---
+        for root, dirs, files in os.walk(self.document_path):
+            # Remove skip directories from dirs list
+            dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
+
+            for filename in files:
+                # Skip hidden files
+                if filename.startswith('.'):
+                    continue
+
+                file_path = Path(root) / filename
+                _maybe_add_text_file(file_path)
+
     
     def _detect_document_types(self):
         """Detect document types based on file extensions"""
@@ -220,7 +251,6 @@ class TextDocumentScanner:
     
     def _analyze_skills(self): 
         """Analyze skills from text files"""
-        from src.Analysis.skillsExtractDocs import analyze_document_for_skills, analyze_folder_for_skills
         
         try:
             if self.single_file:
