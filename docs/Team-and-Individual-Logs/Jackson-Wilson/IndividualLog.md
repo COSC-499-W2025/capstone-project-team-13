@@ -117,6 +117,22 @@ unfortunately this week lined up with a handful of other projects and midterms s
 
 This week was first week back from reading break. My main focus for this week was getting the ranking scores (importance scores) in place for the database. There was a fair bit of work off-repository to try and figure out how to properly weigh things in a way that the final score would most accurately reflect the quality of a project. As of right now, I've split them into four categories, each with weights. I put most of the weight onto metadata seeing as this is supposed to be a resume tool as the category covered skills and languages used.
 
+
+
+## Log 10:
+## Date Range: Week 13 - Nov 24-30, 2025
+
+## ![week 13 features](weeklyfeaturesimages/week13features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+This week was a significant amount of work outside of the actual repository. Getting the presentation together as well as divvying up what work was remaining to ensure that we were ending the last week of classes in good form. During this, we came to the agreement that we could use some more non-llm analysis for our projects. Because of this, I began work on a module to evaluate the efficiency of a specific code file. It determines the language of the file and runs it through evaluation functions based on the syntax of the language. It will return scores for the storage complexity and time complexity and further an overall efficiency score (Putting higher weight on time complexity). As of right now, only the functions really exist for this evaluation to be done on a singular file. As it stands it is more of a proof of concept versus a full implementation for what we need, but the next steps won't be especially hard. Aside from this, I had a couple PRs of 1-30 lines each just finishing minor functions and polishing where I can. 
+
+### Plans for next week
+
+This next week is presentation week so as far as work to complete, I will likely step back and let those with functions that need polishing to finish up. If I have the time, I may tackle fully implementing efficiency, but as it stands I'll put my effort into the final presentation and offering whatever help I can. 
 Outside of this, it was a little hard to get momentum going again coming back from reading break, but I think the team did a pretty good job. We were missing a good chunk at the check-in but with communication through our chats I feel we are still on good pace to finish what is needed before milestone 1. 
 
 This next week I'd imagine will be a lot of scrap cleaning across the board. Our kanban board has a handful of tasks still to be completed so leading up to the milestone due date we will be meeting after Monday's class to divide up the work as best we can. 
