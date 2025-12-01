@@ -98,6 +98,70 @@ Manual testing through `testConsole.py` also confirmed that all modules work as 
 **What didn’t go as planned:**  
 - Merge conflicts across multiple branches slowed integration.  
 - The database still isn’t fully connected to other system components.  
-- Some manual testing processes (like the console dashboard) remain time-intensive.  
+- Some manual testing processes (like the console dashboard) remain time-intensive.
+
+
+
+
+  
+
+## Week 12 Team Log  
+
+Project Board:<img width="1516" height="795" alt="image" src="https://github.com/user-attachments/assets/820105d0-7cf4-4fe4-9184-6ddf35ec8949" />
+
+**Date Range:** Nov 23 - Nov 30, 2025  
+**Team Member** | **Work Completed / Focus This Week** | **Related Issue #** |
+|------------------|--------------------------------------|---------------------|
+| **T’Olu Akinwande** | Improved Git-based collaboration detection and integrated fixes into ProjectCollabType. Developed the new **AI Project Ranking** feature, added scoring logic, semantic/skill-based evaluation, and created a full test suite and clean PR. | #14, #114 |
+| **Prina Mehta** | Worked on the **deletion module**, adding safe deletion of AI-generated insights, shared-file detection, protection rules, and clearer warnings/previews. Also prepared for next week’s Milestone 1 presentation. | #25 |
+| **Maya Knutsvig** | Added **textDocumentScanner** and **visualMediaAnalyzer** to `main.py` (they were previously unused). Updated scanners to use file-format and file-data checking for more reliable processing. |  |
+| **Jackson Wilson** | Developed **code efficiency analysis** (time/space complexity grading). Added project-sorting to main and included missing dependencies in `requirements.txt`. |  |
+| **Illina Islam** | Improved resume-bullet generation functions and built the new submenu for resume item generation, refining formatting and usability. | #22, #112, #166 |
+| **Sana Shah** | Built the **AI media-project analyzer** for design/media files and integrated early logic for skill inference from visual artifacts. | #140 |
+
+
+
+
+Burnup Chart:
+<img width="764" height="398" alt="image" src="https://github.com/user-attachments/assets/abb42186-d341-4094-a3db-3b1406e6ff0f" />
+
+
+
+In-Progress Tasks: 
+<img width="825" height="144" alt="image" src="https://github.com/user-attachments/assets/12b73c94-5dc3-4e9e-9406-71e1751513dd" />
+
+
+Completed Tasks:
+<img width="831" height="665" alt="image" src="https://github.com/user-attachments/assets/d2cadccd-3015-4cc3-91e7-1d8273b8818c" />
+<img width="838" height="590" alt="image" src="https://github.com/user-attachments/assets/4ee354a9-f490-4966-aac8-96e06a9e8478" />
+
+
+#Test Report 
+
+271 our of 274 test cases throughtout the project are functioning successfully. The 3 test cases with errors are currently undergoing refacroring and will continue to be worked on in the upcoming week. Other than those 3, everything else is being tested accurately and efficiently.
+
+<img width="1214" height="624" alt="image" src="https://github.com/user-attachments/assets/d833433e-03ca-4b39-84e5-01ef51a95826" />
+
+
+
+# Reflection Points
+# What went well:
+
+-New features such as the AI Project Ranking system, improved media analysis, resume-bullet generation updates, and the deletion safety module all integrated smoothly into the existing workflow.
+-Unit tests and manual testing confirmed strong reliability across modules, and team communication during PR reviews helped maintain consistency.
+
+# What didn’t go as planned:
+
+-A few merge conflicts came up while integrating multiple new components, but they were resolved quickly.
+-Some modules required extra manual testing time due to new AI-related setup steps, but everything was stabilized by the end of the week.
+
+
+
+
+
+
+
+
+
 
 
