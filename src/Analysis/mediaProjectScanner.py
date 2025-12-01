@@ -17,32 +17,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Databases.database import db_manager
 from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileDataCheck import sniff_supertype
+from src.Helpers.classifier import supertype_from_extension
 
 
 class MediaProjectScanner:
     """Scans and analyzes VISUAL media projects (photography, design, video, 3D)"""
-    
-    # Supported VISUAL media file extensions only
-    MEDIA_EXTENSIONS = {
-        # Raster images
-        '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.ico',
-        # RAW image formats (photography)
-        '.raw', '.cr2', '.nef', '.arw', '.dng', '.orf', '.rw2',
-        # Design files (Photoshop, Affinity, etc.)
-        '.psd', '.psb', '.xcf', '.afphoto',
-        # Vector graphics
-        '.ai', '.svg', '.eps', '.cdr',
-        # UI/UX design
-        '.fig', '.sketch', '.xd',
-        # 3D modeling
-        '.blend', '.obj', '.fbx', '.max', '.ma', '.mb', '.c4d', '.3ds', '.stl',
-        # Video files
-        '.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v', '.mpg', '.mpeg',
-        # Video project files
-        '.aep', '.prproj', '.veg', '.drp',
-        # Audio files (for video/motion design projects)
-        '.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a',
-    }
     
     # Text file extensions ONLY for keyword extraction (not counted as media)
     TEXT_EXTENSIONS = {'.txt', '.md'}
@@ -78,7 +59,9 @@ class MediaProjectScanner:
             'node_modules', '__pycache__', '.git', '.venv', 'venv',
             'env', 'dist', 'build', '.next', '.cache', 'vendor',
             '.pytest_cache', 'coverage', '.mypy_cache', '__MACOSX',
-            'Backup', 'Cache', 'Thumbnails'
+            'Backup', 'Cache', 'Thumbnails', '.DS_Store', 'Thumbs.db',
+            '.backup', 'backup', 'backups', '.archive', 'archive', 
+            'archives', '.trash', 'trash', 'temp', 'tmp', '.tmp'
         }
     
     def scan_and_store(self) -> Optional[int]:
@@ -145,7 +128,63 @@ class MediaProjectScanner:
         return project_id
     
     def _find_files(self):
-        """Find all media and text files in the project directory"""
+        """Find all media and text files in the project directory with validation"""
+        
+        def _maybe_add_media_file(path: Path):
+            """Validate a path as a 'media' file and add to self.media_files if valid."""
+            path_str = str(path)
+            
+            # Extension-level validation (allowed formats)
+            try:
+                check_file_format(path_str)
+            except InvalidFileFormatError as e:
+                # Unsupported extension → skip silently
+                return
+            
+            # Map extension → supertype ("text" / "code" / "media" / etc)
+            ext_supertype = supertype_from_extension(path_str)
+            if ext_supertype != "media":
+                # Not configured as a media file
+                return
+            
+            # Content sniffing → make sure the file actually *looks* like media
+            sniffed_supertype = sniff_supertype(path_str)
+            if sniffed_supertype != "media":
+                # e.g. text file with media extension
+                print(f"Skipping {path.name}: ext says 'media' but content is '{sniffed_supertype}'")
+                return
+            
+            # All checks passed → track it
+            self.media_files.append(path)
+        
+        def _maybe_add_text_file(path: Path):
+            """Validate a path as a 'text' file for keyword extraction."""
+            path_str = str(path)
+            file_ext = path.suffix.lower()
+            
+            # Only process specific text extensions for keyword extraction
+            if file_ext not in self.TEXT_EXTENSIONS and path.name.upper() not in ['README', 'README.TXT']:
+                return
+            
+            # Extension-level validation
+            try:
+                check_file_format(path_str)
+            except InvalidFileFormatError:
+                # Not in allowed formats, but still try for README files
+                if path.name.upper() not in ['README', 'README.TXT']:
+                    return
+            
+            # Map extension → supertype
+            ext_supertype = supertype_from_extension(path_str)
+            
+            # For text files, accept if extension says text OR if it's a README
+            if ext_supertype == "text" or path.name.upper() in ['README', 'README.TXT']:
+                # Content sniffing for text files
+                sniffed_supertype = sniff_supertype(path_str)
+                if sniffed_supertype == "text":
+                    self.text_files.append(path)
+        
+        # --- Directory mode ---
         for root, dirs, files in os.walk(self.project_path):
             # Remove skip directories from dirs list
             dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
@@ -156,15 +195,12 @@ class MediaProjectScanner:
                     continue
                 
                 file_path = Path(root) / filename
-                file_ext = file_path.suffix.lower()
                 
-                # Check if it's a media file
-                if file_ext in self.MEDIA_EXTENSIONS:
-                    self.media_files.append(file_path)
+                # Try to add as media file
+                _maybe_add_media_file(file_path)
                 
-                # Check if it's a text file for keyword extraction
-                elif file_ext in self.TEXT_EXTENSIONS or filename.upper() in ['README', 'README.TXT']:
-                    self.text_files.append(file_path)
+                # Try to add as text file (for keyword extraction)
+                _maybe_add_text_file(file_path)
     
     def _analyze_media(self):
         """Analyze media files using existing visualMediaAnalyzer function"""

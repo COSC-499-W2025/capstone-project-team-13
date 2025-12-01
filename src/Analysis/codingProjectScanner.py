@@ -17,7 +17,9 @@ from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
 from src.Analysis.skillsExtractCoding import extract_skills_with_scores
-
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileDataCheck import sniff_supertype
+from src.Helpers.classifier import supertype_from_extension
 
 class CodingProjectScanner:
     """Scans and analyzes coding projects"""
@@ -140,8 +142,25 @@ class CodingProjectScanner:
                 file_ext = file_path.suffix.lower()
                 
                 # Check if it's a code file using existing LANGUAGE_BY_EXTENSION
-                if file_ext in LANGUAGE_BY_EXTENSION:
-                    self.code_files.append(file_path)
+                if file_ext not in LANGUAGE_BY_EXTENSION:
+                    continue
+                # Validate file format using your new checker
+                try:
+                    check_file_format(str(file_path))
+                except InvalidFileFormatError as e:
+                    print(f"Skipping unsupported file: {file_path} — {e}")
+                    continue 
+                # Determine if what is in the file matches the extension 
+                try:
+                    sniff_type = sniff_supertype(str(file_path))
+                    if sniff_type != "code":
+                        print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
+                        continue
+                except Exception:
+                    # If sniffing fails, skip it safely
+                    continue
+                #If all checks pass, store the file   
+                self.code_files.append(file_path)
     
     def _detect_languages_and_frameworks(self):
         """Detect languages and frameworks using existing codeIdentifier function"""
