@@ -1,4 +1,4 @@
-#Week3 (Log 1)
+# Week3 (Log 1)
 
 This week, we focused on establishing functional and non-functional requirements for our project. For functional requirements, I proposed that we should create a user dashboard to keep user artifacts and data organized. The requirements I created are as follows: 
 Users can view a dashboard summarizing their uploaded artifacts and analytics
@@ -17,7 +17,7 @@ Drafted non-functional requirements for security and reliability.
 
 ![Week 1 Screenshot](./weeklytasks-images/week1-screenshot.png)
 
-#Week4 (Log 2)
+# Week4 (Log 2)
 
 This week, I focused on the system architecture design and project planning. For the architecture document, I outlined how the system would be separated into layers (UI, business logic, and data) and documented considerations for scalability and performance, such as batch processing and having different file size limits to make data processing managaeable. I also emphasized simplicity and communication, which was reflected in the Figma diagram created for the design.
 
@@ -54,7 +54,7 @@ Recap of Goals / Progress:
 ![Week 3 screenshot](./weeklytasks-images/week3-screenshot.png)
 
 
-#Week6  (Log 4)
+# Week6  (Log 4)
 Date Range: Oct 6 – Oct 12, 2025
 
 This week, I worked on implementing and testing the ProjectCollabType function, which determines whether a project is individual or collaborative based on folder and metadata analysis.
@@ -76,7 +76,7 @@ Progress summary: Completed and tested the feature successfully. Future improvem
 
 
 
-#Week7 (Log 5)
+# Week7 (Log 5)
 Date Range: Oct 13 – Oct 19, 2025
 
 This week, I focused on expanding our system’s analysis capabilities and improving the connection between project metadata and contribution insights. My primary tasks involved implementing a new data-processing function for individual contribution analysis, refactoring an existing module to integrate real parsed data, and performing code reviews to ensure system consistency and maintainability.
@@ -193,6 +193,33 @@ Project board association: Task #14
 Progress summary:
 This week, I refined the Git analysis functionality by improving contributor parsing, updating the classification logic, and ensuring test coverage aligned with the new behavior. I also ensured proper project setup by updating dependencies and validated teammate code through manual testing. The feature is now more stable, more accurate, and better integrated into the overall pipeline, continuing to push our artifact-analysis system beyond surface-level metadata.
 <img width="1084" height="627" alt="Screenshot 2025-11-23 151909" src="https://github.com/user-attachments/assets/68f3d491-68ff-49d1-b355-d3b1cf8ea8d5" />
+
+
+
+
+# Week 12  (Log 9)
+Date Range: Nov 23 – Nov 30, 2025
+
+Tasks Worked On:
+
+-This week, I continued improving the ProjectCollabType feature by debugging inconsistencies in the Git-based contributor analysis. I reviewed and adjusted parts of the logic to resolve merge-related issues and ensure that the feature continues to classify project collaboration types accurately across different repositories.
+
+-The main focus of the week, however, was designing and implementing the new AI Project Ranking feature. I created a ranking module that evaluates projects using normalized metrics (effort, success, contribution), skill relevance, optional AI semantic similarity, and diversity of skills selection. I also wrote a full test suite (test_ai_project_ranker.py), set up dependency handling with mock AI calls for stable testing, and integrated the ranking option into the main.py workflow. After several iterations, I resolved merge conflicts, cleaned the branch history, and prepared the feature for a clean and isolated pull request. Additionally, this week I worked on our presentation slide deck for our Milestone 1 presentation next week. I worked with my team to decide our main points of focus for the presentation and ensure it runs smoothly.
+
+Recap of Goals / Progress
+Feature focus:
+
+-Git-Based Collaboration Classification
+-AI-Driven Project Ranking
+-Project board associations:
+-ProjectCollabType → Task #14
+-AI Project Ranking → Task #114
+
+Progress summary:
+This week, I finalized the GitCollab adjustments and shifted focus toward architecting and integrating the new AI-driven ranking system. I wrote comprehensive tests for ranking accuracy and ensured that the feature integrates smoothly into the main analysis flow. I also handled branch cleanup, conflict resolution, and dependency updates during the PR preparation process. I worked on our presentation slides and logic for our Milestone 1 presentation next week. 
+
+
+<img width="868" height="492" alt="image" src="https://github.com/user-attachments/assets/5c049f20-f460-4aa5-a0c5-e93e59c1de01" />
 
 
 
