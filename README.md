@@ -17,6 +17,9 @@ A versatile platform that intelligently processes digital artifacts including co
 
 ---
 
+## Team Contract
+https://docs.google.com/document/d/16xSLlqSOmJyfw9b78a8Gc61JJh8cMKzb9KAB2M3JHEg/edit?usp=sharing
+
 ## 🎯 Project Overview
 
 Our digital artifact mining software serves as a tool for new graduates and students to efficiently display their projects, skills, and highlights. The system supports three different user groups:
