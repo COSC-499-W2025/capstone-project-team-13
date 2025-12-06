@@ -36,6 +36,7 @@ from src.Analysis.summarizeProjects import summarize_projects
 from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
 from src.AI.ai_project_analyzer import AIProjectAnalyzer
+from src.AI.ai_project_ranker import AIProjectRanker
 from src.AI.ai_enhanced_summarizer import (
     summarize_projects_with_ai,
     generate_resume_bullets
@@ -44,6 +45,7 @@ from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
 from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
 from src.Analysis.codeEfficiency import grade_efficiency
+from src.Analysis.folderEfficiency import grade_folder
 from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 
@@ -410,9 +412,9 @@ def handle_document():
     if not path:
         return
     
-    if not os.path.isfile(path):
-        print("❌ Path must be a file")
-        return
+    # if not os.path.isfile(path):
+    #     print("❌ Path must be a file")
+    #     return
     
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
@@ -827,6 +829,20 @@ def ai_project_analysis_menu():
         print_header("AI Project Analysis")
         
         print("Choose an analysis option:\n")
+
+        print("1. Analyze Single Project")
+        print("2. Generate AI Summaries for All Projects")
+        print("3. Generate Resume Bullets")
+        print("4. Batch Analyze All Projects")
+        print("5. View AI Analysis Statistics")
+        print("6. AI Project Ranking")
+        print("7. Back to Main Menu")
+        print("8. AI Project Ranking")
+        print("9. Back to Main Menu")
+
+        
+        choice = input("\nEnter your choice (1-7): ").strip()
+
         print("1. Analyze Coding Project")
         print("2. Analyze Media Project")
         print("3. Analyze Text Project")
@@ -837,6 +853,7 @@ def ai_project_analysis_menu():
         print("8. Back to Main Menu")
         
         choice = input("\nEnter your choice (1-8): ").strip()
+
         
         if choice == '1':
             analyze_single_project_ai()
@@ -854,6 +871,8 @@ def ai_project_analysis_menu():
             view_ai_statistics()
         elif choice == '8':
             print("\nReturning to main menu...\n")
+            run_ai_project_ranking_menu()
+        elif choice == '9':
             break
         else:
             print("❌ Invalid choice. Please try again.")
@@ -1570,6 +1589,45 @@ def view_ai_statistics():
     
     input("\nPress Enter to continue...")
 
+def run_ai_project_ranking_menu():
+    print("\n=== 🤖 AI Project Ranking ===\n")
+
+    # Fetch all projects from DB
+    projects = fetch_projects_for_summary()
+
+    if not projects:
+        print("No projects found in database.")
+        input("\nPress Enter to continue...")
+        return
+
+    # Ask user for skills to prioritize
+    skills_input = input("Enter skills to prioritize (comma-separated), or press Enter for none:\n").strip()
+    target_skills = [s.strip() for s in skills_input.split(",")] if skills_input else None
+
+    # Ask how many top projects they want
+    try:
+        top_k = int(input("\nHow many top projects do you want ranked? (default = 3): ").strip() or 3)
+    except ValueError:
+        top_k = 3
+
+    # Create the ranker
+    ranker = AIProjectRanker()
+
+    # Run ranking
+    result = ranker.rank(projects, target_skills=target_skills, top_k=top_k)
+
+    # Display results
+    print("\n=== 🏆 Top Ranked Projects ===\n")
+    for i, proj in enumerate(result["selected"], 1):
+        print(f"{i}. {proj['project_name']}  (Score: {proj['_rank_score']:.3f})")
+        if proj.get("skills"):
+            print(f"   Skills: {', '.join(proj['skills'])}")
+        print()
+
+    print("Done.")
+    input("\nPress Enter to continue...")
+ 
+
 def run_importance_test():
     print("=== Running Importance Score Test ===")
 
@@ -1607,7 +1665,7 @@ def run_project_ranking_test():
 def run_code_efficiency_test():
     """
     Prompt the user for a file or directory path and analyze code efficiency.
-    Prints results for each code file found.
+    Prints results for each code file or folder summary.
     """
     path_input = input("Enter the path to a code file or directory: ").strip()
     target = Path(path_input)
@@ -1616,35 +1674,37 @@ def run_code_efficiency_test():
         print(f"Error: '{path_input}' does not exist.")
         return
 
-    files_to_scan = []
+    # Case 1: single file
     if target.is_file():
-        files_to_scan.append(target)
-    elif target.is_dir():
-        # Recursively grab common code files
-        for ext in ["*.py", "*.js", "*.java", "*.cpp", "*.c", "*.ts"]:
-            files_to_scan.extend(target.rglob(ext))
-    else:
-        print(f"Error: '{path_input}' is neither a file nor a directory.")
-        return
-
-    if not files_to_scan:
-        print("No code files found to analyze.")
-        return
-
-    for file_path in files_to_scan:
         try:
-            code = file_path.read_text(encoding="utf-8")
+            code = target.read_text(encoding="utf-8")
         except Exception as e:
-            print(f"Could not read '{file_path}': {e}")
-            continue
+            print(f"Could not read '{target}': {e}")
+            return
 
-        result = grade_efficiency(code, str(file_path))
-        print(f"\n=== Efficiency Analysis for {file_path} ===")
+        result = grade_efficiency(code, str(target))
+        print(f"\n=== Efficiency Analysis for {target} ===")
         print(f"Time Score: {result['time_score']}")
         print(f"Space Score: {result['space_score']}")
         print(f"Overall Efficiency Score: {result['efficiency_score']}")
         print(f"Max Loop Depth: {result['max_loop_depth']}")
         print(f"Total Loops: {result['total_loops']}")
+        if result.get("notes"):
+            print("Notes:")
+            for note in result["notes"]:
+                print(f"- {note}")
+
+    # Case 2: folder
+    elif target.is_dir():
+        summary = grade_folder(str(target))
+        print(f"\n=== Folder Efficiency Summary for {target} ===")
+        for k, v in summary.items():
+            if k != "all_notes":
+                print(f"{k}: {v}")
+
+    else:
+        print(f"Error: '{path_input}' is neither a file nor a directory.")
+
 
 # ============================================
 # DELETION MANAGEMENT FUNCTIONS
@@ -1944,10 +2004,9 @@ def main():
                 print("Invalid choice. Returning to main menu.")
         elif choice == '11':
             run_code_efficiency_test()
-        if choice == "12":
+        elif choice == '12':
             delete_project_enhanced()
-
-        elif choice == "13":
+        elif choice == '13':
             manager = DeletionManager()
             pid = input("Enter project ID: ").strip()
 

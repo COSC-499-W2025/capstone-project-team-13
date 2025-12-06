@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional
 from collections import defaultdict
 import nltk
 from nltk.tokenize import word_tokenize
-nltk.download('punkt', quiet=True)
+# nltk.download('punkt', quiet=True)
 
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -27,7 +27,7 @@ class TextDocumentScanner:
     """Scans and analyzes text-based documents"""
 
     
-    def __init__(self, document_path: str,single_file: bool = False):
+    def __init__(self, document_path: str,single_file: Optional[bool] = None):
         """
         Initialize scanner for a text document or folder
 
@@ -41,8 +41,13 @@ class TextDocumentScanner:
         self.document_path = Path(document_path).resolve()
         if not self.document_path.exists():
             raise ValueError(f"Document path does not exist: {document_path}")
-        self.single_file = single_file
         
+        
+        if single_file is None:
+            self.single_file = self.document_path.is_file()
+        else:
+            self.single_file = single_file
+
         if self.single_file:
             if not self.document_path.is_file():
                 raise ValueError(f"Single file mode requires a file path: {document_path}")
@@ -362,7 +367,7 @@ class TextDocumentScanner:
         return project.id
 
 
-def scan_text_document(document_path: str, single_file: bool = False) -> Optional[int]:
+def scan_text_document(document_path: str, single_file: Optional[bool] = None) -> Optional[int]:
     """
     Convenience function to scan a text document or folder
     
@@ -374,7 +379,7 @@ def scan_text_document(document_path: str, single_file: bool = False) -> Optiona
         document_id: Database ID of scanned document, or None if failed
     """
     try:
-        scanner = TextDocumentScanner(document_path, single_file=single_file)
+        scanner = TextDocumentScanner(document_path)
         return scanner.scan_and_store()
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
