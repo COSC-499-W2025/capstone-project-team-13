@@ -44,6 +44,7 @@ from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
 from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
 from src.Analysis.codeEfficiency import grade_efficiency
+from src.Analysis.folderEfficiency import grade_folder
 from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 
@@ -1602,7 +1603,7 @@ def run_project_ranking_test():
 def run_code_efficiency_test():
     """
     Prompt the user for a file or directory path and analyze code efficiency.
-    Prints results for each code file found.
+    Prints results for each code file or folder summary.
     """
     path_input = input("Enter the path to a code file or directory: ").strip()
     target = Path(path_input)
@@ -1611,35 +1612,37 @@ def run_code_efficiency_test():
         print(f"Error: '{path_input}' does not exist.")
         return
 
-    files_to_scan = []
+    # Case 1: single file
     if target.is_file():
-        files_to_scan.append(target)
-    elif target.is_dir():
-        # Recursively grab common code files
-        for ext in ["*.py", "*.js", "*.java", "*.cpp", "*.c", "*.ts"]:
-            files_to_scan.extend(target.rglob(ext))
-    else:
-        print(f"Error: '{path_input}' is neither a file nor a directory.")
-        return
-
-    if not files_to_scan:
-        print("No code files found to analyze.")
-        return
-
-    for file_path in files_to_scan:
         try:
-            code = file_path.read_text(encoding="utf-8")
+            code = target.read_text(encoding="utf-8")
         except Exception as e:
-            print(f"Could not read '{file_path}': {e}")
-            continue
+            print(f"Could not read '{target}': {e}")
+            return
 
-        result = grade_efficiency(code, str(file_path))
-        print(f"\n=== Efficiency Analysis for {file_path} ===")
+        result = grade_efficiency(code, str(target))
+        print(f"\n=== Efficiency Analysis for {target} ===")
         print(f"Time Score: {result['time_score']}")
         print(f"Space Score: {result['space_score']}")
         print(f"Overall Efficiency Score: {result['efficiency_score']}")
         print(f"Max Loop Depth: {result['max_loop_depth']}")
         print(f"Total Loops: {result['total_loops']}")
+        if result.get("notes"):
+            print("Notes:")
+            for note in result["notes"]:
+                print(f"- {note}")
+
+    # Case 2: folder
+    elif target.is_dir():
+        summary = grade_folder(str(target))
+        print(f"\n=== Folder Efficiency Summary for {target} ===")
+        for k, v in summary.items():
+            if k != "all_notes":
+                print(f"{k}: {v}")
+
+    else:
+        print(f"Error: '{path_input}' is neither a file nor a directory.")
+
 
 # ============================================
 # DELETION MANAGEMENT FUNCTIONS
@@ -1939,10 +1942,9 @@ def main():
                 print("Invalid choice. Returning to main menu.")
         elif choice == '11':
             run_code_efficiency_test()
-        if choice == "12":
+        elif choice == '12':
             delete_project_enhanced()
-
-        elif choice == "13":
+        elif choice == '13':
             manager = DeletionManager()
             pid = input("Enter project ID: ").strip()
 
