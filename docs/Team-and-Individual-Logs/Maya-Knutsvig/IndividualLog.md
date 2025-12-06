@@ -169,3 +169,17 @@ There was no specific issue # I was fixing, I was just updating main to use our 
 As this was updating main, there was no specific issue #
 
 For the following week, we will be working on fixing any other issues, so we can provide a proper video demo on Sunday
+
+
+# Log 11:
+## Date Range: Weeks 14 - Dec 01-Dec 07, 2025
+
+## ![week 11 features](weeklyfeaturesimages/week11features.png)
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+There was no specific issue # I was fixing, as this weeks focus was updating main and fixing any bugs encountered within our project. This was because we had our presentation on Wednesday, and our video demo submission on Sunday, so we were focusing on fixing any issues rather than creating new features. I updated fileDataCheck, as it was running into some issues with pdf files (labeling them as media, even if they had text), and text files (labelling them as code, because the code indicators had some "normal" words such as "let"). Then I updated the three Scanners, to allow them to work with both single files and a folder directory, this led to me updating main + visualSkillsAnalyzer as well, so that it all worked together properly.
+
+As this was updating bugs encountered along the way, there was no specific issue #
+
+Over the break I plan to look at Milestone 2 and 1 requirements, and hope to make some progress within them. 
