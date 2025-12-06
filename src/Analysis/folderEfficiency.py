@@ -2,6 +2,7 @@
 
 import os
 from typing import Dict, Any, List
+from tqdm import tqdm
 from .codeEfficiency import grade_efficiency
 from src.Settings.config import EXT_SUPERTYPES  # import the mapping
 
@@ -14,34 +15,40 @@ def is_code_file(filename: str) -> bool:
 def grade_folder(folder_path: str) -> Dict[str, Any]:
     """
     Recursively grades all code files in a folder and aggregates results.
+    Shows a progress bar.
     """
     file_results = []
+
+    # Collect all code files first for tqdm
+    code_files = []
     for root, _, files in os.walk(folder_path):
         for file in files:
             if is_code_file(file):
-                file_path = os.path.join(root, file)
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        code = f.read()
-                    result = grade_efficiency(code, file_path)
-                    result["file_path"] = file_path
-                    file_results.append(result)
-                except Exception as e:
-                    file_results.append({
-                        "file_path": file_path,
-                        "time_score": None,
-                        "space_score": None,
-                        "efficiency_score": None,
-                        "max_loop_depth": None,
-                        "total_loops": None,
-                        "notes": [f"Failed to read or parse file: {e}"]
-                    })
+                code_files.append(os.path.join(root, file))
+
+    # Process files with progress bar
+    for file_path in tqdm(code_files, desc="Grading files", unit="file"):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                code = f.read()
+            result = grade_efficiency(code, file_path)
+            file_results.append(result)
+        except Exception as e:
+            file_results.append({
+                "file_path": file_path,
+                "time_score": None,
+                "space_score": None,
+                "efficiency_score": None,
+                "max_loop_depth": None,
+                "total_loops": None,
+                "notes": [f"Failed to read or parse file: {e}"]
+            })
 
     return aggregate_results(file_results)
 
 def aggregate_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Aggregate results across all files.
+    Aggregate results across all files, returning only final summary.
     """
     agg = {
         "num_files": len(results),
@@ -50,7 +57,6 @@ def aggregate_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         "avg_efficiency_score": None,
         "total_loops": 0,
         "max_loop_depth": 0,
-        "all_notes": []
     }
 
     time_scores = []
@@ -68,7 +74,6 @@ def aggregate_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
             agg["total_loops"] += r["total_loops"]
         if r.get("max_loop_depth") is not None:
             agg["max_loop_depth"] = max(agg["max_loop_depth"], r["max_loop_depth"])
-        agg["all_notes"].extend([f"{r['file_path']}: {note}" for note in r.get("notes", [])])
 
     if time_scores:
         agg["avg_time_score"] = round(sum(time_scores) / len(time_scores), 2)
@@ -86,4 +91,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     summary = grade_folder(args.folder)
-    
+    print("=== Folder Efficiency Summary ===")
+    for k, v in summary.items():
+        print(f"{k}: {v}")
