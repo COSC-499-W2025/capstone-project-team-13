@@ -109,3 +109,16 @@ This week, I worked on the deletion module(issue https://github.com/COSC-499-W20
 
 ### Plan for Next Week
 Next week, I am planning to do some refactoring and take on whatever other tasks the team prioritizes during our meeting.
+
+## Log 11:
+## Date Range: Week 11 - Dec 1 - Dec 7, 2025
+
+## ![week 1 features](week10tasks.png)
+
+## Recap on your week's goals
+
+### What I Worked On This Week
+The AI analysis option was constantly returning an “AI quota exceeded” error even when that was not true. I fixed this issue, and the system now correctly returns detailed-analysis for coding projects instead of failing with a false quota error.
+
+### Plan for Next Week
+After the break, I will work on whatever the team identifies as the next priority for Milestone 2.
