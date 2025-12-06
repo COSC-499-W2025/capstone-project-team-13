@@ -841,20 +841,9 @@ def ai_project_analysis_menu():
         print("9. Back to Main Menu")
 
         
-        choice = input("\nEnter your choice (1-7): ").strip()
+        choice = input("\nEnter your choice (1-9): ").strip()
 
-        print("1. Analyze Coding Project")
-        print("2. Analyze Media Project")
-        print("3. Analyze Text Project")
-        print("4. Generate AI Summaries for All Projects")
-        print("5. Generate Resume Bullets")
-        print("6. Batch Analyze All Projects")
-        print("7. View AI Analysis Statistics")
-        print("8. Back to Main Menu")
-        
-        choice = input("\nEnter your choice (1-8): ").strip()
-
-        
+    
         if choice == '1':
             analyze_single_project_ai()
         elif choice == '2':
@@ -870,9 +859,9 @@ def ai_project_analysis_menu():
         elif choice == '7':
             view_ai_statistics()
         elif choice == '8':
-            print("\nReturning to main menu...\n")
             run_ai_project_ranking_menu()
         elif choice == '9':
+            print("\nReturning to main menu...\n")
             break
         else:
             print("❌ Invalid choice. Please try again.")
