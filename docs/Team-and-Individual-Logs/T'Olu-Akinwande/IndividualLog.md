@@ -221,9 +221,30 @@ This week, I finalized the GitCollab adjustments and shifted focus toward archit
 
 <img width="868" height="492" alt="image" src="https://github.com/user-attachments/assets/5c049f20-f460-4aa5-a0c5-e93e59c1de01" />
 
+# Week 13  (Log 10)
+Date Range: Dec 1 – Dec 7, 2025
+
+Tasks Worked On:
+
+**• Refactored AI Project Ranking Module:**
+This week, I focused heavily on refactoring and stabilizing the AI Project Ranker. I cleaned up the scoring pipeline, fixed semantic similarity issues, updated normalization logic, corrected structural indentation, and simplified the ranking flow to ensure consistent and interpretable outputs. I also reviewed and rewrote sections of the test suite to provide stronger coverage over edge cases such as malformed input, empty project lists, and embedding-based comparisons.
+
+**• Reviewed and Debugged Multiple PRs:**
+I assisted with reviewing teammate PRs, especially those related to the ProjectCollabType logic and other debugging-focused updates. I validated changes locally, tested functionality, and provided feedback on logic duplication, unreachable code, and merge-related issues. This helped ensure that the codebase remained clean, consistent, and conflict-free as we move toward Milestone 1.
+
+**• Presentation Preparation:**
+This week, I continued working with my team on our Milestone 1 presentation. I contributed to slide structure, refined key talking points.  I also helped coordinate responsibilities so our narrative remained clear and cohesive.
+
+**• Worked on Filming the Video Demo:**
+We worked on ensuring main is strucutred accurately in preparation of our video demo. We refined scripts for narration, and planned transitions to highlight the most important functionality.
+
+**• Completed Team Contract, Milestone 1 Reflection, Peer Reviews for Other Team Presentations, Revisitied DFD Diagrams and System Architecture for final submission, Worked on Filming the Video Demo**
+
+**Progress Summary:**
+This week was focused on stabilizing and refining major components of the system. The AI Project Ranker is now more robust, thoroughly tested, and ready for integration. I also contributed significantly to debugging efforts across PRs and progressed our presentation and demo recording. Overall, this was a productive week centered on quality improvement and preparing polished deliverables for Milestone 1.
 
 
-
+<img width="856" height="495" alt="image" src="https://github.com/user-attachments/assets/55639be7-1379-48f3-a00c-ab48f8df8416" />
 
 
 
