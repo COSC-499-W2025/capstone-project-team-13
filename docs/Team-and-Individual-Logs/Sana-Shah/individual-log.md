@@ -141,3 +141,17 @@ Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project
 
 Despite our backend being pretty much complete, in terms of implementation, my team and I will continue to refactor and make small changes to increase performance, modularity, and uniformity across our system functions.
 
+# Log 11:
+## Date Range: Weeks 14 - Dec 1- Dec 7, 2025
+
+## ![week 14 features](499-week14-log.png)
+
+
+### Which features were yours in the project plan for this milestone?
+
+This week my team and I wrapped up the final implementation of functions and refactored main.py. We encountered a lot of issues for different file types, whether its a folder or file path, so majority of our time this week was spent refactoring and making changes to our existing functions for our milestone 1 submission. Additionally, we also finished the final implementation of our AI features. I dont have any 1 specfic coding function that I worked on this week, but our team met in person and made changes, as a group. Aside from that, half of mine and my groups week was spent preparing for the milestone 1 presentation, as well as writing the team contract.
+
+## Upcoming Cycle
+
+For the following few weeks, I will aim to improve our current system to make it more unique, opposed to just "working" and fulfilling the project requirements. 
+
