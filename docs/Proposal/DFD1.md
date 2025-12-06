@@ -1,5 +1,6 @@
 # Data Flow Diagram Level 1
-![Data Flow Diagram Level 1](Diagram-Images/DFDlevel1.png)
+<img width="1429" height="1000" alt="UpdatedDFD drawio" src="https://github.com/user-attachments/assets/2e6a3ee6-e103-4d01-b057-e27b3c85f16e" />
+
 
 The Data Flow Diagram outlines the processes in our system from beginning to end. The process begins with the user granting consent and selecting filters, which define the scope and type of data to be analyzed. Once the user selects a folder, the Directory Crawler scans its contents to identify relevant files, such as documents, code, images, and metadata. The retrieved data then flows into the data processing modules, where different types of content, image, text, and code, which are analyzed according to their specific formats.
 
