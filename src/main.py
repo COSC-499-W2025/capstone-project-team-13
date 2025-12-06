@@ -410,9 +410,9 @@ def handle_document():
     if not path:
         return
     
-    if not os.path.isfile(path):
-        print("❌ Path must be a file")
-        return
+    # if not os.path.isfile(path):
+    #     print("❌ Path must be a file")
+    #     return
     
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
