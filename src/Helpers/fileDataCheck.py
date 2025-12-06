@@ -4,9 +4,6 @@ from docx import Document
 from PyPDF2 import PdfReader
 
 
-# -------------------------------------------------------------
-# Extract text from different file types
-# -------------------------------------------------------------
 def extract_text(file_path: str) -> str:
     ext = os.path.splitext(file_path)[1].lower()
 
@@ -36,12 +33,14 @@ def extract_text(file_path: str) -> str:
         except:
             return ""
 
-    return ""
+    # 🔥 IMPORTANT: fallback for code files & other text-like files (.py, .js, .json, etc.)
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except:
+        return ""
 
 
-# -------------------------------------------------------------
-# Detect if extracted text is human-readable (not binary)
-# -------------------------------------------------------------
 def is_text_content(text: str, min_length: int = 20) -> bool:
     if not text or len(text.strip()) < min_length:
         return False
@@ -51,9 +50,6 @@ def is_text_content(text: str, min_length: int = 20) -> bool:
     return ratio > 0.85
 
 
-# -------------------------------------------------------------
-# Detect if text looks like code
-# -------------------------------------------------------------
 def looks_like_code(text: str) -> bool:
     lines = text.splitlines()
 
@@ -79,9 +75,6 @@ def looks_like_code(text: str) -> bool:
     return False
 
 
-# -------------------------------------------------------------
-# MAIN classifier: "text", "code", or "media"
-# -------------------------------------------------------------
 def sniff_supertype(file_path: str) -> str:
     text = extract_text(file_path)
 
