@@ -311,9 +311,9 @@ def handle_coding_project():
     if not path:
         return
     
-    # if not os.path.isdir(path):
-    #     print("❌ Path must be a directory (folder)")
-    #     return
+    if not os.path.isdir(path):
+        print("❌ Path must be a directory (folder)")
+        return
     
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
@@ -369,9 +369,9 @@ def handle_visual_project():
     if not path:
         return
     
-    # if not os.path.isdir(path):
-    #     print("❌ Path must be a directory (folder)")
-    #     return
+    if not os.path.isdir(path):
+        print("❌ Path must be a directory (folder)")
+        return
     
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
@@ -870,6 +870,7 @@ def ai_project_analysis_menu():
         elif choice == '7':
             view_ai_statistics()
         elif choice == '8':
+            print("\nReturning to main menu...\n")
             run_ai_project_ranking_menu()
         elif choice == '9':
             break
@@ -949,8 +950,9 @@ def analyze_single_project_ai():
         if results.get('technical_depth'):
             print("🔬 Technical Analysis:")
             tech_text = results['technical_depth'].get('raw_analysis', 'Not available')
-            # Print first 800 characters
-            if len(tech_text) > 800:
+            if tech_text is None or tech_text == 'Not available':
+                print("❌ Technical analysis unavailable\n")
+            elif len(tech_text) > 800:
                 print(f"{tech_text[:800]}...\n")
                 print("(Analysis truncated for display)\n")
             else:
@@ -984,12 +986,15 @@ def analyze_single_project_ai():
                 print("⚠️  Could not update database")
         
     except Exception as e:
+        import traceback
         print(f"\n❌ Error during analysis: {e}")
+        print("\n🔍 FULL ERROR DETAILS:")
+        traceback.print_exc()
         print("\nPossible issues:")
         print("  • Check your GEMINI_API_KEY is set")
         print("  • Verify you have internet connection")
         print("  • Check API quota limits")
-    
+        
     input("\nPress Enter to continue...")
 
 def analyzeMediaProject():

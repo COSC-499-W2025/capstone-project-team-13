@@ -160,12 +160,35 @@ class AIProjectAnalyzer:
         except Exception as e:
             print(f"⚠️ Cache write error: {e}")
 
-    def _gather_project_context(self, project) -> Dict[str, Any]:
-        """Gather comprehensive context about a project from database."""
+    def _gather_project_context(self, project) -> Dict[str, str]:
+        """Gather comprehensive context about a project for AI analysis."""
+        
+        # Safely handle languages with multiple fallbacks
+        try:
+            langs = project.languages
+            if langs and isinstance(langs, (list, tuple)) and len(langs) > 0:
+                languages_str = ', '.join(str(l) for l in langs)
+            else:
+                languages_str = 'Not detected'
+        except Exception as e:
+            print(f"⚠️  Error getting languages: {e}")
+            languages_str = 'Not detected'
+        
+        # Safely handle frameworks with multiple fallbacks
+        try:
+            fworks = project.frameworks
+            if fworks and isinstance(fworks, (list, tuple)) and len(fworks) > 0:
+                frameworks_str = ', '.join(str(f) for f in fworks)
+            else:
+                frameworks_str = 'None'
+        except Exception as e:
+            print(f"⚠️  Error getting frameworks: {e}")
+            frameworks_str = 'None'
+        
         context = {
-            'project_name': project.name,
-            'languages': ', '.join(project.languages) if project.languages else 'Not detected',
-            'frameworks': ', '.join(project.frameworks) if project.frameworks else 'None',
+            'project_name': project.name or 'Unnamed Project',
+            'languages': languages_str,
+            'frameworks': frameworks_str,
             'file_count': project.file_count or 0,
             'lines_of_code': project.lines_of_code or 0,
             'date_created': project.date_created.strftime('%Y-%m-%d') if project.date_created else 'Unknown',
@@ -173,25 +196,44 @@ class AIProjectAnalyzer:
             'project_id': project.id
         }
 
-        # Get keywords for context
-        keywords = db_manager.get_keywords_for_project(project.id)
-        context['keywords'] = ', '.join([kw.keyword for kw in keywords[:20]]) if keywords else 'None extracted'
+        # Get keywords for context - with error handling
+        try:
+            keywords = db_manager.get_keywords_for_project(project.id)
+            if keywords:
+                context['keywords'] = ', '.join([str(kw.keyword) for kw in keywords[:20]])
+            else:
+                context['keywords'] = 'None extracted'
+        except Exception as e:
+            print(f"⚠️  Error getting keywords: {e}")
+            context['keywords'] = 'None extracted'
 
         # Get key files (attempt to identify important files)
-        context['key_files'] = self._identify_key_files(project)
+        try:
+            context['key_files'] = self._identify_key_files(project)
+        except Exception as e:
+            print(f"⚠️  Error identifying key files: {e}")
+            context['key_files'] = 'Not available'
 
         # Get code structure hints
-        context['code_structure'] = self._analyze_structure(project)
+        try:
+            context['code_structure'] = self._analyze_structure(project)
+        except Exception as e:
+            print(f"⚠️  Error analyzing structure: {e}")
+            context['code_structure'] = 'Unknown structure'
 
         # Check for version control
-        if project.file_path:
-            git_path = Path(project.file_path) / '.git'
-            context['has_commits'] = 'Yes' if git_path.exists() else 'No'
-        else:
+        try:
+            if project.file_path:
+                git_path = Path(project.file_path) / '.git'
+                context['has_commits'] = 'Yes' if git_path.exists() else 'No'
+            else:
+                context['has_commits'] = 'Unknown'
+        except Exception as e:
+            print(f"⚠️  Error checking git: {e}")
             context['has_commits'] = 'Unknown'
 
         return context
-
+    
     def _identify_key_files(self, project) -> str:
         """Identify important files in the project structure."""
         if not project.file_path or not Path(project.file_path).exists():
@@ -311,10 +353,18 @@ class AIProjectAnalyzer:
         analysis_text = self.ai_service.generate_text(
             prompt,
             temperature=0.3,  # Lower temperature for factual analysis
-            max_tokens=800
+            # max_tokens=1500
         )
 
         self.analyses_count += 1
+
+        if analysis_text is None:
+            print("⚠️  Technical analysis failed - AI response was blocked or errored")
+            return {
+                'raw_analysis': 'Analysis failed - AI response was blocked',
+                'project_id': project_id,
+                'analyzed_at': datetime.now().isoformat()
+            }
 
         # Parse the analysis into structured format
         analysis = {
@@ -357,12 +407,23 @@ class AIProjectAnalyzer:
         prompt = self.ANALYSIS_PROMPTS['skills_extraction'].format(**context)
 
         # Get AI analysis
+        # Get AI analysis
         print(f"💡 Extracting demonstrable skills for: {project.name}...")
         skills_text = self.ai_service.generate_text(
             prompt,
-            temperature=0.2,  # Low temperature for precise skill identification
-            max_tokens=500
+            temperature=0.2,
+            # max_tokens=800
         )
+
+        self.analyses_count += 1
+
+        # Check if AI generation failed
+        if skills_text is None:
+            print("⚠️  Skills extraction failed - AI response was blocked or errored")
+            return []
+
+        # Parse skills into structured format
+        skills = self._parse_skills_from_text(skills_text)
 
         self.analyses_count += 1
 
@@ -377,6 +438,9 @@ class AIProjectAnalyzer:
 
     def _parse_skills_from_text(self, text: str) -> List[Dict[str, str]]:
         """Parse AI-generated skills text into structured format."""
+        if not text:
+            return []
+        
         skills = []
         lines = text.strip().split('\n')
 
@@ -385,42 +449,53 @@ class AIProjectAnalyzer:
             if not line or line.startswith('#'):
                 continue
 
-            # Try to parse skill format: "Skill Name (Evidence): Justification"
-            # Or simpler format: "Skill Name - Evidence - Justification"
-            if '(' in line and ')' in line:
+            # Remove leading bullets/numbers
+            line = line.lstrip('*-•0123456789. ')
+            
+            if not line:
+                continue
+
+            # Try to parse different formats
+            skill_entry = {
+                'skill': '',
+                'evidence': '',
+                'justification': ''
+            }
+            
+            # Format 1: "Skill Name (Evidence): Justification"
+            if '(' in line and ')' in line and ':' in line:
                 parts = line.split('(', 1)
-                skill_name = parts[0].strip('- •123456789.').strip()
+                skill_entry['skill'] = parts[0].strip()
                 rest = parts[1].split(')', 1)
-                evidence = rest[0].strip()
-                justification = rest[1].strip(' :-') if len(rest) > 1 else ""
+                skill_entry['evidence'] = rest[0].strip()
+                if len(rest) > 1:
+                    skill_entry['justification'] = rest[1].strip(' :-')
+            
+            # Format 2: "Skill: Justification" or "**Skill:** Justification"
+            elif ':' in line:
+                parts = line.split(':', 1)
+                skill_entry['skill'] = parts[0].strip('* ')
+                skill_entry['justification'] = parts[1].strip()
+                skill_entry['evidence'] = 'Demonstrated'
+            
+            # Format 3: Just skill name
+            else:
+                skill_entry['skill'] = line
+                skill_entry['evidence'] = 'Demonstrated'
+                skill_entry['justification'] = ''
 
-                if skill_name:
-                    skills.append({
-                        'skill': skill_name,
-                        'evidence': evidence,
-                        'justification': justification
-                    })
-            elif '-' in line:
-                parts = line.split('-')
-                if len(parts) >= 2:
-                    skill_name = parts[0].strip('- •123456789.').strip()
-                    evidence = parts[1].strip() if len(parts) > 1 else "Demonstrated"
-                    justification = parts[2].strip() if len(parts) > 2 else ""
+            if skill_entry['skill']:
+                skills.append(skill_entry)
 
-                    if skill_name:
-                        skills.append({
-                            'skill': skill_name,
-                            'evidence': evidence,
-                            'justification': justification
-                        })
-
-        return skills
+        return skills if skills else [{'skill': 'Basic Programming', 'evidence': 'Code structure', 'justification': text[:200]}]
 
     def analyze_project_complete(self, project_id: int) -> Dict[str, Any]:
         """
         Perform complete AI analysis on a project.
         Returns all analysis types in one comprehensive result.
         """
+        import traceback  # Add this import at the top
+        
         print(f"\n{'='*70}")
         print(f"🤖 AI Analysis: Complete Project Analysis")
         print(f"{'='*70}\n")
@@ -445,14 +520,25 @@ class AIProjectAnalyzer:
             }
         }
 
-        # Run all analyses
+        # Run all analyses with detailed error tracking
         try:
+            print("🔍 DEBUG: Starting overview analysis...")
             results['overview'] = self.analyze_project_overview(project_id)
+            print("✓ Overview complete")
+            
+            print("🔍 DEBUG: Starting technical depth analysis...")
             results['technical_depth'] = self.analyze_technical_depth(project_id)
+            print("✓ Technical depth complete")
+            
+            print("🔍 DEBUG: Starting skills extraction...")
             results['skills'] = self.extract_demonstrated_skills(project_id)
+            print("✓ Skills extraction complete")
+            
         except Exception as e:
             results['error'] = str(e)
             print(f"❌ Analysis error: {e}")
+            print(f"🔍 DEBUG: Full traceback:")
+            traceback.print_exc()
 
         # Update cache stats
         results['cache_stats']['analyses_run'] = self.analyses_count
@@ -463,7 +549,6 @@ class AIProjectAnalyzer:
         print(f"💾 Cache hits: {self.cache_hits}")
 
         return results
-
     def batch_analyze_projects(self, project_ids: List[int], 
                               analysis_types: List[str] = None) -> List[Dict[str, Any]]:
         """
