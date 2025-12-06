@@ -136,3 +136,19 @@ This next week is presentation week so as far as work to complete, I will likely
 Outside of this, it was a little hard to get momentum going again coming back from reading break, but I think the team did a pretty good job. We were missing a good chunk at the check-in but with communication through our chats I feel we are still on good pace to finish what is needed before milestone 1. 
 
 This next week I'd imagine will be a lot of scrap cleaning across the board. Our kanban board has a handful of tasks still to be completed so leading up to the milestone due date we will be meeting after Monday's class to divide up the work as best we can. 
+
+
+## Log 11:
+## Date Range: Week 14 - Nov 30-Dec 7, 2025
+
+## ![week 14 features](weeklyfeaturesimages/week14features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+This week was mostly polishing things off for the Milstone 1 submission. The group as a whole worked on fixing the issues we had with tests, refactoring main.py to run smoother, and fixing any other last minute issues we came across. Personally, I wrapped up the other half of the code efficiency module I was working on, enabling a full folder to be submitted and to provide the user with an aggregate score for the files within as well as giving a progress bar so larger projects don't just look like a freeze. I didn't have a specific issue for this, as it was a non-requirement feature we decided to add last minute to provide more non-LLM analyses to the user.
+
+### Plans for next week
+
+Christmas shopping I guess? Coming back from the break I assume there will be a meeting discussing next steps, and if I find myself with spare time I may pick up some non-consequential module that won't require too much input from others as I imagine communication may be spotty over the break. 
