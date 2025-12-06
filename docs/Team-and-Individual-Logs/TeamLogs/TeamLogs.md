@@ -365,7 +365,6 @@ Completed Tasks:
 
 # Test Report
 All tests were written in Python and executed successfully, other than analysis using LLM which is currently not working due to API key generation, but we are currently working on resolving it. For each of the functions in our system, we have implemented unit tests. Manual testing can be done through `main.py` and it confirms that all modules work as expected with sample project data, after refactoring
-<img width="259" height="130" alt="image" src="https://github.com/user-attachments/assets/44867371-4375-4dd4-bd04-d501488cbc86" />
 
 ### Reflection Points
 
