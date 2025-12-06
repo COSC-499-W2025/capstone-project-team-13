@@ -61,6 +61,14 @@ except ImportError:
     DELETION_FEATURES_AVAILABLE = False
     print("⚠️  Deletion features not available (modules not found)")
 
+# Import resume menu
+try:
+    from src.Resume.resumeMenu import run_resume_menu
+    RESUME_FEATURES_AVAILABLE = True
+except ImportError:
+    RESUME_FEATURES_AVAILABLE = False
+    print("⚠️  Resume features not available (modules not found)")
+
 def clear_screen():
     """Clear console screen"""
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -180,14 +188,15 @@ def get_user_choice():
     print("5.  Any Folder (auto-detect type)")
     print("6.  View All Projects in Database")
     print("7.  Generate Project Summary")
-    print("8.  AI Project Analysis")
-    print("9.  Rank Projects")  
-    print("10. Code Efficiency Analysis")
-    print("11. Delete Project")
-    print("12. Delete AI Insights Only")
-    print("13. Exit")
-    
-    choice = input("\nEnter your choice (1-13): ").strip()
+    print("8.  Resume Items")
+    print("9.  AI Project Analysis")
+    print("10. Rank Projects")  
+    print("11. Code Efficiency Analysis")
+    print("12. Delete Project")
+    print("13. Delete AI Insights Only")
+    print("14. Exit")
+
+    choice = input("\nEnter your choice (1-14): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -301,9 +310,9 @@ def handle_coding_project():
     if not path:
         return
     
-    if not os.path.isdir(path):
-        print("❌ Path must be a directory (folder)")
-        return
+    # if not os.path.isdir(path):
+    #     print("❌ Path must be a directory (folder)")
+    #     return
     
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
@@ -1887,6 +1896,55 @@ def view_deletion_cache_stats():
     
     input("\nPress Enter to continue...")
 
+
+def handle_resume_items():
+    """Handle resume items menu option"""
+    print_header("Resume Items")
+    
+    if not RESUME_FEATURES_AVAILABLE:
+        print("❌ Resume features are not available.")
+        input("\nPress Enter to continue...")
+        return
+    
+    projects = db_manager.get_all_projects()
+    
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\n⚠️  You need to analyze a project first before generating resume items.")
+        print("   Please go back to the main menu and use options 1-5 to analyze a project.")
+        input("\nPress Enter to continue...")
+        return
+    
+    print("Has the project you want resume items for already been analyzed?\n")
+    print("1. Yes - Take me to the Resume menu")
+    print("2. No  - I need to analyze it first")
+    print("3. Cancel - Return to main menu")
+    
+    choice = input("\nSelect option (1-3): ").strip()
+    
+    if choice == '1':
+        print(f"\n✓ Found {len(projects)} analyzed project(s) in database:")
+        print("-" * 50)
+        for i, p in enumerate(projects[:10], 1):
+            project_type = p.project_type or "unknown"
+            print(f"   {i}. {p.name} ({project_type})")
+        if len(projects) > 10:
+            print(f"   ... and {len(projects) - 10} more")
+        print()
+        run_resume_menu()
+    elif choice == '2':
+        print("\n📋 To analyze a project, return to the main menu and select:")
+        print("   • Option 1 - For coding projects")
+        print("   • Option 2 - For visual/media projects")
+        print("   • Option 3 - For text documents")
+        print("   • Option 5 - For auto-detection")
+        print("\nOnce analyzed, come back here to generate resume items.")
+        input("\nPress Enter to return to main menu...")
+    elif choice == '3':
+        print("\nReturning to main menu...")
+    else:
+        print("\n❌ Invalid option. Returning to main menu...")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1920,9 +1978,11 @@ def main():
             view_all_projects()
         elif choice == '7':
             generate_summary()
-        elif choice == '8':                      
+        elif choice == '8':
+            handle_resume_items()
+        elif choice == '9':                      
             ai_project_analysis_menu()
-        elif choice == '9':
+        elif choice == '10':
             print("\n--- Importance Score Menu ---")
             print("1. Sort projects by date")
             print("2. Compute/grade importance scores")
@@ -1934,12 +1994,12 @@ def main():
                 run_importance_test()
             else:
                 print("Invalid choice. Returning to main menu.")
-        elif choice == '10':
+        elif choice == '11':
             run_code_efficiency_test()
-        if choice == "11":
+        if choice == "12":
             delete_project_enhanced()
 
-        elif choice == "12":
+        elif choice == "13":
             manager = DeletionManager()
             pid = input("Enter project ID: ").strip()
 
@@ -1949,7 +2009,7 @@ def main():
             else:
                 print("Invalid ID.")
 
-        elif choice == "13":
+        elif choice == "14":
             print("Goodbye!")
             break
 

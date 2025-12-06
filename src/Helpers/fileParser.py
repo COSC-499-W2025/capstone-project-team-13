@@ -49,6 +49,8 @@ def parse_docx(file_path):
     except Exception as e:
         raise FileParseError(f"Failed to parse DOCX: {e}")
     
+    
+    
 def parse_pdf(file_path):
     """Parse PDF files as TEXT (best-effort)."""
     text = ""
@@ -169,7 +171,8 @@ def parse_file(file_path):
     category = EXT_SUPERTYPES.get(ext)
 
     if category is None:
-        raise FileParseError(f"No parser for extension: {ext}")
+        raise FileParseError(f"No parser available for {ext} files")
+
     
     # --- TEXT ---
     if category == "text":
@@ -182,10 +185,20 @@ def parse_file(file_path):
     # --- CODE ---
     if category == "code":
         return parse_code(file_path)
+    
+    # JSON
+    if category == "json":
+        return parse_json(file_path)
+
+    # CSV
+    if category == "csv":
+        return parse_csv(file_path)
    
     # --- MEDIA ---
     if category == "media":
         return parse_media(file_path)
     
+
+        
     
     raise FileParseError(f"Unknown category '{category}' for extension {ext}")

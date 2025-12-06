@@ -1,33 +1,86 @@
+import os
+import re
+from docx import Document
+from PyPDF2 import PdfReader
+
+
+def extract_text(file_path: str) -> str:
+    ext = os.path.splitext(file_path)[1].lower()
+
+    if ext == ".txt":
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except:
+            return ""
+
+    elif ext == ".docx":
+        try:
+            doc = Document(file_path)
+            return "\n".join(p.text for p in doc.paragraphs)
+        except:
+            return ""
+
+    elif ext == ".pdf":
+        try:
+            reader = PdfReader(file_path)
+            text = ""
+            for page in reader.pages:
+                content = page.extract_text()
+                if content:
+                    text += content + "\n"
+            return text
+        except:
+            return ""
+
+    # 🔥 IMPORTANT: fallback for code files & other text-like files (.py, .js, .json, etc.)
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except:
+        return ""
+
+
+def is_text_content(text: str, min_length: int = 20) -> bool:
+    if not text or len(text.strip()) < min_length:
+        return False
+
+    printable = sum(c.isprintable() or c in "\n\r\t" for c in text)
+    ratio = printable / len(text)
+    return ratio > 0.85
+
+
+def looks_like_code(text: str) -> bool:
+    lines = text.splitlines()
+
+    patterns = [
+        r"^\s*def\s+\w+\(",
+        r"^\s*class\s+\w+",
+        r"^\s*#include",
+        r"^\s*function\s",
+        r"^\s*import\s",
+        r"^\s*(var|let|const)\s+\w+",
+        r"^\s*public\s",
+        r"^\s*<html",
+        r"^\s*<!doctype",
+        r"^\s*<\?xml",
+        r"^\s*fn\s+\w+\(",
+    ]
+    regexes = [re.compile(p, re.I) for p in patterns]
+
+    for line in lines:
+        if any(r.search(line) for r in regexes):
+            return True
+
+    return False
+
+
 def sniff_supertype(file_path: str) -> str:
-    """
-    Classify file content into one of:
-        "code"  - any structured code/markup/config (py/js/html/json/yaml/sql etc)
-        "media" - any binary file (pdf, zip, image, video, docx, etc)
-        "text"  - human-readable plain text (no code-like patterns)
-    """
+    text = extract_text(file_path)
 
-    with open(file_path, "rb") as f:
-        chunk = f.read(8192)
+    if is_text_content(text):
+        if looks_like_code(text):
+            return "code"
+        return "text"
 
-    # --- BINARY check = MEDIA ---
-    if b"\x00" in chunk:            # fast binary signature
-        return "media"
-
-    # decode best-effort
-    text = chunk.decode("utf-8", errors="ignore").lower()
-
-    # --- CODE detection patterns ---
-    code_markers = (
-        # typical programming
-        "def ", "class ", "import ", "#include", "fn ", "public ", "function ",
-        # markup/config
-        "<html", "<!doctype", "<?xml", "{", "[", "---", "apiVersion:", "version:",
-        # common structured file types
-        "select ", "insert ", "update ", "from ", "var ", "let ", "const ",
-    )
-
-    if any(marker in text for marker in code_markers):
-        return "code"
-
-    # --- Everything decoded & not code => plain text ---
-    return "text"
+    return "media"

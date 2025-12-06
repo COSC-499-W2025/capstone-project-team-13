@@ -4,6 +4,9 @@ EXT_SUPERTYPES = {
     ".cpp": "code", ".c": "code", ".rb": "code", ".php": "code",
     ".go": "code", ".rs": "code", ".cs": "code", ".swift": "code",
     ".html": "code", ".css": "code",
+
+    # --- data ---
+    ".json": "json", ".csv": "csv",
     
     # --- text / markup ---
     ".txt": "text", ".md": "text", ".xml": "text", ".pdf": "text", ".doc": "text", ".docx": "text",

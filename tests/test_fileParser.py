@@ -9,7 +9,7 @@ import csv
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from Helpers.fileParser import (
-    parse_txt, parse_json, parse_csv, parse_py, 
+    parse_txt, parse_json, parse_csv, parse_code,
     parse_file, FileParseError
 )
 
@@ -190,7 +190,7 @@ def func2():
         with open(self.py_file, 'w') as f:
             f.write(code)
         
-        result = parse_py(self.py_file)
+        result = parse_code(self.py_file)
         
         self.assertEqual(result['type'], 'python')
         self.assertEqual(result['functions'], 2)
@@ -208,7 +208,7 @@ class AnotherClass:
         with open(self.py_file, 'w') as f:
             f.write(code)
         
-        result = parse_py(self.py_file)
+        result = parse_code(self.py_file)
         
         self.assertEqual(result['classes'], 2)
         self.assertEqual(result['functions'], 1)  # method1 counts as function
@@ -218,7 +218,7 @@ class AnotherClass:
         with open(self.py_file, 'w') as f:
             f.write("")
         
-        result = parse_py(self.py_file)
+        result = parse_code(self.py_file)
         
         self.assertEqual(result['lines'], 0)  # Empty file has 0 lines
         self.assertEqual(result['functions'], 0)
@@ -255,9 +255,9 @@ class TestMainParser(unittest.TestCase):
     
     def test_parse_unsupported_format(self):
         """Test parsing unsupported file format"""
-        unsupported = os.path.join(self.test_dir, "test.xml")
+        unsupported = os.path.join(self.test_dir, "test.unsupported")
         with open(unsupported, 'w') as f:
-            f.write("<xml></xml>")
+            f.write("<unsupported></unsupported>")
         
         with self.assertRaises(FileParseError) as context:
             parse_file(unsupported)
