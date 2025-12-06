@@ -831,13 +831,13 @@ def ai_project_analysis_menu():
         print("Choose an analysis option:\n")
 
         print("1. Analyze Single Project")
-        print("2. Generate AI Summaries for All Projects")
-        print("3. Generate Resume Bullets")
-        print("4. Batch Analyze All Projects")
-        print("5. View AI Analysis Statistics")
-        print("6. AI Project Ranking")
-        print("7. Back to Main Menu")
-        print("8. AI Project Ranking")
+        print("2. Analyze Media Project")
+        print("3. Analyze Text Project")
+        print("4. Generate AI Summaries for All")
+        print("5. Generate Resume Bullet Points")
+        print("6. Batch Analyze All Projects")
+        print("7. View AI Statistics")
+        print("8. Run AI Project Ranking Menu")
         print("9. Back to Main Menu")
 
         
