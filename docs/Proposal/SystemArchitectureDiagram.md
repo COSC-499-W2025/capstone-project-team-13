@@ -1,5 +1,5 @@
 # System Architecture Diagram
-![System Architecture Diagram](Diagram-Images/SystemArchitectureRevised.drawio.png)
+<img width="1361" height="874" alt="image" src="https://github.com/user-attachments/assets/a0f6de82-b315-4f0a-8343-727726b21594" />
 
 Our system architecture diagram outlines a three-layer architecture including Front End, Back End, and a Database Layer, for a data analysis and visualization system.
 
