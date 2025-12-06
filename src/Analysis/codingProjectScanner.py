@@ -37,8 +37,14 @@ class CodingProjectScanner:
         self.project_path = Path(project_path).resolve()
         if not self.project_path.exists():
             raise ValueError(f"Project path does not exist: {project_path}")
-        if not self.project_path.is_dir():
-            raise ValueError(f"Project path is not a directory: {project_path}")
+        
+        #allow either dir or single file
+        self.single_file = self.project_path.is_file()
+        if self.single_file:
+            self.project_name = self.project_path.stem
+        else:
+            if not self.project_path.is_dir():
+                raise ValueError(f"Project path is not a directory: {project_path}")
         
         self.project_name = self.project_path.name
         
@@ -129,6 +135,34 @@ class CodingProjectScanner:
     
     def _find_code_files(self):
         """Find all code files in the project directory using existing config"""
+        
+            # Single-file mode
+        if self.single_file:
+            file_path = self.project_path
+            file_ext = file_path.suffix.lower()
+
+            if file_ext not in LANGUAGE_BY_EXTENSION:
+                return
+
+            try:
+                check_file_format(str(file_path))
+            except InvalidFileFormatError as e:
+                print(f"Skipping unsupported file: {file_path} — {e}")
+                return
+
+            try:
+                sniff_type = sniff_supertype(str(file_path))
+                if sniff_type != "code":
+                    print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
+                    return
+            except Exception:
+                return
+
+            self.code_files.append(file_path)
+            return
+
+        
+        
         for root, dirs, files in os.walk(self.project_path):
             # Remove skip directories from dirs list
             dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
