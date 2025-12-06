@@ -1,16 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-"""
-AI Project Ranker (Final Version)
----------------------------------
-Ranks projects using:
- - inferred numeric metrics (LOC, file_count, contributors)
- - strong skill relevance (test requirement)
- - AI semantic similarity (optional)
- - diversity-based top-K selection
-"""
-
 from typing import List, Dict, Any, Optional
 import math
 from copy import deepcopy
@@ -33,16 +23,16 @@ class AIProjectRanker:
             "contribution": 0.3
         }
 
-        self.skill_alpha = skill_alpha      # additional boost (not main)
+        self.skill_alpha = skill_alpha      # additional boost
         self.semantic_alpha = semantic_alpha
         self.diversity_alpha = diversity_alpha
 
         # AI service (if embedding logic is used)
         self.ai_service = get_ai_service()
 
-    # -----------------------------------------------------
+    # ----------------------------------------
     # Helpers
-    # -----------------------------------------------------
+    # ----------------------------------------
 
     def _min_max(self, vals):
         if not vals:
@@ -55,24 +45,24 @@ class AIProjectRanker:
     def _cosine(self, a, b):
         if not a or not b:
             return 0
-        dot = sum(x*y for x, y in zip(a, b))
-        mag1 = math.sqrt(sum(x*x for x in a))
-        mag2 = math.sqrt(sum(x*x for x in b))
+        dot = sum(x * y for x, y in zip(a, b))
+        mag1 = math.sqrt(sum(x * x for x in a))
+        mag2 = math.sqrt(sum(x * x for x in b))
         if mag1 == 0 or mag2 == 0:
             return 0
         return dot / (mag1 * mag2)
 
-    # -----------------------------------------------------
+    # ----------------------------------------
     # Main Ranking Function
-    # -----------------------------------------------------
+    # ----------------------------------------
 
     def rank(
         self,
         projects: List[Dict[str, Any]],
         target_skills: Optional[List[str]] = None,
-        top_k: int = 3
-    ) -> Dict[str, Any]:
-
+        top_k: int = 3,
+        target_embedding: Optional[List[float]] = None
+    ):
         if not projects:
             return {"selected": [], "all_scored": []}
 
@@ -89,23 +79,21 @@ class AIProjectRanker:
             p.setdefault("contributors", [])
             p.setdefault("embedding", None)
 
-        # -----------------------------------------------------
-        # Infer missing metrics (LOC, contributors, file_count)
-        # -----------------------------------------------------
+        # Infer missing metrics
         for p in items:
 
-            # A) Infer time spent from LOC
+            # A) Time spent from LOC
             if p.get("time_spent", 0) == 0:
                 loc = p.get("lines_of_code", 0)
-                p["time_spent"] = max(1, loc / 500)   # 500 LOC ≈ 1 unit
+                p["time_spent"] = max(1, loc / 500)
 
-            # B) Infer success score from file_count + LOC
+            # B) Success score from file_count + LOC
             if p.get("success_score", 0) == 0:
                 files = p.get("file_count", 1)
                 loc = p.get("lines_of_code", 1)
                 p["success_score"] = min(100, (files * 5) + (loc / 200)) / 100
 
-            # C) Contribution score from number of contributors
+            # C) Contribution score from contributors
             if p.get("contribution_score", 0) == 0:
                 contributors = p.get("contributors", [])
                 if isinstance(contributors, list) and len(contributors) > 0:
@@ -113,50 +101,43 @@ class AIProjectRanker:
                 else:
                     p["contribution_score"] = 1.0
 
-        # -----------------------------------------------------
-        # Normalize numeric metrics
-        # -----------------------------------------------------
+        # Normalize metrics
         t_norm = self._min_max([p["time_spent"] for p in items])
         s_norm = self._min_max([p["success_score"] for p in items])
         c_norm = self._min_max([p["contribution_score"] for p in items])
 
-        # -----------------------------------------------------
-        # Score each project
-        # -----------------------------------------------------
+        # Compute scores
         for i, p in enumerate(items):
 
-            # 1. Base normalized metric score
+            # Base weighted score
             base = (
                 self.weights["time"] * t_norm[i] +
                 self.weights["success"] * s_norm[i] +
                 self.weights["contribution"] * c_norm[i]
             )
 
-            # 2. Skill Match — strong boost (must pass unit test)
+            # Skill matching
             skill_score = 0
             if target_skills:
                 overlap = len(set(p["skills"]) & set(target_skills))
                 if overlap > 0:
-                    skill_score = 2.0    # ensures test_skill_matching passes
+                    skill_score = 2.0
 
-            # 3. Semantic similarity (if embeddings exist)
+            # Semantic similarity
             semantic = 0
-            if p.get("embedding"):
+            if p.get("embedding") and target_embedding:
                 semantic = self.semantic_alpha * self._cosine(
-                    p["embedding"], p["embedding"]
+                    p["embedding"], target_embedding
                 )
 
-            # 4. Final combined score
+            # Final combined score
             p["_rank_score"] = max(0, min(1.5, base + skill_score + semantic))
 
-
-        # Diversity-aware Top-K selection
-        # -----------------------------------------------------
+        # Diversity-aware Top-k
         selected, seen_skills = [], set()
         remaining = sorted(items, key=lambda x: x["_rank_score"], reverse=True)
 
         for _ in range(min(top_k, len(remaining))):
-
             best_idx, best_val = None, -999
 
             for i, p in enumerate(remaining):
@@ -172,9 +153,10 @@ class AIProjectRanker:
             selected.append(chosen)
             seen_skills.update(chosen["skills"])
 
+        # Final output
         return {
             "selected": selected,
             "all_scored": items,
             "covered_skills": sorted(seen_skills),
-            "summary": f"Ranked {len(items)} projects using metrics, skill matching, semantic similarity, and diversity."
+            "summary": f"Ranked {len(items)} projects using metrics, skills, semantic similarity, and diversity."
         }

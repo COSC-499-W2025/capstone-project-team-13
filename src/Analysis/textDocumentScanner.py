@@ -9,40 +9,48 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('punkt', quiet=True)
 
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from src.Settings.config import EXT_SUPERTYPES
 from src.Databases.database import db_manager
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
-from src.Analysis.skillsExtractDocs import analyze_folder_for_skills
+from src.Analysis.skillsExtractDocs import analyze_folder_for_skills, analyze_document_for_skills, extract_text
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileDataCheck import sniff_supertype
+from src.Helpers.classifier import supertype_from_extension
 
 class TextDocumentScanner:
     """Scans and analyzes text-based documents"""
 
-    # Document file extensions to scan
-    TEXT_EXTENSIONS = {
-        '.txt', '.md', '.html', '.css',
-        '.xml', '.pdf', '.doc', '.docx'
-    }
     
-    def __init__(self, document_path: str):
+    def __init__(self, document_path: str,single_file: bool = False):
         """
-        Initialize scanner for a text document folder
+        Initialize scanner for a text document or folder
 
         Args:
-            document_path: Path to text document root directory
+            document_path: Path to text document file or root directory
+            single_file: If True, analyze only the single file; if False, analyze entire folder
 
         Raises:
-            ValueError: If path doesn't exist or isn't a directory
+            ValueError: If path doesn't exist
         """
         self.document_path = Path(document_path).resolve()
         if not self.document_path.exists():
             raise ValueError(f"Document path does not exist: {document_path}")
-        if not self.document_path.is_dir():
-            raise ValueError(f"Document path is not a directory: {document_path}")
-
-        self.document_name = self.document_path.name
+        self.single_file = single_file
+        
+        if self.single_file:
+            if not self.document_path.is_file():
+                raise ValueError(f"Single file mode requires a file path: {document_path}")
+            self.document_name = self.document_path.stem
+        else:
+            if not self.document_path.is_dir():
+                raise ValueError(f"Folder mode requires a directory path: {document_path}")
+            self.document_name = self.document_path.name
 
         # Data storage
         self.text_files = []  # List of text file paths
@@ -133,22 +141,54 @@ class TextDocumentScanner:
         return project_id
     
     def _find_text_files(self):
-        """Find all text files in the project directory using existing config"""
+        """Find all text files - either single file or entire directory"""
+
+        def _maybe_add_text_file(path: Path):
+            """Validate a path as a 'text' file and add to self.text_files if valid."""
+            path_str = str(path)
+
+            # Extension-level validation (allowed formats)
+            try:
+                check_file_format(path_str)
+            except InvalidFileFormatError as e:
+                # Unsupported extension → skip
+                print(f"Skipping unsupported file: {path_str} — {e}")
+                return
+
+            # Map extension → supertype ("text" / "code" / "media" / etc)
+            ext_supertype = supertype_from_extension(path_str)
+            if ext_supertype != "text":
+                # Not configured as a text file
+                return
+
+            # Content sniffing → make sure the file actually *looks* like text
+            sniffed_supertype = sniff_supertype(path_str)
+            if sniffed_supertype != "text":
+                # e.g. binary file with .txt extension, or code pretending to be text
+                print(f"Skipping {path_str}: ext says 'text' but content is '{sniffed_supertype}'")
+                return
+
+            # All checks passed → track it
+            self.text_files.append(path)
+
+        # --- Single file mode ---
+        if self.single_file:
+            _maybe_add_text_file(self.document_path)
+            return
+
+        # --- Directory mode ---
         for root, dirs, files in os.walk(self.document_path):
             # Remove skip directories from dirs list
             dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
-            
+
             for filename in files:
                 # Skip hidden files
                 if filename.startswith('.'):
                     continue
-                
+
                 file_path = Path(root) / filename
-                file_ext = file_path.suffix.lower()
-                
-                # Check if it's a text file using EXT_SUPERTYPES
-                if EXT_SUPERTYPES.get(file_ext) == "text":
-                    self.text_files.append(file_path)
+                _maybe_add_text_file(file_path)
+
     
     def _detect_document_types(self):
         """Detect document types based on file extensions"""
@@ -185,83 +225,56 @@ class TextDocumentScanner:
         
         for file_path in self.text_files:
             try:
-                # Use existing function
-                keywords = extract_keywords_with_scores(str(file_path))
+                text_content = extract_text(str(file_path))
+                
+                if not text_content or not text_content.strip():
+                    continue
+                
+                keywords = extract_keywords_with_scores(text_content)
 
                 # Aggregate scores (take top 10 per file)
                 for score, keyword in keywords[:10]:
                     keyword_scores[keyword.lower()] += score
                     
             except Exception as e:
-                # Skip files that can't be processed
+                print(f"  ⚠️  Error extracting keywords from {file_path.name}: {e}")
                 continue
         
-        # Sort by score and keep top 50 overall
+        # Store sorted list in self.all_keywords
+        # Sort by score descending
         self.all_keywords = sorted(
             keyword_scores.items(),
             key=lambda x: x[1],
             reverse=True
-        )[:50]
+        )
+
     
     def _analyze_skills(self): 
-        """Analyze skills from text files using existing skills extractor"""
-        try:            
-            # Analyze the entire folder for skills
-            # Returns list of tuples: [(skill, count), ...]
-            skill_results = analyze_folder_for_skills(str(self.document_path))
-            
-            # Convert to dictionary {skill: score}
-            self.all_skills = {skill: count for skill, count in skill_results}
+        """Analyze skills from text files"""
+        
+        try:
+            if self.single_file:
+                # For single file, use the single document analyzer
+                skill_results = analyze_document_for_skills(str(self.document_path))
+                self.all_skills = {skill: count for skill, count in skill_results}
+            else:
+                # For folders, use the folder analyzer
+                skill_results = analyze_folder_for_skills(str(self.document_path))
+                self.all_skills = {skill: count for skill, count in skill_results}
             
         except ImportError:
-            # If the module doesn't exist yet, skip skill analysis
             pass
         except Exception as e:
-            # Log error but continue processing
             print(f"  ⚠️  Error analyzing skills: {e}")
             pass
 
 
     def _read_file_content(self, file_path: Path) -> Optional[str]:
-        """Read content from various file types"""
-        file_ext = file_path.suffix.lower()
-        
+        """Read content from various file types using extract_text"""
         try:
-            # Plain text files
-            if file_ext in {'.txt', '.md', '.xml'}:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    return f.read()
-            
-            # PDF files (requires PyPDF2)
-            elif file_ext == '.pdf':
-                try:
-                    import PyPDF2
-                    with open(file_path, 'rb') as f:
-                        reader = PyPDF2.PdfReader(f)
-                        text = []
-                        for page in reader.pages:
-                            text.append(page.extract_text())
-                        return '\n'.join(text)
-                except ImportError:
-                    print(f"  ⚠️  PyPDF2 not installed, skipping PDF: {file_path.name}")
-                    return None
-            
-            # Word documents (requires python-docx)
-            elif file_ext in {'.doc', '.docx'}:
-                try:
-                    import docx
-                    doc = docx.Document(file_path)
-                    return '\n'.join([para.text for para in doc.paragraphs])
-                except ImportError:
-                    print(f"  ⚠️  python-docx not installed, skipping Word doc: {file_path.name}")
-                    return None
-            
-            # Other formats - try as plain text
-            else:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    return f.read()
-                    
+            return extract_text(str(file_path))
         except Exception as e:
+            print(f"    ⚠️  Error reading {file_path.name}: {str(e)}")
             return None
         
 
@@ -283,6 +296,7 @@ class TextDocumentScanner:
                         r"[A-Za-z0-9\u00C0-\u024F\u1E00-\u1EFF]+(?:[’'-][A-Za-z0-9\u00C0-\u024F\u1E00-\u1EFF]+)*",
                         content
                     )
+
                     # Fallback if regex finds nothing but there is content
                     if not word_tokens:
                         word_tokens = content.split()
@@ -302,7 +316,7 @@ class TextDocumentScanner:
         # Determine date range
         date_created = min(file_dates) if file_dates else datetime.now(timezone.utc)
         date_modified = max(file_dates) if file_dates else datetime.now(timezone.utc)
-        
+
         return {
             'word_count': total_words,
             'file_count': len(self.text_files),
@@ -311,7 +325,8 @@ class TextDocumentScanner:
             'date_created': date_created,
             'date_modified': date_modified
         }
-    
+
+
     def _store_in_database(self, metrics: Dict[str, Any]) -> int:
         """Store project data in database"""
         
@@ -347,18 +362,19 @@ class TextDocumentScanner:
         return project.id
 
 
-def scan_text_document(document_path: str) -> Optional[int]:
+def scan_text_document(document_path: str, single_file: bool = False) -> Optional[int]:
     """
-    Convenience function to scan a text document
+    Convenience function to scan a text document or folder
     
     Args:
-        document_path: Path to coding project directory
+        document_path: Path to text document file or directory
+        single_file: If True, analyze only the file; if False, analyze entire folder
         
     Returns:
         document_id: Database ID of scanned document, or None if failed
     """
     try:
-        scanner = TextDocumentScanner(document_path)
+        scanner = TextDocumentScanner(document_path, single_file=single_file)
         return scanner.scan_and_store()
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")

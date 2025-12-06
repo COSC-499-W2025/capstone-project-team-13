@@ -12,10 +12,13 @@ A versatile platform that intelligently processes digital artifacts including co
 - **Jackson Wilson** - 11927753
 - **Prina Mehta** - 87716874
 - **Maya Knutsvig** - 17950502
-- **Ilina Islam** - 58189903
+- **Illina Islam** - 58189903
 - **T'Olu Akinwande** - 69892271
 
 ---
+
+## Team Contract
+https://docs.google.com/document/d/16xSLlqSOmJyfw9b78a8Gc61JJh8cMKzb9KAB2M3JHEg/edit?usp=sharing
 
 ## 🎯 Project Overview
 

@@ -3,6 +3,7 @@ Digital Artifact Mining Software - Main Entry Point
 Integrates all components for a complete workflow
 
 """
+import json
 import sys
 import os
 from pathlib import Path
@@ -26,6 +27,8 @@ from src.Extraction.zipHandler import (
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
 from src.Analysis.codingProjectScanner import scan_coding_project
+from src.Analysis.textDocumentScanner import scan_text_document
+from src.Analysis.mediaProjectScanner import scan_media_project
 from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
 from src.Databases.database import db_manager
@@ -40,7 +43,23 @@ from src.AI.ai_enhanced_summarizer import (
 )
 from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
+from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
+from src.Analysis.codeEfficiency import grade_efficiency
+from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
+from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 
+# Import deletion management features
+try:
+    from src.deletion_manager import DeletionManager
+    from src.enhanced_deletion import (
+        delete_project_enhanced,
+        bulk_delete_projects,
+        view_shared_files_report
+    )
+    DELETION_FEATURES_AVAILABLE = True
+except ImportError:
+    DELETION_FEATURES_AVAILABLE = False
+    print("⚠️  Deletion features not available (modules not found)")
 
 def clear_screen():
     """Clear console screen"""
@@ -131,48 +150,44 @@ def detect_project_type(folder_path):
 
 def check_if_collaborative(project_path):
     """
-    Check if a project is collaborative
-    
-    TODO: Implement proper collaboration detection using:
-    - Git history analysis (git log --format=%aN)
-    - File metadata analysis (@author tags, file ownership)
-    - Database contributor records
-    
-    For now, returns 'Unknown' as placeholder.
-    
-    Args:
-        project_path: Path to project directory
-        
-    Returns:
-        str: 'Individual Project', 'Collaborative Project', or 'Unknown'
+    Determine if a project is collaborative by using:
+    - metadata (owners, editors)
+    - git analysis (if .git exists)
+    - file-level contributor extraction
     """
-    # Placeholder - check database if project already exists
-    existing = db_manager.get_project_by_path(str(project_path))
-    if existing:
-        contributors = db_manager.get_contributors_for_project(existing.id)
-        if len(contributors) > 1:
-            return 'Collaborative Project'
-        elif len(contributors) == 1:
-            return 'Individual Project'
-    
-    return 'Unknown (no contributor data found)'
+
+    try:
+        from src.Analysis.projectcollabtype import identify_project_type
+
+        # Minimal metadata so the function can still run
+        project_data = {"files": []}
+
+        collab_type = identify_project_type(project_path, project_data)
+        return collab_type
+
+    except Exception as e:
+        print("Collaboration detection error:", e)
+        return "Unknown"
 
 def get_user_choice():
     """Get user's choice for what to analyze"""
     print_header("Digital Artifact Mining Software")
     print("What would you like to analyze?\n")
-    print("1. Coding Project (folder containing code files)")
-    print("2. Visual/Media Project (folder containing design/media files)")
-    print("3. Single Document (text file for keyword extraction)")
-    print("4. ZIP Archive (extract and analyze)")
-    print("5. Any Folder (auto-detect type)")
-    print("6. View All Projects in Database")
-    print("7. Generate Project Summary")
-    print("8. AI Project Analysis")
-    print("9. Rank Projects")  
-    print("10. Exit")
+    print("1.  Coding Project (folder containing code files)")
+    print("2.  Visual/Media Project (folder containing design/media files)")
+    print("3.  Single Document (text file for keyword extraction)")
+    print("4.  ZIP Archive (extract and analyze)")
+    print("5.  Any Folder (auto-detect type)")
+    print("6.  View All Projects in Database")
+    print("7.  Generate Project Summary")
+    print("8.  AI Project Analysis")
+    print("9.  Rank Projects")  
+    print("10. Code Efficiency Analysis")
+    print("11. Delete Project")
+    print("12. Delete AI Insights Only")
+    print("13. Exit")
     
-    choice = input("\nEnter your choice (1-10): ").strip()
+    choice = input("\nEnter your choice (1-13): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -236,6 +251,11 @@ def display_project_details(project):
             if len(project.skills) > 10:
                 print(f"                    ... and {len(project.skills) - 10} more")
         
+        # Show AI insights if available
+        if hasattr(project, 'ai_description') and project.ai_description:
+            print(f"\n🤖 AI-Generated Description:")
+            print(f"   {project.ai_description}")
+        
         # Show contributors if any
         contributors = db_manager.get_contributors_for_project(project.id)
         if contributors:
@@ -259,6 +279,17 @@ def display_project_details(project):
             print(f"   Skills: {', '.join(project.skills)}")
         if project.tags:
             print(f"   Software: {', '.join(project.tags)}")
+    
+    # Show if files are shared with other projects
+    if DELETION_FEATURES_AVAILABLE:
+        try:
+            manager = DeletionManager()
+            shared_files = manager.get_shared_files(project.id)
+            if shared_files:
+                print(f"\n⚠️  Shared Files:")
+                print(f"   {len(shared_files)} file(s) are used in other projects")
+        except:
+            pass
     
     print(f"\n{'='*70}")
 
@@ -332,59 +363,42 @@ def handle_visual_project():
         print("❌ Path must be a directory (folder)")
         return
     
-    # Normalize path
+    # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
     
-    # Check if already exists
+    # Check if already exists BEFORE scanning
     existing = db_manager.get_project_by_path(path)
-    if existing and existing.project_type == 'media':
-        print(f"\n⚠️  This media project already exists in database (ID: {existing.id})")
-        display_project_details(existing)
+    if existing:
+        print(f"\n⚠️  This media project already exists in the database!")
+        print(f"   Project: {existing.name}")
+        print(f"   Database ID: {existing.id}") 
+        if existing.date_scanned:
+            from datetime import timezone
+            local_time = existing.date_scanned.replace(tzinfo=timezone.utc).astimezone()
+            print(f"   Last scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+        
+        rescan = input("\n   Would you like to re-scan and update? (yes/no): ").strip().lower()
+        if rescan != 'yes':
+            print("\n✅ Using existing project data.")
+            display_project_details(existing)
+            return
+        
+        # Delete old project to re-scan
+        print("\n⏳ Deleting old data and re-scanning...")
+        db_manager.delete_project(existing.id)
+    
+    # The scanner handles all the analysis and display internally
+    project_id = scan_media_project(path)
+    
+    if not project_id:
+        print("\n❌ Failed to scan project or no media files found.")
         return
-    
-    print("\n⏳ Analyzing visual project...")
-    
-    try:
-        result = analyze_visual_project(path)
-        
-        print(f"\n✅ Analysis Complete!")
-        print(f"\n📊 Visual Project Analysis:")
-        print(f"   Type: {result['type']}")
-        print(f"   Files Found: {result['num_files']}")
-        
-        if result['software_used']:
-            print(f"\n   Software Detected:")
-            for software in result['software_used']:
-                print(f"      • {software}")
-        
-        if result['skills_detected']:
-            print(f"\n   Skills Detected:")
-            for skill in result['skills_detected']:
-                print(f"      • {skill}")
-        
-        # Optionally store in database
-        if result['num_files'] > 0:
-            store = input("\n💾 Would you like to store this in the database? (yes/no): ").strip().lower()
-            if store == 'yes':
-                project_data = {
-                    'name': os.path.basename(path),
-                    'file_path': path,
-                    'file_count': result['num_files'],
-                    'project_type': 'media',
-                    'skills': result['skills_detected'],
-                    'tags': result['software_used']
-                }
-                project = db_manager.create_project(project_data)
-                print(f"✅ Stored in database with ID: {project.id}")
-    
-    except Exception as e:
-        print(f"\n❌ Error analyzing project: {e}")
 
 def handle_document():
-    """Handle single document keyword extraction"""
-    print_header("Extract Keywords from Document")
+    """Handle scanning a single text document"""
+    print_header("Scan Text Document")
     
-    path = get_path_input("Enter path to text document: ")
+    path = get_path_input("Enter path to document: ")
     if not path:
         return
     
@@ -392,41 +406,35 @@ def handle_document():
         print("❌ Path must be a file")
         return
     
-    print("\n⏳ Extracting keywords...")
+    # Normalize path to absolute for consistent comparison
+    path = os.path.abspath(path)
     
-    try:
-        # Validate format
-        check_file_format(path)
+    # Check if already exists BEFORE scanning
+    existing = db_manager.get_project_by_path(path)
+    if existing:
+        print(f"\n⚠️  This document already exists in the database!")
+        print(f"   Project: {existing.name}")
+        print(f"   Database ID: {existing.id}") 
+        if existing.date_scanned:
+            from datetime import timezone
+            local_time = existing.date_scanned.replace(tzinfo=timezone.utc).astimezone()
+            print(f"   Last scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
         
-        # Parse file
-        parsed = parse_file(path)
+        rescan = input("\n   Would you like to re-scan and update? (yes/no): ").strip().lower()
+        if rescan != 'yes':
+            print("\n✅ Using existing project data.")
+            return
         
-        # Extract keywords from content
-        if parsed.get('content'):
-            content = parsed['content']
-            if isinstance(content, dict):
-                content = str(content)
-            
-            keywords = extract_keywords_with_scores(content)
-            
-            print(f"\n✅ Keyword Extraction Complete!")
-            print(f"\n📊 Document Analysis:")
-            print(f"   File: {os.path.basename(path)}")
-            print(f"   Type: {parsed['type']}")
-            
-            if keywords:
-                print(f"\n   Top Keywords (score, phrase):")
-                for score, phrase in keywords[:15]:
-                    print(f"      {score:5.2f}  →  {phrase}")
-            else:
-                print("\n   No keywords extracted.")
-        else:
-            print("❌ Could not extract text content from file.")
+        # Delete old project to re-scan
+        print("\n⏳ Deleting old data and re-scanning...")
+        db_manager.delete_project(existing.id)
+        
+    # The scanner handles all the analysis and display internally
+    project_id = scan_text_document(path, single_file=True)
     
-    except (InvalidFileFormatError, FileParseError) as e:
-        print(f"\n❌ Error: {e}")
-    except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+    if not project_id:
+        print("\n❌ Failed to scan document.")
+        return
 
 def handle_zip_archive():
     """Handle ZIP archive extraction and analysis"""
@@ -811,6 +819,7 @@ def ai_project_analysis_menu():
         print_header("AI Project Analysis")
         
         print("Choose an analysis option:\n")
+
         print("1. Analyze Single Project")
         print("2. Generate AI Summaries for All Projects")
         print("3. Generate Resume Bullets")
@@ -818,22 +827,41 @@ def ai_project_analysis_menu():
         print("5. View AI Analysis Statistics")
         print("6. AI Project Ranking")
         print("7. Back to Main Menu")
+        print("8. AI Project Ranking")
+        print("9. Back to Main Menu")
+
         
         choice = input("\nEnter your choice (1-7): ").strip()
+
+        print("1. Analyze Coding Project")
+        print("2. Analyze Media Project")
+        print("3. Analyze Text Project")
+        print("4. Generate AI Summaries for All Projects")
+        print("5. Generate Resume Bullets")
+        print("6. Batch Analyze All Projects")
+        print("7. View AI Analysis Statistics")
+        print("8. Back to Main Menu")
+        
+        choice = input("\nEnter your choice (1-8): ").strip()
+
         
         if choice == '1':
             analyze_single_project_ai()
         elif choice == '2':
-            generate_ai_summaries_all()
+            analyzeMediaProject()
         elif choice == '3':
-            generate_resume_bullets_menu()
+            analyzeTextProject()        
         elif choice == '4':
-            batch_analyze_all_projects()
+            generate_ai_summaries_all()
         elif choice == '5':
-            view_ai_statistics()
+            generate_resume_bullets_menu()
         elif choice == '6':
-            run_ai_project_ranking_menu()
+            batch_analyze_all_projects()
         elif choice == '7':
+            view_ai_statistics()
+        elif choice == '8':
+            run_ai_project_ranking_menu()
+        elif choice == '9':
             break
         else:
             print("❌ Invalid choice. Please try again.")
@@ -945,6 +973,231 @@ def analyze_single_project_ai():
             else:
                 print("⚠️  Could not update database")
         
+    except Exception as e:
+        print(f"\n❌ Error during analysis: {e}")
+        print("\nPossible issues:")
+        print("  • Check your GEMINI_API_KEY is set")
+        print("  • Verify you have internet connection")
+        print("  • Check API quota limits")
+    
+    input("\nPress Enter to continue...")
+
+def analyzeMediaProject():
+    """Analyze a media project with AI - provides deep technical insights"""
+    print_header("AI Media Project Analysis")
+    
+    # Get all media projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\nTip: Scan some projects first using options 1-5!")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display available projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Type':<10}")
+    print("-" * 60)
+    for project in projects[:20]:  # Show first 20
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        print(f"{project.id:<5} {name:<40} {project.project_type:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter media project ID to analyze (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project or project.project_type != 'visual_media':
+        print(f"❌ Media project with ID {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm analysis
+    print(f"\n📁 Selected: {project.name}")
+    
+    # Run AI analysis
+    print(f"\n{'='*70}")
+    print(f"🤖 Running AI Media Analysis...")
+    print(f"{'='*70}\n")
+    print("This may take 10-30 seconds...\n")
+
+    project_dict = {
+        "project_name": project.name,
+        "media_type": project.project_type,
+        "details": project.description or project.file_path or ""
+    }
+    
+    try:
+
+        analyzer = AIMediaProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_dict)
+        
+        # Display results
+        print(f"{'='*70}")
+        print(f"📊 AI Media Analysis Results")
+        print(f"{'='*70}\n")
+        print(f"📁 Project: {results['project_name']}\n")
+
+        # Description
+        if results.get("ai_description"):
+            print("📝 AI Project Description:")
+            print(results["ai_description"])
+            print()
+
+        # Skills
+        if results.get("extracted_skills"):
+            skills = results["extracted_skills"]
+            print(f"💡 Skills Detected ({len(skills)}):")
+            for s in skills[:8]:
+                print(f"   • {s}")
+            if len(skills) > 8:
+                print(f"   ... and {len(skills)-8} more")
+            print()
+        
+        if results.get("contribution_score") is not None:
+            print("📈 Estimated Contribution Score:")
+            print(f"   {results['contribution_score']}/10\n")
+
+        # Save?
+        print(f"{'='*70}")
+        save = input("💾 Save this analysis to database? (yes/no): ").strip().lower()
+        
+        if save == "yes":
+            db_manager.update_project(
+                project_id,
+                {
+                    "ai_description": results["ai_description"],
+                    "skills": ", ".join(results["extracted_skills"]),
+                    "contribution_score": results["contribution_score"]
+                }
+            )
+            print("✅ Saved to database!")
+        
+    except Exception as e:
+        print(f"\n❌ Error during analysis: {e}")
+        print("\nPossible issues:")
+        print("  • Check your GEMINI_API_KEY is set")
+        print("  • Verify you have internet connection")
+        print("  • Check API quota limits")
+    
+    input("\nPress Enter to continue...")
+
+def analyzeTextProject():
+    """Analyze a text document project with AI - provides deep insights"""
+    print_header("AI Text Document Analysis")
+    
+    # Get all text document projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\nTip: Scan some projects first using options 1-5!")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display available projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Type':<10}")
+    print("-" * 60)
+    for project in projects[:20]:  # Show first 20
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        print(f"{project.id:<5} {name:<40} {project.project_type:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter text document project ID to analyze (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project or project.project_type != 'text':
+        print(f"❌ Text document project with ID {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm analysis
+    print(f"\n📁 Selected: {project.name}")
+    
+    # Run AI analysis
+    print(f"\n{'='*70}")
+    print(f"🤖 Running AI Text Document Analysis...")
+    print(f"{'='*70}\n")
+    print("This may take 10-30 seconds...\n")
+
+    project_dict = {
+        "project_name": project.name,
+        "document_type": project.project_type,
+        "details": project.description or project.file_path or ""
+    }
+    
+    try:
+
+        analyzer = AITextProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_dict)
+        print(f"{'='*70}")
+        print(f"📊 AI Text Project Analysis Results")
+        print(f"{'='*70}\n")
+        print(f"📁 Project: {results['project_name']}\n")
+
+        if results.get("ai_description"):
+            print("📝 AI Description:")
+            print(results["ai_description"])
+            print()
+
+        # Skills
+        if results.get("extracted_skills"):
+            print(f"💡 Extracted Skills ({len(results['extracted_skills'])}):")
+            for i, skill in enumerate(results["extracted_skills"], 1):
+                print(f"   {i}. {skill}")
+            print()
+
+        print("📈 Contribution Score:")
+        print(f"   {results.get('contribution_score', 'N/A')}")
+        print()
+
+        # Cache stats
+        print("📊 Analysis Stats:")
+        print(f"   Cache hits: {analyzer.cache_hits}")
+        print()
+
+        # Save?
+        print("="*70)
+        save = input("💾 Save AI results to database? (yes/no): ").strip().lower()
+        if save == "yes":
+            update_data = {
+                "ai_description": results.get("ai_description"),
+                "skills": ", ".join(results.get("extracted_skills", [])),
+                "contribution_score": results.get("contribution_score")
+            }
+            try:
+                db_manager.update_project(project_id, update_data)
+                print("✅ AI analysis saved to database!")
+            except Exception as e:
+                print(f"⚠️ Could not update database: {e}")
+    
     except Exception as e:
         print(f"\n❌ Error during analysis: {e}")
         print("\nPossible issues:")
@@ -1153,9 +1406,9 @@ def batch_analyze_all_projects():
     
     # Options
     print("Analysis Options:")
-    print("1. Overview only (Fast")
-    print("2. Overview + Skills (Moderate")
-    print("3. Complete analysis (Thorough")
+    print("1. Overview only (Fast)")
+    print("2. Overview + Skills (Moderate)")
+    print("3. Complete analysis (Thorough)")
     print("4. Cancel")
     
     choice = input("\nChoice (1-4): ").strip()
@@ -1379,6 +1632,261 @@ def run_importance_test():
     i=0
     print("\nDone.")
 
+def run_project_ranking_test():
+    """Rank projects by creation/update date and display"""
+    print("=== Project Timeline ===\n")
+
+    # Sample project data — replace with real DB fetch later
+    projects = [
+        {"name": "Capstone Project", "created_at": "2023-10-03", "updated_at": "2024-05-15"},
+        {"name": "Project 1", "created_at": "2024-02-01", "updated_at": "2024-09-20"},
+        {"name": "Project 2", "created_at": "2025-01-12", "updated_at": "2025-03-02"},
+    ]
+
+    sorted_projects = rank_projects_chronologically(projects)
+    output = format_project_timeline(sorted_projects)
+    print(output)
+
+def run_code_efficiency_test():
+    """
+    Prompt the user for a file or directory path and analyze code efficiency.
+    Prints results for each code file found.
+    """
+    path_input = input("Enter the path to a code file or directory: ").strip()
+    target = Path(path_input)
+
+    if not target.exists():
+        print(f"Error: '{path_input}' does not exist.")
+        return
+
+    files_to_scan = []
+    if target.is_file():
+        files_to_scan.append(target)
+    elif target.is_dir():
+        # Recursively grab common code files
+        for ext in ["*.py", "*.js", "*.java", "*.cpp", "*.c", "*.ts"]:
+            files_to_scan.extend(target.rglob(ext))
+    else:
+        print(f"Error: '{path_input}' is neither a file nor a directory.")
+        return
+
+    if not files_to_scan:
+        print("No code files found to analyze.")
+        return
+
+    for file_path in files_to_scan:
+        try:
+            code = file_path.read_text(encoding="utf-8")
+        except Exception as e:
+            print(f"Could not read '{file_path}': {e}")
+            continue
+
+        result = grade_efficiency(code, str(file_path))
+        print(f"\n=== Efficiency Analysis for {file_path} ===")
+        print(f"Time Score: {result['time_score']}")
+        print(f"Space Score: {result['space_score']}")
+        print(f"Overall Efficiency Score: {result['efficiency_score']}")
+        print(f"Max Loop Depth: {result['max_loop_depth']}")
+        print(f"Total Loops: {result['total_loops']}")
+
+# ============================================
+# DELETION MANAGEMENT FUNCTIONS
+# ============================================
+
+def deletion_management_menu():
+    """Deletion management submenu"""
+    if not DELETION_FEATURES_AVAILABLE:
+        print("\n❌ Deletion features are not available.")
+        print("   Please ensure deletion_manager.py and enhanced_deletion.py are in src/")
+        input("\nPress Enter to continue...")
+        return
+    
+    while True:
+        clear_screen()
+        print_header("Deletion Management")
+        
+        print("Choose an option:\n")
+        print("1. Delete Project (Safe - protects shared files)")
+        print("2. Delete AI Insights (Single Project)")
+        print("3. Delete ALL AI Insights")
+        print("4. Bulk Delete Projects")
+        print("5. View Shared Files Report")
+        print("6. View Cache Statistics")
+        print("7. Back to Main Menu")
+        
+        choice = input("\nEnter your choice (1-7): ").strip()
+        
+        if choice == '1':
+            delete_project_enhanced()
+        elif choice == '2':
+            delete_single_project_insights()
+        elif choice == '3':
+            delete_all_insights_confirm()
+        elif choice == '4':
+            bulk_delete_projects()
+        elif choice == '5':
+            view_shared_files_report()
+        elif choice == '6':
+            view_deletion_cache_stats()
+        elif choice == '7':
+            break
+        else:
+            print("❌ Invalid choice. Please try again.")
+            input("\nPress Enter to continue...")
+
+def delete_single_project_insights():
+    """Delete AI insights for a single project"""
+    print_header("Delete AI Insights (Single Project)")
+    
+    # Get all projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Has AI':<10}")
+    print("-" * 60)
+    
+    for project in projects[:20]:
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        has_ai = 'Yes' if (hasattr(project, 'ai_description') and project.ai_description) else 'No'
+        print(f"{project.id:<5} {name:<40} {has_ai:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter project ID (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project:
+        print(f"❌ Project {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Get deletion preview
+    manager = DeletionManager()
+    preview = manager.get_deletion_preview(project_id)
+    
+    print(f"\n📁 Project: {preview['project_name']}")
+    print(f"   AI insights in database: {'Yes' if preview['has_ai_insights'] else 'No'}")
+    print(f"   Cached analysis files: {preview['cache_files_found']}")
+    
+    if not preview['has_ai_insights'] and preview['cache_files_found'] == 0:
+        print("\n✅ No AI insights to delete")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm deletion
+    confirm = input("\n⚠️  Delete AI insights? (yes/no): ").strip().lower()
+    
+    if confirm == 'yes':
+        print("\n🔄 Deleting AI insights...")
+        results = manager.delete_ai_insights_for_project(project_id)
+        
+        print(f"\n✅ Deletion complete!")
+        print(f"  Database updated: {'Yes' if results['db_updated'] else 'No'}")
+        print(f"  Cache files deleted: {results['cache_files_deleted']}")
+        
+        if results['errors']:
+            print("\n⚠️  Errors:")
+            for error in results['errors']:
+                print(f"  • {error}")
+    else:
+        print("\nDeletion cancelled")
+    
+    input("\nPress Enter to continue...")
+
+def delete_all_insights_confirm():
+    """Delete ALL AI insights with confirmation"""
+    print_header("Delete ALL AI Insights")
+    
+    print("⚠️⚠️⚠️  WARNING  ⚠️⚠️⚠️")
+    print("\nThis will delete ALL AI-generated insights from:")
+    print("  • Project descriptions in database")
+    print("  • All cached AI analyses")
+    print("\nThis action affects ALL projects in the system.")
+    
+    confirm = input("\nAre you absolutely sure? (yes/no): ").strip().lower()
+    
+    if confirm != 'yes':
+        print("\nDeletion cancelled")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Double confirmation
+    confirm2 = input("⚠️  Type 'DELETE ALL' to confirm: ").strip()
+    
+    if confirm2 != 'DELETE ALL':
+        print("\nDeletion cancelled")
+        input("\nPress Enter to continue...")
+        return
+    
+    print("\n🔄 Deleting all AI insights...")
+    
+    manager = DeletionManager()
+    results = manager.delete_all_ai_insights()
+    
+    print(f"\n✅ Deletion complete!")
+    print(f"  Projects updated: {results['projects_updated']}")
+    print(f"  Cache files deleted: {results['cache_files_deleted']}")
+    
+    if results['errors']:
+        print(f"\n⚠️  Errors encountered ({len(results['errors'])}):")
+        for error in results['errors'][:5]:
+            print(f"  • {error}")
+        if len(results['errors']) > 5:
+            print(f"  ... and {len(results['errors']) - 5} more")
+    
+    input("\nPress Enter to continue...")
+
+def view_deletion_cache_stats():
+    """View cache statistics"""
+    print_header("Cache Statistics")
+    
+    manager = DeletionManager()
+    stats = manager.get_cache_statistics()
+    
+    print(f"📊 Cache Information:")
+    print(f"  Total cache files: {stats['total_cache_files']}")
+    print(f"  Total cache size: {stats['total_cache_size_bytes'] / 1024:.2f} KB")
+    
+    if stats['cache_by_type']:
+        print(f"\n📋 Cache by type:")
+        for cache_type, count in stats['cache_by_type'].items():
+            print(f"  • {cache_type}: {count}")
+    
+    if stats['oldest_cache']:
+        print(f"\n📅 Cache age:")
+        print(f"  Oldest: {stats['oldest_cache']}")
+        print(f"  Newest: {stats['newest_cache']}")
+    
+    # Option to clear cache
+    if stats['total_cache_files'] > 0:
+        print()
+        clear = input("🗑️  Clear all cache? (yes/no): ").strip().lower()
+        if clear == 'yes':
+            confirm = input("⚠️  This cannot be undone. Confirm? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                results = manager.delete_all_ai_insights()
+                print(f"\n✅ Deleted {results['cache_files_deleted']} cache file(s)")
+    
+    input("\nPress Enter to continue...")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1414,16 +1922,39 @@ def main():
             generate_summary()
         elif choice == '8':                      
             ai_project_analysis_menu()
-        elif choice == '9':                      
-            run_importance_test()            
-        elif choice == '10':                      
+        elif choice == '9':
+            print("\n--- Importance Score Menu ---")
+            print("1. Sort projects by date")
+            print("2. Compute/grade importance scores")
+            sub = input("Select an option (1 or 2): ").strip()
+
+            if sub == '1':
+                run_project_ranking_test()
+            elif sub == '2':
+                run_importance_test()
+            else:
+                print("Invalid choice. Returning to main menu.")
+        elif choice == '10':
+            run_code_efficiency_test()
+        if choice == "11":
+            delete_project_enhanced()
+
+        elif choice == "12":
+            manager = DeletionManager()
+            pid = input("Enter project ID: ").strip()
+
+            if pid.isdigit():
+                ok = manager.delete_ai_insights_for_project(int(pid))
+                print("AI insights deleted." if ok else "Invalid project ID.")
+            else:
+                print("Invalid ID.")
+
+        elif choice == "13":
             print("Goodbye!")
             break
-            print("\n👋 Thank you for using Digital Artifact Mining Software!")
-            print("   All your data has been saved to the database.\n")
-            sys.exit(0)
+
         else:
-            print("\n❌ Invalid choice. Please enter 1-9.")
+            print("Invalid choice.")
         
         input("\n⏸️  Press Enter to continue...")
         clear_screen()
