@@ -42,8 +42,16 @@ class MediaProjectScanner:
         self.project_path = Path(project_path).resolve()
         if not self.project_path.exists():
             raise ValueError(f"Project path does not exist: {project_path}")
-        if not self.project_path.is_dir():
-            raise ValueError(f"Project path is not a directory: {project_path}")
+        
+        #allow directory OR single file
+        self.single_file = self.project_path.is_file()
+        
+        if self.single_file:
+            # Use the file name without extension as project name
+            self.project_name = self.project_path.stem
+        else:
+            if not self.project_path.is_dir():
+                raise ValueError(f"Project path is not a directory: {project_path}")
         
         self.project_name = self.project_path.name
         
@@ -183,6 +191,15 @@ class MediaProjectScanner:
                 sniffed_supertype = sniff_supertype(path_str)
                 if sniffed_supertype == "text":
                     self.text_files.append(path)
+
+                    
+        # Single-file mode
+        if self.single_file:
+            file_path = self.project_path
+            if file_path.is_file():
+                _maybe_add_media_file(file_path)
+                _maybe_add_text_file(file_path)
+            return
         
         # --- Directory mode ---
         for root, dirs, files in os.walk(self.project_path):

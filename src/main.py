@@ -367,9 +367,9 @@ def handle_visual_project():
     if not path:
         return
     
-    if not os.path.isdir(path):
-        print("❌ Path must be a directory (folder)")
-        return
+    # if not os.path.isdir(path):
+    #     print("❌ Path must be a directory (folder)")
+    #     return
     
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
