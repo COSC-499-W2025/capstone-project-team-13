@@ -36,6 +36,7 @@ from src.Analysis.summarizeProjects import summarize_projects
 from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
 from src.AI.ai_project_analyzer import AIProjectAnalyzer
+from src.AI.ai_project_ranker import AIProjectRanker
 from src.AI.ai_enhanced_summarizer import (
     summarize_projects_with_ai,
     generate_resume_bullets
@@ -828,6 +829,20 @@ def ai_project_analysis_menu():
         print_header("AI Project Analysis")
         
         print("Choose an analysis option:\n")
+
+        print("1. Analyze Single Project")
+        print("2. Generate AI Summaries for All Projects")
+        print("3. Generate Resume Bullets")
+        print("4. Batch Analyze All Projects")
+        print("5. View AI Analysis Statistics")
+        print("6. AI Project Ranking")
+        print("7. Back to Main Menu")
+        print("8. AI Project Ranking")
+        print("9. Back to Main Menu")
+
+        
+        choice = input("\nEnter your choice (1-7): ").strip()
+
         print("1. Analyze Coding Project")
         print("2. Analyze Media Project")
         print("3. Analyze Text Project")
@@ -838,6 +853,7 @@ def ai_project_analysis_menu():
         print("8. Back to Main Menu")
         
         choice = input("\nEnter your choice (1-8): ").strip()
+
         
         if choice == '1':
             analyze_single_project_ai()
@@ -854,6 +870,8 @@ def ai_project_analysis_menu():
         elif choice == '7':
             view_ai_statistics()
         elif choice == '8':
+            run_ai_project_ranking_menu()
+        elif choice == '9':
             break
         else:
             print("❌ Invalid choice. Please try again.")
@@ -1565,6 +1583,45 @@ def view_ai_statistics():
                 print(f"❌ Error clearing cache: {e}")
     
     input("\nPress Enter to continue...")
+
+def run_ai_project_ranking_menu():
+    print("\n=== 🤖 AI Project Ranking ===\n")
+
+    # Fetch all projects from DB
+    projects = fetch_projects_for_summary()
+
+    if not projects:
+        print("No projects found in database.")
+        input("\nPress Enter to continue...")
+        return
+
+    # Ask user for skills to prioritize
+    skills_input = input("Enter skills to prioritize (comma-separated), or press Enter for none:\n").strip()
+    target_skills = [s.strip() for s in skills_input.split(",")] if skills_input else None
+
+    # Ask how many top projects they want
+    try:
+        top_k = int(input("\nHow many top projects do you want ranked? (default = 3): ").strip() or 3)
+    except ValueError:
+        top_k = 3
+
+    # Create the ranker
+    ranker = AIProjectRanker()
+
+    # Run ranking
+    result = ranker.rank(projects, target_skills=target_skills, top_k=top_k)
+
+    # Display results
+    print("\n=== 🏆 Top Ranked Projects ===\n")
+    for i, proj in enumerate(result["selected"], 1):
+        print(f"{i}. {proj['project_name']}  (Score: {proj['_rank_score']:.3f})")
+        if proj.get("skills"):
+            print(f"   Skills: {', '.join(proj['skills'])}")
+        print()
+
+    print("Done.")
+    input("\nPress Enter to continue...")
+ 
 
 def run_importance_test():
     print("=== Running Importance Score Test ===")
