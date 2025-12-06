@@ -339,3 +339,39 @@ All tests were written in Python and executed successfully when they were writte
 **What didn't go as planned:**  
 - Due to this week being our first week back from the break, we weren't able to hold a team meeting due to conflicting schedules. 
 
+## Week 14 Team Log  
+**Date Range:** Dec 1 – Dec 7, 2025  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T'Olu Akinwande** | Implemented AI_project_ranker.py + required tests | # 114 |
+| **Prina Mehta** | Refactored Main.py to ensure it runs as expected  | # 160 |
+| **Maya Knutsvig** | Refactored Main.py to ensure it runs as expected | # 160 |
+| **Jackson Wilson** | Refactored Main.py to ensure it runs as expected | # 160 |
+| **Illina Islam** | Refactored Main.py to ensure it runs as expected  | # 160 |
+| **Sana Shah** |Refactored Main.py to ensure it runs as expected  | # 160 |
+
+---
+![Backlog](teamLogImages/backlogW14.png)
+
+Burnup Chart:
+![Burnup Chart](teamLogImages/burnupW14.png)
+
+In Progress Tasks:
+![In Progress](teamLogImages/inProgressW14.png)
+
+Completed Tasks:
+![Completed](teamLogImages/completedW14.png)
+
+# Test Report
+All tests were written in Python and executed successfully, other than analysis using LLM which is currently not working due to API key generation, but we are currently working on resolving it. For each of the functions in our system, we have implemented unit tests. Manual testing can be done through `main.py` and it confirms that all modules work as expected with sample project data, after refactoring
+<img width="259" height="130" alt="image" src="https://github.com/user-attachments/assets/44867371-4375-4dd4-bd04-d501488cbc86" />
+
+### Reflection Points
+
+**What went well:**  
+- The team collaborated effectively and made progress with the last few function implementations, and refactoring existing functions.
+- Team members worked independently and collaboritvely, to refactor main.py.
+
+**What didn't go as planned:**  
+- Some of our inputs for different project types were not uniform through the system, so we had to refactor some existing functions, as well as main.py, to ensure that they accept intended file types, and analyzes them accordingly, for each project/digitalartifact type.
