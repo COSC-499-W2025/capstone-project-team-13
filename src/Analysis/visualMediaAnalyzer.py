@@ -1,9 +1,9 @@
 import os
 from PIL import Image, ExifTags
 
-def analyze_visual_project(folder_path):
+def analyze_visual_project(path):
     """
-    Analyze a folder containing visual/media files.
+    Analyze a folder or single visual/media file.
     Returns insights such as likely software used and top skills involved.
     
     Supports: Images (including RAW), Design files, 3D models, Videos, Audio
@@ -31,15 +31,25 @@ def analyze_visual_project(folder_path):
         '.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a'
     )
     
+    path = os.path.abspath(path)
     media_files = []
     software_detected = set()
     skills_detected = set()
 
-    # Crawl folder for media files
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            if file.lower().endswith(supported_formats):
-                media_files.append(os.path.join(root, file))
+    # --- Collect media files from either a folder OR a single file ---
+    if os.path.isdir(path):
+        # Crawl folder for media files
+        for root, _, files in os.walk(path):
+            for file in files:
+                if file.lower().endswith(supported_formats):
+                    media_files.append(os.path.join(root, file))
+    elif os.path.isfile(path):
+        # Single-file mode: analyze just this file if supported
+        if path.lower().endswith(supported_formats):
+            media_files.append(path)
+    else:
+        # Path doesn't exist or is something weird
+        return {"type": "visual_media", "details": "Path does not exist or is not a file/folder."}
 
     if not media_files:
         return {"type": "visual_media", "details": "No visual media files found."}
