@@ -3,6 +3,7 @@ Digital Artifact Mining Software - Main Entry Point
 Integrates all components for a complete workflow
 
 """
+import json
 import sys
 import os
 from pathlib import Path
@@ -43,6 +44,8 @@ from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
 from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
 from src.Analysis.codeEfficiency import grade_efficiency
+from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
+from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 
 # Import deletion management features
 try:
@@ -56,6 +59,14 @@ try:
 except ImportError:
     DELETION_FEATURES_AVAILABLE = False
     print("⚠️  Deletion features not available (modules not found)")
+
+# Import resume menu
+try:
+    from src.Resume.resumeMenu import run_resume_menu
+    RESUME_FEATURES_AVAILABLE = True
+except ImportError:
+    RESUME_FEATURES_AVAILABLE = False
+    print("⚠️  Resume features not available (modules not found)")
 
 def clear_screen():
     """Clear console screen"""
@@ -176,14 +187,15 @@ def get_user_choice():
     print("5.  Any Folder (auto-detect type)")
     print("6.  View All Projects in Database")
     print("7.  Generate Project Summary")
-    print("8.  AI Project Analysis")
-    print("9.  Rank Projects")  
-    print("10. Code Efficiency Analysis")
-    print("11. Delete Project")
-    print("12. Delete AI Insights Only")
-    print("13. Exit")
-    
-    choice = input("\nEnter your choice (1-13): ").strip()
+    print("8.  Resume Items")
+    print("9.  AI Project Analysis")
+    print("10. Rank Projects")  
+    print("11. Code Efficiency Analysis")
+    print("12. Delete Project")
+    print("13. Delete AI Insights Only")
+    print("14. Exit")
+
+    choice = input("\nEnter your choice (1-14): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -815,26 +827,32 @@ def ai_project_analysis_menu():
         print_header("AI Project Analysis")
         
         print("Choose an analysis option:\n")
-        print("1. Analyze Single Project")
-        print("2. Generate AI Summaries for All Projects")
-        print("3. Generate Resume Bullets")
-        print("4. Batch Analyze All Projects")
-        print("5. View AI Analysis Statistics")
-        print("6. Back to Main Menu")
+        print("1. Analyze Coding Project")
+        print("2. Analyze Media Project")
+        print("3. Analyze Text Project")
+        print("4. Generate AI Summaries for All Projects")
+        print("5. Generate Resume Bullets")
+        print("6. Batch Analyze All Projects")
+        print("7. View AI Analysis Statistics")
+        print("8. Back to Main Menu")
         
-        choice = input("\nEnter your choice (1-6): ").strip()
+        choice = input("\nEnter your choice (1-8): ").strip()
         
         if choice == '1':
             analyze_single_project_ai()
         elif choice == '2':
-            generate_ai_summaries_all()
+            analyzeMediaProject()
         elif choice == '3':
-            generate_resume_bullets_menu()
+            analyzeTextProject()        
         elif choice == '4':
-            batch_analyze_all_projects()
+            generate_ai_summaries_all()
         elif choice == '5':
-            view_ai_statistics()
+            generate_resume_bullets_menu()
         elif choice == '6':
+            batch_analyze_all_projects()
+        elif choice == '7':
+            view_ai_statistics()
+        elif choice == '8':
             break
         else:
             print("❌ Invalid choice. Please try again.")
@@ -946,6 +964,231 @@ def analyze_single_project_ai():
             else:
                 print("⚠️  Could not update database")
         
+    except Exception as e:
+        print(f"\n❌ Error during analysis: {e}")
+        print("\nPossible issues:")
+        print("  • Check your GEMINI_API_KEY is set")
+        print("  • Verify you have internet connection")
+        print("  • Check API quota limits")
+    
+    input("\nPress Enter to continue...")
+
+def analyzeMediaProject():
+    """Analyze a media project with AI - provides deep technical insights"""
+    print_header("AI Media Project Analysis")
+    
+    # Get all media projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\nTip: Scan some projects first using options 1-5!")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display available projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Type':<10}")
+    print("-" * 60)
+    for project in projects[:20]:  # Show first 20
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        print(f"{project.id:<5} {name:<40} {project.project_type:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter media project ID to analyze (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project or project.project_type != 'visual_media':
+        print(f"❌ Media project with ID {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm analysis
+    print(f"\n📁 Selected: {project.name}")
+    
+    # Run AI analysis
+    print(f"\n{'='*70}")
+    print(f"🤖 Running AI Media Analysis...")
+    print(f"{'='*70}\n")
+    print("This may take 10-30 seconds...\n")
+
+    project_dict = {
+        "project_name": project.name,
+        "media_type": project.project_type,
+        "details": project.description or project.file_path or ""
+    }
+    
+    try:
+
+        analyzer = AIMediaProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_dict)
+        
+        # Display results
+        print(f"{'='*70}")
+        print(f"📊 AI Media Analysis Results")
+        print(f"{'='*70}\n")
+        print(f"📁 Project: {results['project_name']}\n")
+
+        # Description
+        if results.get("ai_description"):
+            print("📝 AI Project Description:")
+            print(results["ai_description"])
+            print()
+
+        # Skills
+        if results.get("extracted_skills"):
+            skills = results["extracted_skills"]
+            print(f"💡 Skills Detected ({len(skills)}):")
+            for s in skills[:8]:
+                print(f"   • {s}")
+            if len(skills) > 8:
+                print(f"   ... and {len(skills)-8} more")
+            print()
+        
+        if results.get("contribution_score") is not None:
+            print("📈 Estimated Contribution Score:")
+            print(f"   {results['contribution_score']}/10\n")
+
+        # Save?
+        print(f"{'='*70}")
+        save = input("💾 Save this analysis to database? (yes/no): ").strip().lower()
+        
+        if save == "yes":
+            db_manager.update_project(
+                project_id,
+                {
+                    "ai_description": results["ai_description"],
+                    "skills": ", ".join(results["extracted_skills"]),
+                    "contribution_score": results["contribution_score"]
+                }
+            )
+            print("✅ Saved to database!")
+        
+    except Exception as e:
+        print(f"\n❌ Error during analysis: {e}")
+        print("\nPossible issues:")
+        print("  • Check your GEMINI_API_KEY is set")
+        print("  • Verify you have internet connection")
+        print("  • Check API quota limits")
+    
+    input("\nPress Enter to continue...")
+
+def analyzeTextProject():
+    """Analyze a text document project with AI - provides deep insights"""
+    print_header("AI Text Document Analysis")
+    
+    # Get all text document projects
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\nTip: Scan some projects first using options 1-5!")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display available projects
+    print(f"Found {len(projects)} project(s):\n")
+    print(f"{'ID':<5} {'Name':<40} {'Type':<10}")
+    print("-" * 60)
+    for project in projects[:20]:  # Show first 20
+        name = project.name[:38] + '..' if len(project.name) > 40 else project.name
+        print(f"{project.id:<5} {name:<40} {project.project_type:<10}")
+    
+    if len(projects) > 20:
+        print(f"\n... and {len(projects) - 20} more projects")
+    
+    # Get project ID
+    print()
+    project_id = input("Enter text document project ID to analyze (or press Enter to cancel): ").strip()
+    
+    if not project_id:
+        return
+    
+    if not project_id.isdigit():
+        print("❌ Invalid project ID")
+        input("\nPress Enter to continue...")
+        return
+    
+    project_id = int(project_id)
+    project = db_manager.get_project(project_id)
+    
+    if not project or project.project_type != 'text':
+        print(f"❌ Text document project with ID {project_id} not found")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Confirm analysis
+    print(f"\n📁 Selected: {project.name}")
+    
+    # Run AI analysis
+    print(f"\n{'='*70}")
+    print(f"🤖 Running AI Text Document Analysis...")
+    print(f"{'='*70}\n")
+    print("This may take 10-30 seconds...\n")
+
+    project_dict = {
+        "project_name": project.name,
+        "document_type": project.project_type,
+        "details": project.description or project.file_path or ""
+    }
+    
+    try:
+
+        analyzer = AITextProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_dict)
+        print(f"{'='*70}")
+        print(f"📊 AI Text Project Analysis Results")
+        print(f"{'='*70}\n")
+        print(f"📁 Project: {results['project_name']}\n")
+
+        if results.get("ai_description"):
+            print("📝 AI Description:")
+            print(results["ai_description"])
+            print()
+
+        # Skills
+        if results.get("extracted_skills"):
+            print(f"💡 Extracted Skills ({len(results['extracted_skills'])}):")
+            for i, skill in enumerate(results["extracted_skills"], 1):
+                print(f"   {i}. {skill}")
+            print()
+
+        print("📈 Contribution Score:")
+        print(f"   {results.get('contribution_score', 'N/A')}")
+        print()
+
+        # Cache stats
+        print("📊 Analysis Stats:")
+        print(f"   Cache hits: {analyzer.cache_hits}")
+        print()
+
+        # Save?
+        print("="*70)
+        save = input("💾 Save AI results to database? (yes/no): ").strip().lower()
+        if save == "yes":
+            update_data = {
+                "ai_description": results.get("ai_description"),
+                "skills": ", ".join(results.get("extracted_skills", [])),
+                "contribution_score": results.get("contribution_score")
+            }
+            try:
+                db_manager.update_project(project_id, update_data)
+                print("✅ AI analysis saved to database!")
+            except Exception as e:
+                print(f"⚠️ Could not update database: {e}")
+    
     except Exception as e:
         print(f"\n❌ Error during analysis: {e}")
         print("\nPossible issues:")
@@ -1596,6 +1839,55 @@ def view_deletion_cache_stats():
     
     input("\nPress Enter to continue...")
 
+
+def handle_resume_items():
+    """Handle resume items menu option"""
+    print_header("Resume Items")
+    
+    if not RESUME_FEATURES_AVAILABLE:
+        print("❌ Resume features are not available.")
+        input("\nPress Enter to continue...")
+        return
+    
+    projects = db_manager.get_all_projects()
+    
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\n⚠️  You need to analyze a project first before generating resume items.")
+        print("   Please go back to the main menu and use options 1-5 to analyze a project.")
+        input("\nPress Enter to continue...")
+        return
+    
+    print("Has the project you want resume items for already been analyzed?\n")
+    print("1. Yes - Take me to the Resume menu")
+    print("2. No  - I need to analyze it first")
+    print("3. Cancel - Return to main menu")
+    
+    choice = input("\nSelect option (1-3): ").strip()
+    
+    if choice == '1':
+        print(f"\n✓ Found {len(projects)} analyzed project(s) in database:")
+        print("-" * 50)
+        for i, p in enumerate(projects[:10], 1):
+            project_type = p.project_type or "unknown"
+            print(f"   {i}. {p.name} ({project_type})")
+        if len(projects) > 10:
+            print(f"   ... and {len(projects) - 10} more")
+        print()
+        run_resume_menu()
+    elif choice == '2':
+        print("\n📋 To analyze a project, return to the main menu and select:")
+        print("   • Option 1 - For coding projects")
+        print("   • Option 2 - For visual/media projects")
+        print("   • Option 3 - For text documents")
+        print("   • Option 5 - For auto-detection")
+        print("\nOnce analyzed, come back here to generate resume items.")
+        input("\nPress Enter to return to main menu...")
+    elif choice == '3':
+        print("\nReturning to main menu...")
+    else:
+        print("\n❌ Invalid option. Returning to main menu...")
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1629,9 +1921,11 @@ def main():
             view_all_projects()
         elif choice == '7':
             generate_summary()
-        elif choice == '8':                      
+        elif choice == '8':
+            handle_resume_items()
+        elif choice == '9':                      
             ai_project_analysis_menu()
-        elif choice == '9':
+        elif choice == '10':
             print("\n--- Importance Score Menu ---")
             print("1. Sort projects by date")
             print("2. Compute/grade importance scores")
@@ -1643,12 +1937,12 @@ def main():
                 run_importance_test()
             else:
                 print("Invalid choice. Returning to main menu.")
-        elif choice == '10':
+        elif choice == '11':
             run_code_efficiency_test()
-        if choice == "11":
+        if choice == "12":
             delete_project_enhanced()
 
-        elif choice == "12":
+        elif choice == "13":
             manager = DeletionManager()
             pid = input("Enter project ID: ").strip()
 
@@ -1658,7 +1952,7 @@ def main():
             else:
                 print("Invalid ID.")
 
-        elif choice == "13":
+        elif choice == "14":
             print("Goodbye!")
             break
 
