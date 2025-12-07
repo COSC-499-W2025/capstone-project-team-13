@@ -123,8 +123,22 @@
   * resumeAnalytics.py offers ATS scoring on the bullets, general bullet improvements and comparison, and improvements based on the target role level
   * resumeMenu.py is a sub menu that will be added to main.py
   * the sub menu allows the user to generate new bullets, retrieve old bullets, improve bullets and delete existing bullets
-* for week 14: present for milestone 1, complete team contract, complete milestone 1 self reflection + peer eval, submit demo video 
- 
+* for week 14: present for milestone 1, complete team contract, complete milestone 1 self reflection + peer eval, submit demo video
+
+
+## Week 14 - Dec 1-Dec 7, 2025
+<img width="1066" height="546" alt="Screenshot 2025-12-06 at 8 33 16 PM" src="https://github.com/user-attachments/assets/ce7d9b42-5002-45ac-b722-ec9c3cb20fdb" />
+
+
+* there was no check-in this week
+* had multiple team meetings this week
+* did our milestone 1 presentation
+* updated main, fixed projectcollabtype.py and various other bug fixes in mediaProjectScanner.py and textDocumentScanner.py
+* updated dfd
+* everything went pretty well this week
+* we'll see what's to come for next semester, I plan to do some work for our project over the break
+
+
 
 
 
