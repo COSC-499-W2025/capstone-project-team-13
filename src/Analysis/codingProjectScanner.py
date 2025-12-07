@@ -182,8 +182,8 @@ class CodingProjectScanner:
                 try:
                     check_file_format(str(file_path))
                 except InvalidFileFormatError as e:
-                    print(f"Skipping unsupported file: {file_path} — {e}")
-                    continue 
+                    print("\n✗ File format not supported — returning to menu.\n")
+                    raise InvalidFileFormatError  # bubble up to stop scan
                 # Determine if what is in the file matches the extension 
                 try:
                     sniff_type = sniff_supertype(str(file_path))
