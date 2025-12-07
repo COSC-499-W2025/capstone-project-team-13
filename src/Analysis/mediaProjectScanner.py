@@ -142,24 +142,30 @@ class MediaProjectScanner:
             """Validate a path as a 'media' file and add to self.media_files if valid."""
             path_str = str(path)
             
-            # Extension-level validation (allowed formats)
+            # 1) First: global format check (ALLOWED_FORMATS)
             try:
                 check_file_format(path_str)
             except InvalidFileFormatError as e:
-                # Unsupported extension → skip silently
+                # Unsupported extension → skip with message
+                print(f"Skipping unsupported file: {path_str} — {e}")
                 return
             
-            # Map extension → supertype ("text" / "code" / "media" / etc)
+            # 2) Then: map extension → supertype ("text" / "code" / "media" / etc)
             ext_supertype = supertype_from_extension(path_str)
             if ext_supertype != "media":
                 # Not configured as a media file
+                print(f"Skipping file with unsupported media extension: {path_str}")
                 return
             
-            # Content sniffing → make sure the file actually *looks* like media
-            sniffed_supertype = sniff_supertype(path_str)
-            if sniffed_supertype != "media":
-                # e.g. text file with media extension
-                print(f"Skipping {path.name}: ext says 'media' but content is '{sniffed_supertype}'")
+            # 3) Finally: sniff content to confirm it's actually media
+            try:
+                sniffed_supertype = sniff_supertype(path_str)
+                if sniffed_supertype != "media":
+                    # e.g. text file with media extension
+                    print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
+                    return
+            except Exception as e:
+                print(f"Skipping file due to sniffing error: {path_str} — {e}")
                 return
             
             # All checks passed → track it
@@ -174,7 +180,7 @@ class MediaProjectScanner:
             if file_ext not in self.TEXT_EXTENSIONS and path.name.upper() not in ['README', 'README.TXT']:
                 return
             
-            # Extension-level validation
+            # 1) Extension-level validation
             try:
                 check_file_format(path_str)
             except InvalidFileFormatError:
@@ -182,15 +188,24 @@ class MediaProjectScanner:
                 if path.name.upper() not in ['README', 'README.TXT']:
                     return
             
-            # Map extension → supertype
+            # 2) Map extension → supertype
             ext_supertype = supertype_from_extension(path_str)
             
             # For text files, accept if extension says text OR if it's a README
-            if ext_supertype == "text" or path.name.upper() in ['README', 'README.TXT']:
-                # Content sniffing for text files
+            if ext_supertype != "text" and path.name.upper() not in ['README', 'README.TXT']:
+                return
+            
+            # 3) Content sniffing for text files
+            try:
                 sniffed_supertype = sniff_supertype(path_str)
-                if sniffed_supertype == "text":
-                    self.text_files.append(path)
+                if sniffed_supertype != "text":
+                    return
+            except Exception as e:
+                # Skip files that fail sniffing
+                return
+            
+            # All checks passed → track it
+            self.text_files.append(path)
 
                     
         # Single-file mode
