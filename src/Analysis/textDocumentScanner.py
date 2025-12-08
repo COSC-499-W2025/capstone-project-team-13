@@ -152,28 +152,32 @@ class TextDocumentScanner:
             """Validate a path as a 'text' file and add to self.text_files if valid."""
             path_str = str(path)
 
-            # Extension-level validation (allowed formats)
+            # 1) First: global format check (ALLOWED_FORMATS)
             try:
                 check_file_format(path_str)
             except InvalidFileFormatError as e:
-                # Unsupported extension → skip
+                # This is where unsupported formats will show
                 print(f"Skipping unsupported file: {path_str} — {e}")
                 return
 
-            # Map extension → supertype ("text" / "code" / "media" / etc)
+            # 2) Then: is this a text extension we care about?
             ext_supertype = supertype_from_extension(path_str)
             if ext_supertype != "text":
                 # Not configured as a text file
+                print(f"Skipping file with unsupported text extension: {path_str}")
                 return
 
-            # Content sniffing → make sure the file actually *looks* like text
-            sniffed_supertype = sniff_supertype(path_str)
-            if sniffed_supertype != "text":
-                # e.g. binary file with .txt extension, or code pretending to be text
-                print(f"Skipping {path_str}: ext says 'text' but content is '{sniffed_supertype}'")
+            # 3) Finally: sniff content to confirm it's actually text
+            try:
+                sniffed_supertype = sniff_supertype(path_str)
+                if sniffed_supertype != "text":
+                    print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
+                    return
+            except Exception as e:
+                print(f"Skipping file due to sniffing error: {path_str} — {e}")
                 return
 
-            # All checks passed → track it
+            # If all checks pass, store the file
             self.text_files.append(path)
 
         # --- Single file mode ---
