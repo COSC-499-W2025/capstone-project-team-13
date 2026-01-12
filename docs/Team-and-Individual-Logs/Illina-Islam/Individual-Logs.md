@@ -1,4 +1,4 @@
-# Logs
+# Logs - Term 1
 
 ## Week 3 - Sept 15-21, 2025
 <img width="1072" height="623" alt="Screenshot 2025-09-21 at 8 05 32 PM" src="https://github.com/user-attachments/assets/47e40adf-0d09-46cb-a923-c6f879e91522" />
@@ -137,6 +137,16 @@
 * updated dfd
 * everything went pretty well this week
 * we'll see what's to come for next semester, I plan to do some work for our project over the break
+
+# Logs - Term 2
+
+## Week 1 - Jan 5-Jan 11, 2026
+<img width="1071" height="548" alt="Screenshot 2026-01-11 at 9 59 52 PM" src="https://github.com/user-attachments/assets/361cb6a5-bff6-47ac-9668-5cb1def4e7f0" />
+
+* I did make any meaning full contributions to the project this week
+* our team had a meeting earlier in the week during the check-in (I was not able to attend due to a personal emergency)
+* I caught up on everything I missed
+* for week 2: hold a meeting to discuss the direction for our project this term
 
 
 
