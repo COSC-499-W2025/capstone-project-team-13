@@ -152,3 +152,20 @@ This week was mostly polishing things off for the Milstone 1 submission. The gro
 ### Plans for next week
 
 Christmas shopping I guess? Coming back from the break I assume there will be a meeting discussing next steps, and if I find myself with spare time I may pick up some non-consequential module that won't require too much input from others as I imagine communication may be spotty over the break. 
+
+
+
+## Log 12:
+## Date Range: Term 2 Week 1 - Jan 4-Jan 11, 2025
+
+## ![week 1 features](weeklyfeaturesimages/T2Week14Features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+This week was listed as bonus so I did not get around to working on it this week.
+
+### Plans for next week
+
+Fixing missed components from M1 and further development
