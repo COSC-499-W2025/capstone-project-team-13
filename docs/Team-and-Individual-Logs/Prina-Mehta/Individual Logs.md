@@ -110,6 +110,7 @@ This week, I worked on the deletion module(issue https://github.com/COSC-499-W20
 ### Plan for Next Week
 Next week, I am planning to do some refactoring and take on whatever other tasks the team prioritizes during our meeting.
 
+
 ## Log 11:
 ## Date Range: Week 11 - Dec 1 - Dec 7, 2025
 
@@ -121,4 +122,19 @@ Next week, I am planning to do some refactoring and take on whatever other tasks
 The AI analysis option was constantly returning an “AI quota exceeded” error even when that was not true. I fixed this issue, and the system now correctly returns detailed-analysis for coding projects instead of failing with a false quota error.
 
 ### Plan for Next Week
-After the break, I will work on whatever the team identifies as the next priority for Milestone 2.
+After the break, I will work on whatever the team
+
+
+## Log 12:
+## Date Range: Term 2 Week 1 - Jan 5 - Jan 11, 2026
+
+## ![week 1 features](T2week1tasks.png)
+
+## Recap on your week's goals
+
+### What I Worked On This Week
+I did not make any meaningful progress toward the project over the Christmas break.
+
+### Plan for Next Week
+Next week, I plan to fix the user configuration handling. Although the config file and integration file exist and user preferences are stored in the database, the system still prompts for user permission every time. I’ll focus on correcting this behavior so stored configurations are properly respected.
+I’ll also begin working on the requirement to recognize duplicate files and ensure that only a single instance is maintained in the system.
