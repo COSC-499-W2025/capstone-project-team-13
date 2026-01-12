@@ -247,6 +247,16 @@ This week was focused on stabilizing and refining major components of the system
 <img width="856" height="495" alt="image" src="https://github.com/user-attachments/assets/55639be7-1379-48f3-a00c-ab48f8df8416" />
 
 
+# Week 16  
+Date Range: Jan 5 - Jan 11, 2026
+
+Tasks Worked On:
+This week, I received my Quiz 2 paper back in class and reviewed it. Additionally, I walked through our Milestone 1 demo and requirements with professor. Next week, I will meet with my team to discuss any refactoring or task priorities that has to be done and we will start discussing our approach to this semester's work.
+
+<img width="846" height="487" alt="image" src="https://github.com/user-attachments/assets/f26e5fc2-4fc2-4569-82a3-7e9b48c24393" />
+
+
+
 
 
 
