@@ -183,3 +183,14 @@ There was no specific issue # I was fixing, as this weeks focus was updating mai
 As this was updating bugs encountered along the way, there was no specific issue #
 
 Over the break I plan to look at Milestone 2 and 1 requirements, and hope to make some progress within them. 
+
+
+# Log 12:
+## Date Range: Semester 2 Week 1  - Jan 05 - 11, 2026
+
+## ![week 12 features](weeklyfeaturesimages/week12features.png)
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+On the Wednesday we received our quizzes back and had a small group meeting, where we determined we would need to add a few things to our to do list. This means that I was not working on any specific issue # this week, but next week we will have a team meeting to determine what needs to be done and what should be focused on.
+
