@@ -155,3 +155,13 @@ This week my team and I wrapped up the final implementation of functions and ref
 
 For the following few weeks, I will aim to improve our current system to make it more unique, opposed to just "working" and fulfilling the project requirements. 
 
+## Log 12:
+## Date Range: T2 Week 1 - Jan 5 - Jan 11, 2026
+
+## ![week 1 features](499-week1-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+Over the past week, as well as the winter break, I did not make any coding contributions.
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to enhance the skills analysis and identification for the different project types, as well as improve the functionality of our existing functions, as we move towards Milestone 2.
