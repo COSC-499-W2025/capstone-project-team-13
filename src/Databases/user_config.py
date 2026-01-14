@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timezone
 import json
 from typing import Dict, Any, Optional, List
-from src.Databases.database import Base, db_manager
+from src.Databases.database import Base
 
 
 class UserConfig(Base):
@@ -264,9 +264,9 @@ class ConfigManager:
     Handles CRUD operations and configuration validation
     """
     
-    def __init__(self, database_manager=None):
+    def __init__(self, database_manager):
         """Initialize configuration manager with database manager"""
-        self.db_manager = database_manager or db_manager
+        self.db_manager = database_manager
     
     def get_or_create_config(self) -> UserConfig:
         """
@@ -761,6 +761,3 @@ class ConfigManager:
         finally:
             session.close()
 
-
-# Global configuration manager instance
-config_manager = ConfigManager()

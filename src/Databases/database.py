@@ -11,6 +11,7 @@ from typing import List, Optional, Dict, Any
 # ============================================
 
 Base = declarative_base()
+from src.Databases import user_config  # registers UserConfig with Base
 
 class Project(Base):
     """Store comprehensive project information"""
@@ -295,14 +296,21 @@ class DatabaseManager:
     def __init__(self, db_path: str = 'data/projects.db'):
         """Initialize database manager - FIXED: Proper engine disposal"""
         os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else 'data', exist_ok=True)
-        
+        print("DB FILE:", os.path.abspath(db_path))
+        print("TABLES:", Base.metadata.tables.keys())
         # Create engine with proper settings for Windows
         self.engine = create_engine(
             f'sqlite:///{db_path}',
             connect_args={'check_same_thread': False},
             pool_pre_ping=True  # Verify connections before using
         )
+
+        from src.Databases.user_config import UserConfig  # noqa: F401
         Base.metadata.create_all(self.engine)
+        
+        # Run schema upgrade to add missing columns
+        self._upgrade_schema()
+
         self.Session = sessionmaker(bind=self.engine)
     
     def close(self):
@@ -316,6 +324,40 @@ class DatabaseManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """FIXED: Ensure cleanup on exit"""
         self.close()
+    
+    
+    def _upgrade_schema(self):
+        """Add missing columns to existing tables"""
+        from sqlalchemy import text, inspect
+        inspector = inspect(self.engine)
+        
+        # Check if tables exist
+        if 'projects' not in inspector.get_table_names():
+            return  # Fresh database, no upgrade needed
+        
+        # Get current columns
+        existing_columns = [col['name'] for col in inspector.get_columns('projects')]
+        
+        # Add missing columns
+        with self.engine.connect() as conn:
+            # Add word_count if missing
+            if 'word_count' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN word_count INTEGER DEFAULT 0;"))
+                    conn.commit()
+                    print("✅ Added word_count column")
+                except Exception as e:
+                    print(f"⚠️  Could not add word_count: {e}")
+            
+            # Add ai_description if missing
+            if 'ai_description' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
+                    conn.commit()
+                    print("✅ Added ai_description column")
+                except Exception as e:
+                    print(f"⚠️  Could not add ai_description: {e}")
+    
     
     def get_session(self):
         """Get a new session"""
@@ -632,43 +674,7 @@ class DatabaseManager:
         finally:
             session.close()
 
-# SCHEMA UPGRADE (Auto-adds missing columns)
-
-def upgrade_schema():
-    """Automatically add missing columns to existing database"""
-    from sqlalchemy import text, inspect
-    
-    inspector = inspect(db_manager.engine)
-    
-    # Check if projects table exists
-    if 'projects' not in inspector.get_table_names():
-        return  # Fresh database, no upgrade needed
-    
-    # Get current columns
-    existing_columns = [col['name'] for col in inspector.get_columns('projects')]
-    
-    # Add missing columns
-    with db_manager.engine.connect() as conn:
-        # Add word_count if missing
-        if 'word_count' not in existing_columns:
-            try:
-                conn.execute(text("ALTER TABLE projects ADD COLUMN word_count INTEGER DEFAULT 0;"))
-                conn.commit()
-                print("✅ Added word_count column")
-            except Exception as e:
-                print(f"⚠️  Could not add word_count: {e}")
-        
-        # Add ai_description if missing (for Week 2)
-        if 'ai_description' not in existing_columns:
-            try:
-                conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
-                conn.commit()
-                print("✅ Added ai_description column")
-            except Exception as e:
-                print(f"⚠️  Could not add ai_description: {e}")
 
 # Global database manager instance
 db_manager = DatabaseManager()
 
-# Run schema upgrade on first import
-upgrade_schema()
