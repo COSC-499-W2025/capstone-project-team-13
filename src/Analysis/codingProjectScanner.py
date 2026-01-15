@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
+from src.Analysis.file_hasher import compute_file_hash
 
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -64,10 +65,13 @@ class CodingProjectScanner:
     def scan_and_store(self) -> int:
         """
         Complete workflow: scan, analyze, and store in database
+        Supports incremental updates.
         
         Returns:
-            project_id: Database ID of created project
+            project_id: Database ID of created/updated project
         """
+        from datetime import datetime, timezone
+        
         print(f"\n{'='*60}")
         print(f"Scanning Coding Project: {self.project_name}")
         print(f"Path: {self.project_path}")
@@ -75,21 +79,29 @@ class CodingProjectScanner:
         
         # Check if already in database
         existing = db_manager.get_project_by_path(str(self.project_path))
+        is_incremental = False
+        
         if existing:
             print(f"⚠️  Project already exists in database with ID: {existing.id}")
-            user_input = input("Do you want to re-scan and update? (yes/no): ").strip().lower()
-            if user_input != 'yes':
+            user_input = input("Options:\n  1. Incremental update (add new files)\n  2. Full rescan (replace all)\n  3. Cancel\nChoice (1/2/3): ").strip()
+            
+            if user_input == '3':
                 print("Scan cancelled.")
                 return existing.id
-            # Delete old project to re-scan
-            db_manager.delete_project(existing.id)
-            print("Deleted old project. Re-scanning...")
+            elif user_input == '1':
+                is_incremental = True
+                print("Performing incremental update...")
+            else:
+                # Full rescan - delete and recreate
+                db_manager.delete_project(existing.id)
+                print("Deleted old project. Re-scanning...")
+                existing = None
         
         # Step 1: Find all code files
         print("Step 1: Finding code files...")
         self._find_code_files()
         print(f"  ✓ Found {len(self.code_files)} code files")
-        
+
         if len(self.code_files) == 0:
             print("\n⚠️  No code files found. This may not be a coding project.")
             return None
@@ -97,41 +109,89 @@ class CodingProjectScanner:
         # Step 2: Detect languages and frameworks
         print("\nStep 2: Detecting languages and frameworks...")
         self._detect_languages_and_frameworks()
-        print(f"  ✓ Languages: {', '.join(sorted(self.languages)) or 'None detected'}")
-        print(f"  ✓ Frameworks: {', '.join(sorted(self.frameworks)) or 'None detected'}")
+        print(f"  ✓ Languages: {', '.join(self.languages) if self.languages else 'None detected'}")
+        print(f"  ✓ Frameworks: {', '.join(self.frameworks) if self.frameworks else 'None detected'}")
         
-        # Step 3: Extract keywords from code
-        print("\nStep 3: Extracting keywords from code...")
-        self._extract_keywords()
-        print(f"  ✓ Extracted {len(self.all_keywords)} unique keywords")
-        
-        # Step 4: Analyze skills
-        print("\nStep 4: Analyzing coding skills...")
-        self._analyze_skills()
-        if self.all_skills:
-            top_skills = sorted(self.all_skills.items(), key=lambda x: x[1], reverse=True)[:5]
-            print(f"  ✓ Top skills: {', '.join([s[0] for s in top_skills])}")
+        if is_incremental:
+            # Incremental update
+            project_id = existing.id
+            
+            # Get existing file hashes
+            existing_files = db_manager.get_files_for_project(project_id)
+            existing_hashes = {f.file_hash for f in existing_files if f.file_hash}
+            
+            new_files_count = 0
+            for file_path in self.code_files:
+                file_hash = compute_file_hash(str(file_path))
+                
+                # Skip if file already exists
+                if file_hash in existing_hashes:
+                    continue
+                
+                # Add new file
+                file_data = {
+                    'project_id': project_id,
+                    'file_path': str(file_path),
+                    'file_name': file_path.name,
+                    'file_type': file_path.suffix,
+                    'file_size': file_path.stat().st_size,
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                    'file_hash': file_hash
+                }
+                db_manager.add_file_to_project(file_data)
+                new_files_count += 1
+            
+            # Update project metadata - FIX: Convert sets to lists
+            updates = {
+                'file_count': len(db_manager.get_files_for_project(project_id)),
+                'languages': list(set(existing.languages + list(self.languages))),
+                'frameworks': list(set(existing.frameworks + list(self.frameworks))),
+                'updated_at': datetime.now(timezone.utc)
+            }
+            db_manager.update_project(project_id, updates)
+            
+            print(f"\n✓ Incremental update complete!")
+            print(f"  Added {new_files_count} new files")
+            print(f"  Total files: {updates['file_count']}")
+            
         else:
-            print("  ✓ No specific skills detected")
-        
-        # Step 5: Calculate metrics
-        print("\nStep 5: Calculating project metrics...")
-        metrics = self._calculate_metrics()
-        print(f"  ✓ Total lines of code: {metrics['lines_of_code']:,}")
-        print(f"  ✓ Total files: {metrics['file_count']}")
-        print(f"  ✓ Total size: {metrics['total_size_mb']:.2f} MB")
-        
-        # Step 6: Store in database
-        print("\nStep 6: Storing in database...")
-        project_id = self._store_in_database(metrics)
-        print(f"  ✓ Stored with project ID: {project_id}")
-        
-        print(f"\n{'='*60}")
-        print(f"✓ Coding Project Scan Complete!")
-        print(f"{'='*60}\n")
+            # Create new project - FIX: Convert sets to lists
+            project_data = {
+                'name': self.project_name,
+                'file_path': str(self.project_path),
+                'file_count': len(self.code_files),
+                'project_type': 'code',
+                'languages': list(self.languages),
+                'frameworks': list(self.frameworks),
+                'date_scanned': datetime.now(timezone.utc)
+            }
+            
+            project = db_manager.create_project(project_data)
+            project_id = project.id
+            
+            print(f"\n✓ Project stored with ID: {project_id}")
+            
+            # Step 3: Store file information
+            print("\nStep 3: Storing file information...")
+            for file_path in self.code_files:
+                file_hash = compute_file_hash(str(file_path))
+                file_data = {
+                    'project_id': project_id,
+                    'file_path': str(file_path),
+                    'file_name': file_path.name,
+                    'file_type': file_path.suffix,
+                    'file_size': file_path.stat().st_size,
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                    'file_hash': file_hash
+                }
+                db_manager.add_file_to_project(file_data)
+            
+            print(f"  ✓ Stored {len(self.code_files)} files")
         
         return project_id
-    
+        
     def _find_code_files(self):
         """Find all code files in the project directory using existing config"""
         
