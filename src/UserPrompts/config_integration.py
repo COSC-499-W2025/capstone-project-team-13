@@ -6,10 +6,14 @@ Connects the new config storage with existing consent prompts
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from src.Databases.user_config import config_manager, UserConfig
+
+from src.Databases.database import db_manager
+
+
+from src.Databases.user_config import ConfigManager, UserConfig
 from datetime import datetime, timezone
 
-
+config_manager = ConfigManager(db_manager)
 def request_and_store_basic_consent() -> bool:
     """
     Request basic file access consent and store result in database

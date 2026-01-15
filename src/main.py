@@ -17,6 +17,7 @@ from src.Helpers.installDependencies import install_requirements
 install_requirements()
 from src.Analysis import codeIdentifier, visualMediaAnalyzer
 from src.UserPrompts.getConsent import get_user_consent
+from src.UserPrompts.config_integration import request_and_store_basic_consent
 from src.UserPrompts.externalPermissions import request_ai_consent
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileParser import parse_file, FileParseError
