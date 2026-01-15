@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from database import DatabaseManager
+from src.Databases.database import DatabaseManager
 
 
 def migrate_add_file_hash():
