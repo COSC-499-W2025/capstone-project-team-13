@@ -12,7 +12,7 @@ from skillsExtractCodingImproved import analyze_coding_skills_refined
 class TestCodingSkillAnalyzer(unittest.TestCase):
 
     def setUp(self):
-        # Create temporary project structure
+        # testing project structure
         self.test_dir = tempfile.TemporaryDirectory()
         root = self.test_dir.name
         os.makedirs(os.path.join(root, "src"), exist_ok=True)
@@ -21,7 +21,7 @@ class TestCodingSkillAnalyzer(unittest.TestCase):
         os.makedirs(os.path.join(root, "scripts"), exist_ok=True)
         os.makedirs(os.path.join(root, "docs"), exist_ok=True)
 
-        # Files content
+        # Test File content
         files_content = {
             "src/main.py": """
 import pandas as pd
@@ -104,6 +104,38 @@ SELECT * FROM users JOIN orders ON users.id = orders.user_id;
         # Python and ML in "src" should be higher than Web in "app" or SQL in "scripts"
         self.assertTrue(python_score > web_score)
         self.assertTrue(ml_score > sql_score)
+
+    def test_python_subskills_structure(self):
+        result = analyze_coding_skills_refined(self.root)
+        python_skill = result["skills"]["Python"]
+
+    # At least one meaningful subskill category must exist
+        self.assertTrue(
+            any(
+                category in python_skill["subskills"]
+                for category in ["libraries", "language_features", "keywords"]
+            ),
+            "Python should have at least one subskill category"
+    )
+
+    def test_relational_db_detection(self):
+        result = analyze_coding_skills_refined(self.root)
+        db = result["skills"].get("Relational Databases")
+        self.assertIsNotNone(db)
+
+    def test_multi_word_case_insensitive(self):
+        file_path = os.path.join(self.root, "src", "api.js")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write("REST API endpoint")
+
+        result = analyze_coding_skills_refined(self.root)
+        web_skill = result["skills"].get("Web Development")
+
+        self.assertIsNotNone(web_skill)
+        self.assertIn("multi_word", web_skill["subskills"])
+        self.assertIn("rest api", web_skill["subskills"]["multi_word"])
+
+
 
     def test_skill_combinations(self):
         result = analyze_coding_skills_refined(self.root)

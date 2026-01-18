@@ -5,20 +5,96 @@ import re
 # --- Top-level skill keywords ---
 SKILL_KEYWORDS = {
     "Python": ["python"],
-    "Web Development": ["html", "css", "javascript", "typescript", "flask", "django",
-                        "express", "node", "php", "ruby on rails", "nextjs", "nuxt"],
-    "Frontend Development": ["react", "vue", "angular", "svelte", "bootstrap", "tailwind",
-                             "html", "css", "dom", "ui", "ux"],
-    "Backend Development": ["flask", "django", "express", "fastapi", "spring", "node",
-                            "api", "server", "microservices", "rest", "graphql"],
+    # --- Web and App Development ---
+    "Web Development": [
+        "html", "css", "javascript", "typescript", "flask", "django",
+        "express", "node", "php", "ruby on rails", "nextjs", "nuxt"
+    ],
+    "Frontend Development": [
+        "react", "vue", "angular", "svelte", "bootstrap", "tailwind",
+        "html", "css", "dom", "ui", "ux"
+    ],
+    "Backend Development": [
+        "flask", "django", "express", "fastapi", "spring", "node",
+        "api", "server", "microservices", "rest", "graphql"
+    ],
+     "API Development": [
+        "rest", "graphql", "endpoint", "swagger", "postman", "jwt", "oauth"
+    ],
+    "Mobile Development": [
+        "android", "ios", "flutter", "swift", "kotlin", "react native"
+    ],
+
+    # --- Databases ---
+    "Relational Databases": [
+        "sql", "mysql", "postgresql", "sqlite", "oracle", "mariadb",
+        "schema", "foreign key", "join", "table"
+    ],
+    "Non-Relational Databases": [
+        "nosql", "mongodb", "redis", "cassandra", "dynamodb",
+        "couchdb", "neo4j", "graphdb", "document store"
+    ],
+    "Database Management": [
+        "orm", "query", "database", "migration", "index", "data model"
+    ],
+
+    # --- Data & AI ---
+    "Data Science": [
+        "numpy", "pandas", "matplotlib", "scipy", "dataframe",
+        "jupyter", "statistics", "data analysis"
+    ],
     "Machine Learning": [
         "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
         "regression", "classification", "model training"
     ],
-    "Data Science": ["data science", "data analysis", "dataframe", "statistics"],
-    "SQL": ["sql", "mysql", "postgresql", "sqlite"],
-}
+    "Data Visualization": [
+        "matplotlib", "seaborn", "plotly", "tableau", "dash", "ggplot"
+    ],
+    "Data Engineering": [
+        "airflow", "spark", "hadoop", "etl", "data pipeline", "big data", "kafka"
+    ],
 
+    # --- DevOps / Cloud ---
+    "DevOps": [
+        "docker", "kubernetes", "jenkins", "ci/cd", "github actions",
+        "pipeline", "automation", "monitoring"
+    ],
+    "Cloud Computing": [
+        "aws", "azure", "gcp", "google cloud", "lambda", "s3",
+        "cloud functions", "deployment", "infrastructure as code"
+    ],
+
+    # --- Software Engineering Practices ---
+    "Testing & QA": [
+        "pytest", "unittest", "selenium", "cypress", "mocha",
+        "testcase", "assertion", "coverage", "jest"
+    ],
+    "Version Control": [
+        "git", "github", "gitlab", "bitbucket", "commit", "branch", "merge"
+    ],
+    "Security & Cybersecurity": [
+        "encryption", "hashing", "vulnerability", "penetration testing",
+        "firewall", "jwt", "oauth", "authentication", "authorization"
+    ],
+
+    # --- Game and Graphics ---
+    "Game Development": [
+        "unity", "unreal", "godot", "game engine", "shader", "physics", "collision detection"
+    ],
+    "3D Rendering": [
+        "webgl", "opengl", "three.js", "blender", "shader", "ray tracing", "lighting", "camera", "vertex", "fragment"
+    ],
+     "Computer Vision": [
+        "opencv", "image processing", "object detection", "segmentation"
+    ],
+
+    # other
+    
+    "AI & Natural Language Processing": [
+        "nlp", "transformer", "bert", "gpt", "tokenization", "embedding"
+    ],
+   
+}
 # --- Subskills / libraries per top-level skill (including multi-word) ---
 SUBSKILL_KEYWORDS = {
     "Python": {
@@ -69,8 +145,8 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
         raise NotADirectoryError(f"{folder_path} is not a valid folder")
 
     skill_scores = defaultdict(float)
-    skill_subskills = defaultdict(lambda: defaultdict(set))
-    project_detected_skills = set()  # project-wide skills for co-occurrence
+    skill_subskills = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    project_detected_skills = set()
 
     for file in folder.rglob("*"):
         if file.is_file() and (file_extensions is None or file.suffix in file_extensions):
@@ -89,56 +165,70 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
 
             detected_skills = set()
 
-            # --- Detect top-level keywords ---
+            # --- 1️⃣ Base keyword subskills (ALWAYS) ---
             for skill, keywords in SKILL_KEYWORDS.items():
-                if find_keywords(text, keywords):
-                    detected_skills.add(skill)
+                for kw in keywords:
+                    pattern = r'\b' + re.escape(kw.lower()) + r'\b'
+                    matches = re.findall(pattern, text)
+                    if matches:
+                        count = len(matches)
+                        detected_skills.add(skill)
+                        skill_scores[skill] += count * folder_weight
+                        skill_subskills[skill]["keywords"][kw] += count
 
-            # --- Detect subskills and trigger top-level if needed ---
-            for skill, subcats in SUBSKILL_KEYWORDS.items():
-                skill_found = False
-                for subcat, subkeys in subcats.items():
-                    found_subskills = find_keywords(text, subkeys)
-                    if found_subskills:
-                        skill_subskills[skill][subcat].update(found_subskills)
-                        skill_scores[skill] += sum(
-                            0.5 if sk in ADVANCED_KEYWORDS else 0.2 for sk in found_subskills
-                        ) * folder_weight
-                        skill_found = True
-                if skill_found:
-                    detected_skills.add(skill)
+            # --- 2️⃣ Structured subskills (OPTIONAL, additive) ---
+            for skill, groups in SUBSKILL_KEYWORDS.items():
+                for group, keywords in groups.items():
+                    for kw in keywords:
+                        pattern = r'\b' + re.escape(kw.lower()) + r'\b'
+                        matches = re.findall(pattern, text)
+                        if matches:
+                            count = len(matches)
+                            detected_skills.add(skill)
+                            skill_subskills[skill][group][kw] += count
 
-            # --- Top-level keyword scoring ---
-            for skill in detected_skills:
-                skill_scores[skill] += 1 * folder_weight
+                            boost = 0.5 if kw.lower() in ADVANCED_KEYWORDS else 0.3
+                            skill_scores[skill] += count * boost * folder_weight
 
-            # --- Track project-wide skills ---
             project_detected_skills.update(detected_skills)
 
-    # --- Normalize skill scores ---
+    # --- Normalize scores ---
     total_score = sum(skill_scores.values())
-    normalized_scores = {k: round(v / total_score, 3) for k, v in skill_scores.items()} if total_score > 0 else {}
+    if total_score == 0:
+        return {"skills": {}, "skill_combinations": {}}
+
+    normalized_scores = {
+        skill: round(score / total_score, 3)
+        for skill, score in skill_scores.items()
+    }
 
     # --- Project-wide skill combinations ---
     combinations = defaultdict(float)
-    skills_list = sorted(project_detected_skills)
-    for i in range(len(skills_list)):
-        for j in range(i + 1, len(skills_list)):
-            pair = (skills_list[i], skills_list[j])
-            combinations[pair] += 1
+    skills = sorted(project_detected_skills)
+    for i in range(len(skills)):
+        for j in range(i + 1, len(skills)):
+            combinations[(skills[i], skills[j])] += 1
 
     max_comb = max(combinations.values(), default=1)
-    normalized_combinations = {k: round(v / max_comb, 3) for k, v in combinations.items()}
+    normalized_combinations = {
+        pair: round(val / max_comb, 3)
+        for pair, val in combinations.items()
+    }
 
-    # --- Build final nested output ---
-    nested_output = {}
+    # --- Final structured output ---
+    final_output = {}
     for skill, score in normalized_scores.items():
-        nested_output[skill] = {
+        final_output[skill] = {
             "score": score,
-            "subskills": {k: list(v) for k, v in skill_subskills.get(skill, {}).items()}
+            "subskills": {
+                group: dict(sorted(items.items(), key=lambda x: x[1], reverse=True))
+                for group, items in skill_subskills[skill].items()
+            }
         }
 
     return {
-        "skills": nested_output,
-        "skill_combinations": dict(sorted(normalized_combinations.items(), key=lambda x: x[1], reverse=True))
+        "skills": dict(sorted(final_output.items(), key=lambda x: x[1]["score"], reverse=True)),
+        "skill_combinations": dict(
+            sorted(normalized_combinations.items(), key=lambda x: x[1], reverse=True)
+        )
     }
