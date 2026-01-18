@@ -165,3 +165,14 @@ Over the past week, as well as the winter break, I did not make any coding contr
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to enhance the skills analysis and identification for the different project types, as well as improve the functionality of our existing functions, as we move towards Milestone 2.
+
+## Log 13:
+## Date Range: T2 Week 2 - Jan 12 - Jan 18, 2026
+
+## ![week 2 features](499-week2-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+The function that I worked on this week is improving the skills extraction function for coding projects. I created a new function instead of replacing the original function, at least until the refined function is integrated properly with the rest of our system. The updated skills extraction function not only maps keywords from files to top level keywords but also advanced keywords, and subskills such as libraries used. I also added test cases in the test_skillsExtractCodingImproved.py test file. 
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to enhance the skills analysis and identification for media projects, and text projects, as well as contribute code for milestone 2 requirements.
