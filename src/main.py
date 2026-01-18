@@ -179,8 +179,8 @@ def check_if_collaborative(project_path):
         print("Collaboration detection error:", e)
         return "Unknown"
 
-def get_user_choice():
-    """Get user's choice for what to analyze"""
+def get_user_choice_old():
+    """Get user's choice for what to analyze (original menu preserved as backup)"""
     print_header("Digital Artifact Mining Software")
     print("What would you like to analyze?\n")
     print("1.  Coding Project (folder containing code files)")
@@ -199,6 +199,20 @@ def get_user_choice():
     print("14. Exit")
 
     choice = input("\nEnter your choice (1-14): ").strip()
+    return choice
+
+
+def get_user_choice():
+    """Simplified main menu with three submenus and exit"""
+    print_header("Digital Artifact Mining Software - Main Menu")
+    print("Choose an option:\n")
+    print("1. Upload Project")
+    print("2. View and Analyze Previously Uploaded Projects")
+    print("3. Resume Tools")
+    print("4. AI Menu")
+    print("5. Exit")
+
+    choice = input("\nEnter your choice (1-5): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -1943,6 +1957,116 @@ def handle_resume_items():
     else:
         print("\n❌ Invalid option. Returning to main menu...")
 
+def project_upload_menu():
+    clear_screen()
+    options = {
+        '1': handle_coding_project,
+        '2': handle_visual_project,
+        '3': handle_document,
+        '4': handle_zip_archive,
+        '5': handle_auto_detect,
+    }
+
+    while True:
+        print("\nSelect the type of project to upload:")
+        print("1. Coding project")
+        print("2. Visual project")
+        print("3. Document")
+        print("4. Zip archive")
+        print("5. Auto-detect")
+        print("6. Exit")
+
+        choice = input("Enter your choice (1-6): ").strip()
+
+        if choice == '6':
+            print("Exiting project upload menu.")
+            return  # or break, depending on how you want to exit
+
+        if choice in options:
+            options[choice]()
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+
+def view_and_analysis_menu():
+    clear_screen()
+    options = {
+        '1': view_all_projects,
+        '2': generate_summary,
+        '3': sort_and_score_projects_menu,
+    }
+
+    while True:
+        print("\nView & Analysis Menu:")
+        print("1. View all projects")
+        print("2. Generate summary")
+        print("3. Sort / score projects")
+        print("4. Exit")
+
+        choice = input("Enter your choice (1-4): ").strip()
+
+        if choice == '4':
+            print("Exiting view & analysis menu.")
+            return
+
+        if choice in options:
+            options[choice]()
+        else:
+            print("Invalid choice. Try again.")
+
+
+def sort_and_score_projects_menu():
+    clear_screen()
+    while True:
+        print("\n--- Sort / Score Projects Menu ---")
+        print("1. Sort projects by date")
+        print("2. Compute / grade importance scores")
+        print("3. Back")
+
+        sub = input("Select an option (1-3): ").strip()
+
+        if sub == '3':
+            return  # go back to View & Analysis menu
+        elif sub == '1':
+            run_project_ranking_test()
+        elif sub == '2':
+            run_importance_test()
+        else:
+            print("Invalid choice. Try again.")
+
+
+def ai_menu():
+    clear_screen()
+    while True:
+        print("\nAI Menu:")
+        print("1. AI project analysis")
+        print("2. Delete AI insights for a project")
+        print("3. Exit")
+
+        choice = input("Enter your choice (1-3): ").strip()
+
+        if choice == '3':
+            print("Exiting AI menu.")
+            return
+
+        elif choice == '1':
+            ai_project_analysis_menu()
+
+        elif choice == '2':
+            manager = DeletionManager()
+            pid = input("Enter project ID: ").strip()
+
+            if pid.isdigit():
+                ok = manager.delete_ai_insights_for_project(int(pid))
+                print("AI insights deleted." if ok else "Invalid project ID.")
+            else:
+                print("Invalid ID.")
+
+        else:
+            print("Invalid choice. Try again.")
+
+
 def main():
     """Main application loop"""
     clear_screen()
@@ -1957,59 +2081,21 @@ def main():
         sys.exit(0)
     
     clear_screen()
-    
     # Main application loop
     while True:
         choice = get_user_choice()
-        
+
         if choice == '1':
-            handle_coding_project()
+            project_upload_menu()
         elif choice == '2':
-            handle_visual_project()
+            view_and_analysis_menu()
         elif choice == '3':
-            handle_document()
-        elif choice == '4':
-            handle_zip_archive()
-        elif choice == '5':
-            handle_auto_detect()
-        elif choice == '6':
-            view_all_projects()
-        elif choice == '7':
-            generate_summary()
-        elif choice == '8':
             handle_resume_items()
-        elif choice == '9':                      
-            ai_project_analysis_menu()
-        elif choice == '10':
-            print("\n--- Importance Score Menu ---")
-            print("1. Sort projects by date")
-            print("2. Compute/grade importance scores")
-            sub = input("Select an option (1 or 2): ").strip()
-
-            if sub == '1':
-                run_project_ranking_test()
-            elif sub == '2':
-                run_importance_test()
-            else:
-                print("Invalid choice. Returning to main menu.")
-        elif choice == '11':
-            run_code_efficiency_test()
-        elif choice == '12':
-            delete_project_enhanced()
-        elif choice == '13':
-            manager = DeletionManager()
-            pid = input("Enter project ID: ").strip()
-
-            if pid.isdigit():
-                ok = manager.delete_ai_insights_for_project(int(pid))
-                print("AI insights deleted." if ok else "Invalid project ID.")
-            else:
-                print("Invalid ID.")
-
-        elif choice == "14":
+        elif choice == '4':
+            ai_menu()
+        elif choice == '5':
             print("Goodbye!")
-            break
-
+            sys.exit(0)
         else:
             print("Invalid choice.")
         
