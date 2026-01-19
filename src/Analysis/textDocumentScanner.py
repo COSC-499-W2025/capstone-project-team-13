@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional
 from collections import defaultdict
 import nltk
 from nltk.tokenize import word_tokenize
-nltk.download('punkt', quiet=True)
+# nltk.download('punkt', quiet=True)
 
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -27,7 +27,7 @@ class TextDocumentScanner:
     """Scans and analyzes text-based documents"""
 
     
-    def __init__(self, document_path: str,single_file: bool = False):
+    def __init__(self, document_path: str,single_file: Optional[bool] = None):
         """
         Initialize scanner for a text document or folder
 
@@ -41,8 +41,13 @@ class TextDocumentScanner:
         self.document_path = Path(document_path).resolve()
         if not self.document_path.exists():
             raise ValueError(f"Document path does not exist: {document_path}")
-        self.single_file = single_file
         
+        
+        if single_file is None:
+            self.single_file = self.document_path.is_file()
+        else:
+            self.single_file = single_file
+
         if self.single_file:
             if not self.document_path.is_file():
                 raise ValueError(f"Single file mode requires a file path: {document_path}")
@@ -147,28 +152,32 @@ class TextDocumentScanner:
             """Validate a path as a 'text' file and add to self.text_files if valid."""
             path_str = str(path)
 
-            # Extension-level validation (allowed formats)
+            # 1) First: global format check (ALLOWED_FORMATS)
             try:
                 check_file_format(path_str)
             except InvalidFileFormatError as e:
-                # Unsupported extension → skip
+                # This is where unsupported formats will show
                 print(f"Skipping unsupported file: {path_str} — {e}")
                 return
 
-            # Map extension → supertype ("text" / "code" / "media" / etc)
+            # 2) Then: is this a text extension we care about?
             ext_supertype = supertype_from_extension(path_str)
             if ext_supertype != "text":
                 # Not configured as a text file
+                print(f"Skipping file with unsupported text extension: {path_str}")
                 return
 
-            # Content sniffing → make sure the file actually *looks* like text
-            sniffed_supertype = sniff_supertype(path_str)
-            if sniffed_supertype != "text":
-                # e.g. binary file with .txt extension, or code pretending to be text
-                print(f"Skipping {path_str}: ext says 'text' but content is '{sniffed_supertype}'")
+            # 3) Finally: sniff content to confirm it's actually text
+            try:
+                sniffed_supertype = sniff_supertype(path_str)
+                if sniffed_supertype != "text":
+                    print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
+                    return
+            except Exception as e:
+                print(f"Skipping file due to sniffing error: {path_str} — {e}")
                 return
 
-            # All checks passed → track it
+            # If all checks pass, store the file
             self.text_files.append(path)
 
         # --- Single file mode ---
@@ -362,7 +371,7 @@ class TextDocumentScanner:
         return project.id
 
 
-def scan_text_document(document_path: str, single_file: bool = False) -> Optional[int]:
+def scan_text_document(document_path: str, single_file: Optional[bool] = None) -> Optional[int]:
     """
     Convenience function to scan a text document or folder
     
@@ -374,7 +383,7 @@ def scan_text_document(document_path: str, single_file: bool = False) -> Optiona
         document_id: Database ID of scanned document, or None if failed
     """
     try:
-        scanner = TextDocumentScanner(document_path, single_file=single_file)
+        scanner = TextDocumentScanner(document_path)
         return scanner.scan_and_store()
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")

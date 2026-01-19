@@ -26,13 +26,13 @@ class CodingProjectScanner:
     
     def __init__(self, project_path: str):
         """
-        Initialize scanner for a coding project folder
+        Initialize scanner for a coding project folder or single file
         
         Args:
-            project_path: Path to coding project root directory
+            project_path: Path to coding project root directory or single code file
         
         Raises:
-            ValueError: If path doesn't exist or isn't a directory
+            ValueError: If path doesn't exist or isn't a directory/file as expected
         """
         self.project_path = Path(project_path).resolve()
         if not self.project_path.exists():
@@ -45,8 +45,7 @@ class CodingProjectScanner:
         else:
             if not self.project_path.is_dir():
                 raise ValueError(f"Project path is not a directory: {project_path}")
-        
-        self.project_name = self.project_path.name
+            self.project_name = self.project_path.name
         
         # Data storage
         self.code_files = []  # List of code file paths
@@ -136,65 +135,80 @@ class CodingProjectScanner:
     def _find_code_files(self):
         """Find all code files in the project directory using existing config"""
         
-            # Single-file mode
+        # --- Single-file mode ---
         if self.single_file:
             file_path = self.project_path
-            file_ext = file_path.suffix.lower()
 
-            if file_ext not in LANGUAGE_BY_EXTENSION:
-                return
-
+            # 1) First: global format check (ALLOWED_FORMATS)
             try:
                 check_file_format(str(file_path))
             except InvalidFileFormatError as e:
+                # This is where unsupported formats like .zip will show
                 print(f"Skipping unsupported file: {file_path} — {e}")
                 return
 
+            file_ext = file_path.suffix.lower()
+
+            # 2) Then: is this a code extension we care about?
+            if file_ext not in LANGUAGE_BY_EXTENSION:
+                print(f"Skipping file with unsupported code extension: {file_path} (ext={file_ext})")
+                return
+
+            # 3) Finally: sniff content to confirm it's actually code
             try:
                 sniff_type = sniff_supertype(str(file_path))
                 if sniff_type != "code":
                     print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
                     return
-            except Exception:
+            except Exception as e:
+                print(f"Skipping file due to sniffing error: {file_path} — {e}")
                 return
 
             self.code_files.append(file_path)
             return
 
-        
-        
+        # --- Directory mode ---
         for root, dirs, files in os.walk(self.project_path):
             # Remove skip directories from dirs list
             dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
-            
+
             for filename in files:
                 # Skip hidden files
                 if filename.startswith('.'):
                     continue
-                
+
                 file_path = Path(root) / filename
-                file_ext = file_path.suffix.lower()
-                
-                # Check if it's a code file using existing LANGUAGE_BY_EXTENSION
-                if file_ext not in LANGUAGE_BY_EXTENSION:
-                    continue
-                # Validate file format using your new checker
+
+                # 1) First: global format check (ALLOWED_FORMATS)
                 try:
                     check_file_format(str(file_path))
                 except InvalidFileFormatError as e:
+                    # ✅ Now you'll see this for disallowed formats like .zip
                     print(f"Skipping unsupported file: {file_path} — {e}")
-                    continue 
-                # Determine if what is in the file matches the extension 
+                    continue
+
+                file_ext = file_path.suffix.lower()
+
+                # 2) Only treat files with known code extensions as "code project" files
+                if file_ext not in LANGUAGE_BY_EXTENSION:
+                    # Optional log; comment out if it's too noisy
+                    print(f"Skipping file with unsupported code extension: {file_path} (ext={file_ext})")
+                    continue
+
+                # 3) Sniff actual file content to verify it's code
                 try:
                     sniff_type = sniff_supertype(str(file_path))
                     if sniff_type != "code":
                         print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
                         continue
-                except Exception:
-                    # If sniffing fails, skip it safely
+                except Exception as e:
+                    print(f"Skipping file due to sniffing error: {file_path} — {e}")
                     continue
-                #If all checks pass, store the file   
+
+                # If all checks pass, store the file
                 self.code_files.append(file_path)
+
+
     
     def _detect_languages_and_frameworks(self):
         """Detect languages and frameworks using existing codeIdentifier function"""

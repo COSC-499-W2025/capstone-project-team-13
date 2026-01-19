@@ -21,6 +21,8 @@ from collections import deque
 from dataclasses import dataclass, asdict
 from dotenv import load_dotenv
 from pathlib import Path
+import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # Find .env in project root (go up from src/AI/)
 env_path = Path(__file__).parent.parent.parent / '.env'
@@ -167,7 +169,7 @@ class AIService:
     def __init__(
     self,
     api_key: Optional[str] = None,
-    model_name: str = "gemini-2.0-flash-exp",
+    model_name: str = "gemini-2.5-flash",
     requests_per_minute: int = 15,
     enable_cache: bool = True
     ):
@@ -202,13 +204,21 @@ class AIService:
         # Load or initialize usage stats
         self.stats_file = Path("data/ai_usage_stats.json")
         self.stats_file.parent.mkdir(parents=True, exist_ok=True)
-        self.usage_stats = self._load_stats()
-        
-        # Create model instance - FIXED: Using default safety settings
-        self.model = genai.GenerativeModel(model_name=self.model_name)
+        self.usage_stats = self._load_stats()   
+
+        # Create model instance with relaxed safety settings for technical content
+        self.model = genai.GenerativeModel(
+            model_name=self.model_name,
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+        )
         
         print(f"✓ AI Service initialized with {self.model_name}")
-            
+        print(f"✓ Model safety settings: {self.model._safety_settings}")  # Debug line        
         
     
     def _load_stats(self) -> APIUsageStats:
@@ -235,6 +245,8 @@ class AIService:
         Rough token estimation (more accurate would require tokenizer)
         Rule of thumb: ~4 characters per token for English
         """
+        if not text:
+            return 0
         return len(text) // 4
     
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
@@ -247,7 +259,7 @@ class AIService:
         self,
         prompt: str,
         temperature: float = 0.7,
-        max_tokens: int = 1024,
+        max_tokens: int = None,
         use_cache: bool = True
     ) -> Optional[str]:
         """
@@ -281,22 +293,52 @@ class AIService:
             input_tokens = self._estimate_tokens(prompt)
             self.usage_stats.total_input_tokens += input_tokens
             
-            # Generate response
-            print(f"🤖 Calling Gemini API... (est. {input_tokens} input tokens)")
-            
+            generation_config = genai.types.GenerationConfig(
+                temperature=temperature,
+            )
+
+            if max_tokens is not None:
+                generation_config.max_output_tokens = max_tokens
+
             response = self.model.generate_content(
                 prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                )
+                generation_config=generation_config
             )
             
-            # Extract text
-            if not response or not response.text:
-                raise ValueError("Empty response from API")
+            # Check for safety blocks
+            if not response.candidates or len(response.candidates) == 0:
+                print("✗ AI response blocked")
+                self.usage_stats.failed_requests += 1
+                self._save_stats()
+                return None
+
+            candidate = response.candidates[0]
+
+            # Check finish reason
+            # 1 = STOP (normal), 2 = MAX_TOKENS (truncated but valid), 3 = SAFETY, 4 = RECITATION
+            if candidate.finish_reason == 3:  # SAFETY block
+                print(f"✗ AI blocked by safety filter")
+                self.usage_stats.failed_requests += 1
+                self._save_stats()
+                return None
+            elif candidate.finish_reason == 2:  # MAX_TOKENS - warning but continue
+                print(f"⚠️  Response truncated (hit max tokens limit)")
+                # Continue processing - we still got partial response
+            elif candidate.finish_reason not in [1, 2]:  # Not STOP or MAX_TOKENS
+                print(f"✗ AI stopped unexpectedly: finish_reason={candidate.finish_reason}")
+                self.usage_stats.failed_requests += 1
+                self._save_stats()
+                return None
             
-            result_text = response.text.strip()
+            try:
+                result_text = response.text
+                if not result_text or not isinstance(result_text, str):
+                    print("✗ Empty or invalid response text")
+                    return None
+            except Exception as e:
+                print(f"✗ Could not get text: {e}")
+                return None
+
             
             # Track output tokens
             output_tokens = self._estimate_tokens(result_text)
@@ -452,6 +494,11 @@ def test_basic_generation():
     print(f"Prompt: {prompt}\n")
     
     response = ai.generate_text(prompt, temperature=0.5, max_tokens=150)
+
+    if not response:
+        return {
+            "error": "AI returned no usable text (likely blocked or empty response)"
+        }
     
     if response:
         print(f"\nResponse:\n{response}\n")
