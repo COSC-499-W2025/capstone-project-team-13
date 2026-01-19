@@ -12,7 +12,7 @@ Personal Log (Expected Time: ~ 3 min)
 
 Hyperlinks for Term 2:
 [Term 2 Week 1](#date-range-term-2-week-1---jan-4-jan-11-2025)
-[Term 2 Week 2](#)
+[Term 2 Week 2](#date-range-term-2-week-2---jan-12-jan-18-2025)
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
