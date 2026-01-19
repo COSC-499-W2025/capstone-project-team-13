@@ -1,3 +1,8 @@
+# This week's log
+- [Term 2, week 2](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-2---jan-12-jan-18-2026)
+
+
+
 # Logs - Term 1
 
 ## Week 3 - Sept 15-21, 2025
@@ -143,10 +148,33 @@
 ## Week 1 - Jan 5-Jan 11, 2026
 <img width="1071" height="548" alt="Screenshot 2026-01-11 at 9 59 52 PM" src="https://github.com/user-attachments/assets/361cb6a5-bff6-47ac-9668-5cb1def4e7f0" />
 
-* I did make any meaning full contributions to the project this week
+* I didn't make any meaning full contributions to the project this week
 * our team had a meeting earlier in the week during the check-in (I was not able to attend due to a personal emergency)
 * I caught up on everything I missed
 * for week 2: hold a meeting to discuss the direction for our project this term
+
+
+
+## Week 2 - Jan 12-Jan 18, 2026
+<img width="1071" height="546" alt="Screenshot 2026-01-18 at 9 40 19 PM" src="https://github.com/user-attachments/assets/548d0c3d-e738-4b1a-9057-f5730a90228e" />
+
+* I worked on refactoring our resume item generation system
+* I got rid of the improvement functions from resumeAnalytics.py
+* I added customization features (edit, change order, etc) within resumeMenu.py
+* I fixed a major bug and improved the overall logic within codeBulletGenerator.py, mediaBulletGenerator.py and textBulletGenerator.py
+* My contributions closes issues:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/237
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/228
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/226
+* I updated all the existing tests accoridingly: test_codeBulletGenerator.py, test_mediaBulletGenerator.py, test_textBulletGenerator.py and test_resumeAnalytics.py
+* This week we had a team meeting to discuss our plan for this term
+* for next week: have another team meeting, prepare for peer testing, maybe add some additional features to the resume generation system
+
+
+
+
+
+
 
 
 
