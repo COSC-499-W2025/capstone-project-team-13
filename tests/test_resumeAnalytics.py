@@ -3,11 +3,12 @@ Comprehensive test suite for shared resume analytics functions.
 
 Tests:
 - ATS optimization scoring
-- Before/After comparison generation
-- Bullet improvement functions
-- Role-level targeting and enhancement
 - Success evidence utilities
 - Utility functions
+- Batch scoring and grade distribution
+
+Note: Improvement functions have been removed from resumeAnalytics.
+Bullets are now optimized during generation in the bullet generators.
 """
 
 import os
@@ -22,20 +23,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Resume.resumeAnalytics import (
     calculate_ats_score,
     score_all_bullets,
-    improve_bullet,
-    generate_before_after_comparison,
-    generate_all_improved_bullets,
-    get_role_appropriate_verb,
-    generate_role_context,
-    improve_bullet_for_role,
-    improve_all_bullets_for_role,
     populate_success_evidence,
     get_success_evidence,
     has_success_metrics,
     extract_metrics_from_bullet,
     suggest_improvements,
-    ROLE_SPECIFIC_VERBS,
-    ROLE_EMPHASIS
+    TECHNICAL_KEYWORDS,
+    STRONG_ACTION_VERBS
 )
 from src.Databases.database import db_manager, Project
 
@@ -112,6 +106,29 @@ class TestATSScoring:
         
         assert strong_score['score'] > weak_score['score']
     
+    def test_calculate_ats_score_returns_all_fields(self):
+        """Test that ATS scoring returns all expected fields"""
+        bullet = "Developed web app using React and Node.js"
+        score_data = calculate_ats_score(bullet, 'code')
+        
+        assert 'score' in score_data
+        assert 'grade' in score_data
+        assert 'feedback' in score_data
+        assert 'keywords' in score_data
+        assert 'word_count' in score_data
+        assert 'has_metrics' in score_data
+    
+    def test_calculate_ats_score_grade_classification(self):
+        """Test grade classification boundaries"""
+        excellent = "Developed scalable REST API using Python Django PostgreSQL, improving performance by 40%"
+        poor = "Did stuff"
+        
+        excellent_score = calculate_ats_score(excellent, 'code')
+        poor_score = calculate_ats_score(poor, 'code')
+        
+        assert 'A' in excellent_score['grade'] or 'B' in excellent_score['grade']
+        assert 'D' in poor_score['grade'] or 'C' in poor_score['grade']
+    
     def test_score_all_bullets(self):
         """Test batch scoring of multiple bullets"""
         bullets = [
@@ -145,501 +162,37 @@ class TestATSScoring:
         assert 'D' in scoring['grade_distribution']
         total_grades = sum(scoring['grade_distribution'].values())
         assert total_grades == 3
-
-
-class TestBulletImprovement:
-    """Test suite for bullet improvement functions"""
     
-    @pytest.fixture(autouse=True)
-    def setup_and_teardown(self):
-        """Setup and teardown for each test"""
-        db_manager.clear_all_data()
-        yield
-        db_manager.clear_all_data()
-    
-    @pytest.fixture
-    def sample_code_project(self):
-        """Create a sample code project"""
-        project_data = {
-            'name': 'E-Commerce Platform',
-            'file_path': '/test/ecommerce',
-            'project_type': 'code',
-            'lines_of_code': 8500,
-            'file_count': 45,
-            'languages': ['Python', 'JavaScript', 'CSS'],
-            'frameworks': ['Django', 'React'],
-            'skills': ['API Development', 'Database Design', 'Frontend Development']
-        }
-        return db_manager.create_project(project_data)
-    
-    @pytest.fixture
-    def sample_media_project(self):
-        """Create a sample media project"""
-        project_data = {
-            'name': 'Brand Identity',
-            'file_path': '/test/branding',
-            'project_type': 'visual_media',
-            'file_count': 35,
-            'total_size_bytes': 200 * 1024 * 1024,
-            'languages': ['Adobe Illustrator', 'Adobe Photoshop', 'Figma'],
-            'skills': ['Logo Design', 'Brand Strategy', 'Typography']
-        }
-        return db_manager.create_project(project_data)
-    
-    @pytest.fixture
-    def sample_text_project(self):
-        """Create a sample text project"""
-        project_data = {
-            'name': 'Technical Documentation',
-            'file_path': '/test/docs',
-            'project_type': 'text',
-            'word_count': 15000,
-            'file_count': 12,
-            'languages': ['Markdown', 'LaTeX'],
-            'skills': ['Technical Writing', 'Documentation', 'API Documentation']
-        }
-        return db_manager.create_project(project_data)
-    
-    def test_improve_bullet_upgrades_weak_verb(self, sample_code_project):
-        """Test that improve_bullet upgrades weak action verbs"""
-        bullet = "Made a web application with Python"
-        improved, _ = improve_bullet(bullet, sample_code_project)
-        
-        # Should start with a strong verb
-        first_word = improved.split()[0]
-        assert first_word == 'Developed'
-    
-    def test_improve_bullet_adds_metrics_code(self, sample_code_project):
-        """Test that improve_bullet adds metrics for code projects"""
-        bullet = "Developed a web application with Python"
-        improved, _ = improve_bullet(bullet, sample_code_project)
-        
-        # Should have added LOC or file count
-        assert any(char.isdigit() for char in improved)
-    
-    def test_improve_bullet_adds_metrics_media(self, sample_media_project):
-        """Test that improve_bullet adds metrics for media projects"""
-        bullet = "Created visual content for branding"
-        improved, _ = improve_bullet(bullet, sample_media_project)
-        
-        # Should have added file count or size
-        assert any(char.isdigit() for char in improved)
-    
-    def test_improve_bullet_adds_metrics_text(self, sample_text_project):
-        """Test that improve_bullet adds metrics for text projects"""
-        bullet = "Wrote technical documentation"
-        improved, _ = improve_bullet(bullet, sample_text_project)
-        
-        # Should have added word count or document count
-        assert any(char.isdigit() for char in improved)
-    
-    def test_improve_bullet_tracks_used_additions(self, sample_code_project):
-        """Test that improve_bullet tracks what's been added"""
-        bullet = "Made a web application"
-        _, used_additions = improve_bullet(bullet, sample_code_project)
-        
-        # Should have tracked at least one addition
-        assert len(used_additions) > 0
-    
-    def test_improve_bullet_avoids_duplicate_additions(self, sample_code_project):
-        """Test that multiple bullets get different additions"""
+    def test_score_all_bullets_aggregate_keywords(self):
+        """Test that batch scoring aggregates keywords correctly"""
         bullets = [
-            "Made a web application",
-            "Created backend services",
-            "Built frontend components"
+            "Developed REST API using Python",
+            "Built frontend with React and TypeScript",
+            "Managed PostgreSQL database"
         ]
         
-        used_additions = {}
-        improved_bullets = []
+        scoring = score_all_bullets(bullets, 'code')
         
-        for bullet in bullets:
-            improved, used_additions = improve_bullet(bullet, sample_code_project, used_additions)
-            improved_bullets.append(improved)
-        
-        # Each bullet should be different
-        assert len(set(improved_bullets)) == len(improved_bullets)
+        assert scoring['total_keywords'] > 0
+        assert 'unique_keywords' in scoring
+        assert isinstance(scoring['unique_keywords'], list)
     
-    def test_generate_all_improved_bullets(self, sample_code_project):
-        """Test batch improvement of bullets"""
+    def test_score_all_bullets_bullets_with_metrics(self):
+        """Test that batch scoring counts bullets with metrics"""
         bullets = [
-            "Made a web application",
-            "Created backend API",
-            "Built database schema"
+            "Developed API with 5000+ lines of code",
+            "Built frontend",
+            "Managed 100+ files"
         ]
         
-        improved = generate_all_improved_bullets(sample_code_project, bullets)
+        scoring = score_all_bullets(bullets, 'code')
         
-        assert len(improved) == 3
-        # All should be different (unique additions)
-        assert len(set(improved)) == 3
-
-
-class TestBeforeAfterComparison:
-    """Test suite for before/after comparison"""
-    
-    @pytest.fixture(autouse=True)
-    def setup_and_teardown(self):
-        """Setup and teardown for each test"""
-        db_manager.clear_all_data()
-        yield
-        db_manager.clear_all_data()
-    
-    @pytest.fixture
-    def sample_code_project(self):
-        """Create a sample code project"""
-        project_data = {
-            'name': 'E-Commerce Platform',
-            'file_path': '/test/ecommerce',
-            'project_type': 'code',
-            'lines_of_code': 8500,
-            'file_count': 45,
-            'languages': ['Python', 'JavaScript'],
-            'frameworks': ['Django', 'React'],
-            'skills': ['API Development', 'Database Design']
-        }
-        return db_manager.create_project(project_data)
-    
-    @pytest.fixture
-    def sample_media_project(self):
-        """Create a sample media project"""
-        project_data = {
-            'name': 'Brand Identity',
-            'file_path': '/test/branding',
-            'project_type': 'visual_media',
-            'file_count': 35,
-            'total_size_bytes': 200 * 1024 * 1024,
-            'languages': ['Adobe Illustrator', 'Adobe Photoshop'],
-            'skills': ['Logo Design', 'Brand Strategy']
-        }
-        return db_manager.create_project(project_data)
-    
-    @pytest.fixture
-    def sample_text_project(self):
-        """Create a sample text project"""
-        project_data = {
-            'name': 'Technical Documentation',
-            'file_path': '/test/docs',
-            'project_type': 'text',
-            'word_count': 15000,
-            'file_count': 12,
-            'skills': ['Technical Writing', 'Documentation']
-        }
-        return db_manager.create_project(project_data)
-    
-    def test_generate_before_after_returns_tuple(self, sample_code_project):
-        """Test that generate_before_after_comparison returns tuple"""
-        bullet = "Made a web application"
-        result = generate_before_after_comparison(sample_code_project, bullet)
-        
-        assert isinstance(result, tuple)
-        assert len(result) == 2
-        comparison, used_additions = result
-        assert isinstance(comparison, dict)
-        assert isinstance(used_additions, dict)
-    
-    def test_generate_before_after_structure(self, sample_code_project):
-        """Test comparison structure"""
-        bullet = "Made a web application"
-        comparison, _ = generate_before_after_comparison(sample_code_project, bullet)
-        
-        assert 'before' in comparison
-        assert 'after' in comparison
-        assert 'improvements' in comparison
-        assert 'improvement_percentage' in comparison
-        
-        assert 'bullet' in comparison['before']
-        assert 'ats_score' in comparison['before']
-        assert 'grade' in comparison['before']
-        assert 'word_count' in comparison['before']
-    
-    def test_generate_before_after_improves_score(self, sample_code_project):
-        """Test that after bullet has better or equal score"""
-        bullet = "Made a web application"
-        comparison, _ = generate_before_after_comparison(sample_code_project, bullet)
-        
-        assert comparison['after']['ats_score'] >= comparison['before']['ats_score']
-    
-    def test_generate_before_after_lists_improvements(self, sample_code_project):
-        """Test that improvements are listed"""
-        bullet = "Made a web application"
-        comparison, _ = generate_before_after_comparison(sample_code_project, bullet)
-        
-        assert isinstance(comparison['improvements'], list)
-        assert len(comparison['improvements']) >= 1
-    
-    def test_generate_before_after_tracks_additions(self, sample_code_project):
-        """Test that used_additions is tracked across multiple calls"""
-        bullets = ["Made app one", "Made app two"]
-        
-        used_additions = {}
-        for bullet in bullets:
-            _, used_additions = generate_before_after_comparison(
-                sample_code_project, bullet, used_additions
-            )
-        
-        # Should have tracked multiple additions
-        assert len(used_additions) >= 1
-    
-    def test_generate_before_after_media(self, sample_media_project):
-        """Test before/after for media project"""
-        bullet = "Created graphics"
-        comparison, _ = generate_before_after_comparison(sample_media_project, bullet)
-        
-        assert comparison['before']['bullet'] == bullet
-        assert comparison['after']['bullet'] != bullet
-    
-    def test_generate_before_after_text(self, sample_text_project):
-        """Test before/after for text project"""
-        bullet = "Wrote articles"
-        comparison, _ = generate_before_after_comparison(sample_text_project, bullet)
-        
-        assert 'improvement_percentage' in comparison
-
-
-class TestRoleLevelTargeting:
-    """Test suite for role-level targeting functions"""
-    
-    @pytest.fixture(autouse=True)
-    def setup_and_teardown(self):
-        """Setup and teardown for each test"""
-        db_manager.clear_all_data()
-        yield
-        db_manager.clear_all_data()
-    
-    @pytest.fixture
-    def sample_code_project(self):
-        """Create a sample code project"""
-        project_data = {
-            'name': 'E-Commerce Platform',
-            'file_path': '/test/ecommerce',
-            'project_type': 'code',
-            'lines_of_code': 8500,
-            'file_count': 45,
-            'languages': ['Python', 'JavaScript'],
-            'frameworks': ['Django', 'React'],
-            'skills': ['API Development', 'Database Design']
-        }
-        return db_manager.create_project(project_data)
-    
-    @pytest.fixture
-    def sample_media_project(self):
-        """Create a sample media project"""
-        project_data = {
-            'name': 'Brand Identity',
-            'file_path': '/test/branding',
-            'project_type': 'visual_media',
-            'file_count': 35,
-            'languages': ['Adobe Illustrator', 'Adobe Photoshop'],
-            'skills': ['Logo Design', 'Brand Strategy']
-        }
-        return db_manager.create_project(project_data)
-    
-    @pytest.fixture
-    def sample_text_project(self):
-        """Create a sample text project"""
-        project_data = {
-            'name': 'Technical Documentation',
-            'file_path': '/test/docs',
-            'project_type': 'text',
-            'word_count': 15000,
-            'file_count': 12,
-            'skills': ['Technical Writing', 'Documentation']
-        }
-        return db_manager.create_project(project_data)
-    
-    def test_get_role_appropriate_verb_all_levels(self):
-        """Test verb selection for all role levels"""
-        levels = ['junior', 'mid', 'senior', 'lead']
-        
-        for level in levels:
-            verb = get_role_appropriate_verb(level, 'code')
-            assert isinstance(verb, str)
-            assert len(verb) > 0
-            assert verb in ROLE_SPECIFIC_VERBS[level]
-    
-    def test_get_role_appropriate_verb_invalid_defaults(self):
-        """Test that invalid role level defaults to mid"""
-        verb = get_role_appropriate_verb('invalid', 'code')
-        mid_verb = get_role_appropriate_verb('mid', 'code')
-        assert verb == mid_verb
-    
-    def test_generate_role_context_junior(self, sample_code_project):
-        """Test role context for junior level"""
-        context = generate_role_context(sample_code_project, 'junior')
-        
-        assert 'focus' in context
-        assert 'team_phrase' in context
-        assert 'emphasis' in context
-        assert 'learning' in context['focus'].lower() or 'implementation' in context['focus'].lower()
-    
-    def test_generate_role_context_senior(self, sample_code_project):
-        """Test role context for senior level"""
-        context = generate_role_context(sample_code_project, 'senior')
-        
-        assert 'architecture' in context['focus'].lower() or 'leadership' in context['focus'].lower()
-    
-    def test_generate_role_context_with_team(self, sample_code_project):
-        """Test role context with team members"""
-        # Add contributors
-        db_manager.add_contributor_to_project({
-            'project_id': sample_code_project.id,
-            'name': 'Dev 1',
-            'commit_count': 50
-        })
-        db_manager.add_contributor_to_project({
-            'project_id': sample_code_project.id,
-            'name': 'Dev 2',
-            'commit_count': 30
-        })
-        
-        project = db_manager.get_project(sample_code_project.id)
-        context = generate_role_context(project, 'lead')
-        
-        assert 'team' in context['team_phrase'].lower()
-    
-    def test_improve_bullet_for_role_returns_tuple(self, sample_code_project):
-        """Test that improve_bullet_for_role returns correct tuple"""
-        bullet = "Made a web application"
-        result = improve_bullet_for_role(bullet, sample_code_project, 'senior')
-        
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-        enhanced, used_verb, emphasis_idx = result
-        assert isinstance(enhanced, str)
-        assert used_verb in ROLE_SPECIFIC_VERBS['senior']
-        assert isinstance(emphasis_idx, int)
-    
-    def test_improve_bullet_for_role_uses_correct_verb(self, sample_code_project):
-        """Test that correct role-level verb is used"""
-        bullet = "Made a web application"
-        
-        junior_result, _, _ = improve_bullet_for_role(bullet, sample_code_project, 'junior')
-        senior_result, _, _ = improve_bullet_for_role(bullet, sample_code_project, 'senior')
-        lead_result, _, _ = improve_bullet_for_role(bullet, sample_code_project, 'lead')
-        
-        assert junior_result.split()[0] in ROLE_SPECIFIC_VERBS['junior']
-        assert senior_result.split()[0] in ROLE_SPECIFIC_VERBS['senior']
-        assert lead_result.split()[0] in ROLE_SPECIFIC_VERBS['lead']
-    
-    def test_improve_bullet_for_role_adds_emphasis(self, sample_code_project):
-        """Test that role-appropriate emphasis is added"""
-        bullet = "Made a web application"
-        enhanced, _, _ = improve_bullet_for_role(bullet, sample_code_project, 'senior')
-        
-        # Should have added some emphasis phrase
-        assert len(enhanced) > len(bullet)
-        assert ',' in enhanced  # Emphasis is added after comma
-    
-    def test_improve_bullet_for_role_avoids_verb_repetition(self, sample_code_project):
-        """Test that verbs aren't repeated when tracking"""
-        bullet = "Made a web application"
-        used_verbs = ['Led']  # Pre-use the first senior verb
-        
-        enhanced, used_verb, _ = improve_bullet_for_role(
-            bullet, sample_code_project, 'senior', used_verbs
-        )
-        
-        # Should use a different verb
-        assert used_verb != 'Led'
-        assert used_verb in ROLE_SPECIFIC_VERBS['senior']
-    
-    def test_improve_bullet_for_role_avoids_emphasis_repetition(self, sample_code_project):
-        """Test that emphasis phrases aren't repeated"""
-        bullet = "Made a web application"
-        used_emphasis_indices = [0]  # Pre-use the first emphasis
-        
-        _, _, emphasis_idx = improve_bullet_for_role(
-            bullet, sample_code_project, 'senior', [], used_emphasis_indices
-        )
-        
-        # Should use a different emphasis index
-        assert emphasis_idx != 0
-    
-    def test_improve_all_bullets_for_role_unique_verbs(self, sample_code_project):
-        """Test that batch role improvement uses unique verbs"""
-        bullets = [
-            "Made app one",
-            "Made app two",
-            "Made app three"
-        ]
-        
-        improved = improve_all_bullets_for_role(bullets, sample_code_project, 'senior')
-        
-        # Extract first words (verbs)
-        verbs = [b.split()[0] for b in improved]
-        
-        # All verbs should be different
-        assert len(set(verbs)) == len(verbs)
-    
-    def test_improve_all_bullets_for_role_unique_emphasis(self, sample_code_project):
-        """Test that batch role improvement uses unique emphasis phrases"""
-        bullets = [
-            "Made app one",
-            "Made app two",
-            "Made app three"
-        ]
-        
-        improved = improve_all_bullets_for_role(bullets, sample_code_project, 'senior')
-        
-        # All bullets should be different
-        assert len(set(improved)) == len(improved)
-    
-    def test_improve_all_bullets_for_role_handles_five_bullets(self, sample_code_project):
-        """Test that 5 bullets get 5 unique extensions (max supported)"""
-        bullets = [
-            "Made app one",
-            "Made app two",
-            "Made app three",
-            "Made app four",
-            "Made app five"
-        ]
-        
-        improved = improve_all_bullets_for_role(bullets, sample_code_project, 'lead')
-        
-        assert len(improved) == 5
-        # All should be unique
-        assert len(set(improved)) == 5
-    
-    def test_improve_all_bullets_for_role_media_project(self, sample_media_project):
-        """Test role improvement for media project"""
-        bullets = [
-            "Created graphics",
-            "Made designs",
-            "Produced artwork"
-        ]
-        
-        improved = improve_all_bullets_for_role(bullets, sample_media_project, 'mid')
-        
-        assert len(improved) == 3
-        # Should use media-specific emphasis
-        for bullet in improved:
-            assert any(word in bullet.lower() for word in ['creative', 'design', 'brand', 'deliverables', 'quality'])
-    
-    def test_improve_all_bullets_for_role_text_project(self, sample_text_project):
-        """Test role improvement for text project"""
-        bullets = [
-            "Wrote articles",
-            "Created content",
-            "Drafted documents"
-        ]
-        
-        improved = improve_all_bullets_for_role(bullets, sample_text_project, 'mid')
-        
-        assert len(improved) == 3
-        # Should use text-specific emphasis
-        for bullet in improved:
-            assert any(word in bullet.lower() for word in ['writing', 'content', 'editorial', 'clarity', 'publication'])
-    
-    def test_role_emphasis_has_five_options_per_level(self):
-        """Test that each role level has 5 emphasis options"""
-        for role_level in ['junior', 'mid', 'senior', 'lead']:
-            for project_type in ['code', 'visual_media', 'text']:
-                options = ROLE_EMPHASIS[role_level][project_type]
-                assert len(options) == 5, f"{role_level}/{project_type} should have 5 options"
+        assert 'bullets_with_metrics' in scoring
+        assert scoring['bullets_with_metrics'] == 2
 
 
 class TestSuccessEvidence:
-    """Test suite for success evidence utilities"""
+    """Test suite for success evidence utility functions"""
     
     @pytest.fixture(autouse=True)
     def setup_and_teardown(self):
@@ -689,6 +242,15 @@ class TestSuccessEvidence:
         evidence = get_success_evidence(sample_project)
         assert evidence is None
     
+    def test_get_success_evidence_invalid_json(self, sample_project):
+        """Test handling of invalid JSON in success evidence"""
+        # Manually set invalid JSON
+        db_manager.update_project(sample_project.id, {'success_evidence': 'invalid json'})
+        project = db_manager.get_project(sample_project.id)
+        
+        evidence = get_success_evidence(project)
+        assert evidence is None
+    
     def test_has_success_metrics_false(self, sample_project):
         """Test has_success_metrics when no metrics exist"""
         assert has_success_metrics(sample_project) is False
@@ -699,6 +261,16 @@ class TestSuccessEvidence:
         project = db_manager.get_project(sample_project.id)
         
         assert has_success_metrics(project) is True
+    
+    def test_populate_success_evidence_overwrites(self, sample_project):
+        """Test that populating success evidence overwrites existing data"""
+        populate_success_evidence(sample_project, {'users': 100})
+        populate_success_evidence(sample_project, {'users': 200})
+        
+        project = db_manager.get_project(sample_project.id)
+        evidence = get_success_evidence(project)
+        
+        assert evidence['users'] == 200
 
 
 class TestUtilityFunctions:
@@ -734,6 +306,13 @@ class TestUtilityFunctions:
         
         assert len(metrics) == 0
     
+    def test_extract_metrics_multiple_types(self):
+        """Test extracting multiple metric types"""
+        bullet = "Processed 50K users with 99.9% uptime and 10 GB storage"
+        metrics = extract_metrics_from_bullet(bullet)
+        
+        assert len(metrics) >= 2
+    
     def test_suggest_improvements_low_score(self):
         """Test improvement suggestions for low-scoring bullet"""
         bullet = "Made a project"
@@ -756,10 +335,68 @@ class TestUtilityFunctions:
         suggestions = suggest_improvements(bullet, 'code')
         
         assert any('keyword' in s.lower() for s in suggestions)
+    
+    def test_suggest_improvements_short_bullet(self):
+        """Test suggestions for short bullets"""
+        bullet = "Made app"
+        suggestions = suggest_improvements(bullet, 'code')
+        
+        assert any('expand' in s.lower() or 'detail' in s.lower() for s in suggestions)
+    
+    def test_suggest_improvements_long_bullet(self):
+        """Test suggestions for overly long bullets"""
+        bullet = "Developed comprehensive web application system using React framework with TypeScript and Node.js backend server with PostgreSQL relational database management system and Redis caching layer"
+        suggestions = suggest_improvements(bullet, 'code')
+        
+        assert any('condense' in s.lower() for s in suggestions)
+
+
+class TestConstants:
+    """Test suite for module constants"""
+    
+    def test_technical_keywords_exists(self):
+        """Test that TECHNICAL_KEYWORDS is defined"""
+        assert TECHNICAL_KEYWORDS is not None
+        assert isinstance(TECHNICAL_KEYWORDS, dict)
+        assert 'code' in TECHNICAL_KEYWORDS
+        assert 'visual_media' in TECHNICAL_KEYWORDS
+        assert 'text' in TECHNICAL_KEYWORDS
+    
+    def test_strong_action_verbs_exists(self):
+        """Test that STRONG_ACTION_VERBS is defined"""
+        assert STRONG_ACTION_VERBS is not None
+        assert isinstance(STRONG_ACTION_VERBS, list)
+        assert len(STRONG_ACTION_VERBS) > 0
+        assert 'Developed' in STRONG_ACTION_VERBS
+        assert 'Built' in STRONG_ACTION_VERBS
+    
+    def test_technical_keywords_code_category(self):
+        """Test code category has expected subcategories"""
+        code_keywords = TECHNICAL_KEYWORDS['code']
+        
+        assert 'languages' in code_keywords
+        assert 'frameworks' in code_keywords
+        assert isinstance(code_keywords['languages'], list)
+    
+    def test_technical_keywords_media_category(self):
+        """Test media category has expected subcategories"""
+        media_keywords = TECHNICAL_KEYWORDS['visual_media']
+        
+        assert 'software' in media_keywords
+        assert 'skills' in media_keywords
+        assert isinstance(media_keywords['software'], list)
+    
+    def test_technical_keywords_text_category(self):
+        """Test text category has expected subcategories"""
+        text_keywords = TECHNICAL_KEYWORDS['text']
+        
+        assert 'types' in text_keywords
+        assert 'skills' in text_keywords
+        assert isinstance(text_keywords['types'], list)
 
 
 class TestIntegration:
-    """Integration tests for all functions working together"""
+    """Integration tests for scoring functions working together"""
     
     @pytest.fixture(autouse=True)
     def setup_and_teardown(self):
@@ -769,8 +406,8 @@ class TestIntegration:
         db_manager.clear_all_data()
     
     @pytest.fixture
-    def sample_code_project(self):
-        """Create a sample code project"""
+    def sample_project(self):
+        """Create a sample project"""
         project_data = {
             'name': 'E-Commerce Platform',
             'file_path': '/test/ecommerce',
@@ -783,78 +420,54 @@ class TestIntegration:
         }
         return db_manager.create_project(project_data)
     
-    def test_full_improvement_workflow(self, sample_code_project):
-        """Test complete bullet improvement workflow"""
-        # Start with weak bullets
-        original_bullets = [
-            "Made a web app",
-            "Created backend",
-            "Built frontend"
+    def test_full_scoring_workflow(self, sample_project):
+        """Test complete scoring workflow"""
+        bullets = [
+            "Developed REST API using Python and Django",
+            "Built responsive frontend with React and TypeScript",
+            "Implemented automated testing with pytest"
         ]
         
-        # Score original bullets
-        original_scoring = score_all_bullets(original_bullets, 'code')
+        # Score individual bullets
+        individual_scores = [calculate_ats_score(b, 'code') for b in bullets]
+        assert all(s['score'] >= 0 for s in individual_scores)
         
-        # Improve with before/after
-        improved_bullets = generate_all_improved_bullets(sample_code_project, original_bullets)
+        # Batch score
+        batch_scoring = score_all_bullets(bullets, 'code')
+        assert batch_scoring['overall_score'] >= 0
         
-        # Score improved bullets
-        improved_scoring = score_all_bullets(improved_bullets, 'code')
+        # Extract metrics
+        all_metrics = []
+        for bullet in bullets:
+            metrics = extract_metrics_from_bullet(bullet)
+            all_metrics.extend(metrics)
         
-        # Improved should have better or equal score
-        assert improved_scoring['overall_score'] >= original_scoring['overall_score']
+        # Get suggestions
+        suggestions = []
+        for bullet in bullets:
+            bullet_suggestions = suggest_improvements(bullet, 'code')
+            suggestions.extend(bullet_suggestions)
+        
+        # All functions work together
+        assert len(individual_scores) == 3
+        assert batch_scoring['overall_score'] <= 100
     
-    def test_role_level_workflow(self, sample_code_project):
-        """Test role-level enhancement workflow"""
-        original_bullets = [
-            "Made a web app",
-            "Created backend",
-            "Built frontend"
-        ]
+    def test_scoring_with_success_evidence(self, sample_project):
+        """Test that scoring works alongside success evidence"""
+        # Add success evidence
+        populate_success_evidence(sample_project, {
+            'users': 1000,
+            'performance_improvement': 40
+        })
         
-        # Enhance for different role levels
-        junior_bullets = improve_all_bullets_for_role(original_bullets, sample_code_project, 'junior')
-        senior_bullets = improve_all_bullets_for_role(original_bullets, sample_code_project, 'senior')
-        lead_bullets = improve_all_bullets_for_role(original_bullets, sample_code_project, 'lead')
+        # Score bullets
+        bullets = ["Developed API improving performance by 40%"]
+        scoring = score_all_bullets(bullets, 'code')
         
-        # All should be different from original
-        assert junior_bullets != original_bullets
-        assert senior_bullets != original_bullets
-        assert lead_bullets != original_bullets
-        
-        # All role levels should produce different results
-        assert junior_bullets != senior_bullets
-        assert senior_bullets != lead_bullets
-    
-    def test_all_functions_work_together(self, sample_code_project):
-        """Test that all shared functions work together"""
-        # Create bullet
-        bullet = "Developed REST API using Python and Django"
-        
-        # ATS scoring
-        ats = calculate_ats_score(bullet, 'code')
-        assert ats['score'] >= 0
-        
-        # Before/after
-        comparison, _ = generate_before_after_comparison(sample_code_project, bullet)
-        assert comparison['after']['ats_score'] >= 0
-        
-        # Role context
-        context = generate_role_context(sample_code_project, 'mid')
-        assert context['focus'] is not None
-        
-        # Role improvement
-        enhanced, _, _ = improve_bullet_for_role(bullet, sample_code_project, 'senior')
-        assert len(enhanced) > 0
-        
-        # Success evidence
-        populate_success_evidence(sample_code_project, {'users': 100})
-        project = db_manager.get_project(sample_code_project.id)
+        # Both should work
+        project = db_manager.get_project(sample_project.id)
         assert has_success_metrics(project) is True
-        
-        # Utility functions
-        metrics = extract_metrics_from_bullet("Improved by 40%")
-        assert len(metrics) > 0
+        assert scoring['overall_score'] > 0
 
 
 if __name__ == "__main__":
