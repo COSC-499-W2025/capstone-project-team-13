@@ -11,3 +11,7 @@ tests/PortfolioTest/
 
 # Environment files
 *.env
+
+# Generated data
+data/projects.db
+data/*.json
