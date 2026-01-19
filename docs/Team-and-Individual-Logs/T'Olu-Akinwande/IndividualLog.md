@@ -247,7 +247,7 @@ This week was focused on stabilizing and refining major components of the system
 <img width="856" height="495" alt="image" src="https://github.com/user-attachments/assets/55639be7-1379-48f3-a00c-ab48f8df8416" />
 
 
-# Week 16  
+# Week 16  (Term 2)
 Date Range: Jan 5 - Jan 11, 2026
 
 Tasks Worked On:
@@ -255,10 +255,30 @@ This week, I received my Quiz 2 paper back in class and reviewed it. Additionall
 
 <img width="846" height="487" alt="image" src="https://github.com/user-attachments/assets/f26e5fc2-4fc2-4569-82a3-7e9b48c24393" />
 
+# Week 17  
+Date Range: Jan 11 - Jan 18, 2026
+This week, I focused on improving keyword extraction from text documents to increase the relevance and clarity of extracted terms for résumé and portfolio analysis. I evaluated the existing extraction output, and improved precision while maintaining compatibility with the existing pipeline.
+
+Tasks Completed
+
+- Reviewed and evaluated the existing RAKE-based keyword extraction output to identify issues such as sentence-level phrases and generic academic language.
+
+- Implemented post-processing helpers to constrain phrase length, filter non-informative phrases, and normalize extracted technical terms.
+
+- Added unit tests to validate improved keyword extraction behavior and ensure technical terms are surfaced correctly.
+
+- Tested the updated keyword extraction through the full pipeline (main.py) and pushed changes to a feature branch.
+  
+- Tested and reviewd teammates code.
+
+Planned Work for Next Week
+
+Begin improving skills extraction from text documents, focusing on more accurate mapping between extracted content and defined skill categories.
+
+Meet with team to thoroughly review Milestone 2, discuss outstanding issues, and coordinate task distribution among team members.
 
 
-
-
+<img width="853" height="491" alt="image" src="https://github.com/user-attachments/assets/9c84ba2a-7ae8-44c1-8047-2ee1f02141e8" />
 
 
 
