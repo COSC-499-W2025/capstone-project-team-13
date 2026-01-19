@@ -1,5 +1,7 @@
 # This week's log
-- ([#Week 2 - Jan 12-Jan 18, 2026](https://github.com/COSC-499-W2025/capstone-project-team-13/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-2---jan-12-jan-18-2026))
+- [Term 2, week 2](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-2---jan-12-jan-18-2026)
+
+
 
 # Logs - Term 1
 
@@ -167,6 +169,7 @@
 * I updated all the existing tests accoridingly: test_codeBulletGenerator.py, test_mediaBulletGenerator.py, test_textBulletGenerator.py and test_resumeAnalytics.py
 * This week we had a team meeting to discuss our plan for this term
 * for next week: have another team meeting, prepare for peer testing, maybe add some additional features to the resume generation system
+
 
 
 
