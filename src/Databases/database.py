@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, Index, func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker, joinedload
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker, joinedload
 from datetime import datetime, timezone
 import json
 import os
@@ -11,7 +10,17 @@ from typing import List, Optional, Dict, Any
 # ============================================
 
 Base = declarative_base()
-from src.Databases import user_config  # registers UserConfig with Base
+
+# Try to import user_config if it exists, but don't fail if it doesn't
+try:
+    from src.Databases import user_config  # registers UserConfig with Base
+except (ImportError, ModuleNotFoundError):
+    try:
+        # Try relative import if src module doesn't exist
+        from . import user_config  # registers UserConfig with Base
+    except (ImportError, ModuleNotFoundError):
+        # user_config module doesn't exist yet, that's okay
+        pass
 
 class Project(Base):
     """Store comprehensive project information"""
@@ -176,7 +185,7 @@ class File(Base):
     __tablename__ = 'files'
     
     id = Column(Integer, primary_key=True)
-    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False, index=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # File info
     file_path = Column(String(500), nullable=False)
@@ -193,6 +202,7 @@ class File(Base):
     lines_of_code = Column(Integer, default=0)
     is_duplicate = Column(Boolean, default=False)
     duplicate_of_id = Column(Integer, ForeignKey('files.id'), nullable=True)
+    file_hash = Column(String(64), index=True)  # For incremental upload functionality
     
     # Ownership
     owner = Column(String(255), nullable=True)
@@ -298,6 +308,7 @@ class DatabaseManager:
         os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else 'data', exist_ok=True)
         print("DB FILE:", os.path.abspath(db_path))
         print("TABLES:", Base.metadata.tables.keys())
+        
         # Create engine with proper settings for Windows
         self.engine = create_engine(
             f'sqlite:///{db_path}',
@@ -305,7 +316,16 @@ class DatabaseManager:
             pool_pre_ping=True  # Verify connections before using
         )
 
-        from src.Databases.user_config import UserConfig  # noqa: F401
+        # Try to import UserConfig if not already imported
+        try:
+            from src.Databases.user_config import UserConfig  # noqa: F401
+        except (ImportError, ModuleNotFoundError):
+            try:
+                from .user_config import UserConfig  # noqa: F401
+            except (ImportError, ModuleNotFoundError):
+                # user_config doesn't exist, continue without it
+                pass
+        
         Base.metadata.create_all(self.engine)
         
         # Run schema upgrade to add missing columns
@@ -325,7 +345,6 @@ class DatabaseManager:
         """FIXED: Ensure cleanup on exit"""
         self.close()
     
-    
     def _upgrade_schema(self):
         """Add missing columns to existing tables"""
         from sqlalchemy import text, inspect
@@ -335,10 +354,10 @@ class DatabaseManager:
         if 'projects' not in inspector.get_table_names():
             return  # Fresh database, no upgrade needed
         
-        # Get current columns
+        # Get current columns for projects table
         existing_columns = [col['name'] for col in inspector.get_columns('projects')]
         
-        # Add missing columns
+        # Add missing columns to projects table
         with self.engine.connect() as conn:
             # Add word_count if missing
             if 'word_count' not in existing_columns:
@@ -357,7 +376,21 @@ class DatabaseManager:
                     print("✅ Added ai_description column")
                 except Exception as e:
                     print(f"⚠️  Could not add ai_description: {e}")
-    
+        
+        # Get current columns for files table
+        if 'files' in inspector.get_table_names():
+            existing_file_columns = [col['name'] for col in inspector.get_columns('files')]
+            
+            # Add file_hash if missing (for incremental uploads)
+            with self.engine.connect() as conn:
+                if 'file_hash' not in existing_file_columns:
+                    try:
+                        conn.execute(text("ALTER TABLE files ADD COLUMN file_hash VARCHAR(64);"))
+                        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_file_hash ON files(file_hash);"))
+                        conn.commit()
+                        print("✅ Added file_hash column")
+                    except Exception as e:
+                        print(f"⚠️  Could not add file_hash: {e}")
     
     def get_session(self):
         """Get a new session"""
@@ -469,6 +502,26 @@ class DatabaseManager:
         finally:
             session.close()
     
+    def get_file_by_hash(self, file_hash: str) -> Optional[File]:
+        """Get file by hash (for incremental uploads)"""
+        session = self.get_session()
+        try:
+            return session.query(File).filter(File.file_hash == file_hash).first()
+        finally:
+            session.close()
+    
+    def file_exists_in_project(self, project_id: int, file_hash: str) -> bool:
+        """Check if file with hash exists in project (for incremental uploads)"""
+        session = self.get_session()
+        try:
+            exists = session.query(File).filter(
+                File.project_id == project_id,
+                File.file_hash == file_hash
+            ).first() is not None
+            return exists
+        finally:
+            session.close()
+    
     # ============ CONTRIBUTOR OPERATIONS ============
     
     def add_contributor_to_project(self, contributor_data: Dict[str, Any]) -> Contributor:
@@ -558,7 +611,7 @@ class DatabaseManager:
         finally:
             session.close()
     
-        # ============ PROJECT ANALYSIS OPERATIONS ============
+    # ============ PROJECT ANALYSIS OPERATIONS ============
 
     def get_project_duration(self, project_id: int):
         """
@@ -677,4 +730,3 @@ class DatabaseManager:
 
 # Global database manager instance
 db_manager = DatabaseManager()
-
