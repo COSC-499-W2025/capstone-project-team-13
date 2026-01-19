@@ -1,3 +1,4 @@
+# from pydoc import text
 import sys
 import os
 import unittest
@@ -44,6 +45,26 @@ class TestKeywordExtractor(unittest.TestCase):
         self.assertTrue(any("python" in kw.lower() for _, kw in results),
                         "Expected 'Python' to appear in top keywords")
 
+    def test_no_long_sentence_phrases(self):
+        text = (
+        "Future improvements may include machine learning based skill classification."
+        )
+        results = extract_keywords_with_scores(text)
+
+        self.assertTrue(
+        all(len(keyword.split()) <= 4 for _, keyword in results),
+        "Extractor should not return long sentence-like phrases"
+       )
+
+    def test_technical_terms_are_extracted(self):
+        text = "This project uses Python, NumPy, and Pandas for data analysis."
+        results = extract_keywords_with_scores(text)
+
+        extracted = [kw.lower() for _, kw in results]
+
+        self.assertIn("python", extracted)
+        self.assertIn("numpy", extracted)
+        self.assertIn("pandas", extracted)
 
 if __name__ == "__main__":
     unittest.main()
