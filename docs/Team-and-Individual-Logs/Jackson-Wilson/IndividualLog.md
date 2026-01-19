@@ -9,6 +9,12 @@ Personal Log (Expected Time: ~ 3 min)
 - Which tasks from the project board are associated with these features?
 - Among these tasks, which have you completed/in progress in the last 2 weeks?
 - Optional text: Additional context that we should be aware of
+
+Hyperlinks for Term 2:
+
+[Term 2 Week 1](#date-range-term-2-week-1---jan-4-jan-11-2025)
+
+[Term 2 Week 2](#date-range-term-2-week-2---jan-12-jan-18-2025)
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
@@ -158,7 +164,7 @@ Christmas shopping I guess? Coming back from the break I assume there will be a 
 ## Log 12:
 ## Date Range: Term 2 Week 1 - Jan 4-Jan 11, 2025
 
-## ![week 1 features](weeklyfeaturesimages/T2Week14Features.png)
+## ![week 1 features](weeklyfeaturesimages/T2Week1Features.png)
 
 ## Recap on your week's goals 
 
@@ -169,3 +175,21 @@ This week was listed as bonus so I did not get around to working on it this week
 ### Plans for next week
 
 Fixing missed components from M1 and further development
+
+
+
+
+## Log 13:
+## Date Range: Term 2 Week 2 - Jan 12-Jan 18, 2025
+
+## ![week 2 features](weeklyfeaturesimages/T2Week2Features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+With peer reviews on the horizon, I figured the current status of our main navigation wasn't really acceptable. To fix this in PR 242, I reworked the menu into three submenus so the user isn't overwhelmed by the 14ish we had before. This was mostly refactoring existing code as it was just reorganizing things a little cleaner. Aside from that, I reviewed PR 238 which was fixing an issue with our configurations that we missed in milestone 1. It was technically fine but I felt it was still prompting the user too much, so I left a suggestion but approved it anyways as it is still functionally fine. By the nature of both of these, there weren't really any tests involved for either, nor were they collaborative. 
+
+### Plans for next week
+
+I've currently listed myself for issue 222 (issue 24 if you go by titles) where we want to incorporate a key role of the user in a given project. At the bare minimum, this will be a prompt that comes after analyzing and identifying a project as collaborative, allowing the user to specify their title in the work. Once this is complete, I'd like to try implementing role identification. I'm unsure how I'd implement this yet, perhaps by creating a list of possible role descriptions based on the work supplied to choose from? Either way, that's my plans for this upcoming week in terms of coding. There will still be the regular team meetings as well as picking up work to prep for peer testing as well. 
