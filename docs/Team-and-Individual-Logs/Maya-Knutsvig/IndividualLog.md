@@ -194,3 +194,16 @@ Over the break I plan to look at Milestone 2 and 1 requirements, and hope to mak
 ### Which features were yours in the project plan for this milestone?
 On the Wednesday we received our quizzes back and had a small group meeting, where we determined we would need to add a few things to our to do list. This means that I was not working on any specific issue # this week, but next week we will have a team meeting to determine what needs to be done and what should be focused on.
 
+
+# Log 13:
+## Date Range: Semester 2 Week 2 - Jan 12th-18th, 2026
+
+## ![week 13 features](weeklyfeaturesimages/week13features.png)
+
+## Recap on your week's goals 
+### Which features were yours in the project plan for this milestone?
+There was no specific issue # I was fixing, as this week our group decided that we needed to focus on adding stuff from Milestone 2 as well as fixing certain things that we did not have from Milestone 1. This was because last Wednesday when we were doing the check with the prof, we realized certain things were not working as expected. This was an example of that, I updated the save configurations so it was implemented in main and within our database schema.
+
+As this was updating bugs, there was no specific issue #
+
+Next week there will be plans to discuss on what issues will be the most important for the upcoming weeks, and I will work on an issue from Milestone 2
