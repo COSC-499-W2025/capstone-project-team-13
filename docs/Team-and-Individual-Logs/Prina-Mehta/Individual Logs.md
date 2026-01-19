@@ -1,3 +1,18 @@
+## Weekly Navigation
+
+- [Term 2 – Week 1 (Jan 5–Jan 11, 2026)](#log-12)
+- [Term 2 – Week 2 (Jan 12–Jan 18, 2026)](#log-13)
+
+- [Week 11 (Dec 1–Dec 7, 2025)](#log-11)
+- [Week 10 (Nov 24–Nov 30, 2025)](#log-10)
+- [Week 9 (Nov 17–Nov 23, 2025)](#log-9)
+- [Week 8 (Nov 3–Nov 9, 2025)](#log-8)
+- [Week 7 (Oct 27–Nov 2, 2025)](#log-7)
+- [Week 6 (Oct 20–Oct 26, 2025)](#log-6)
+- [Week 5 (Oct 13–Oct 19, 2025)](#log-5)
+- [Week 4 (Sept 22–Sept 28, 2025)](#log-2)
+- [Week 3 (Sept 15–Sept 21, 2025)](#log-1)
+
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
@@ -138,3 +153,29 @@ I did not make any meaningful progress toward the project over the Christmas bre
 ### Plan for Next Week
 Next week, I plan to fix the user configuration handling. Although the config file and integration file exist and user preferences are stored in the database, the system still prompts for user permission every time. I’ll focus on correcting this behavior so stored configurations are properly respected.
 I’ll also begin working on the requirement to recognize duplicate files and ensure that only a single instance is maintained in the system.
+
+## Log 13:
+## Date Range: Term 2 Week 2 – Jan 12 – Jan 18, 2026
+
+## ![week 1 features](T2week2tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/219
+- Implemented file hash infrastructure to enable duplicate detection for incremental uploads.
+- Updated CodingProjectScanner.py to support incremental update mode, allowing users to choose between adding new files only, full rescan, or canceling when re-scanning existing projects.
+- Created database migration script to add file_hash column to existing databases and implemented hash-based query methods.
+
+### Testing
+- Wrote comprehensive unit tests for file hashing utility, database migration, and hash-based query methods to ensure duplicate detection works correctly.
+- Manually tested incremental updates by adding new code files to existing projects and verifying only new files are added while existing files are preserved.
+
+### Reviewing
+- Reviewed PR **#238**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/238 
+- Reviewed PR **#242**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/242  
+
+### Plan for Next Week
+- Extend incremental upload support to text and media files.  
+- Make corresponding updates to main.py to handle non-code incremental uploads.  
+- Add broader test coverage for mixed file uploads.
