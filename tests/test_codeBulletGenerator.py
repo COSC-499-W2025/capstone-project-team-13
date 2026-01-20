@@ -3,11 +3,9 @@ Comprehensive test suite for code resume bullet generator
 
 Tests:
 - Project header generation with tech stack
-- Main description bullet generation
-- Scale/scope bullet generation
-- Skills bullet generation
-- Impact bullet generation
-- Complete resume component formatting
+- All 9 bullet type generation methods
+- Bullet scoring system
+- Complete resume component formatting with 2-5 bullets
 - Edge cases and error handling
 """
 
@@ -54,7 +52,7 @@ class TestCodeBulletGenerator:
             'date_modified': datetime.now(timezone.utc),
             'languages': ['C#', 'JavaScript'],
             'frameworks': ['Unity'],
-            'skills': ['Game Development', '3D Rendering', 'AI Development'],
+            'skills': ['Game Development', '3D Rendering', 'AI Development', 'Git'],
             'collaboration_type': 'Individual Project'
         }
         return db_manager.create_project(project_data)
@@ -72,7 +70,7 @@ class TestCodeBulletGenerator:
             'total_size_bytes': 2048000,
             'date_created': datetime.now(timezone.utc),
             'date_modified': datetime.now(timezone.utc),
-            'languages': ['JavaScript', 'Python'],
+            'languages': ['TypeScript', 'Python'],
             'frameworks': ['React', 'Django'],
             'skills': ['Frontend Development', 'Backend Development', 'API Development', 'Database Management'],
             'collaboration_type': 'Collaborative Project'
@@ -124,43 +122,82 @@ class TestCodeBulletGenerator:
         assert project.name in header
     
     # ============================================
-    # MAIN DESCRIPTION BULLET TESTS
+    # SCORING SYSTEM TESTS
     # ============================================
     
-    def test_generate_main_description_with_description(self, generator, sample_project):
-        """Test main bullet uses description when available"""
-        bullet = generator._generate_main_description_bullet(sample_project)
+    def test_score_bullet_with_metrics(self, generator, sample_project):
+        """Test bullet scoring includes metrics check"""
+        bullet_with_metrics = "Developed 5,000+ lines of code using Unity and C#"
+        score = generator._score_bullet(bullet_with_metrics, sample_project)
         
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.25  # Should get at least metrics points
+    
+    def test_score_bullet_with_keywords(self, generator, sample_project):
+        """Test bullet scoring includes keyword check"""
+        bullet_with_keywords = "Built application using Python, React, and MongoDB"
+        score = generator._score_bullet(bullet_with_keywords, sample_project)
+        
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.15  # Should get keyword points for 3+ keywords
+    
+    def test_score_bullet_optimal_length(self, generator, sample_project):
+        """Test bullet scoring rewards optimal length"""
+        bullet = "Developed web application using React framework with responsive design features"  # ~11 words
+        score = generator._score_bullet(bullet, sample_project)
+        
+        assert 0.0 <= score <= 1.0
+    
+    def test_score_bullet_strong_action_verb(self, generator, sample_project):
+        """Test bullet scoring recognizes strong action verbs"""
+        bullet = "Engineered scalable backend system"
+        score = generator._score_bullet(bullet, sample_project)
+        
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.25  # Should get action verb points
+    
+    # ============================================
+    # BULLET TYPE GENERATION TESTS (9 TYPES)
+    # ============================================
+    
+    def test_generate_main_description_bullet(self, generator, sample_project):
+        """Test main description bullet generation"""
+        bullet = generator._generate_main_description_bullet(sample_project, [])
+        
+        assert bullet is not None
         assert bullet.split()[0] in [v for verbs in generator.ACTION_VERBS.values() for v in verbs]
         assert len(bullet) > 10
     
-    def test_generate_main_description_minimal_project(self, generator):
-        """Test main bullet generation with minimal project data"""
-        project_data = {
-            'name': 'Minimal App',
-            'file_path': '/test/minimal',
-            'project_type': 'code',
-            'languages': ['Python']
-        }
-        project = db_manager.create_project(project_data)
-        bullet = generator._generate_main_description_bullet(project)
-        
-        assert bullet.split()[0] in [v for verbs in generator.ACTION_VERBS.values() for v in verbs]
-        assert 'Python' in bullet or 'application' in bullet
-    
-    # ============================================
-    # SCALE BULLET TESTS
-    # ============================================
-    
-    def test_generate_scale_bullet_with_metrics(self, generator, sample_project):
-        """Test scale bullet generation with project metrics"""
+    def test_generate_scale_bullet(self, generator, sample_project):
+        """Test scale bullet generation with metrics"""
         bullet = generator._generate_scale_bullet(sample_project, [])
         
         assert bullet is not None
         assert '5,000' in bullet or '45' in bullet
     
-    def test_generate_scale_bullet_with_team(self, generator, web_project):
-        """Test scale bullet includes team size"""
+    def test_generate_skills_bullet(self, generator, web_project):
+        """Test skills bullet generation"""
+        bullet = generator._generate_skills_bullet(web_project, [])
+        
+        assert bullet is not None
+        assert any(skill.split()[0] in bullet for skill in web_project.skills[:4])
+    
+    def test_generate_impact_bullet(self, generator, sample_project):
+        """Test impact bullet generation with success metrics"""
+        success_metrics = {
+            'users': 1000,
+            'performance_improvement': 40
+        }
+        db_manager.update_project(sample_project.id, {'success_evidence': json.dumps(success_metrics)})
+        
+        project = db_manager.get_project(sample_project.id)
+        bullet = generator._generate_impact_bullet(project, [])
+        
+        assert bullet is not None
+        assert '1000' in bullet or '40' in bullet
+    
+    def test_generate_collaboration_bullet(self, generator, web_project):
+        """Test collaboration bullet generation with team"""
         db_manager.add_contributor_to_project({
             'project_id': web_project.id,
             'name': 'Developer 1',
@@ -173,82 +210,52 @@ class TestCodeBulletGenerator:
         })
         
         project = db_manager.get_project(web_project.id)
-        bullet = generator._generate_scale_bullet(project, [])
+        bullet = generator._generate_collaboration_bullet(project, [])
         
         assert bullet is not None
-        assert '2-person team' in bullet or 'collaboration' in bullet.lower()
+        assert '2-person team' in bullet
     
-    def test_generate_scale_bullet_returns_none_for_small_project(self, generator):
-        """Test scale bullet returns None for projects below thresholds"""
+    def test_generate_process_bullet(self, generator, sample_project):
+        """Test process bullet generation with relevant skills"""
+        bullet = generator._generate_process_bullet(sample_project, [])
+        
+        # Should generate if Git skill is present
+        assert bullet is not None or sample_project.skills is None
+    
+    def test_generate_innovation_bullet(self, generator, web_project):
+        """Test innovation bullet generation with modern tech"""
+        bullet = generator._generate_innovation_bullet(web_project, [])
+        
+        # Should generate since React and TypeScript are modern
+        assert bullet is not None
+        assert 'React' in bullet or 'TypeScript' in bullet
+    
+    def test_generate_technical_depth_bullet(self, generator, web_project):
+        """Test technical depth bullet generation"""
+        bullet = generator._generate_technical_depth_bullet(web_project, [])
+        
+        # May or may not generate depending on skills
+        if bullet:
+            assert isinstance(bullet, str)
+    
+    def test_generate_deployment_bullet(self, generator):
+        """Test deployment bullet generation with cloud skills"""
         project_data = {
-            'name': 'Tiny App',
-            'file_path': '/test/tiny',
+            'name': 'Cloud App',
+            'file_path': '/test/cloud',
             'project_type': 'code',
-            'lines_of_code': 500,
-            'file_count': 5
+            'languages': ['Python'],
+            'skills': ['AWS', 'Docker', 'CI/CD']
         }
         project = db_manager.create_project(project_data)
-        bullet = generator._generate_scale_bullet(project, [])
         
-        assert bullet is None
-    
-    # ============================================
-    # SKILLS BULLET TESTS
-    # ============================================
-    
-    def test_generate_skills_bullet_with_multiple_skills(self, generator, web_project):
-        """Test skills bullet generation with multiple skills"""
-        bullet = generator._generate_skills_bullet(web_project, [])
+        bullet = generator._generate_deployment_bullet(project, [])
         
         assert bullet is not None
-        assert any(skill.split()[0] in bullet for skill in web_project.skills[:4])
-    
-    def test_generate_skills_bullet_returns_none_with_few_skills(self, generator):
-        """Test skills bullet returns None when insufficient skills"""
-        project_data = {
-            'name': 'No Skills',
-            'file_path': '/test/noskills',
-            'project_type': 'code',
-            'skills': []
-        }
-        project = db_manager.create_project(project_data)
-        bullet = generator._generate_skills_bullet(project, [])
-        
-        assert bullet is None
+        assert 'AWS' in bullet or 'Docker' in bullet or 'cloud' in bullet.lower()
     
     # ============================================
-    # IMPACT BULLET TESTS
-    # ============================================
-    
-    def test_generate_impact_bullet_with_metrics(self, generator, sample_project):
-        """Test impact bullet generation with success metrics"""
-        success_metrics = {
-            'users': 1000,
-            'performance_improvement': 40,
-            'success_rate': 95
-        }
-        db_manager.update_project(sample_project.id, {'success_evidence': json.dumps(success_metrics)})
-        
-        project = db_manager.get_project(sample_project.id)
-        bullet = generator._generate_impact_bullet(project, [])
-        
-        assert bullet is not None
-        assert '1000' in bullet or '40' in bullet or '95' in bullet
-    
-    def test_generate_impact_bullet_returns_none_without_metrics(self, generator):
-        """Test impact bullet returns None without success metrics"""
-        project_data = {
-            'name': 'No Metrics',
-            'file_path': '/test/nometrics',
-            'project_type': 'code'
-        }
-        project = db_manager.create_project(project_data)
-        bullet = generator._generate_impact_bullet(project, [])
-        
-        assert bullet is None
-    
-    # ============================================
-    # COMPLETE BULLET GENERATION TESTS
+    # COMPLETE BULLET GENERATION TESTS (2-5 BULLETS)
     # ============================================
     
     def test_generate_resume_bullets_default_count(self, generator, sample_project):
@@ -258,6 +265,30 @@ class TestCodeBulletGenerator:
         assert len(bullets) == 3
         assert all(isinstance(b, str) for b in bullets)
         assert all(len(b) > 10 for b in bullets)
+    
+    def test_generate_resume_bullets_2_bullets(self, generator, sample_project):
+        """Test generating 2 bullets"""
+        bullets = generator.generate_resume_bullets(sample_project, num_bullets=2)
+        
+        assert len(bullets) == 2
+        assert all(isinstance(b, str) for b in bullets)
+    
+    def test_generate_resume_bullets_5_bullets(self, generator, web_project):
+        """Test generating 5 bullets (was broken, now fixed)"""
+        bullets = generator.generate_resume_bullets(web_project, num_bullets=5)
+        
+        assert len(bullets) == 5
+        assert all(isinstance(b, str) for b in bullets)
+    
+    def test_generate_resume_bullets_returns_top_scored(self, generator, web_project):
+        """Test that generated bullets are scored and top N returned"""
+        bullets = generator.generate_resume_bullets(web_project, num_bullets=3)
+        
+        # Verify all bullets are scored and valid
+        assert len(bullets) == 3
+        for bullet in bullets:
+            score = generator._score_bullet(bullet, web_project)
+            assert 0.0 <= score <= 1.0
     
     def test_generate_resume_bullets_avoids_duplicate_verbs(self, generator, sample_project):
         """Test that generated bullets avoid repeating action verbs"""
@@ -280,6 +311,13 @@ class TestCodeBulletGenerator:
         assert component.count('•') == 3
         assert '\n' in component
     
+    def test_format_resume_component_with_5_bullets(self, generator, web_project):
+        """Test formatting with 5 bullets"""
+        component = generator.format_resume_component(web_project, num_bullets=5)
+        
+        assert web_project.name in component
+        assert component.count('•') == 5
+    
     # ============================================
     # GENERATE_BULLETS_FOR_PROJECT TESTS
     # ============================================
@@ -294,6 +332,13 @@ class TestCodeBulletGenerator:
         assert 'header' in result
         assert 'bullets' in result
         assert len(result['bullets']) == 3
+    
+    def test_generate_bullets_for_project_custom_count(self, generator, web_project):
+        """Test generating custom number of bullets"""
+        result = generator.generate_bullets_for_project(web_project.id, num_bullets=5)
+        
+        assert result['success'] is True
+        assert len(result['bullets']) == 5
     
     def test_generate_bullets_for_project_invalid_id(self, generator):
         """Test handling of invalid project ID"""
@@ -351,6 +396,25 @@ class TestCodeBulletGenerator:
         
         if scale_bullet:
             assert '1,000,000' in scale_bullet or '5,000' in scale_bullet
+    
+    def test_minimal_project_generates_bullets(self, generator):
+        """Test that even minimal projects generate at least 1 bullet"""
+        project_data = {
+            'name': 'Minimal',
+            'file_path': '/test/minimal',
+            'project_type': 'code',
+            'languages': ['Python']
+        }
+        project = db_manager.create_project(project_data)
+        
+        bullets = generator.generate_resume_bullets(project, num_bullets=2)
+        assert len(bullets) >= 1
+    
+    def test_category_parameter_in_select_verb(self, generator, sample_project):
+        """Test that _select_action_verb accepts category parameter"""
+        verb = generator._select_action_verb(sample_project, [], category='collaboration')
+        
+        assert verb in generator.ACTION_VERBS['collaboration']
 
 
 if __name__ == "__main__":

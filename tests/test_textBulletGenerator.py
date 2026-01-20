@@ -3,10 +3,9 @@ Comprehensive test suite for text resume bullet generator
 
 Tests:
 - Project header generation with document types
-- Main description bullet generation
-- Scale/scope bullet generation
-- Skills bullet generation
-- Complete resume component formatting
+- All 10 bullet type generation methods
+- Writing-specific bullet scoring system
+- Complete resume component formatting with 2-5 bullets
 - Edge cases and error handling
 """
 
@@ -52,7 +51,7 @@ class TestTextBulletGenerator:
             'date_modified': datetime.now(timezone.utc),
             'languages': [],
             'frameworks': [],
-            'skills': ['Technical Writing', 'Documentation', 'Research Writing'],
+            'skills': ['Technical Writing', 'Documentation', 'Research Writing', 'SEO'],
             'tags': ['Markdown', 'PDF']
         }
         return db_manager.create_project(project_data)
@@ -72,7 +71,7 @@ class TestTextBulletGenerator:
             'date_modified': datetime.now(timezone.utc),
             'languages': [],
             'frameworks': [],
-            'skills': ['Research Writing', 'Critical Thinking', 'Data Analysis'],
+            'skills': ['Research Writing', 'Critical Thinking', 'Data Analysis', 'Academic Writing'],
             'tags': ['LaTeX', 'PDF']
         }
         return db_manager.create_project(project_data)
@@ -105,58 +104,62 @@ class TestTextBulletGenerator:
         assert '|' in header
     
     # ============================================
-    # MAIN DESCRIPTION BULLET TESTS
+    # SCORING SYSTEM TESTS
     # ============================================
     
-    def test_generate_main_description_with_description(self, generator, text_project):
-        """Test main bullet generation with description"""
-        bullet = generator._generate_main_description_bullet(text_project)
+    def test_score_bullet_with_metrics(self, generator, text_project):
+        """Test bullet scoring includes metrics check"""
+        bullet_with_metrics = "Authored 25,000+ words of technical documentation"
+        score = generator._score_bullet(bullet_with_metrics, text_project)
+        
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.25  # Should get at least metrics points
+    
+    def test_score_bullet_with_writing_keywords(self, generator, text_project):
+        """Test bullet scoring includes writing-specific keywords"""
+        bullet_with_keywords = "Composed technical writing with SEO and copywriting expertise"
+        score = generator._score_bullet(bullet_with_keywords, text_project)
+        
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.15  # Should get keyword points
+    
+    # ============================================
+    # BULLET TYPE GENERATION TESTS (10 TYPES)
+    # ============================================
+    
+    def test_generate_main_description_bullet(self, generator, text_project):
+        """Test main description bullet generation"""
+        bullet = generator._generate_main_description_bullet(text_project, [])
         
         assert isinstance(bullet, str)
         assert len(bullet) > 10
         first_word = bullet.split()[0]
-        assert first_word in generator.ACTION_VERBS['writing'] or first_word in generator.ACTION_VERBS['research']
+        assert first_word in [v for verbs in generator.ACTION_VERBS.values() for v in verbs]
     
-    def test_generate_main_description_with_skills(self, generator, text_project):
-        """Test main bullet includes skills"""
-        bullet = generator._generate_main_description_bullet(text_project)
-        
-        assert 'technical writing' in bullet.lower() or 'documentation' in bullet.lower()
-    
-    def test_generate_main_description_with_tags(self, generator, text_project):
-        """Test main bullet uses document types from tags"""
-        bullet = generator._generate_main_description_bullet(text_project)
-        
-        # Should mention documentation or content
-        assert 'documentation' in bullet.lower() or 'content' in bullet.lower() or 'markdown' in bullet.lower()
-    
-    # ============================================
-    # SCALE BULLET TESTS
-    # ============================================
-    
-    def test_generate_scale_bullet_with_word_count(self, generator, text_project):
+    def test_generate_scale_bullet(self, generator, text_project):
         """Test scale bullet with word count"""
         bullet = generator._generate_scale_bullet(text_project, [])
         
         assert bullet is not None
-        assert '25' in bullet or 'word' in bullet.lower()
+        assert '25' in bullet or '15' in bullet
     
-    def test_generate_scale_bullet_with_large_word_count(self, generator, research_project):
-        """Test scale bullet with large word count (shows in K)"""
-        bullet = generator._generate_scale_bullet(research_project, [])
+    def test_generate_skills_bullet(self, generator, text_project):
+        """Test skills bullet generation"""
+        bullet = generator._generate_skills_bullet(text_project, [])
         
         assert bullet is not None
-        assert '50K' in bullet or '50,000' in bullet
+        assert any(skill.lower() in bullet.lower() for skill in text_project.skills[:4])
     
-    def test_generate_scale_bullet_with_document_count(self, generator, text_project):
-        """Test scale bullet with document count"""
-        bullet = generator._generate_scale_bullet(text_project, [])
+    def test_generate_research_depth_bullet(self, generator, research_project):
+        """Test research depth bullet generation"""
+        bullet = generator._generate_research_depth_bullet(research_project, [])
         
+        # Should generate with research skills
         assert bullet is not None
-        assert '15' in bullet or 'document' in bullet.lower()
+        assert 'research' in bullet.lower() or 'analysis' in bullet.lower()
     
-    def test_generate_scale_bullet_with_team(self, generator, text_project):
-        """Test scale bullet with writing team"""
+    def test_generate_collaboration_bullet(self, generator, text_project):
+        """Test collaboration bullet with writing team"""
         db_manager.add_contributor_to_project({
             'project_id': text_project.id,
             'name': 'Writer 1',
@@ -169,64 +172,91 @@ class TestTextBulletGenerator:
         })
         
         project = db_manager.get_project(text_project.id)
-        bullet = generator._generate_scale_bullet(project, [])
+        bullet = generator._generate_collaboration_bullet(project, [])
         
         assert bullet is not None
-        # Should mention either team size OR word/document metrics (limited to 2 metrics)
-        assert ('2-person writing team' in bullet or 
-                ('25K' in bullet or '25,000' in bullet) or 
-                ('15' in bullet and 'document' in bullet.lower()))
+        assert '2-person' in bullet
     
-    def test_generate_scale_bullet_returns_none_for_small_project(self, generator):
-        """Test scale bullet returns None for small projects"""
+    def test_generate_audience_focus_bullet(self, generator, text_project):
+        """Test audience focus bullet generation"""
+        bullet = generator._generate_audience_focus_bullet(text_project, [])
+        
+        # Should generate with SEO skill or audience-related content
+        assert bullet is not None
+        # Check for audience-related terms (stakeholders, audiences, readers, etc.)
+        assert any(term in bullet.lower() for term in ['audience', 'seo', 'stakeholder', 'reader', 'web'])
+    
+    def test_generate_editing_quality_bullet(self, generator):
+        """Test editing quality bullet generation"""
         project_data = {
-            'name': 'Tiny Doc',
-            'file_path': '/test/tiny',
+            'name': 'Editing Project',
+            'file_path': '/test/editing',
             'project_type': 'text',
-            'word_count': 500,
-            'file_count': 2
+            'skills': ['Editing', 'Proofreading', 'Grammar', 'AP Style']
         }
         project = db_manager.create_project(project_data)
-        bullet = generator._generate_scale_bullet(project, [])
         
-        assert bullet is None
-    
-    # ============================================
-    # SKILLS BULLET TESTS
-    # ============================================
-    
-    def test_generate_skills_bullet_with_multiple_skills(self, generator, text_project):
-        """Test skills bullet generation"""
-        bullet = generator._generate_skills_bullet(text_project, [])
+        bullet = generator._generate_editing_quality_bullet(project, [])
         
         assert bullet is not None
-        # Skills should be lowercased in the bullet
-        combined_text = ' '.join(text_project.skills).lower()
-        assert any(skill.lower() in bullet.lower() for skill in text_project.skills[:4])
+        assert 'edit' in bullet.lower() or 'style' in bullet.lower()
     
-    def test_generate_skills_bullet_returns_none_with_few_skills(self, generator):
-        """Test skills bullet returns None with insufficient skills"""
-        project_data = {
-            'name': 'No Skills',
-            'file_path': '/test/noskills',
-            'project_type': 'text',
-            'skills': []
-        }
-        project = db_manager.create_project(project_data)
-        bullet = generator._generate_skills_bullet(project, [])
+    def test_generate_content_strategy_bullet(self, generator, text_project):
+        """Test content strategy bullet generation"""
+        bullet = generator._generate_content_strategy_bullet(text_project, [])
         
-        assert bullet is None
+        # Should generate with SEO skill
+        assert bullet is not None
+        assert 'seo' in bullet.lower() or 'strategy' in bullet.lower()
+    
+    def test_generate_technical_documentation_bullet(self, generator, text_project):
+        """Test technical documentation bullet generation"""
+        bullet = generator._generate_technical_documentation_bullet(text_project, [])
+        
+        # Should generate with Technical Writing skill
+        assert bullet is not None
+        assert 'technical' in bullet.lower() or 'documentation' in bullet.lower()
+    
+    def test_generate_publication_impact_bullet(self, generator, text_project):
+        """Test publication impact bullet generation"""
+        bullet = generator._generate_publication_impact_bullet(text_project, [])
+        
+        assert bullet is not None
+        assert 'deliver' in bullet.lower() or 'materials' in bullet.lower()
     
     # ============================================
-    # COMPLETE BULLET GENERATION TESTS
+    # COMPLETE BULLET GENERATION TESTS (2-5 BULLETS)
     # ============================================
     
     def test_generate_resume_bullets_default_count(self, generator, text_project):
-        """Test generating default number of bullets"""
+        """Test generating default number of bullets (3)"""
         bullets = generator.generate_resume_bullets(text_project)
         
-        assert len(bullets) >= 1
+        assert len(bullets) == 3
         assert all(isinstance(b, str) for b in bullets)
+    
+    def test_generate_resume_bullets_2_bullets(self, generator, text_project):
+        """Test generating 2 bullets"""
+        bullets = generator.generate_resume_bullets(text_project, num_bullets=2)
+        
+        assert len(bullets) == 2
+    
+    def test_generate_resume_bullets_5_bullets(self, generator, research_project):
+        """Test generating 5 bullets (was broken, now fixed)"""
+        bullets = generator.generate_resume_bullets(research_project, num_bullets=5)
+        
+        assert len(bullets) == 5
+        assert all(isinstance(b, str) for b in bullets)
+    
+    def test_generate_resume_bullets_returns_top_scored(self, generator, text_project):
+        """Test that generated bullets are scored and top N returned"""
+        bullets = generator.generate_resume_bullets(text_project, num_bullets=3)
+        
+        # Verify all bullets are scored and valid
+        assert len(bullets) == 3
+        for bullet in bullets:
+            score = generator._score_bullet(bullet, text_project)
+            assert 0.0 <= score <= 1.0
     
     def test_generate_resume_bullets_avoids_duplicate_verbs(self, generator, research_project):
         """Test that bullets avoid repeating verbs"""
@@ -248,6 +278,13 @@ class TestTextBulletGenerator:
         assert '•' in component
         assert '\n' in component
     
+    def test_format_resume_component_with_5_bullets(self, generator, research_project):
+        """Test formatting with 5 bullets"""
+        component = generator.format_resume_component(research_project, num_bullets=5)
+        
+        assert research_project.name in component
+        assert component.count('•') == 5
+    
     # ============================================
     # GENERATE_BULLETS_FOR_PROJECT TESTS
     # ============================================
@@ -261,6 +298,13 @@ class TestTextBulletGenerator:
         assert result['project_type'] == 'text'
         assert 'header' in result
         assert 'bullets' in result
+    
+    def test_generate_bullets_for_project_custom_count(self, generator, research_project):
+        """Test generating custom number of bullets"""
+        result = generator.generate_bullets_for_project(research_project.id, num_bullets=5)
+        
+        assert result['success'] is True
+        assert len(result['bullets']) == 5
     
     def test_generate_bullets_for_project_invalid_id(self, generator):
         """Test handling of invalid project ID"""
@@ -314,6 +358,25 @@ class TestTextBulletGenerator:
         bullets = generator.generate_resume_bullets(project, num_bullets=3)
         # Should have at least the main bullet
         assert len(bullets) >= 1
+    
+    def test_minimal_project_generates_bullets(self, generator):
+        """Test that even minimal projects generate at least 1 bullet"""
+        project_data = {
+            'name': 'Minimal',
+            'file_path': '/test/minimal',
+            'project_type': 'text',
+            'tags': ['Writing']
+        }
+        project = db_manager.create_project(project_data)
+        
+        bullets = generator.generate_resume_bullets(project, num_bullets=2)
+        assert len(bullets) >= 1
+    
+    def test_category_parameter_in_select_verb(self, generator, text_project):
+        """Test that _select_action_verb accepts category parameter"""
+        verb = generator._select_action_verb(text_project, [], category='research')
+        
+        assert verb in generator.ACTION_VERBS['research']
 
 
 if __name__ == "__main__":

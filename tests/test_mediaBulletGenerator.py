@@ -3,10 +3,9 @@ Comprehensive test suite for media resume bullet generator
 
 Tests:
 - Project header generation with software tools
-- Main description bullet generation
-- Scale/scope bullet generation
-- Skills bullet generation
-- Complete resume component formatting
+- All 10 bullet type generation methods
+- Media-specific bullet scoring system
+- Complete resume component formatting with 2-5 bullets
 - Edge cases and error handling
 """
 
@@ -49,9 +48,9 @@ class TestMediaBulletGenerator:
             'total_size_bytes': 250 * 1024 * 1024,  # 250 MB
             'date_created': datetime.now(timezone.utc),
             'date_modified': datetime.now(timezone.utc),
-            'languages': ['Adobe Illustrator', 'Adobe Photoshop'],  # Software in languages field
+            'languages': ['Adobe Illustrator', 'Adobe Photoshop', 'Figma'],
             'frameworks': [],
-            'skills': ['Vector Illustration', 'Logo Design', 'Brand Strategy'],
+            'skills': ['Vector Illustration', 'Logo Design', 'Brand Strategy', 'Typography'],
             'tags': ['Design', 'Branding']
         }
         return db_manager.create_project(project_data)
@@ -70,7 +69,7 @@ class TestMediaBulletGenerator:
             'date_modified': datetime.now(timezone.utc),
             'languages': ['Adobe Premiere Pro', 'DaVinci Resolve'],
             'frameworks': [],
-            'skills': ['Video Editing', 'Color Grading', 'Motion Graphics'],
+            'skills': ['Video Editing', 'Color Grading', 'Motion Graphics', '3D'],
             'tags': ['Video', 'Post-Production']
         }
         return db_manager.create_project(project_data)
@@ -84,7 +83,7 @@ class TestMediaBulletGenerator:
         header = generator.generate_project_header(media_project)
         
         assert media_project.name in header
-        assert 'Adobe' in header or 'Illustrator' in header or 'Photoshop' in header
+        assert 'Adobe' in header or 'Illustrator' in header or 'Photoshop' in header or 'Figma' in header
         assert '|' in header
     
     def test_generate_project_header_without_software(self, generator):
@@ -103,51 +102,61 @@ class TestMediaBulletGenerator:
         assert '|' in header
     
     # ============================================
-    # MAIN DESCRIPTION BULLET TESTS
+    # SCORING SYSTEM TESTS
     # ============================================
     
-    def test_generate_main_description_with_software(self, generator, media_project):
-        """Test main bullet generation with software"""
-        bullet = generator._generate_main_description_bullet(media_project)
+    def test_score_bullet_with_metrics(self, generator, media_project):
+        """Test bullet scoring includes metrics check"""
+        bullet_with_metrics = "Produced 45+ visual assets using Adobe Illustrator"
+        score = generator._score_bullet(bullet_with_metrics, media_project)
+        
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.25  # Should get at least metrics points
+    
+    def test_score_bullet_with_media_keywords(self, generator, media_project):
+        """Test bullet scoring includes media-specific keywords"""
+        bullet_with_keywords = "Designed UI mockups using Figma with typography and branding"
+        score = generator._score_bullet(bullet_with_keywords, media_project)
+        
+        assert 0.0 <= score <= 1.0
+        assert score >= 0.15  # Should get keyword points
+    
+    # ============================================
+    # BULLET TYPE GENERATION TESTS (10 TYPES)
+    # ============================================
+    
+    def test_generate_main_description_bullet(self, generator, media_project):
+        """Test main description bullet generation"""
+        bullet = generator._generate_main_description_bullet(media_project, [])
         
         assert isinstance(bullet, str)
         assert len(bullet) > 10
         first_word = bullet.split()[0]
-        assert first_word in generator.ACTION_VERBS['creative'] or first_word in generator.ACTION_VERBS['design']
+        assert first_word in [v for verbs in generator.ACTION_VERBS.values() for v in verbs]
     
-    def test_generate_main_description_with_skills(self, generator, media_project):
-        """Test main bullet includes skills"""
-        bullet = generator._generate_main_description_bullet(media_project)
-        
-        assert 'Vector Illustration' in bullet or 'Logo Design' in bullet or 'expertise' in bullet.lower()
-    
-    # ============================================
-    # SCALE BULLET TESTS
-    # ============================================
-    
-    def test_generate_scale_bullet_with_file_count(self, generator, media_project):
-        """Test scale bullet with file count"""
+    def test_generate_scale_bullet(self, generator, media_project):
+        """Test scale bullet with file count and size"""
         bullet = generator._generate_scale_bullet(media_project, [])
         
         assert bullet is not None
-        assert '45' in bullet or 'assets' in bullet.lower()
+        assert '45' in bullet or '250' in bullet
     
-    def test_generate_scale_bullet_with_size_mb(self, generator, media_project):
-        """Test scale bullet with MB size"""
-        bullet = generator._generate_scale_bullet(media_project, [])
+    def test_generate_skills_bullet(self, generator, media_project):
+        """Test skills bullet generation"""
+        bullet = generator._generate_skills_bullet(media_project, [])
         
         assert bullet is not None
-        assert '250' in bullet or 'MB' in bullet
+        assert any(skill in bullet for skill in ['Vector Illustration', 'Logo Design', 'Brand Strategy'])
     
-    def test_generate_scale_bullet_with_size_gb(self, generator, video_project):
-        """Test scale bullet with GB size"""
-        bullet = generator._generate_scale_bullet(video_project, [])
+    def test_generate_software_mastery_bullet(self, generator, media_project):
+        """Test software mastery bullet generation"""
+        bullet = generator._generate_software_mastery_bullet(media_project, [])
         
         assert bullet is not None
-        assert '5' in bullet and 'GB' in bullet
+        assert 'Adobe Illustrator' in bullet or 'Adobe Photoshop' in bullet or 'Figma' in bullet
     
-    def test_generate_scale_bullet_with_team(self, generator, media_project):
-        """Test scale bullet with creative team"""
+    def test_generate_collaboration_bullet(self, generator, media_project):
+        """Test collaboration bullet with creative team"""
         db_manager.add_contributor_to_project({
             'project_id': media_project.id,
             'name': 'Designer 1',
@@ -160,62 +169,83 @@ class TestMediaBulletGenerator:
         })
         
         project = db_manager.get_project(media_project.id)
-        bullet = generator._generate_scale_bullet(project, [])
+        bullet = generator._generate_collaboration_bullet(project, [])
         
         assert bullet is not None
-        # Should mention either team size OR file/size metrics (limited to 2 metrics)
-        assert ('2-person creative team' in bullet or 
-                ('45' in bullet and 'assets' in bullet.lower()) or 
-                ('250' in bullet and 'MB' in bullet))
+        assert '2-person' in bullet
     
-    def test_generate_scale_bullet_returns_none_for_small_project(self, generator):
-        """Test scale bullet returns None for small projects"""
-        project_data = {
-            'name': 'Tiny Media',
-            'file_path': '/test/tiny',
-            'project_type': 'visual_media',
-            'file_count': 3,
-            'total_size_bytes': 10 * 1024 * 1024  # 10 MB
-        }
-        project = db_manager.create_project(project_data)
-        bullet = generator._generate_scale_bullet(project, [])
+    def test_generate_design_process_bullet(self, generator, media_project):
+        """Test design process bullet generation"""
+        bullet = generator._generate_design_process_bullet(media_project, [])
         
-        assert bullet is None
+        # Should generate if relevant skills present (Brand Strategy, Typography)
+        if bullet:
+            assert isinstance(bullet, str)
     
-    # ============================================
-    # SKILLS BULLET TESTS
-    # ============================================
+    def test_generate_technical_complexity_bullet(self, generator, video_project):
+        """Test technical complexity bullet with advanced skills"""
+        bullet = generator._generate_technical_complexity_bullet(video_project, [])
+        
+        # Should generate with advanced media skills (3D, motion graphics, video editing, color grading)
+        assert bullet is not None
+        # Check that it mentions at least one of the advanced skills
+        assert any(skill.lower() in bullet.lower() for skill in ['3d', 'motion graphics', 'video editing', 'color grading'])
     
-    def test_generate_skills_bullet_with_multiple_skills(self, generator, media_project):
-        """Test skills bullet generation"""
-        bullet = generator._generate_skills_bullet(media_project, [])
+    def test_generate_portfolio_impact_bullet(self, generator, media_project):
+        """Test portfolio impact bullet generation"""
+        bullet = generator._generate_portfolio_impact_bullet(media_project, [])
         
         assert bullet is not None
-        assert any(skill in bullet for skill in ['Vector Illustration', 'Logo Design', 'Brand Strategy'])
+        assert 'production' in bullet.lower() or 'deliver' in bullet.lower()
     
-    def test_generate_skills_bullet_returns_none_with_few_skills(self, generator):
-        """Test skills bullet returns None with insufficient skills"""
-        project_data = {
-            'name': 'No Skills',
-            'file_path': '/test/noskills',
-            'project_type': 'visual_media',
-            'skills': []
-        }
-        project = db_manager.create_project(project_data)
-        bullet = generator._generate_skills_bullet(project, [])
+    def test_generate_creative_innovation_bullet(self, generator, media_project):
+        """Test creative innovation bullet with modern tools"""
+        bullet = generator._generate_creative_innovation_bullet(media_project, [])
         
-        assert bullet is None
+        # Should generate with Figma (modern tool)
+        assert bullet is not None
+        assert 'Figma' in bullet
+    
+    def test_generate_delivery_quality_bullet(self, generator, media_project):
+        """Test delivery quality bullet generation"""
+        bullet = generator._generate_delivery_quality_bullet(media_project, [])
+        
+        assert bullet is not None
+        assert 'polished' in bullet.lower() or 'quality' in bullet.lower()
     
     # ============================================
-    # COMPLETE BULLET GENERATION TESTS
+    # COMPLETE BULLET GENERATION TESTS (2-5 BULLETS)
     # ============================================
     
     def test_generate_resume_bullets_default_count(self, generator, media_project):
-        """Test generating default number of bullets"""
+        """Test generating default number of bullets (3)"""
         bullets = generator.generate_resume_bullets(media_project)
         
-        assert len(bullets) >= 1
+        assert len(bullets) == 3
         assert all(isinstance(b, str) for b in bullets)
+    
+    def test_generate_resume_bullets_2_bullets(self, generator, media_project):
+        """Test generating 2 bullets"""
+        bullets = generator.generate_resume_bullets(media_project, num_bullets=2)
+        
+        assert len(bullets) == 2
+    
+    def test_generate_resume_bullets_5_bullets(self, generator, video_project):
+        """Test generating 5 bullets (was broken, now fixed)"""
+        bullets = generator.generate_resume_bullets(video_project, num_bullets=5)
+        
+        assert len(bullets) == 5
+        assert all(isinstance(b, str) for b in bullets)
+    
+    def test_generate_resume_bullets_returns_top_scored(self, generator, media_project):
+        """Test that generated bullets are scored and top N returned"""
+        bullets = generator.generate_resume_bullets(media_project, num_bullets=3)
+        
+        # Verify all bullets are scored and valid
+        assert len(bullets) == 3
+        for bullet in bullets:
+            score = generator._score_bullet(bullet, media_project)
+            assert 0.0 <= score <= 1.0
     
     def test_generate_resume_bullets_avoids_duplicate_verbs(self, generator, video_project):
         """Test that bullets avoid repeating verbs"""
@@ -237,6 +267,13 @@ class TestMediaBulletGenerator:
         assert '•' in component
         assert '\n' in component
     
+    def test_format_resume_component_with_5_bullets(self, generator, video_project):
+        """Test formatting with 5 bullets"""
+        component = generator.format_resume_component(video_project, num_bullets=5)
+        
+        assert video_project.name in component
+        assert component.count('•') == 5
+    
     # ============================================
     # GENERATE_BULLETS_FOR_PROJECT TESTS
     # ============================================
@@ -250,6 +287,13 @@ class TestMediaBulletGenerator:
         assert result['project_type'] == 'visual_media'
         assert 'header' in result
         assert 'bullets' in result
+    
+    def test_generate_bullets_for_project_custom_count(self, generator, video_project):
+        """Test generating custom number of bullets"""
+        result = generator.generate_bullets_for_project(video_project.id, num_bullets=5)
+        
+        assert result['success'] is True
+        assert len(result['bullets']) == 5
     
     def test_generate_bullets_for_project_invalid_id(self, generator):
         """Test handling of invalid project ID"""
@@ -288,6 +332,25 @@ class TestMediaBulletGenerator:
         
         bullets = generator.generate_resume_bullets(project)
         assert len(bullets) >= 1
+    
+    def test_minimal_project_generates_bullets(self, generator):
+        """Test that even minimal projects generate at least 1 bullet"""
+        project_data = {
+            'name': 'Minimal',
+            'file_path': '/test/minimal',
+            'project_type': 'visual_media',
+            'languages': ['Photoshop']
+        }
+        project = db_manager.create_project(project_data)
+        
+        bullets = generator.generate_resume_bullets(project, num_bullets=2)
+        assert len(bullets) >= 1
+    
+    def test_category_parameter_in_select_verb(self, generator, media_project):
+        """Test that _select_action_verb accepts category parameter"""
+        verb = generator._select_action_verb(media_project, [], category='delivery')
+        
+        assert verb in generator.ACTION_VERBS['delivery']
 
 
 if __name__ == "__main__":
