@@ -12,6 +12,7 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from src.Databases.database import db_manager, Project, Contributor
 from src.Analysis.projectcollabtype import identify_project_type
+from src.Analysis.indivcontributions import extrapolate_individual_contributions
 
 
 # -----------------------------
@@ -28,6 +29,57 @@ ROLE_OPTIONS: List[str] = [
     "Designer",
     "Tester",
 ]
+
+
+# -----------------------------
+# Role Tiers Based on Contribution
+# -----------------------------
+
+def get_contribution_level(contribution_percent: float, is_collaborative: bool) -> str:
+    """
+    Get the contribution level prefix based on contribution percentage.
+    
+    Args:
+        contribution_percent: Percentage of contribution (0-100)
+        is_collaborative: Whether the project is collaborative
+    
+    Returns:
+        Contribution level (e.g., "Lead", "Senior", "Contributing")
+    """
+    if not is_collaborative:
+        return "Owner"
+    
+    # Tiered contribution levels for collaborative projects
+    if contribution_percent >= 50:
+        return "Lead"
+    elif contribution_percent >= 25:
+        return "Senior"
+    elif contribution_percent >= 10:
+        return "Contributing"
+    elif contribution_percent > 0:
+        return "Junior"
+    else:
+        return "Supporting"
+
+
+def get_role_from_contribution(contribution_percent: float, is_collaborative: bool, role_type: str = "Developer") -> str:
+    """
+    Combine contribution level with role type to create full role title.
+    
+    Args:
+        contribution_percent: Percentage of contribution (0-100)
+        is_collaborative: Whether the project is collaborative
+        role_type: The type of role (e.g., "Backend Developer", "Project Manager")
+    
+    Returns:
+        Complete role title (e.g., "Lead Backend Developer", "Senior Project Manager")
+    """
+    contribution_level = get_contribution_level(contribution_percent, is_collaborative)
+    
+    if contribution_level == "Owner":
+        return f"Owner / {role_type}"
+    else:
+        return f"{contribution_level} {role_type}"
 
 
 # -----------------------------
@@ -187,19 +239,29 @@ def prompt_manual_contribution() -> float:
             print("Invalid input. Please enter a number.")
 
 
-def assign_user_role(session: Session, project: Project) -> None:
+def assign_user_role(session: Session, project: Project, auto_assign: bool = True, project_data: Dict[str, Any] = None) -> None:
     """
-    Prompt the user and store the role on the project.
-    Also detects and stores collaboration type and user contribution percentage.
+    Assign a role to the user based on project type and contribution.
+    
+    Args:
+        session: Database session
+        project: Project object
+        auto_assign: If True, automatically assign role based on contribution.
+                     If False, prompt user for role selection.
+        project_data: Optional parsed project data for contribution analysis
     """
-
-    # Detect collaboration type (best-effort)
+    # Use provided project_data or create empty dict
+    if project_data is None:
+        project_data = {}
+    
+    # Detect collaboration type
     collaboration_type = identify_project_type(
         project.file_path,
-        project_data={}  # placeholder; richer data can be passed later
+        project_data=project_data
     )
 
     project.collaboration_type = collaboration_type
+    is_collaborative = collaboration_type == "Collaborative Project"
 
     # Display contribution summary if available
     display_contribution_summary(session, project)
@@ -207,43 +269,107 @@ def assign_user_role(session: Session, project: Project) -> None:
     # Calculate user contribution percentage
     contribution_percent = 0.0
     
-    # Check if contributor data exists
-    contributors = session.query(Contributor).filter(
-        Contributor.project_id == project.id
-    ).all()
+    # Try to get contribution from project_data using indivcontributions
+    if project_data and project_data.get("files"):
+        contributions_result = extrapolate_individual_contributions(project_data)
+        contributors_dict = contributions_result.get("contributors", {})
+        
+        if contributors_dict:
+            print("\n=== Contribution Analysis ===")
+            for name, stats in sorted(contributors_dict.items(), 
+                                     key=lambda x: x[1]["contribution_percent"], 
+                                     reverse=True):
+                print(f"  {name}: {stats['contribution_percent']:.1f}%")
+            
+            if not is_collaborative:
+                # For individual projects, user is the owner
+                contribution_percent = 100.0
+            else:
+                # For collaborative projects, identify user's contribution
+                if len(contributors_dict) == 1:
+                    # Only one contributor found, assume it's the user
+                    contributor_name = list(contributors_dict.keys())[0]
+                    contribution_percent = contributors_dict[contributor_name]["contribution_percent"]
+                else:
+                    # Multiple contributors, ask user to identify themselves
+                    user_identifier = get_user_identifier(session)
+                    user_identifier_lower = user_identifier.lower()
+                    
+                    # Try to match user identifier
+                    matched = False
+                    for name, stats in contributors_dict.items():
+                        if user_identifier_lower in name.lower():
+                            contribution_percent = stats["contribution_percent"]
+                            matched = True
+                            print(f"\nMatched you as: {name} ({contribution_percent:.1f}%)")
+                            break
+                    
+                    if not matched:
+                        print(f"\nCould not match '{user_identifier}' to contributors.")
+                        manual = input("Would you like to manually enter your contribution? (y/n): ").strip().lower()
+                        if manual == 'y':
+                            contribution_percent = prompt_manual_contribution()
     
-    has_contributor_data = len(contributors) > 0
-    
-    if collaboration_type == "Collaborative Project":
-        if has_contributor_data:
-            print("\nGit contributor data is available for this project.")
-            calculate = input("Would you like to identify your contribution from Git data? (y/n): ").strip().lower()
-            if calculate == 'y':
-                user_identifier = get_user_identifier(session)
-                contribution_percent = calculate_user_contribution(session, project, user_identifier)
-                
+    # Fallback: Check database contributor data
+    if contribution_percent == 0.0:
+        contributors = session.query(Contributor).filter(
+            Contributor.project_id == project.id
+        ).all()
+        
+        has_contributor_data = len(contributors) > 0
+        
+        if collaboration_type == "Collaborative Project":
+            if has_contributor_data:
+                print("\nGit contributor data is available for this project.")
+                if auto_assign:
+                    user_identifier = get_user_identifier(session)
+                    contribution_percent = calculate_user_contribution(session, project, user_identifier)
+                else:
+                    calculate = input("Would you like to identify your contribution from Git data? (y/n): ").strip().lower()
+                    if calculate == 'y':
+                        user_identifier = get_user_identifier(session)
+                        contribution_percent = calculate_user_contribution(session, project, user_identifier)
+                    
                 # If no match found, offer manual entry
                 if contribution_percent == 0.0:
                     manual = input("\nWould you like to manually enter your contribution instead? (y/n): ").strip().lower()
                     if manual == 'y':
                         contribution_percent = prompt_manual_contribution()
             else:
-                # User declined Git matching, offer manual entry
+                # No Git data available, offer manual entry
+                print("\nNo Git contributor data found for this project.")
                 manual = input("Would you like to manually enter your contribution percentage? (y/n): ").strip().lower()
                 if manual == 'y':
                     contribution_percent = prompt_manual_contribution()
-        else:
-            # No Git data available, offer manual entry
-            print("\nNo Git contributor data found for this project.")
-            manual = input("Would you like to manually enter your contribution percentage? (y/n): ").strip().lower()
-            if manual == 'y':
-                contribution_percent = prompt_manual_contribution()
-    elif collaboration_type == "Individual Project":
-        contribution_percent = 100.0
-        print("\nAs an individual project, your contribution is 100%.")
+        elif collaboration_type == "Individual Project":
+            contribution_percent = 100.0
+            print("\nAs an individual project, your contribution is 100%.")
 
-    # Prompt for role with contribution context
-    role = prompt_user_role(collaboration_type, contribution_percent)
+    # Assign role based on contribution and collaboration type
+    if auto_assign:
+        # First, get the role type from the user
+        role_type = prompt_user_role(collaboration_type, contribution_percent)
+        
+        # Combine contribution level with role type
+        role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
+        
+        contribution_level = get_contribution_level(contribution_percent, is_collaborative)
+        print(f"\n=== Auto-Assigned Role ===")
+        print(f"Based on your {contribution_percent:.1f}% contribution:")
+        print(f"Contribution Level: {contribution_level}")
+        print(f"Role Type: {role_type}")
+        print(f"Complete Role: {role}")
+        
+        # Optionally allow override
+        override = input("\nWould you like to change this role? (y/n): ").strip().lower()
+        if override == 'y':
+            role_type = prompt_user_role(collaboration_type, contribution_percent)
+            role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
+    else:
+        # Manual role selection
+        role_type = prompt_user_role(collaboration_type, contribution_percent)
+        role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
+    
     project.user_role = role
     project.user_contribution_percent = contribution_percent
 
