@@ -21,6 +21,7 @@ from src.Analysis.skillsExtractCoding import extract_skills_with_scores
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
+from src.Helpers.gitContributorExtraction import is_git_repository, populate_contributors_for_project
 
 class CodingProjectScanner:
     """Scans and analyzes coding projects"""
@@ -189,6 +190,21 @@ class CodingProjectScanner:
                 db_manager.add_file_to_project(file_data)
             
             print(f"  ✓ Stored {len(self.code_files)} files")
+        
+        # Step 4: Extract Git contributors (if Git repository)
+        if is_git_repository(str(self.project_path)):
+            print("\nStep 4: Extracting Git contributors...")
+            project = db_manager.get_project(project_id)
+            try:
+                contrib_count = populate_contributors_for_project(project)
+                if contrib_count > 0:
+                    print(f"  ✓ Added {contrib_count} contributors")
+                else:
+                    print("  ℹ No Git contributors found")
+            except Exception as e:
+                print(f"  ⚠️  Could not extract contributors: {e}")
+        else:
+            print("\nStep 4: Skipping contributor extraction (not a Git repository)")
         
         return project_id
         
