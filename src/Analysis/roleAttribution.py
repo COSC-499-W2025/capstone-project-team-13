@@ -3,16 +3,14 @@ from sqlalchemy.orm import Session
 import os
 import sys
 
-# Ensure project root is on path (matches your existing usage)
+# Ensure project root is on path
 PROJECT_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..')
 )
 sys.path.insert(0, PROJECT_ROOT)
 
-
-from src.Databases.database import db_manager
-from src.Databases.database import Project
-
+from src.Databases.database import db_manager, Project
+from src.Analysis.projectcollabtype import identify_project_type
 
 
 # -----------------------------
@@ -35,8 +33,20 @@ ROLE_OPTIONS: List[str] = [
 # Prompt Logic
 # -----------------------------
 
-def prompt_user_role() -> str:
+def prompt_user_role(collaboration_type: Optional[str] = None) -> str:
     print("\n=== Select Your Role on This Project ===")
+
+    if collaboration_type:
+        print(f"Detected project type: {collaboration_type}")
+
+        if collaboration_type == "Individual Project":
+            print("This appears to be an individual project.")
+            print("You likely owned most or all responsibilities.")
+        elif collaboration_type == "Collaborative Project":
+            print("This appears to be a collaborative project.")
+            print("Select the role that best represents your contribution.")
+
+    print()
 
     for idx, role in enumerate(ROLE_OPTIONS, start=1):
         print(f"{idx}. {role}")
@@ -62,14 +72,26 @@ def prompt_user_role() -> str:
 def assign_user_role(session: Session, project: Project) -> None:
     """
     Prompt the user and store the role on the project.
+    Also detects and stores collaboration type.
     """
-    role = prompt_user_role()
+
+    # Detect collaboration type (best-effort)
+    collaboration_type = identify_project_type(
+        project.file_path,
+        project_data={}  # placeholder; richer data can be passed later
+    )
+
+    project.collaboration_type = collaboration_type
+
+    role = prompt_user_role(collaboration_type)
     project.user_role = role
 
     session.add(project)
     session.commit()
 
-    print(f"\nRole saved: {role}")
+    print("\nSaved values:")
+    print(f"  Role: {project.user_role}")
+    print(f"  Collaboration Type: {project.collaboration_type}")
 
 
 # -----------------------------
@@ -108,11 +130,15 @@ def manual_test():
 
         print(f"\nSelected project: {project.name}")
         print(f"Current role: {project.user_role}")
+        print(f"Current collaboration type: {project.collaboration_type}")
 
         assign_user_role(session, project)
 
         session.refresh(project)
-        print(f"Updated role: {project.user_role}")
+
+        print("\nVerification read-back:")
+        print(f"  Role: {project.user_role}")
+        print(f"  Collaboration Type: {project.collaboration_type}")
 
     finally:
         session.close()
