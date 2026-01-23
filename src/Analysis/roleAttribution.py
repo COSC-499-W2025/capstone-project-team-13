@@ -214,7 +214,7 @@ def identify_user_role(session: Session, project: Project) -> str:
     # Prompt for contributor selection
     while True:
         try:
-            choice = int(input("\nSelect a contributor by number: ").strip())
+            choice = int(input("\nInsert number to select user's contributor: ").strip())
             if 1 <= choice <= len(contributors):
                 selected_contributor = contributors[choice - 1]
                 contribution_percent = selected_contributor.contribution_percent
@@ -274,6 +274,12 @@ def identify_user_role(session: Session, project: Project) -> str:
     # Combine pretext and job title into a complete role
     role = f"{pretext} - {job_title}"
 
+    # Allow the user to manually override the generated role
+    print(f"\nGenerated Role: {role}")
+    manual_override = input("\nWould you like to manually enter a full job title instead? (y/n): ").strip().lower()
+    if manual_override == 'y':
+        role = input("Enter your full job title: ").strip()
+
     # Store the role in the database
     project.user_role = role
     session.add(project)
@@ -283,11 +289,32 @@ def identify_user_role(session: Session, project: Project) -> str:
     return role
 
 
+def lookup_roles():
+    """
+    Function to look up roles assigned to projects.
+    """
+    session = db_manager.get_session()
+    try:
+        projects = session.query(Project).order_by(Project.name).all()
+        if not projects:
+            print("No projects found in the database.")
+        else:
+            print("\n=== Project Roles ===")
+            for project in projects:
+                role = project.user_role or "No role assigned"
+                print(f"{project.name}: {role}")
+    finally:
+        session.close()
+
+
 # -----------------------------
 # Entry Point
 # -----------------------------
 
-if __name__ == "__main__":
+def test_role_attribution():
+    """
+    Function to test the roleAttribution functionality.
+    """
     session = db_manager.get_session()
     try:
         projects = session.query(Project).order_by(Project.name).all()
@@ -307,6 +334,9 @@ if __name__ == "__main__":
 
                         # Identify and assign the user's role
                         identify_user_role(session, selected_project)
+
+                        # Pause to let the user see the role
+                        input("\nPress Enter to continue...")
                         break
                     else:
                         print("Invalid selection. Please choose a valid project number.")
@@ -314,3 +344,7 @@ if __name__ == "__main__":
                     print("Invalid input. Please enter a number.")
     finally:
         session.close()
+
+
+if __name__ == "__main__":
+    test_role_attribution()
