@@ -419,7 +419,10 @@ def manual_test():
         print(f"\nSelected project: {project.name}")
         print(f"Current role: {project.user_role}")
         print(f"Current collaboration type: {project.collaboration_type}")
-        print(f"Current contribution: {project.user_contribution_percent:.1f}%")
+        
+        contrib = project.user_contribution_percent
+        contrib_str = f"{contrib:.1f}%" if contrib is not None else "Not set"
+        print(f"Current contribution: {contrib_str}")
 
         assign_user_role(session, project)
 
@@ -428,7 +431,10 @@ def manual_test():
         print("\nVerification read-back:")
         print(f"  Role: {project.user_role}")
         print(f"  Collaboration Type: {project.collaboration_type}")
-        print(f"  Contribution: {project.user_contribution_percent:.1f}%")
+        
+        contrib = project.user_contribution_percent
+        contrib_str = f"{contrib:.1f}%" if contrib is not None else "Not set"
+        print(f"  Contribution: {contrib_str}")
 
     finally:
         session.close()
