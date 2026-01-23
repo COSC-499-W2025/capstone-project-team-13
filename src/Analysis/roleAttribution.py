@@ -2,7 +2,6 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 import os
 import sys
-import re
 
 # Ensure project root is on path
 PROJECT_ROOT = os.path.abspath(
@@ -83,160 +82,29 @@ def get_role_from_contribution(contribution_percent: float, is_collaborative: bo
 
 
 # -----------------------------
-# User Identification
+# Contribution Analysis
 # -----------------------------
-
-def get_user_identifier(session: Session) -> str:
-    """
-    Prompt for or retrieve the user's identifier (name, email, or username)
-    that matches contributor records in the database.
-    """
-    print("\n=== User Identification ===")
-    print("To calculate your contribution percentage, we need to identify you.")
-    print("Enter your name, email, or username as it appears in your Git commits.")
-    print("Common formats: 'John Doe', 'john.doe@email.com', 'johndoe', etc.")
-    
-    while True:
-        identifier = input("Your identifier: ").strip()
-        if identifier:
-            return identifier
-        print("Please enter a valid identifier.")
-
 
 def calculate_user_contribution(session: Session, project: Project, user_identifier: str) -> float:
     """
     Calculate the percentage of work completed by the user based on contributor data.
     Returns a percentage (0.0 to 100.0).
     """
-    # Get all contributors for this project
     contributors = session.query(Contributor).filter(
         Contributor.project_id == project.id
     ).all()
     
     if not contributors:
-        print("\nNo contributor data found for this project.")
         return 0.0
     
-    # Try to find matching contributor by name (case-insensitive, partial match)
-    user_contributor = None
     user_identifier_lower = user_identifier.lower()
-    
-    # First, try exact match
     for contrib in contributors:
         if contrib.name and contrib.name.lower() == user_identifier_lower:
-            user_contributor = contrib
-            break
+            return contrib.contribution_percent
         if contrib.contributor_identifier and contrib.contributor_identifier.lower() == user_identifier_lower:
-            user_contributor = contrib
-            break
+            return contrib.contribution_percent
     
-    # If no exact match, try partial match
-    if not user_contributor:
-        for contrib in contributors:
-            if contrib.name and user_identifier_lower in contrib.name.lower():
-                user_contributor = contrib
-                break
-            if contrib.contributor_identifier and user_identifier_lower in contrib.contributor_identifier.lower():
-                user_contributor = contrib
-                break
-    
-    if not user_contributor:
-        print(f"\nWarning: No contributor found matching '{user_identifier}'")
-        print("Available contributors:")
-        for contrib in contributors:
-            display_name = contrib.name or contrib.contributor_identifier or "Unknown"
-            print(f"  - {display_name} ({contrib.contribution_percent:.1f}%)")
-        return 0.0
-    
-    # Return the stored contribution percentage
-    contribution = user_contributor.contribution_percent
-    print(f"\nFound contributor: {user_contributor.name or user_contributor.contributor_identifier}")
-    print(f"Your contribution: {contribution:.1f}%")
-    
-    return contribution
-
-
-def display_contribution_summary(session: Session, project: Project) -> None:
-    """
-    Display a summary of all contributors and their percentages.
-    """
-    contributors = session.query(Contributor).filter(
-        Contributor.project_id == project.id
-    ).order_by(Contributor.contribution_percent.desc()).all()
-    
-    if not contributors:
-        print("\nNo contributor data available.")
-        return
-    
-    print("\n=== Project Contributions ===")
-    for contrib in contributors:
-        name = contrib.name or contrib.contributor_identifier or "Unknown"
-        print(f"  {name}: {contrib.contribution_percent:.1f}%")
-        if contrib.commit_count > 0:
-            print(f"    Commits: {contrib.commit_count}")
-        if contrib.lines_added > 0 or contrib.lines_deleted > 0:
-            print(f"    Lines: +{contrib.lines_added} / -{contrib.lines_deleted}")
-
-
-# -----------------------------
-# Prompt Logic
-# -----------------------------
-
-def prompt_user_role(collaboration_type: Optional[str] = None, contribution_percent: float = 0.0) -> str:
-    print("\n=== Select Your Role on This Project ===")
-
-    if collaboration_type:
-        print(f"Detected project type: {collaboration_type}")
-
-        if collaboration_type == "Individual Project":
-            print("This appears to be an individual project.")
-            print("You likely owned most or all responsibilities.")
-        elif collaboration_type == "Collaborative Project":
-            print("This appears to be a collaborative project.")
-            print("Select the role that best represents your contribution.")    
-    if contribution_percent > 0:
-        print(f"\nYour contribution to this project: {contribution_percent:.1f}%")
-    print()
-
-    for idx, role in enumerate(ROLE_OPTIONS, start=1):
-        print(f"{idx}. {role}")
-    print("0. Other (type manually)")
-
-    while True:
-        choice = input("Select an option: ").strip()
-
-        if choice.isdigit():
-            choice = int(choice)
-
-            if choice == 0:
-                custom = input("Enter your role: ").strip()
-                if custom:
-                    return custom
-
-            elif 1 <= choice <= len(ROLE_OPTIONS):
-                return ROLE_OPTIONS[choice - 1]
-
-        print("Invalid selection. Please try again.")
-
-
-def prompt_manual_contribution() -> float:
-    """
-    Prompt user to manually enter their contribution percentage.
-    """
-    print("\n=== Manual Contribution Entry ===")
-    print("Since Git contributor data is not available, please manually estimate your contribution.")
-    print("Enter a value between 0 and 100 (e.g., 50 for 50%)")
-    
-    while True:
-        try:
-            value = input("Your contribution percentage: ").strip()
-            contribution = float(value)
-            if 0 <= contribution <= 100:
-                return contribution
-            else:
-                print("Please enter a value between 0 and 100.")
-        except ValueError:
-            print("Invalid input. Please enter a number.")
+    return 0.0
 
 
 def assign_user_role(session: Session, project: Project, auto_assign: bool = True, project_data: Dict[str, Any] = None) -> None:
@@ -263,10 +131,6 @@ def assign_user_role(session: Session, project: Project, auto_assign: bool = Tru
     project.collaboration_type = collaboration_type
     is_collaborative = collaboration_type == "Collaborative Project"
 
-    # Display contribution summary if available
-    display_contribution_summary(session, project)
-
-    # Calculate user contribution percentage
     contribution_percent = 0.0
     
     # Try to get contribution from project_data using indivcontributions
@@ -275,100 +139,16 @@ def assign_user_role(session: Session, project: Project, auto_assign: bool = Tru
         contributors_dict = contributions_result.get("contributors", {})
         
         if contributors_dict:
-            print("\n=== Contribution Analysis ===")
-            for name, stats in sorted(contributors_dict.items(), 
-                                     key=lambda x: x[1]["contribution_percent"], 
-                                     reverse=True):
-                print(f"  {name}: {stats['contribution_percent']:.1f}%")
-            
-            if not is_collaborative:
-                # For individual projects, user is the owner
-                contribution_percent = 100.0
-            else:
-                # For collaborative projects, identify user's contribution
-                if len(contributors_dict) == 1:
-                    # Only one contributor found, assume it's the user
-                    contributor_name = list(contributors_dict.keys())[0]
-                    contribution_percent = contributors_dict[contributor_name]["contribution_percent"]
-                else:
-                    # Multiple contributors, ask user to identify themselves
-                    user_identifier = get_user_identifier(session)
-                    user_identifier_lower = user_identifier.lower()
-                    
-                    # Try to match user identifier
-                    matched = False
-                    for name, stats in contributors_dict.items():
-                        if user_identifier_lower in name.lower():
-                            contribution_percent = stats["contribution_percent"]
-                            matched = True
-                            print(f"\nMatched you as: {name} ({contribution_percent:.1f}%)")
-                            break
-                    
-                    if not matched:
-                        print(f"\nCould not match '{user_identifier}' to contributors.")
-                        manual = input("Would you like to manually enter your contribution? (y/n): ").strip().lower()
-                        if manual == 'y':
-                            contribution_percent = prompt_manual_contribution()
+            user_identifier = input("Enter your identifier: ").strip()
+            contribution_percent = contributors_dict.get(user_identifier, {}).get("contribution_percent", 0.0)
     
     # Fallback: Check database contributor data
     if contribution_percent == 0.0:
-        contributors = session.query(Contributor).filter(
-            Contributor.project_id == project.id
-        ).all()
-        
-        has_contributor_data = len(contributors) > 0
-        
-        if collaboration_type == "Collaborative Project":
-            if has_contributor_data:
-                print("\nGit contributor data is available for this project.")
-                if auto_assign:
-                    user_identifier = get_user_identifier(session)
-                    contribution_percent = calculate_user_contribution(session, project, user_identifier)
-                else:
-                    calculate = input("Would you like to identify your contribution from Git data? (y/n): ").strip().lower()
-                    if calculate == 'y':
-                        user_identifier = get_user_identifier(session)
-                        contribution_percent = calculate_user_contribution(session, project, user_identifier)
-                    
-                # If no match found, offer manual entry
-                if contribution_percent == 0.0:
-                    manual = input("\nWould you like to manually enter your contribution instead? (y/n): ").strip().lower()
-                    if manual == 'y':
-                        contribution_percent = prompt_manual_contribution()
-            else:
-                # No Git data available, offer manual entry
-                print("\nNo Git contributor data found for this project.")
-                manual = input("Would you like to manually enter your contribution percentage? (y/n): ").strip().lower()
-                if manual == 'y':
-                    contribution_percent = prompt_manual_contribution()
-        elif collaboration_type == "Individual Project":
-            contribution_percent = 100.0
-            print("\nAs an individual project, your contribution is 100%.")
-
-    # Assign role based on contribution and collaboration type
-    if auto_assign:
-        # First, get the role type from the user
-        role_type = prompt_user_role(collaboration_type, contribution_percent)
-        
-        # Combine contribution level with role type
-        role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
-        
-        contribution_level = get_contribution_level(contribution_percent, is_collaborative)
-        print(f"\n=== Auto-Assigned Role ===")
-        print(f"Based on your {contribution_percent:.1f}% contribution:")
-        print(f"Contribution Level: {contribution_level}")
-        print(f"Role Type: {role_type}")
-        print(f"Complete Role: {role}")
-        
-        # Optionally allow override
-        override = input("\nWould you like to change this role? (y/n): ").strip().lower()
-        if override == 'y':
-            role_type = prompt_user_role(collaboration_type, contribution_percent)
-            role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
-    else:
-        # Manual role selection
-        role_type = prompt_user_role(collaboration_type, contribution_percent)
-        role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
+        user_identifier = input("Enter your identifier: ").strip()
+        contribution_percent = calculate_user_contribution(session, project, user_identifier)
+    
+    role_type = input("Enter your role type: ").strip()
+    role = get_role_from_contribution(contribution_percent, is_collaborative, role_type)
     
     project.user_role = role
     project.user_contribution_percent = contribution_percent
@@ -376,62 +156,131 @@ def assign_user_role(session: Session, project: Project, auto_assign: bool = Tru
     session.add(project)
     session.commit()
 
-    print("\nSaved values:")
-    print(f"  Role: {project.user_role}")
-    print(f"  Collaboration Type: {project.collaboration_type}")
-    print(f"  Your Contribution: {project.user_contribution_percent:.1f}%")
+    print(f"Role assigned: {role}")
 
 
-# -----------------------------
-# Manual Testing
-# -----------------------------
+def display_project_contributors(session: Session, project: Project) -> None:
+    """
+    Display all contributors for the selected project.
+    """
+    contributors = session.query(Contributor).filter(
+        Contributor.project_id == project.id
+    ).order_by(Contributor.contribution_percent.desc()).all()
 
-def select_project(session: Session) -> Optional[Project]:
-    projects = session.query(Project).order_by(Project.name).all()
+    if not contributors:
+        print("\nNo contributors found for this project.")
+    else:
+        print("\n=== Contributors for Project: {} ===".format(project.name))
+        for contrib in contributors:
+            name = contrib.name or contrib.contributor_identifier or "Unknown"
+            print(f"  {name}: {contrib.contribution_percent:.1f}%")
+            if contrib.commit_count > 0:
+                print(f"    Commits: {contrib.commit_count}")
+            if contrib.lines_added > 0 or contrib.lines_deleted > 0:
+                print(f"    Lines: +{contrib.lines_added} / -{contrib.lines_deleted}")
 
-    if not projects:
-        print("No projects found.")
-        return None
 
-    print("\n=== Select a Project ===")
-    for idx, project in enumerate(projects, start=1):
-        print(f"{idx}. {project.name}")
+def identify_user_role(session: Session, project: Project) -> str:
+    """
+    Identify the user's role based on their username and contribution percentage.
 
+    Args:
+        session: Database session.
+        project: The selected project.
+
+    Returns:
+        The complete role title.
+    """
+    # Display contributors for the project
+    contributors = session.query(Contributor).filter(
+        Contributor.project_id == project.id
+    ).order_by(Contributor.contribution_percent.desc()).all()
+
+    if not contributors:
+        print("\nNo contributors found for this project. Automatically assigning 'Project Owner' as the role.")
+        role = "Project Owner"
+        project.user_role = role
+        session.add(project)
+        session.commit()
+        print(f"\nRole assigned: {role}")
+        return role
+
+    print("\n=== Contributors for Project: {} ===".format(project.name))
+    print("Note: Duplicates may exist based on username or email being used for commits.")
+    for idx, contrib in enumerate(contributors, start=1):
+        name = contrib.name or contrib.contributor_identifier or "Unknown"
+        print(f"{idx}. {name}: {contrib.contribution_percent:.1f}%")
+
+    # Prompt for contributor selection
     while True:
-        choice = input("Select a project: ").strip()
-        if choice.isdigit():
-            idx = int(choice) - 1
-            if 0 <= idx < len(projects):
-                return projects[idx]
-        print("Invalid selection. Please try again.")
+        try:
+            choice = int(input("\nSelect a contributor by number: ").strip())
+            if 1 <= choice <= len(contributors):
+                selected_contributor = contributors[choice - 1]
+                contribution_percent = selected_contributor.contribution_percent
+                break
+            else:
+                print("Invalid selection. Please choose a valid number.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
+    # Determine pretext based on contribution percentage
+    if contribution_percent >= 65:
+        pretext = "Project Owner"
+    elif contribution_percent >= 50:
+        pretext = "Lead Collaborator"
+    elif contribution_percent >= 22.5:
+        pretext = "Major Contributor"
+    elif contribution_percent >= 10:
+        pretext = "Contributor"
+    elif contribution_percent > 0:
+        pretext = "Junior Contributor"
+    else:
+        pretext = "Observer"
 
-def manual_test():
-    print("\n=== Manual User Role Assignment Test ===")
+    # Provide a list of common job titles
+    job_titles = [
+        "Technical Lead",
+        "Backend Developer",
+        "Frontend Developer",
+        "Full Stack Developer",
+        "Project Manager",
+        "Designer",
+        "Tester",
+        "Researcher",
+    ]
 
-    session = db_manager.get_session()
+    print("\n=== Select a Job Title ===")
+    for idx, title in enumerate(job_titles, start=1):
+        print(f"{idx}. {title}")
+    print("0. Manually Type")
 
-    try:
-        project = select_project(session)
-        if not project:
-            return
+    # Allow the user to select a job title
+    while True:
+        try:
+            choice = int(input("\nSelect a job title by number: ").strip())
+            if choice == 0:
+                job_title = input("Enter your job title: ").strip()
+                if job_title:
+                    break
+            elif 1 <= choice <= len(job_titles):
+                job_title = job_titles[choice - 1]
+                break
+            else:
+                print("Invalid selection. Please choose a valid number.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
-        print(f"\nSelected project: {project.name}")
-        print(f"Current role: {project.user_role}")
-        print(f"Current collaboration type: {project.collaboration_type}")
-        print(f"Current contribution: {project.user_contribution_percent:.1f}%")
+    # Combine pretext and job title into a complete role
+    role = f"{pretext} - {job_title}"
 
-        assign_user_role(session, project)
+    # Store the role in the database
+    project.user_role = role
+    session.add(project)
+    session.commit()
 
-        session.refresh(project)
-
-        print("\nVerification read-back:")
-        print(f"  Role: {project.user_role}")
-        print(f"  Collaboration Type: {project.collaboration_type}")
-        print(f"  Contribution: {project.user_contribution_percent:.1f}%")
-
-    finally:
-        session.close()
+    print(f"\nRole assigned: {role}")
+    return role
 
 
 # -----------------------------
@@ -439,4 +288,29 @@ def manual_test():
 # -----------------------------
 
 if __name__ == "__main__":
-    manual_test()
+    session = db_manager.get_session()
+    try:
+        projects = session.query(Project).order_by(Project.name).all()
+        if not projects:
+            print("No projects found in the database.")
+        else:
+            print("\n=== Available Projects ===")
+            for idx, project in enumerate(projects, start=1):
+                print(f"{idx}. {project.name}")
+
+            while True:
+                try:
+                    choice = int(input("\nSelect a project by number: ").strip())
+                    if 1 <= choice <= len(projects):
+                        selected_project = projects[choice - 1]
+                        display_project_contributors(session, selected_project)
+
+                        # Identify and assign the user's role
+                        identify_user_role(session, selected_project)
+                        break
+                    else:
+                        print("Invalid selection. Please choose a valid project number.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+    finally:
+        session.close()
