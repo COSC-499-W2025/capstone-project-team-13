@@ -90,32 +90,56 @@ class Project(Base):
         return json.loads(self._languages) if self._languages else []
     
     @languages.setter
-    def languages(self, value: List[str]):
-        self._languages = json.dumps(value) if isinstance(value, list) else value
+    def languages(self, value):
+        # Convert sets to lists before storing
+        if isinstance(value, set):
+            value = list(value)
+        self._languages = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def frameworks(self) -> List[str]:
         return json.loads(self._frameworks) if self._frameworks else []
     
+    # @frameworks.setter
+    # def frameworks(self, value: List[str]):
+    #     self._frameworks = json.dumps(value) if isinstance(value, list) else value
+
     @frameworks.setter
-    def frameworks(self, value: List[str]):
-        self._frameworks = json.dumps(value) if isinstance(value, list) else value
+    def frameworks(self, value):
+        # Convert sets to lists before storing
+        if isinstance(value, set):
+            value = list(value)
+        self._frameworks = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def skills(self) -> List[str]:
         return json.loads(self._skills) if self._skills else []
     
+    # @skills.setter
+    # def skills(self, value: List[str]):
+    #     self._skills = json.dumps(value) if isinstance(value, list) else value
+
     @skills.setter
-    def skills(self, value: List[str]):
-        self._skills = json.dumps(value) if isinstance(value, list) else value
+    def skills(self, value):
+        # Convert sets to lists before storing
+        if isinstance(value, set):
+            value = list(value)
+        self._skills = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def tags(self) -> List[str]:
         return json.loads(self._tags) if self._tags else []
     
+    # @tags.setter
+    # def tags(self, value: List[str]):
+    #     self._tags = json.dumps(value) if isinstance(value, list) else value
+
     @tags.setter
-    def tags(self, value: List[str]):
-        self._tags = json.dumps(value) if isinstance(value, list) else value
+    def tags(self, value):
+        # Convert sets to lists before storing
+        if isinstance(value, set):
+            value = list(value)
+        self._tags = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def success_metrics(self) -> Dict[str, Any]:
