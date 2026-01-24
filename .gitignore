@@ -11,3 +11,6 @@ tests/PortfolioTest/
 
 # Environment files
 *.env
+
+# Project-specific files
+projects.py
