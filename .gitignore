@@ -13,4 +13,4 @@ tests/PortfolioTest/
 *.env
 
 # Project-specific files
-projects.py
+projects.db
