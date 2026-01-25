@@ -209,7 +209,7 @@ def get_user_choice():
     """Simplified main menu with three submenus and exit"""
     print_header("Digital Artifact Mining Software - Main Menu")
     print("Choose an option:\n")
-    print("1. Upload Project")
+    print("1. Upload a Project or Thumbnail")
     print("2. View and Analyze Previously Uploaded Projects")
     print("3. Resume Tools")
     print("4. AI Menu")
@@ -2094,6 +2094,71 @@ def handle_resume_items():
     else:
         print("\n❌ Invalid option. Returning to main menu...")
 
+def handle_thumbnail_upload():
+    """Handle uploading a thumbnail for an existing project"""
+    print_header("Upload Thumbnail for Project")
+    
+    # Get all projects from database
+    projects = db_manager.get_all_projects()
+    
+    if not projects:
+        print("📭 No projects found in database.")
+        print("\n⚠️  You need to upload a project first before adding a thumbnail.")
+        input("\nPress Enter to continue...")
+        return
+    
+    # Display projects
+    print("Available projects:\n")
+    print("-" * 70)
+    for i, project in enumerate(projects, 1):
+        project_type = project.project_type or "unknown"
+        has_thumbnail = "✓" if project.thumbnail_path else "✗"
+        print(f"{i}. {project.name} ({project_type}) [Thumbnail: {has_thumbnail}]")
+    print("-" * 70)
+    
+    # Get project selection
+    try:
+        choice = input(f"\nSelect project (1-{len(projects)}) or 'cancel' to go back: ").strip()
+        if choice.lower() == 'cancel':
+            print("Cancelled.")
+            return
+        
+        project_index = int(choice) - 1
+        if project_index < 0 or project_index >= len(projects):
+            print("❌ Invalid project number.")
+            return
+        
+        selected_project = projects[project_index]
+    except ValueError:
+        print("❌ Invalid input. Please enter a number.")
+        return
+    
+    # Get thumbnail file path
+    thumbnail_path = get_path_input("\nEnter the path to the thumbnail image: ")
+    if not thumbnail_path:
+        print("Cancelled.")
+        return
+    
+    # Validate it's an image file
+    valid_image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'}
+    file_ext = os.path.splitext(thumbnail_path)[1].lower()
+    
+    if file_ext not in valid_image_extensions:
+        print(f"❌ Invalid image format. Supported formats: {', '.join(valid_image_extensions)}")
+        return
+    
+    # Update project with thumbnail path
+    update_data = {'thumbnail_path': thumbnail_path}
+    success = db_manager.update_project(selected_project.id, update_data)
+    
+    if success:
+        print(f"\n✅ Thumbnail successfully uploaded for project: {selected_project.name}")
+        print(f"   Thumbnail path: {thumbnail_path}")
+    else:
+        print(f"\n❌ Failed to update project with thumbnail.")
+    
+    input("\nPress Enter to continue...")
+
 def project_upload_menu():
     ...
     options = {
@@ -2104,6 +2169,7 @@ def project_upload_menu():
         '5': handle_auto_detect,
         '6': handle_add_files_to_project,     
         '7': handle_incremental_zip_upload,
+        '8': handle_thumbnail_upload,
     }
     
     print("UPLOAD NEW PROJECT:")
@@ -2115,18 +2181,19 @@ def project_upload_menu():
     print("\nADD TO EXISTING PROJECT:")
     print("  6. Add individual file(s)")       
     print("  7. Add ZIP archive")
-    print("\n  8. Back to main menu")
+    print("  8. Upload thumbnail for a stored project")
+    print("\n  9. Back to main menu")
     print("="*70)
 
-    choice = input("\nEnter your choice (1-8): ").strip()
-    if choice == '8':
+    choice = input("\nEnter your choice (1-9): ").strip()
+    if choice == '9':
         print("\nReturning to main menu...")
         return
 
     if choice in options:
         options[choice]()
     else:
-        print("❌ Invalid choice. Please enter a number 1-8.")
+        print("❌ Invalid choice. Please enter a number 1-9.")
 
 def view_and_analysis_menu():
     clear_screen()

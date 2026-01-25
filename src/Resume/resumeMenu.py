@@ -9,6 +9,7 @@ Features:
 - Generate bullets for any project type (code/media/text)
 - View stored bullets with metadata and ATS scores
 - Customize bullets (edit, regenerate, reorder)
+- Generate full resume from selected projects
 - Delete stored bullets
 
 Usage:
@@ -28,6 +29,7 @@ from src.Resume.codeBulletGenerator import CodeBulletGenerator
 from src.Resume.mediaBulletGenerator import MediaBulletGenerator
 from src.Resume.textBulletGenerator import TextBulletGenerator
 from src.Resume.resumeAnalytics import calculate_ats_score, score_all_bullets
+from src.Resume.resumeGenerator import generate_full_resume
 
 
 # ============================================
@@ -592,8 +594,9 @@ def run_resume_menu():
         print("1. Generate Resume Bullets (New)")
         print("2. View Stored Bullets")
         print("3. Customize Bullets")
-        print("4. Delete Stored Bullets")
-        print("5. Back to Main Menu")
+        print("4. Generate Full Resume")
+        print("5. Delete Stored Bullets")
+        print("6. Back to Main Menu")
         print("="*60)
         
         choice = input("Select option: ").strip()
@@ -605,8 +608,10 @@ def run_resume_menu():
         elif choice == '3':
             customize_bullets_menu()
         elif choice == '4':
-            delete_stored_bullets()
+            generate_full_resume()
         elif choice == '5':
+            delete_stored_bullets()
+        elif choice == '6':
             break
         else:
             print("Invalid option. Please try again.")
