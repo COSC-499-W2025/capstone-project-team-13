@@ -1,4 +1,5 @@
-# This week's log
+# Log navigation
+- [Term 2, week 3](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-3---jan-19-jan-25-2026)
 - [Term 2, week 2](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-2---jan-12-jan-18-2026)
 
 
@@ -169,6 +170,25 @@
 * I updated all the existing tests accoridingly: test_codeBulletGenerator.py, test_mediaBulletGenerator.py, test_textBulletGenerator.py and test_resumeAnalytics.py
 * This week we had a team meeting to discuss our plan for this term
 * for next week: have another team meeting, prepare for peer testing, maybe add some additional features to the resume generation system
+
+
+
+## Week 3 - Jan 19-Jan 25, 2026
+<img width="1069" height="545" alt="Screenshot 2026-01-25 at 1 08 39 PM" src="https://github.com/user-attachments/assets/437639f5-dfa3-42a9-89e9-bfae85a96940" />
+
+* I worked on adding a thumbnail upload option on main.py
+* I created resumeGenerator.py
+  * pulls all the stored bullets from the database and complies them into a full resume
+  * the user is able to select which projects they want on the resume and the order
+  * the use's the user's name as a header
+  * TODO: needs to store full resume to the database and retrieve it
+* I created test_resumeGenerator.py; just tests for resumeGenerator.py
+* My contributions closes issues:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/237
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/224
+* This week we had a team meeting to explain our contributions and prepare for the peer testing
+* for next week: have a team meeting, prepare for and start peer testing, add a table or column to the database for storing resumes
+
 
 
 
