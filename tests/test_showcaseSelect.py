@@ -10,7 +10,6 @@ sys.path.insert(
 from showcaseSelect import process_showcase 
 
 class TestShowcaseSelection(unittest.TestCase):
-
     def setUp(self):
         self.projects = [
             {
@@ -84,7 +83,6 @@ class TestShowcaseSelection(unittest.TestCase):
 
         impacts = [p["impact"] for p in result]
         self.assertEqual(impacts, sorted(impacts, reverse=True))
-
 
 if __name__ == "__main__":
     unittest.main()

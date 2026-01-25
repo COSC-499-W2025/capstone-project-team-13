@@ -1,4 +1,6 @@
+
 def showcase_projects(projects):
+    
     print("\nAvailable Projects:")
     for p in projects:
         print(f"- {p['id']}: {p['name']}")
