@@ -249,18 +249,18 @@ Next week there will be plans to discuss on what issues will be the most importa
 
 ### Tasks Worked On
 
-**Coding**
+### Coding
 
 - Issue 29
 - PortfolioFormatter to format database projects into portfolio read JSON structures (for future frontend)
 - Implemented portfolio summary generation with statistics + highlights
 -added a function in main as an option to view portfolio
 
-**Testing / Debugging**
+### Testing / Debugging
 
 - Debugged manually, by seeing any errors that came up and going into the code and fixing them (scanning multiple projects and ensuring that they all worked)
 
-**Review / Collaboration**
+### Review / Collaboration
 
 - Monday zoom where we decided the plan for the week, collaboration on the heuristic + google form in preperation for the peer testing
 
