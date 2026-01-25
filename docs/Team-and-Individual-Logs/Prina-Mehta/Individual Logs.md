@@ -2,6 +2,7 @@
 
 - [Term 2 – Week 1 (Jan 5–Jan 11, 2026)](#log-12)
 - [Term 2 – Week 2 (Jan 12–Jan 18, 2026)](#log-13)
+- [Term 2 – Week 3 (Jan 19–Jan 25, 2026)](#log-14)
 
 - [Week 11 (Dec 1–Dec 7, 2025)](#log-11)
 - [Week 10 (Nov 24–Nov 30, 2025)](#log-10)
@@ -179,3 +180,39 @@ I’ll also begin working on the requirement to recognize duplicate files and en
 - Extend incremental upload support to text and media files.  
 - Make corresponding updates to main.py to handle non-code incremental uploads.  
 - Add broader test coverage for mixed file uploads.
+
+## Log 14:
+## Date Range: Term 2 Week 3 – Jan 19 – Jan 25, 2026
+
+## ![week 1 features](T2week3tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/219
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/220
+- Implemented incremental file upload support for existing projects of all file types (code, media, text, zip), including:
+
+    - Single-file and multi-file uploads with automatic file type detection.
+    - Smart project type handling, including automatic upgrades to mixed projects when required (with user confirmation).
+
+- Built SHA-256 file hash infrastructure to reliably detect and prevent duplicate file uploads.
+- Silent skipping of files already present in the project, with clear user feedback.
+
+### Testing
+- Wrote comprehensive unit tests for:
+
+    - Incremental file uploads (test_incrementalFileHandler.py)
+    - Incremental ZIP uploads (test_incrementalZipHandler.py)
+    - File hashing utilities and hash-based database queries.
+
+- Manually tested incremental workflows by adding new files to existing projects and verifying:
+
+    - No overwriting of existing files.
+    - Correct duplicate detection.
+    - Accurate user-facing feedback for skipped and added files.
+
+### Plan for Next Week
+- Implement FastAPI to facilitate structured communication between the backend and frontend.
+- Define and expose API endpoints for project uploads, incremental updates, and project metadata retrieval.
+- Add initial API-level tests to ensure backend stability as frontend integration begins.
