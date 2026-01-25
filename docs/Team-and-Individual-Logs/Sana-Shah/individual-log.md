@@ -1,3 +1,9 @@
+## Term 2 Weekly Logs
+- [T2 Week 1](#log-12)
+- [T2 Week 2](#log-13)
+- [T2 Week 3](#log-14)
+
+
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
@@ -176,3 +182,22 @@ The function that I worked on this week is improving the skills extraction funct
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to enhance the skills analysis and identification for media projects, and text projects, as well as contribute code for milestone 2 requirements.
+
+## Log 14:
+## Date Range: T2 Week 3 - Jan 13 - Jan 25, 2026
+
+## ![week 3 features](499-week3-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+This week, the function that I worked on was implementing a function from the milestone 2 requirements, which allows users to control how their projects are represented / what about their projects are represented.
+My function displays all projects retrieved from the database, allows users to select which projects to include in a showcase, enables per-project customization of displayed attributes, allows users to highlight specific skills for each selected project, supports re-ranking of selected projects based on a chosen attribute.
+
+Additionally, I also added a test file which includes test cases to test the logic of my function in "test_selectShowcase.py"
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/263)
+
+### In-progress tasks
+I am in-progress of updating main.py to manage how interactions with the database take place. Our team has encountered issues where information about projects are either not getting stored or retireved from the project database properly.
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to continue implementing functions that fulfull milestone 2 requirements, such as implementing and utilizing a FastAPI and adding supporting API endpoints, as per the milestone 2 requirements.
