@@ -11,6 +11,8 @@ from typing import Dict, Any, List, Optional
 from collections import defaultdict
 import nltk
 from nltk.tokenize import word_tokenize
+
+
 # nltk.download('punkt', quiet=True)
 
 # Setup path for imports
@@ -22,6 +24,8 @@ from src.Analysis.skillsExtractDocs import analyze_folder_for_skills, analyze_do
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
+from src.Analysis.file_hasher import compute_file_hash
+from src.UserPrompts.config_integration import config_manager
 
 class TextDocumentScanner:
     """Scans and analyzes text-based documents"""
@@ -78,10 +82,13 @@ class TextDocumentScanner:
     def scan_and_store(self) -> int:
         """
         Complete workflow: scan, analyze, and store in database
+        Supports incremental updates.
         
         Returns:
-            project_id: Database ID of created project
+            project_id: Database ID of created/updated project
         """
+        from datetime import datetime, timezone
+        
         print(f"\n{'='*60}")
         print(f"Scanning Text Document: {self.document_name}")
         print(f"Path: {self.document_path}")
@@ -89,59 +96,115 @@ class TextDocumentScanner:
         
         # Check if already in database
         existing = db_manager.get_project_by_path(str(self.document_path))
+        is_incremental = False
+        
         if existing:
             print(f"⚠️  Document already exists in database with ID: {existing.id}")
-            user_input = input("Do you want to re-scan and update? (yes/no): ").strip().lower()
-            if user_input != 'yes':
+            user_input = input("Options:\n  1. Incremental update (add new files)\n  2. Full rescan (replace all)\n  3. Cancel\nChoice (1/2/3): ").strip()
+            
+            if user_input == '3':
                 print("Scan cancelled.")
                 return existing.id
-            # Delete old project to re-scan
-            db_manager.delete_project(existing.id)
-            print("Deleted old project. Re-scanning...")
+            elif user_input == '1':
+                is_incremental = True
+                print("Performing incremental update...")
+            else:
+                db_manager.delete_project(existing.id)
+                print("Deleted old project. Re-scanning...")
+                existing = None
         
-        # Step 1: Find all text files
+        # Step 1: Find text files
         print("Step 1: Finding text files...")
         self._find_text_files()
         print(f"  ✓ Found {len(self.text_files)} text files")
 
         if len(self.text_files) == 0:
-            print("\n⚠️  No text files found. This may not be a text project.")
+            print("\n⚠️  No text files found.")
             return None
         
-        # Step 2: Detect document types
-        print("\nStep 2: Detecting document types...")
-        self._detect_document_types()
-        print(f"  ✓ Document types: {', '.join(sorted(self.document_types)) or 'None detected'}")
-
-        # Step 3: Extract keywords from document
-        print("\nStep 3: Extracting keywords from document...")
-        self._extract_keywords()
-        print(f"  ✓ Extracted {len(self.all_keywords)} unique keywords")
-        
-        # Step 4: Analyze skills 
-        print("\nStep 4: Analyzing skills from content...")
-        self._analyze_skills()
-        if self.all_skills:
-            top_skills = sorted(self.all_skills.items(), key=lambda x: x[1], reverse=True)[:5]
-            print(f"  ✓ Top skills: {', '.join([s[0] for s in top_skills])}")
+        if is_incremental:
+            # Incremental update
+            project_id = existing.id
+            
+            existing_files = db_manager.get_files_for_project(project_id)
+            existing_hashes = {f.file_hash for f in existing_files if f.file_hash}
+            
+            new_files_count = 0
+            for file_path in self.text_files:
+                file_hash = compute_file_hash(str(file_path))
+                
+                if file_hash in existing_hashes:
+                    continue
+                
+                file_data = {
+                    'project_id': project_id,
+                    'file_path': str(file_path),
+                    'file_name': file_path.name,
+                    'file_type': file_path.suffix,
+                    'file_size': file_path.stat().st_size,
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                    'file_hash': file_hash
+                }
+                db_manager.add_file_to_project(file_data)
+                new_files_count += 1
+            
+            updates = {
+                'file_count': len(db_manager.get_files_for_project(project_id)),
+                'updated_at': datetime.now(timezone.utc)
+            }
+            db_manager.update_project(project_id, updates)
+            
+            print(f"\n✓ Incremental update complete!")
+            print(f"  Added {new_files_count} new files")
+            print(f"  Total files: {updates['file_count']}")
+            
         else:
-            print("  ✓ No specific skills detected")
-        
-        # Step 5: Calculate metrics
-        print("\nStep 5: Calculating project metrics...")
-        metrics = self._calculate_metrics()
-        print(f"  ✓ Total word count: ~{metrics['word_count']:,}")
-        print(f"  ✓ Total files: {metrics['file_count']}")
-        print(f"  ✓ Total size: {metrics['total_size_mb']:.2f} MB")
-       
-        # Step 6: Store in database
-        print("\nStep 6: Storing in database...")
-        project_id = self._store_in_database(metrics)
-        print(f"  ✓ Stored with project ID: {project_id}")
-        
-        print(f"\n{'='*60}")
-        print(f"✓ Text Document Scan Complete!")
-        print(f"{'='*60}\n")
+            # Create new project
+            project_data = {
+                'name': self.document_name,
+                'file_path': str(self.document_path),
+                'file_count': len(self.text_files),
+                'project_type': 'document',
+                'date_scanned': datetime.now(timezone.utc)
+            }
+            
+            project = db_manager.create_project(project_data)
+            project_id = project.id
+            
+            print(f"\n✓ Project stored with ID: {project_id}")
+            
+            print("\nStep 2: Storing file information...")
+            for file_path in self.text_files:
+                file_hash = compute_file_hash(str(file_path))
+                file_data = {
+                    'project_id': project_id,
+                    'file_path': str(file_path),
+                    'file_name': file_path.name,
+                    'file_type': file_path.suffix,
+                    'file_size': file_path.stat().st_size,
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                    'file_hash': file_hash
+                }
+                db_manager.add_file_to_project(file_data)
+            
+            print(f"  ✓ Stored {len(self.text_files)} files")
+            
+            # Extract keywords if enabled
+            # Extract keywords if enabled
+            if config_manager.get_or_create_config().enable_keyword_extraction:
+                print("\nStep 3: Extracting keywords...")
+                self._extract_keywords()
+                if self.all_keywords:
+                    for keyword, score in self.all_keywords[:30]:  
+                        keyword_data = {
+                            'project_id': project_id,
+                            'keyword': keyword,  
+                            'score': float(score)
+                        }
+                        db_manager.add_keyword(keyword_data)
+                    print(f"  ✓ Extracted {len(self.all_keywords)} keywords")
         
         return project_id
     
@@ -241,22 +304,20 @@ class TextDocumentScanner:
                 
                 keywords = extract_keywords_with_scores(text_content)
 
-                # Aggregate scores (take top 10 per file)
-                for score, keyword in keywords[:10]:
+                # IMPORTANT: extract_keywords_with_scores returns (score, keyword) tuples!
+                for score, keyword in keywords[:10]:  # ✅ CORRECT: score first, keyword second
                     keyword_scores[keyword.lower()] += score
                     
             except Exception as e:
                 print(f"  ⚠️  Error extracting keywords from {file_path.name}: {e}")
                 continue
         
-        # Store sorted list in self.all_keywords
-        # Sort by score descending
+        # Store sorted list in self.all_keywords as (keyword, score) tuples
         self.all_keywords = sorted(
-            keyword_scores.items(),
+            keyword_scores.items(),  # items() returns (keyword, score) tuples
             key=lambda x: x[1],
             reverse=True
         )
-
     
     def _analyze_skills(self): 
         """Analyze skills from text files"""
@@ -365,7 +426,7 @@ class TextDocumentScanner:
                     'project_id': project.id,
                     'keyword': keyword,
                     'score': float(score),
-                    'category': 'text'
+                    #'category': 'text'
                 })
         
         return project.id
