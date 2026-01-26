@@ -259,6 +259,7 @@ Next week there will be plans to discuss on what issues will be the most importa
 ### Testing / Debugging
 
 - Debugged manually, by seeing any errors that came up and going into the code and fixing them (scanning multiple projects and ensuring that they all worked)
+- Unit testing for portfolioFormatter in tests folder 
 
 ### Review / Collaboration
 
