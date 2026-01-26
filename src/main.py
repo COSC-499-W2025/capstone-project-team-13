@@ -2089,13 +2089,13 @@ def view_and_analysis_menu():
         print("1. View all projects")
         print("2. Generate summary")
         print("3. Sort / score projects")
-        print("4. View portfolio")
         print("4. Assign and View Roles")
-        print("5. Exit")
+        print("5. View portfolio")
+        print("6. Exit")
 
-        choice = input("Enter your choice (1-5): ").strip()
+        choice = input("Enter your choice (1-6): ").strip()
 
-        if choice == '5':
+        if choice == '6':
             print("Exiting view & analysis menu.")
             return
 
@@ -2123,7 +2123,6 @@ def sort_and_score_projects_menu():
             run_importance_test()
         else:
             print("Invalid choice. Try again.")
-
 
 
 def ai_menu():
