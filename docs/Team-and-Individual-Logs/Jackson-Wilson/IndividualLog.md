@@ -12,9 +12,11 @@ Personal Log (Expected Time: ~ 3 min)
 
 Hyperlinks for Term 2:
 
-[Term 2 Week 1](#date-range-term-2-week-1---jan-4-jan-11-2025)
+[Term 2 Week 1](#date-range-term-2-week-1---jan-4-jan-11-2026)
 
-[Term 2 Week 2](#date-range-term-2-week-2---jan-12-jan-18-2025)
+[Term 2 Week 2](#date-range-term-2-week-2---jan-12-jan-18-2026)
+
+[Term 2 Week 3](#date-range-term-2-week-3---jan-19-jan-25-2026)
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
@@ -180,7 +182,7 @@ Fixing missed components from M1 and further development
 
 
 ## Log 13:
-## Date Range: Term 2 Week 2 - Jan 12-Jan 18, 2025
+## Date Range: Term 2 Week 2 - Jan 12-Jan 18, 2026
 
 ## ![week 2 features](weeklyfeaturesimages/T2Week2Features.png)
 
@@ -193,3 +195,21 @@ With peer reviews on the horizon, I figured the current status of our main navig
 ### Plans for next week
 
 I've currently listed myself for issue 222 (issue 24 if you go by titles) where we want to incorporate a key role of the user in a given project. At the bare minimum, this will be a prompt that comes after analyzing and identifying a project as collaborative, allowing the user to specify their title in the work. Once this is complete, I'd like to try implementing role identification. I'm unsure how I'd implement this yet, perhaps by creating a list of possible role descriptions based on the work supplied to choose from? Either way, that's my plans for this upcoming week in terms of coding. There will still be the regular team meetings as well as picking up work to prep for peer testing as well. 
+
+
+
+
+## Log 14:
+## Date Range: Term 2 Week 3 - Jan 19-Jan 25, 2026
+
+## ![week 3 features](weeklyfeaturesimages/T2Week3Features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+My main focus this week surrounded issue 24 for milstone 2, isolated around assigning user roles for projects. First, I had to implement github contribution analysis. I made a file that detected if a project was a repository and in the file upload process, provides a list of contributors and contributions throughout, storing them alongside the project in the database. Secondly, I worked on the actual role assignment. This unfortunately cannot be an automated process as learning about a user's contributions requires them selecting which of the contributors they were. In our console, you can navigate to the role assignment process and both assign and view roles. The process takes small user input to clarify their github account and exactly what their title was, then assigns a final role. Tests were also created for both.
+
+### Plans for next week
+
+I was going to look at issue 34, parsing multiple projects within a single file. The thing I'm struggling with is determining how to differentiate multiple files? Worst comes to worst, I will prompt the user to ensure that all the first layer within the zip file are the individual projects. 
