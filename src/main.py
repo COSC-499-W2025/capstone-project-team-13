@@ -2125,7 +2125,6 @@ def project_upload_menu():
 
         if choice in options:
             options[choice]()
-            break
         else:
             print("Invalid choice. Try again.")
 
