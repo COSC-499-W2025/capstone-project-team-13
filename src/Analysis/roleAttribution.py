@@ -303,6 +303,8 @@ def lookup_roles():
             for project in projects:
                 role = project.user_role or "No role assigned"
                 print(f"{project.name}: {role}")
+        
+        input("\nPress Enter to continue...")
     finally:
         session.close()
 
