@@ -26,5 +26,38 @@ def migrate_add_file_hash():
     finally:
         session.close()
 
-if __name__ == "__main__":
+
+def migrate_add_user_contribution_percent():
+    """Add user_contribution_percent column to projects table if it doesn't exist"""
+    db = DatabaseManager()
+    session = db.get_session()
+    
+    try:
+        # Check if column exists
+        result = session.execute(text("PRAGMA table_info(projects)"))
+        columns = [row[1] for row in result]
+        
+        if 'user_contribution_percent' not in columns:
+            print("Adding user_contribution_percent column to projects table...")
+            session.execute(text("ALTER TABLE projects ADD COLUMN user_contribution_percent FLOAT"))
+            session.commit()
+            print("✓ Migration complete")
+        else:
+            print("✓ user_contribution_percent column already exists")
+    except Exception as e:
+        print(f"Migration error: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
+def run_all_migrations():
+    """Run all migrations in order"""
+    print("Running database migrations...")
     migrate_add_file_hash()
+    migrate_add_user_contribution_percent()
+    print("\nAll migrations complete!")
+
+
+if __name__ == "__main__":
+    run_all_migrations()

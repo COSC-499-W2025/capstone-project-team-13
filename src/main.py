@@ -2193,6 +2193,35 @@ def project_upload_menu():
     if choice in options:
         options[choice]()
     else:
+        print("❌ Invalid choice. Please enter a number 1-8.")
+        if choice in options:
+            options[choice]()
+        else:
+            print("Invalid choice. Try again.")
+
+def assign_and_view_roles():
+    from src.Analysis.roleAttribution import test_role_attribution, lookup_roles
+
+    while True:
+        clear_screen()
+        print("\n--- Assign / View Roles Menu ---")
+        print("1. Assign Role by Project")
+        print("2. View Role by Project")
+        print("3. Back")
+
+        sub = input("Select an option (1-3): ").strip()
+
+        if sub == '3':
+            return  # go back to View & Analysis menu
+        elif sub == '1':
+            clear_screen()
+            test_role_attribution()
+        elif sub == '2':
+            clear_screen()
+            lookup_roles()
+        else:
+            print("Invalid choice. Try again.")
+
         print("❌ Invalid choice. Please enter a number 1-9.")
 
 def view_and_analysis_menu():
@@ -2201,6 +2230,7 @@ def view_and_analysis_menu():
         '1': view_all_projects,
         '2': generate_summary,
         '3': sort_and_score_projects_menu,
+        '4': assign_and_view_roles,
     }
 
     while True:
@@ -2208,11 +2238,12 @@ def view_and_analysis_menu():
         print("1. View all projects")
         print("2. Generate summary")
         print("3. Sort / score projects")
-        print("4. Exit")
+        print("4. Assign and View Roles")
+        print("5. Exit")
 
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input("Enter your choice (1-5): ").strip()
 
-        if choice == '4':
+        if choice == '5':
             print("Exiting view & analysis menu.")
             return
 
@@ -2240,6 +2271,7 @@ def sort_and_score_projects_menu():
             run_importance_test()
         else:
             print("Invalid choice. Try again.")
+
 
 
 def ai_menu():

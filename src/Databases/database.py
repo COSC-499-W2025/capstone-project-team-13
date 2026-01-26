@@ -68,6 +68,7 @@ class Project(Base):
     # User customizations
     custom_description = Column(Text, nullable=True)
     user_role = Column(String(100), nullable=True)
+    user_contribution_percent = Column(Float, nullable=True)
     
     # Relationships
     files = relationship('File', back_populates='project', cascade='all, delete-orphan', lazy='select')
