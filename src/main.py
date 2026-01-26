@@ -829,7 +829,7 @@ def view_portfolio():
     print_header("📂 Portfolio View")
 
     try:
-        from src.Portfolio.portfolioFormatter import PortfolioFormatter
+        from src.portfolio.portfolioFormatter import PortfolioFormatter
         formatter = PortfolioFormatter()
         formatter.display_portfolio_view()
     except Exception as e:

@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.Databases.database import db_manager, Project
-from src.Portfolio.portfolioFormatter import PortfolioFormatter
+from src.portfolio.portfolioFormatter import PortfolioFormatter
 
 
 class TestPortfolioFormatter:
