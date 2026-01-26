@@ -1,5 +1,8 @@
 # Team Logs
 
+## Term 2 Logs
+- [T2 Week 3](#term-2-week-3-team-log)
+
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
 
@@ -374,3 +377,51 @@ All tests were written in Python and executed successfully, other than analysis 
 
 **What didn't go as planned:**  
 - Some of our inputs for different project types were not uniform through the system, so we had to refactor some existing functions, as well as main.py, to ensure that they accept intended file types, and analyzes them accordingly, for each project/digitalartifact type.
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Term 2 Week 3 Team Log  
+**Date Range:** Jan 19-Jan 25, 2026  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T'Olu Akinwande** | Improving skills extraction | # 244 |
+| **Prina Mehta** | Incremental file upload support, duplicate file detection, silent skipping of pre-existing files  | # 219 & 220 |
+| **Maya Knutsvig** | Created portfolio formatter | # 227 |
+| **Jackson Wilson** | Implemented github contribution extraction, created role assignment function | # 222 & 256 |
+| **Illina Islam** | Thumbnail upload, created a resume generator   | # 237 & 224 |
+| **Sana Shah** | Project representation module  | # 263 |
+
+---
+![Backlog](teamLogImages/backlogT2W3.png)
+
+Burnup Chart:
+![Burnup Chart](teamLogImages/burnupT2W3.png)
+
+In Progress Tasks:
+![In Progress](teamLogImages/inProgressT2W3.png)
+
+Completed Tasks:
+![Completed](teamLogImages/completedT2W3.png)
+
+# Test Report
+All tests were written in Python and executed successfully, other than analysis using LLM which is currently not working due to API key generation, but we are currently working on resolving it. For each of the functions in our system, we have implemented unit tests. Manual testing can be done through `main.py` and it confirms that all modules work as expected with sample project data, after refactoring
+
+### Reflection Points
+
+**What went well:**  
+- The team did well tacking as much of the M2 requirements as we could within the week
+- We met and reworked a schedule for meetings that works better for term 2
+
+**What didn't go as planned:**  
+- because we didn't have the above meeting, our work the previous week was a little disorganized until we met about it.
