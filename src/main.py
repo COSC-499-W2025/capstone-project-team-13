@@ -49,6 +49,8 @@ from src.Analysis.codeEfficiency import grade_efficiency
 from src.Analysis.folderEfficiency import grade_folder
 from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
+from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
+from src.Analysis.incrementalFileHandler import handle_add_files_to_project
 
 # Import deletion management features
 try:
@@ -692,7 +694,7 @@ def view_portfolio():
     print_header("📂 Portfolio View")
 
     try:
-        from src.Portfolio.portfolioFormatter import PortfolioFormatter
+        from src.portfolio.portfolioFormatter import PortfolioFormatter
         formatter = PortfolioFormatter()
         formatter.display_portfolio_view()
     except Exception as e:
@@ -2043,56 +2045,34 @@ def project_upload_menu():
         '3': handle_document,
         '4': handle_zip_archive,
         '5': handle_auto_detect,
-    }
-
-    while True:
-        print("\nSelect the type of project to upload:")
-        print("1. Coding project")
-        print("2. Visual project")
-        print("3. Document")
-        print("4. Zip archive")
-        print("5. Auto-detect")
-        print("6. Exit")
-
-        choice = input("Enter your choice (1-6): ").strip()
-
-        if choice == '6':
-            print("Exiting project upload menu.")
-            return  # or break, depending on how you want to exit
-
-        if choice in options:
-            options[choice]()
-            break
-        else:
-            print("Invalid choice. Try again.")
-
         '6': handle_add_files_to_project,     
         '7': handle_incremental_zip_upload,
         '8': handle_thumbnail_upload,
     }
-    
-    print("UPLOAD NEW PROJECT:")
-    print("  1. Coding project")
-    print("  2. Visual/media project")
-    print("  3. Text document")
-    print("  4. ZIP archive")
-    print("  5. Auto-detect type")
-    print("\nADD TO EXISTING PROJECT:")
-    print("  6. Add individual file(s)")       
-    print("  7. Add ZIP archive")
-    print("  8. Upload thumbnail for a stored project")
-    print("\n  9. Back to main menu")
-    print("="*70)
 
-    choice = input("\nEnter your choice (1-9): ").strip()
-    if choice == '9':
-        print("\nReturning to main menu...")
-        return
+    while True:
+        print("UPLOAD NEW PROJECT:")
+        print("  1. Coding project")
+        print("  2. Visual/media project")
+        print("  3. Text document")
+        print("  4. ZIP archive")
+        print("  5. Auto-detect type")
+        print("\nADD TO EXISTING PROJECT:")
+        print("  6. Add individual file(s)")       
+        print("  7. Add ZIP archive")
+        print("  8. Upload thumbnail for a stored project")
+        print("\n  9. Back to main menu")
+        print("="*70)
 
-    if choice in options:
-        options[choice]()
-    else:
-        print("❌ Invalid choice. Please enter a number 1-9.")
+        choice = input("\nEnter your choice (1-9): ").strip()
+        if choice == '9':
+            print("\nReturning to main menu...")
+            return
+
+        if choice in options:
+            options[choice]()
+        else:
+            print("❌ Invalid choice. Please enter a number 1-9.")
 
 def view_and_analysis_menu():
     clear_screen()
