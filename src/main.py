@@ -13,6 +13,7 @@ import math
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from Portfolio.portfolioFormatter import PortfolioFormatter
 from src.Helpers.installDependencies import install_requirements
 install_requirements()
 from src.Analysis import codeIdentifier, visualMediaAnalyzer
@@ -694,7 +695,6 @@ def view_portfolio():
     print_header("📂 Portfolio View")
 
     try:
-        from src.portfolio.portfolioFormatter import PortfolioFormatter
         formatter = PortfolioFormatter()
         formatter.display_portfolio_view()
     except Exception as e:
