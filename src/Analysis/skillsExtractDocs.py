@@ -83,6 +83,28 @@ def extract_text(file_path):
         return ""
 
 
+def count_keyword_matches(text: str, keywords: list[str]) -> int:
+    """
+    Counts both single-word and multi-word keyword occurrences in text.
+    """
+    text = text.lower()
+    count = 0
+
+    for kw in keywords:
+        kw = kw.lower()
+        if " " in kw:
+            # Match full phrase
+            count += len(re.findall(rf"\b{re.escape(kw)}\b", text))
+        else:
+            # Match single word
+            count += len(re.findall(rf"\b{kw}\b", text))
+
+    return count
+
+def normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.lower()).strip()
+
+
 # Skill Analysis - Single Document
 
 def analyze_document_for_skills(file_path):
@@ -108,7 +130,7 @@ def analyze_document_for_skills(file_path):
     # Count matches for each skill
     for skill, keywords in SKILL_KEYWORDS.items():
         lower_keywords = [k.lower() for k in keywords]
-        matches = sum(word in lower_keywords for word in words)
+        matches = count_keyword_matches(text, keywords)
         if matches > 0:
             skill_counts[skill] = matches
     
