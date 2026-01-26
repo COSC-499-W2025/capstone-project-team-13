@@ -2,17 +2,28 @@ import os
 import sys
 import unittest
 
-# Add your analysis folder to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "analysis")))
-from skillsExtractDocs import analyze_folder_for_skills
+# 🔹 ADD SRC TO PATH FIRST
+sys.path.insert(
+    0,
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
+)
+
+# 🔹 THEN IMPORT
+from Analysis.skillsExtractDocs import analyze_folder_for_skills
+from Analysis.skillsExtractDocs import count_keyword_matches
+
 
 class TestSkillExtraction(unittest.TestCase):
+    
 
+    
     def print_results(self, results):
         print("Detected skills:")
         for skill, count in results:
             print(f"{skill}: {count}")
         print("-" * 30)
+
+
 
     def test_case1(self):
         """Essays showing research and critical thinking skills"""
@@ -55,6 +66,26 @@ class TestSkillExtraction(unittest.TestCase):
         self.assertIn("content_writing", detected)
         self.assertIn("writing_mechanics", detected)
         self.assertIn("organization", detected)
+
+    def test_count_keyword_matches_phrases(self):
+        """Unit test for phrase-aware keyword matching helper."""
+        text = """
+        This project demonstrates character development and sentence structure.
+        A strong call to action was supported by critical thinking.
+        """
+
+        keywords = [
+            "character development",
+            "sentence structure",
+            "call to action",
+            "critical thinking"
+        ]
+
+        result = count_keyword_matches(text, keywords)
+
+        self.assertEqual(result, 4)
+
+
 
 if __name__ == "__main__":
     unittest.main()
