@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import math
+from datetime import datetime, timezone
 
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -49,6 +50,8 @@ from src.Analysis.codeEfficiency import grade_efficiency
 from src.Analysis.folderEfficiency import grade_folder
 from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
+from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
+from src.Analysis.incrementalFileHandler import handle_add_files_to_project
 
 # Import deletion management features
 try:
@@ -326,33 +329,8 @@ def handle_coding_project():
     if not path:
         return
     
-    # if not os.path.isdir(path):
-    #     print("❌ Path must be a directory (folder)")
-    #     return
-    
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
-    
-    # Check if already exists BEFORE scanning
-    existing = db_manager.get_project_by_path(path)
-    if existing:
-        print(f"\n⚠️  This project already exists in the database!")
-        print(f"   Project: {existing.name}")
-        print(f"   Database ID: {existing.id}") 
-        if existing.date_scanned:
-            from datetime import timezone
-            local_time = existing.date_scanned.replace(tzinfo=timezone.utc).astimezone()
-            print(f"   Last scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
-        
-        rescan = input("\n   Would you like to re-scan and update? (yes/no): ").strip().lower()
-        if rescan != 'yes':
-            print("\n✅ Using existing project data.")
-            display_project_details(existing)
-            return
-        
-        # Delete old project to re-scan
-        print("\n⏳ Deleting old data and re-scanning...")
-        db_manager.delete_project(existing.id)
     
     # Check if collaborative
     print("\n🔍 Analyzing collaboration type...")
@@ -365,7 +343,7 @@ def handle_coding_project():
     else:
         print(f"❓ Collaboration Type: Unknown")
     
-    # The scanner handles all the analysis and display internally
+    # The scanner handles all the analysis, duplicate detection, and display internally
     project_id = scan_coding_project(path)
     
     if not project_id:
@@ -376,6 +354,10 @@ def handle_coding_project():
     if collab_type != 'Unknown (no contributor data found)':
         db_manager.update_project(project_id, {'collaboration_type': collab_type})
 
+# ============================================
+# PATCH FOR handle_visual_project()
+# ============================================
+
 def handle_visual_project():
     """Handle analyzing a visual/media project"""
     print_header("Analyze Visual/Media Project")
@@ -384,33 +366,34 @@ def handle_visual_project():
     if not path:
         return
     
-    # if not os.path.isdir(path):
-    #     print("❌ Path must be a directory (folder)")
-    #     return
-    
     # Normalize path to absolute for consistent comparison
     path = os.path.abspath(path)
     
     # Check if already exists BEFORE scanning
     existing = db_manager.get_project_by_path(path)
     if existing:
-        print(f"\n⚠️  This media project already exists in the database!")
-        print(f"   Project: {existing.name}")
-        print(f"   Database ID: {existing.id}") 
+        # ============ START OF CHANGE ============
+        print(f"\n✅ PROJECT ALREADY EXISTS IN DATABASE")
+        print(f"="*70)
+        print(f"   Project Name: {existing.name}")
+        print(f"   Project ID: {existing.id}") 
+        print(f"   Type: {existing.project_type}")
+        print(f"   Files: {existing.file_count}")
+        
         if existing.date_scanned:
             from datetime import timezone
             local_time = existing.date_scanned.replace(tzinfo=timezone.utc).astimezone()
-            print(f"   Last scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+            print(f"   Last Scanned: {local_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
-        rescan = input("\n   Would you like to re-scan and update? (yes/no): ").strip().lower()
-        if rescan != 'yes':
-            print("\n✅ Using existing project data.")
-            display_project_details(existing)
-            return
+        print(f"\n💡 No duplicate created - using existing project.")
+        print(f"\n   To add more files, use:")
+        print(f"   • Upload Menu → Add individual file(s)")
+        print(f"   • Upload Menu → Add ZIP to existing project")
+        print(f"="*70)
         
-        # Delete old project to re-scan
-        print("\n⏳ Deleting old data and re-scanning...")
-        db_manager.delete_project(existing.id)
+        display_project_details(existing)
+        return
+        # ============ END OF CHANGE ============
     
     # The scanner handles all the analysis and display internally
     project_id = scan_media_project(path)
@@ -473,6 +456,9 @@ def handle_zip_archive():
         print("❌ File must have .zip extension")
         return
     
+    # Store original ZIP name for later use
+    original_zip_name = os.path.splitext(os.path.basename(path))[0]
+    
     try:
         # Validate ZIP
         validate_zip_file(path)
@@ -505,88 +491,237 @@ def handle_zip_archive():
         extract_path = extract_zip(path)
         print(f"✅ Extracted to: {extract_path}")
         
-        # Automatically detect project type
-        print("\n🔍 Detecting project type...")
-        detection_result = detect_project_type(extract_path)
-        project_type = detection_result['type']
-        
-        print(f"✅ {detection_result['details']}")
-        
         # Check if collaborative
+        print("\n🔍 Analyzing collaboration type...")
         collab_type = check_if_collaborative(extract_path)
         if collab_type == 'Collaborative Project':
             print("🤝 Collaborative project detected")
         elif collab_type == 'Individual Project':
             print("👤 Individual project detected")
         
-        # Handle based on project type
-        if project_type == 'code':
-            print("\n⏳ Scanning as coding project...")
-            project_id = scan_coding_project(extract_path)
-            if project_id and collab_type != 'Unknown (no contributor data found)':
-                db_manager.update_project(project_id, {'collaboration_type': collab_type})
+        # ====================================================================
+        # COMPREHENSIVE MULTI-TYPE FILE SCANNING
+        # Use scanner classes directly to avoid duplicate path conflicts
+        # ====================================================================
+        
+        print("\n" + "="*70)
+        print("  🔍 ANALYZING ALL FILES IN ZIP")
+        print("="*70)
+        
+        # Import scanner classes
+        from src.Analysis.codingProjectScanner import CodingProjectScanner
+        from src.Analysis.mediaProjectScanner import MediaProjectScanner
+        from src.Analysis.textDocumentScanner import TextDocumentScanner
+        
+        main_project_id = None
+        all_file_data = []
+        all_keywords = []
+        combined_metadata = {
+            'languages': set(),
+            'frameworks': set(),
+            'skills': set(),
+            'tags': set(),
+            'software': set(),
+            'total_files': 0,
+            'total_size': 0,
+            'word_count': 0,
+            'lines_of_code': 0
+        }
+        
+        # Step 1: Scan code files
+        print("\n⏳ Step 1: Scanning for code files...")
+        try:
+            code_scanner = CodingProjectScanner(extract_path)
+            code_scanner._find_code_files()
+            
+            if code_scanner.code_files:
+                print(f"  ✓ Found {len(code_scanner.code_files)} code files")
+                code_scanner._detect_languages_and_frameworks()
                 
-        elif project_type == 'media':
-            print("\n⏳ Analyzing as visual project...")
-            result = analyze_visual_project(extract_path)
-            
-            print(f"\n✅ Analysis Complete!")
-            print(f"   Files Found: {result['num_files']}")
-            if result['software_used']:
-                print(f"   Software: {', '.join(result['software_used'])}")
-            if result['skills_detected']:
-                print(f"   Skills: {', '.join(result['skills_detected'])}")
-            
-            # Ask if they want to store it
-            if result['num_files'] > 0:
-                store = input("\n💾 Store in database? (yes/no): ").strip().lower()
-                if store == 'yes':
-                    project_data = {
-                        'name': os.path.basename(extract_path),
-                        'file_path': extract_path,
-                        'project_type': 'mixed',  # Not 'code' or 'media'
-                        'description': 'Mixed project with code and media files',
-                        'file_count': result['num_files'],
-                        'skills': result['skills_detected'],
-                        'tags': result['software_used']
-                    }
-                    project = db_manager.create_project(project_data)
-                    print(f"✅ Stored with ID: {project.id}")
+                # Collect code file data
+                for file_path in code_scanner.code_files:
+                    from src.Analysis.file_hasher import compute_file_hash
+                    all_file_data.append({
+                        'file_path': str(file_path),
+                        'file_name': file_path.name,
+                        'file_type': file_path.suffix,
+                        'file_size': file_path.stat().st_size,
+                        'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                        'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                        'file_hash': compute_file_hash(str(file_path))
+                    })
                 
-        elif project_type == 'mixed':
-            print("\n📦 Mixed project detected - processing both code and media files...")
+                combined_metadata['languages'].update(code_scanner.languages)
+                combined_metadata['frameworks'].update(code_scanner.frameworks)
+                combined_metadata['total_files'] += len(code_scanner.code_files)
+                print(f"  ✓ Languages: {', '.join(code_scanner.languages) or 'None'}")
+                print(f"  ✓ Frameworks: {', '.join(code_scanner.frameworks) or 'None'}")
+            else:
+                print("  No code files found")
+        except Exception as e:
+            print(f"  ⚠️  Code scanning error: {str(e)}")
+        
+        # Step 2: Scan media files
+        print("\n⏳ Step 2: Scanning for media files...")
+        try:
+            media_scanner = MediaProjectScanner(extract_path)
+            media_scanner._find_files()
             
-            # Scan code files
-            print("\n⏳ Analyzing code files...")
-            code_project_id = scan_coding_project(extract_path)
-            if code_project_id:
-                if collab_type != 'Unknown (no contributor data found)':
-                    db_manager.update_project(code_project_id, {'collaboration_type': collab_type})
-                print(f"✅ Code analysis complete (Project ID: {code_project_id})")
-            
-            # Analyze media files
-            print("\n⏳ Analyzing media files...")
-            media_result = analyze_visual_project(extract_path)
-            if media_result['num_files'] > 0:
-                print(f"✅ Found {media_result['num_files']} media files")
-                print(f"   Software: {', '.join(media_result['software_used']) if media_result['software_used'] else 'None detected'}")
+            if media_scanner.media_files:
+                print(f"  ✓ Found {len(media_scanner.media_files)} media files")
+                media_scanner._analyze_media()
                 
-                # Optionally store media analysis separately
-                store_media = input("\n💾 Store media analysis separately? (yes/no): ").strip().lower()
-                if store_media == 'yes':
-                    project_data = {
-                        'name': f"{os.path.basename(extract_path)} (Media)",
-                        'file_path': extract_path,
-                        'file_count': media_result['num_files'],
-                        'project_type': 'media',
-                        'skills': media_result['skills_detected'],
-                        'tags': media_result['software_used']
-                    }
-                    media_project = db_manager.create_project(project_data)
-                    print(f"✅ Media analysis stored with ID: {media_project.id}")
+                # Collect media file data
+                for file_path in media_scanner.media_files:
+                    from src.Analysis.file_hasher import compute_file_hash
+                    all_file_data.append({
+                        'file_path': str(file_path),
+                        'file_name': file_path.name,
+                        'file_type': file_path.suffix,
+                        'file_size': file_path.stat().st_size,
+                        'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                        'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                        'file_hash': compute_file_hash(str(file_path))
+                    })
+                
+                combined_metadata['software'].update(media_scanner.software_used)
+                combined_metadata['skills'].update(media_scanner.skills_detected)
+                combined_metadata['total_files'] += len(media_scanner.media_files)
+                print(f"  ✓ Software: {', '.join(sorted(media_scanner.software_used)[:5]) or 'None'}")
+                print(f"  ✓ Skills: {', '.join(sorted(media_scanner.skills_detected)[:5]) or 'None'}")
+                
+                # Collect media keywords
+                media_scanner._extract_keywords()
+                for keyword, score in media_scanner.all_keywords:
+                    all_keywords.append({'keyword': keyword, 'score': score, 'category': 'media'})
+            else:
+                print("  No media files found")
+        except Exception as e:
+            print(f"  ⚠️  Media scanning error: {str(e)}")
+        
+        # Step 3: Scan text documents
+        print("\n⏳ Step 3: Scanning for text documents...")
+        try:
+            text_scanner = TextDocumentScanner(extract_path)
+            text_scanner._find_text_files()
+            
+            if text_scanner.text_files:
+                print(f"  ✓ Found {len(text_scanner.text_files)} text files")
+                text_scanner._detect_document_types()
+                
+                # Collect text file data
+                for file_path in text_scanner.text_files:
+                    from src.Analysis.file_hasher import compute_file_hash
+                    all_file_data.append({
+                        'file_path': str(file_path),
+                        'file_name': file_path.name,
+                        'file_type': file_path.suffix,
+                        'file_size': file_path.stat().st_size,
+                        'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                        'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
+                        'file_hash': compute_file_hash(str(file_path))
+                    })
+                
+                combined_metadata['tags'].update(text_scanner.document_types)
+                combined_metadata['total_files'] += len(text_scanner.text_files)
+                print(f"  ✓ Document types: {', '.join(sorted(text_scanner.document_types)) or 'None'}")
+                
+                # Collect text keywords
+                text_scanner._extract_keywords()
+                for keyword, score in text_scanner.all_keywords:
+                    all_keywords.append({'keyword': keyword, 'score': score, 'category': 'text'})
+            else:
+                print("  No text documents found")
+        except Exception as e:
+            print(f"  ⚠️  Text scanning error: {str(e)}")
+        
+        # Step 4: Create single comprehensive project
+        print("\n⏳ Step 4: Creating comprehensive project...")
+        if all_file_data:
+            # Determine project type
+            has_code = any('languages' in str(combined_metadata) and combined_metadata['languages'])
+            has_media = any('software' in str(combined_metadata) and combined_metadata['software'])
+            has_text = any('tags' in str(combined_metadata) and combined_metadata['tags'])
+            
+            if (has_code and has_media) or (has_code and has_text) or (has_media and has_text):
+                project_type = 'mixed'
+            elif has_code:
+                project_type = 'code'
+            elif has_media:
+                project_type = 'visual_media'
+            else:
+                project_type = 'text'
+            
+            # Calculate total size
+            total_size = sum(f['file_size'] for f in all_file_data)
+            
+            # Create project
+            project_data = {
+                'name': original_zip_name,
+                'file_path': extract_path,
+                'project_type': project_type,
+                'file_count': len(all_file_data),
+                'total_size_bytes': total_size,
+                'languages': list(combined_metadata['languages']),
+                'frameworks': list(combined_metadata['frameworks']),
+                'skills': list(combined_metadata['skills'].union(combined_metadata['software']))[:20],
+                'tags': list(combined_metadata['tags'].union(combined_metadata['software'])),
+                'date_scanned': datetime.now(timezone.utc),
+                'collaboration_type': collab_type if collab_type != 'Unknown (no contributor data found)' else None
+            }
+            
+            project = db_manager.create_project(project_data)
+            main_project_id = project.id
+            print(f"  ✓ Project created (ID: {main_project_id}, Type: {project_type})")
+            
+            # Store all files
+            print(f"\n⏳ Step 5: Storing {len(all_file_data)} files...")
+            for file_data in all_file_data:
+                file_data['project_id'] = main_project_id
+                db_manager.add_file_to_project(file_data)
+            print(f"  ✓ All files stored")
+            
+            # Store keywords
+            if all_keywords:
+                print(f"\n⏳ Step 6: Storing {len(all_keywords)} keywords...")
+                for kw_data in all_keywords[:50]:  # Top 50 keywords
+                    db_manager.add_keyword({
+                        'project_id': main_project_id,
+                        'keyword': kw_data['keyword'],
+                        'score': kw_data['score'],
+                        'category': kw_data.get('category', 'general')
+                    })
+                print(f"  ✓ Keywords stored")
         else:
-            print("\n⚠️  Could not determine project type automatically.")
-            print("   The folder may not contain recognizable code or media files.")
+            print("  ⚠️  No files found to process")
+        
+        # Final summary
+        print("\n" + "="*70)
+        if main_project_id:
+            final_project = db_manager.get_project(main_project_id)
+            
+            if final_project:
+                print(f"✅ ZIP UPLOAD COMPLETE!")
+                print("="*70)
+                print(f"  Project Name: {final_project.name}")
+                print(f"  Project ID: {final_project.id}")
+                print(f"  Project Type: {final_project.project_type}")
+                print(f"  Total Files: {final_project.file_count}")
+                if final_project.total_size_bytes:
+                    print(f"  Total Size: {final_project.total_size_bytes / (1024*1024):.2f} MB")
+                if final_project.languages:
+                    print(f"  Languages: {', '.join(final_project.languages)}")
+                if final_project.tags:
+                    print(f"  Software/Types: {', '.join(final_project.tags[:10])}")
+                if final_project.skills:
+                    print(f"  Skills: {', '.join(final_project.skills[:10])}")
+                print("="*70)
+            else:
+                print(f"⚠️  Error: Could not retrieve project with ID {main_project_id}")
+                print("="*70)
+        else:
+            print("⚠️  No recognizable files found in ZIP")
+            print("="*70)
             
     except (InvalidFileFormatError, ZipExtractionError) as e:
         print(f"\n❌ ZIP error: {e}")
@@ -636,8 +771,10 @@ def handle_auto_detect():
         proceed = input("\n📝 Proceed with code analysis? (yes/no): ").strip().lower()
         if proceed == 'yes':
             project_id = scan_coding_project(path)
-            if project_id and collab_type != 'Unknown (no contributor data found)':
-                db_manager.update_project(project_id, {'collaboration_type': collab_type})
+            if project_id:
+                
+                if collab_type != 'Unknown (no contributor data found)':
+                    db_manager.update_project(project_id, {'collaboration_type': collab_type})
                 
     elif project_type == 'media':
         proceed = input("\n📝 Proceed with media analysis? (yes/no): ").strip().lower()
@@ -1958,29 +2095,33 @@ def handle_resume_items():
         print("\n❌ Invalid option. Returning to main menu...")
 
 def project_upload_menu():
-    clear_screen()
+    ...
     options = {
         '1': handle_coding_project,
         '2': handle_visual_project,
         '3': handle_document,
         '4': handle_zip_archive,
         '5': handle_auto_detect,
+        '6': handle_add_files_to_project,     
+        '7': handle_incremental_zip_upload,
     }
+    
+    print("UPLOAD NEW PROJECT:")
+    print("  1. Coding project")
+    print("  2. Visual/media project")
+    print("  3. Text document")
+    print("  4. ZIP archive")
+    print("  5. Auto-detect type")
+    print("\nADD TO EXISTING PROJECT:")
+    print("  6. Add individual file(s)")       
+    print("  7. Add ZIP archive")
+    print("\n  8. Back to main menu")
+    print("="*70)
 
-    while True:
-        print("\nSelect the type of project to upload:")
-        print("1. Coding project")
-        print("2. Visual project")
-        print("3. Document")
-        print("4. Zip archive")
-        print("5. Auto-detect")
-        print("6. Exit")
-
-        choice = input("Enter your choice (1-6): ").strip()
-
-        if choice == '6':
-            print("Exiting project upload menu.")
-            return  # or break, depending on how you want to exit
+    choice = input("\nEnter your choice (1-8): ").strip()
+    if choice == '8':
+        print("\nReturning to main menu...")
+        return
 
         if choice in options:
             options[choice]()
@@ -2011,6 +2152,10 @@ def assign_and_view_roles():
         else:
             print("Invalid choice. Try again.")
 
+    if choice in options:
+        options[choice]()
+    else:
+        print("❌ Invalid choice. Please enter a number 1-8.")
 
 def view_and_analysis_menu():
     clear_screen()
