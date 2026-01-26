@@ -1,3 +1,11 @@
+
+[Term 1 Logs](#term-2-logs)
+
+[Term 2 Logs](#term-2-logs)
+
+# Term 1 Logs 
+
+
 # Week3 (Log 1)
 
 This week, we focused on establishing functional and non-functional requirements for our project. For functional requirements, I proposed that we should create a user dashboard to keep user artifacts and data organized. The requirements I created are as follows: 
@@ -256,13 +264,14 @@ This week, I received my Quiz 2 paper back in class and reviewed it. Additionall
 <img width="846" height="487" alt="image" src="https://github.com/user-attachments/assets/f26e5fc2-4fc2-4569-82a3-7e9b48c24393" />
 
 
-Week 17  
+
+
+# Term 2 LOGS
+# Log 1(Term 2)  
 
 Worked on issue 254: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/254
 Here is the link to my PR for the week: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/252
-
-
-Date Range: Jan 11 - Jan 18, 2026
+**Date Range: Jan 11 - Jan 18, 2026**
 This week, I focused on improving keyword extraction from text documents to increase the relevance and clarity of extracted terms for résumé and portfolio analysis. I evaluated the existing extraction output, and improved precision while maintaining compatibility with the existing pipeline.
 
 Tasks Completed
@@ -285,6 +294,33 @@ Meet with team to thoroughly review Milestone 2, discuss outstanding issues, and
 
 
 <img width="853" height="491" alt="image" src="https://github.com/user-attachments/assets/9c84ba2a-7ae8-44c1-8047-2ee1f02141e8" />
+
+# Log 2 (Term 2)
+**Date Range: Jan 19 – Jan 25, 2026**
+
+This week, I focused on improving the quality and reliability of keyword extraction from text documents to make the extracted terms more relevant for résumé and portfolio analysis. Building on work from the past two weeks, I continued refining Milestone 1 components by cleaning up outputs, improving precision, and ensuring performance remained stable within the existing pipeline. This sets a stronger foundation as we transition toward Milestone 2.
+
+Tasks Completed:
+Worked on issue 271: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/271
+
+-Reviewed and evaluated the existing RAKE-based keyword extraction output to identify issues such as sentence-level phrases and overly generic academic language.
+-Implemented post-processing helper functions to constrain phrase length, filter non-informative phrases, and normalize extracted technical terms.
+-Added unit tests to validate improved keyword extraction behavior and ensure key technical terms are consistently surfaced.
+-Tested and reviewed teammates’ code, providing feedback where needed.
+
+Connection to Previous Week:
+Building on last week’s work cleaning and stabilizing Milestone 1 components, I continued refining the keyword and skill extraction pipeline by improving output quality and test coverage. The cleanup and normalization work from the previous week directly informed the updates to skill detection and helped surface inconsistencies between extraction behavior and existing tests.
+
+Issues / Blockers:
+I encountered test failures caused by outdated assumptions and imports following recent refactors. These were addressed by updating test expectations to match refined extraction behavior and removing unused or deprecated imports. I verified all fixes locally to ensure the pipeline remains stable moving forward.
+
+Planned Work for Next Week:
+- Begin focusing on Milestone 2 by improving skills extraction from text documents, with an emphasis on more accurate mapping between extracted content and defined skill categories. 
+- Meet with the team to thoroughly review Milestone 2, address outstanding issues, and coordinate task distribution.
+- Continue keeping main.py clean and stable as we implement Milestone 2 features
+
+<img width="843" height="494" alt="image" src="https://github.com/user-attachments/assets/0445952c-9132-4158-b9d7-fbdfaa629452" />
+
 
 
 
