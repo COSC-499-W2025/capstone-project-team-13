@@ -824,6 +824,19 @@ def handle_auto_detect():
         print("\n⚠️  Unable to analyze this folder.")
         print("   It may not contain recognizable project files.")
 
+def view_portfolio():
+    """View portfolio-style formatted projects"""
+    print_header("📂 Portfolio View")
+
+    try:
+        from src.portfolio.portfolioFormatter import PortfolioFormatter
+        formatter = PortfolioFormatter()
+        formatter.display_portfolio_view()
+    except Exception as e:
+        print(f"\n❌ Failed to load portfolio view: {e}")
+        import traceback
+        traceback.print_exc()
+
 def view_all_projects():
     """View all projects in database"""
     print_header("All Projects in Database")
@@ -2231,6 +2244,7 @@ def view_and_analysis_menu():
         '2': generate_summary,
         '3': sort_and_score_projects_menu,
         '4': assign_and_view_roles,
+        '5': view_portfolio
     }
 
     while True:
@@ -2239,11 +2253,12 @@ def view_and_analysis_menu():
         print("2. Generate summary")
         print("3. Sort / score projects")
         print("4. Assign and View Roles")
-        print("5. Exit")
+        print("5. View portfolio")
+        print("6. Exit")
 
-        choice = input("Enter your choice (1-5): ").strip()
+        choice = input("Enter your choice (1-6): ").strip()
 
-        if choice == '5':
+        if choice == '6':
             print("Exiting view & analysis menu.")
             return
 
