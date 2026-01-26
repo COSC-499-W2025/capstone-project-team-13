@@ -2080,7 +2080,8 @@ def view_and_analysis_menu():
         '1': view_all_projects,
         '2': generate_summary,
         '3': sort_and_score_projects_menu,
-        '4': view_portfolio
+        
+        '5': view_portfolio
     }
 
     while True:
