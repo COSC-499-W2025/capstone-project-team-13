@@ -17,7 +17,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
-from src.Analysis.skillsExtractCoding import extract_skills_with_scores
+from src.Analysis.skillsExtractCoding import extract_skills_with_scores, SKILL_KEYWORDS
+from src.Analysis.skillsExtractCodingImproved import analyze_coding_skills_refined, SUBSKILL_KEYWORDS, CORE_FOLDERS, PERIPHERAL_FOLDERS, ADVANCED_KEYWORDS, SKILL_KEYWORDS
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
@@ -112,7 +113,12 @@ class CodingProjectScanner:
         self._detect_languages_and_frameworks()
         print(f"  ✓ Languages: {', '.join(self.languages) if self.languages else 'None detected'}")
         print(f"  ✓ Frameworks: {', '.join(self.frameworks) if self.frameworks else 'None detected'}")
-        
+
+        # Step 3: Store project and files in database       
+        print("\nStep 3: Analyzing skills...")
+        self._analyze_skills()
+        print(f"  ✓ Skills detected: {list(self.all_skills.keys())[:10] if self.all_skills else 'None'}")
+
         if is_incremental:
             # Incremental update
             project_id = existing.id
@@ -165,6 +171,7 @@ class CodingProjectScanner:
                 'project_type': 'code',
                 'languages': list(self.languages),
                 'frameworks': list(self.frameworks),
+                'skills': list(self.all_skills.keys())[:10],  #  added this to store skills.
                 'date_scanned': datetime.now(timezone.utc)
             }
             
@@ -332,19 +339,30 @@ class CodingProjectScanner:
     def _analyze_skills(self):
         """Analyze technical skills using existing skills extractor"""
         # Read all code file contents
-        all_code_text = []
+        try:
+            result = analyze_coding_skills_refined(
+                folder_path=str(self.project_path),
+                file_extensions={".py", ".js", ".ts", ".java", ".cpp", ".c", ".html", ".css"}
+            )
+        except Exception as e:
+            print(f"  ⚠️ Skill analysis failed: {e}")
+            self.all_skills = {}
+            self.skill_combinations = {}
+            return
         
-        for file_path in self.code_files:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    all_code_text.append(f.read())
-            except Exception:
-                continue
-        
-        if all_code_text:
-            # Combine all code and use existing function
-            combined_text = '\n'.join(all_code_text)
-            self.all_skills = extract_skills_with_scores(combined_text)
+        self.all_skills = {
+            skill: data["score"]
+            for skill, data in result.get("skills", {}).items()
+        }   
+        self.skill_details = result.get("skills", {})
+        self.specific_skills = defaultdict(float)
+        for skill, data in self.skill_details.items():
+            for group, items in data.get("subskills", {}).items():
+                for subskill, count in items.items():
+                    self.specific_skills[subskill] += count
+
+        self.skill_combinations = result.get("skill_combinations", {})
+
     
     def _calculate_metrics(self) -> Dict[str, Any]:
         """Calculate basic project metrics"""
