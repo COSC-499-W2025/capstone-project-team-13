@@ -12,12 +12,17 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add parent directory to path to access src modules
+import sys
+import os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+src_path = os.path.join(project_root, 'src')
+sys.path.insert(0, project_root)
+sys.path.insert(0, src_path)
 
-from src.Evidence.evidenceManager import EvidenceManager, evidence_manager
-from src.Evidence.autoExtractor import AutoEvidenceExtractor
-from src.Databases.database import db_manager
+from Evidence.evidenceManager import EvidenceManager, evidence_manager
+from Evidence.autoExtractor import AutoEvidenceExtractor
+from Databases.database import db_manager
 
 
 class TestEvidenceManager(unittest.TestCase):
@@ -166,7 +171,10 @@ class TestEvidenceManager(unittest.TestCase):
         # Add various types of evidence
         self.manager.store_evidence(self.test_project.id, {
             'test_coverage': 85.5,
-            'git_stats': {'commits': 150, 'contributors': 3}
+            'readme_badges': [
+                {'alt': 'Build', 'type': 'build_status'},
+                {'alt': 'Coverage', 'type': 'coverage'}
+            ]
         })
         self.manager.add_manual_metric(self.test_project.id, 'users', 1000)
         self.manager.add_feedback(self.test_project.id, 'Great work!', 'Client', 5)
@@ -174,10 +182,11 @@ class TestEvidenceManager(unittest.TestCase):
         
         summary = self.manager.get_summary(self.test_project.id)
         
+        # Check evidence is in summary
         self.assertIn('Test Coverage', summary)
         self.assertIn('85.5', summary)
-        self.assertIn('Total Commits', summary)
-        self.assertIn('150', summary)
+        self.assertIn('Badges', summary)
+        self.assertIn('Build', summary)
         self.assertIn('users', summary)
         self.assertIn('Feedback', summary)
         self.assertIn('Achievements', summary)
