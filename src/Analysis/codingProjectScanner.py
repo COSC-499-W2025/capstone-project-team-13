@@ -115,9 +115,16 @@ class CodingProjectScanner:
         print(f"  ✓ Frameworks: {', '.join(self.frameworks) if self.frameworks else 'None detected'}")
 
         # Step 3: Store project and files in database       
-        print("\nStep 3: Analyzing skills...")
+        print("\nStep 2b: Analyzing skills...")
         self._analyze_skills()
-        print(f"  ✓ Skills detected: {list(self.all_skills.keys())[:10] if self.all_skills else 'None'}")
+        print(f"  ✓ Skills detected ({len(self.unified_skills)} total):")
+
+        for skill in sorted(self.unified_skills):
+            if skill.startswith("tool:"):
+                print(f"      🔧 {skill.replace('tool:', '')}")
+            else:
+                print(f"      🧠 {skill}")
+
 
         if is_incremental:
             # Incremental update
@@ -171,7 +178,7 @@ class CodingProjectScanner:
                 'project_type': 'code',
                 'languages': list(self.languages),
                 'frameworks': list(self.frameworks),
-                'skills': list(self.all_skills.keys())[:10],  #  added this to store skills.
+                'skills': sorted(self.unified_skills),
                 'date_scanned': datetime.now(timezone.utc)
             }
             
@@ -337,8 +344,8 @@ class CodingProjectScanner:
         )[:50]
     
     def _analyze_skills(self):
-        """Analyze technical skills using existing skills extractor"""
-        # Read all code file contents
+        """Analyze technical skills using refined coding skill extractor"""
+
         try:
             result = analyze_coding_skills_refined(
                 folder_path=str(self.project_path),
@@ -348,21 +355,32 @@ class CodingProjectScanner:
             print(f"  ⚠️ Skill analysis failed: {e}")
             self.all_skills = {}
             self.skill_combinations = {}
+            self.unified_skills = set()
             return
-        
-        self.all_skills = {
-            skill: data["score"]
-            for skill, data in result.get("skills", {}).items()
-        }   
-        self.skill_details = result.get("skills", {})
-        self.specific_skills = defaultdict(float)
-        for skill, data in self.skill_details.items():
-            for group, items in data.get("subskills", {}).items():
-                for subskill, count in items.items():
-                    self.specific_skills[subskill] += count
 
+        # --- Raw outputs ---
+        self.skill_details = result.get("skills", {})
         self.skill_combinations = result.get("skill_combinations", {})
 
+        # --- Filtered skill containers ---
+        self.all_skills = {}
+        self.unified_skills = set()
+
+        MIN_SKILL_SCORE = 0.01   # prevents noise categories
+
+        for skill, data in self.skill_details.items():
+            score = data.get("score", 0)
+
+            # ✅ Only include REAL detected top-level skills
+            if score >= MIN_SKILL_SCORE:
+                self.all_skills[skill] = score
+                self.unified_skills.add(skill)
+
+                # ✅ Only include subskills that actually appeared
+                for group, items in data.get("subskills", {}).items():
+                    for subskill, count in items.items():
+                        if count > 0:
+                            self.unified_skills.add(f"tool:{subskill.lower()}")
 
     
     def _calculate_metrics(self) -> Dict[str, Any]:
@@ -413,8 +431,7 @@ class CodingProjectScanner:
             'project_type': 'code',
             'languages': list(self.languages),
             'frameworks': list(self.frameworks),
-            'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
-            'specific_skills': list(self.specific_skills.keys())[:20]
+            'skills': sorted(self.unified_skills)
         }
         
         # Create project record

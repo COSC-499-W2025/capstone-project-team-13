@@ -2,6 +2,8 @@ from collections import defaultdict
 from pathlib import Path
 import re
 
+
+
 # --- Top-level skill keywords ---
 SKILL_KEYWORDS = {
     "Python": ["python"],
@@ -100,7 +102,6 @@ SUBSKILL_KEYWORDS = {
     "Python": {
         "libraries": ["numpy", "pandas", "scipy", "matplotlib", "seaborn", "tensorflow",
                       "keras", "pytorch", "sklearn", "xgboost", "transformers", "randomforestclassifier"],
-        "language_features": ["async", "await", "decorator", "context manager", "generator"]
     },
     "Machine Learning": {
         "algorithms": ["regression", "classification", "clustering", "xgboost", "random forest", "RandomForestClassifier"],
@@ -110,13 +111,21 @@ SUBSKILL_KEYWORDS = {
         "tools": ["pandas", "numpy", "matplotlib", "seaborn", "jupyter"],
         "techniques": ["data cleaning", "data analysis", "statistics", "visualization"]
     },
-    "SQL": {
-        "commands": ["join", "select", "insert", "update", "delete", "group by", "foreign key"]
-    },
     "Web Development": {
         "libraries": ["react", "vue", "angular", "bootstrap", "tailwind", "nextjs", "nuxt"],
         "multi_word": ["rest api", "webgl shader", "ruby on rails", "google cloud"]
     }
+}
+
+GENERIC_SKILLS = {
+    "Web Development",
+    "Backend Development",
+    "Frontend Development",
+    "API Development",
+    "Database Management",
+    "Testing & QA",
+    "Version Control",
+    "DevOps"
 }
 
 # --- Advanced coding keywords for boosting ---
@@ -147,64 +156,85 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
     skill_scores = defaultdict(float)
     skill_subskills = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
     project_detected_skills = set()
+    raw_skill_hits = defaultdict(int)
 
     for file in folder.rglob("*"):
-        if file.is_file() and (file_extensions is None or file.suffix in file_extensions):
-            try:
-                text = file.read_text(encoding="utf-8").lower()
-            except UnicodeDecodeError:
+        if not file.is_file():
+            continue
+        if file_extensions and file.suffix not in file_extensions:
+            continue
+
+        try:
+            text = file.read_text(encoding="utf-8").lower()
+        except UnicodeDecodeError:
+            continue
+
+        parts = [p.lower() for p in file.parts]
+        if any(cf in parts for cf in CORE_FOLDERS):
+            folder_weight = 1.5
+        elif any(pf in parts for pf in PERIPHERAL_FOLDERS):
+            folder_weight = 0.8
+        else:
+            folder_weight = 1.0
+
+        detected_skills = set()
+
+        # 1️⃣ Top-level skills (ONLY if keyword appears)
+        for skill, keywords in SKILL_KEYWORDS.items():
+            for kw in keywords:
+                pattern = r'\b' + re.escape(kw) + r'\b'
+                matches = re.findall(pattern, text)
+                if matches:
+                    count = len(matches)
+                    detected_skills.add(skill)
+                    raw_skill_hits[skill] += count
+                    skill_scores[skill] += count * folder_weight
+                    skill_subskills[skill]["keywords"][kw] += count
+
+        # 2️⃣ Subskills (ONLY if parent skill already detected)
+        for skill, groups in SUBSKILL_KEYWORDS.items():
+            if skill not in detected_skills:
                 continue
 
-            parts = [p.lower() for p in file.parts]
-            if any(cf in parts for cf in CORE_FOLDERS):
-                folder_weight = 1.5
-            elif any(pf in parts for pf in PERIPHERAL_FOLDERS):
-                folder_weight = 0.8
-            else:
-                folder_weight = 1.0
-
-            detected_skills = set()
-
-            # --- 1️⃣ Base keyword subskills (ALWAYS) ---
-            for skill, keywords in SKILL_KEYWORDS.items():
+            for group, keywords in groups.items():
                 for kw in keywords:
                     pattern = r'\b' + re.escape(kw.lower()) + r'\b'
                     matches = re.findall(pattern, text)
                     if matches:
                         count = len(matches)
-                        detected_skills.add(skill)
-                        skill_scores[skill] += count * folder_weight
-                        skill_subskills[skill]["keywords"][kw] += count
+                        raw_skill_hits[skill] += count
+                        skill_subskills[skill][group][kw] += count
 
-            # --- 2️⃣ Structured subskills (OPTIONAL, additive) ---
-            for skill, groups in SUBSKILL_KEYWORDS.items():
-                for group, keywords in groups.items():
-                    for kw in keywords:
-                        pattern = r'\b' + re.escape(kw.lower()) + r'\b'
-                        matches = re.findall(pattern, text)
-                        if matches:
-                            count = len(matches)
-                            detected_skills.add(skill)
-                            skill_subskills[skill][group][kw] += count
+                        boost = 0.5 if kw.lower() in ADVANCED_KEYWORDS else 0.3
+                        skill_scores[skill] += count * boost * folder_weight
 
-                            boost = 0.5 if kw.lower() in ADVANCED_KEYWORDS else 0.3
-                            skill_scores[skill] += count * boost * folder_weight
+        project_detected_skills.update(detected_skills)
 
-            project_detected_skills.update(detected_skills)
-
-    # --- Normalize scores ---
-    total_score = sum(skill_scores.values())
-    if total_score == 0:
+    # 🚫 Nothing detected → safe return
+    if not skill_scores:
         return {"skills": {}, "skill_combinations": {}}
 
-    normalized_scores = {
-        skill: round(score / total_score, 3)
+    # 3️⃣ Filter weak skills
+    MIN_RAW_COUNT = 8
+    filtered_scores = {
+        skill: score
         for skill, score in skill_scores.items()
+        if raw_skill_hits[skill] >= MIN_RAW_COUNT
     }
 
-    # --- Project-wide skill combinations ---
+    if not filtered_scores:
+        return {"skills": {}, "skill_combinations": {}}
+
+    # 4️⃣ Normalize
+    total_score = sum(filtered_scores.values())
+    normalized_scores = {
+        skill: round(score / total_score, 3)
+        for skill, score in filtered_scores.items()
+    }
+
+    # 5️⃣ Skill combinations
     combinations = defaultdict(float)
-    skills = sorted(project_detected_skills)
+    skills = sorted(filtered_scores.keys())
     for i in range(len(skills)):
         for j in range(i + 1, len(skills)):
             combinations[(skills[i], skills[j])] += 1
@@ -215,14 +245,18 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
         for pair, val in combinations.items()
     }
 
-    # --- Final structured output ---
+        # 6️⃣ Final output
     final_output = {}
     for skill, score in normalized_scores.items():
+        if skill in GENERIC_SKILLS:
+            continue  # Skip generic / descriptor skills
+
         final_output[skill] = {
             "score": score,
             "subskills": {
                 group: dict(sorted(items.items(), key=lambda x: x[1], reverse=True))
                 for group, items in skill_subskills[skill].items()
+                if items
             }
         }
 
@@ -232,3 +266,5 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
             sorted(normalized_combinations.items(), key=lambda x: x[1], reverse=True)
         )
     }
+
+
