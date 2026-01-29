@@ -363,6 +363,7 @@ class CodingProjectScanner:
 
         self.skill_combinations = result.get("skill_combinations", {})
 
+
     
     def _calculate_metrics(self) -> Dict[str, Any]:
         """Calculate basic project metrics"""
@@ -412,7 +413,8 @@ class CodingProjectScanner:
             'project_type': 'code',
             'languages': list(self.languages),
             'frameworks': list(self.frameworks),
-            'skills': list(self.all_skills.keys())[:10] if self.all_skills else []
+            'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
+            'specific_skills': list(self.specific_skills.keys())[:20]
         }
         
         # Create project record
