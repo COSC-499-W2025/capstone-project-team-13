@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
-from src.Analysis.skillsExtractCoding import extract_skills_with_scores, SKILL_KEYWORDS
 from src.Analysis.skillsExtractCodingImproved import analyze_coding_skills_refined, SUBSKILL_KEYWORDS, CORE_FOLDERS, PERIPHERAL_FOLDERS, ADVANCED_KEYWORDS, SKILL_KEYWORDS
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileDataCheck import sniff_supertype
@@ -117,14 +116,6 @@ class CodingProjectScanner:
         # Step 3: Store project and files in database       
         print("\nStep 2b: Analyzing skills...")
         self._analyze_skills()
-        print(f"  ✓ Skills detected ({len(self.unified_skills)} total):")
-
-        for skill in sorted(self.unified_skills):
-            if skill.startswith("tool:"):
-                print(f"      🔧 {skill.replace('tool:', '')}")
-            else:
-                print(f"      🧠 {skill}")
-
 
         if is_incremental:
             # Incremental update
@@ -358,29 +349,56 @@ class CodingProjectScanner:
             self.unified_skills = set()
             return
 
-        # --- Raw outputs ---
-        self.skill_details = result.get("skills", {})
+        # --- Raw outputs from analyzer ---
+        skill_details = result.get("skills", {})
         self.skill_combinations = result.get("skill_combinations", {})
 
         # --- Filtered skill containers ---
         self.all_skills = {}
         self.unified_skills = set()
+        MIN_SKILL_SCORE = 0.01   # minimum normalized score to include
 
-        MIN_SKILL_SCORE = 0.01   # prevents noise categories
+        # Only keep subskill groups we care about
+        ALLOWED_SUBSKILL_GROUPS = {"libraries", "tools"}
 
-        for skill, data in self.skill_details.items():
+        for skill, data in skill_details.items():
             score = data.get("score", 0)
 
-            # ✅ Only include REAL detected top-level skills
-            if score >= MIN_SKILL_SCORE:
-                self.all_skills[skill] = score
-                self.unified_skills.add(skill)
+            # Only include top-level skills with a significant score
+            if score < MIN_SKILL_SCORE:
+                continue
 
-                # ✅ Only include subskills that actually appeared
-                for group, items in data.get("subskills", {}).items():
-                    for subskill, count in items.items():
-                        if count > 0:
-                            self.unified_skills.add(f"tool:{subskill.lower()}")
+            # --- Collect only subskills that actually appear ---
+            subskills_cleaned = {}
+            for group, items in data.get("subskills", {}).items():
+                if group not in ALLOWED_SUBSKILL_GROUPS:
+                    continue
+                for subskill, count in items.items():
+                    if count > 0:  # Only include if detected in this project
+                        subskills_cleaned[subskill] = count
+
+            # Store final top-level skill + subskills
+            self.all_skills[skill] = {
+                "score": score,
+                "subskills": subskills_cleaned
+            }
+
+            # Unified set for printing
+            self.unified_skills.add(skill)
+
+        self._print_skills()
+
+
+
+    def _print_skills(self):
+        print(f"  ✓ Skills detected ({len(self.all_skills)} total):")
+        for skill, data in sorted(self.all_skills.items(), key=lambda x: x[1]["score"], reverse=True):
+            print(f"       {skill} (score: {data['score']:.3f})")
+            if data["subskills"]:
+                subskills_sorted = sorted(data["subskills"].keys())
+                print(f"          🔧 {', '.join(subskills_sorted)}")
+
+
 
     
     def _calculate_metrics(self) -> Dict[str, Any]:

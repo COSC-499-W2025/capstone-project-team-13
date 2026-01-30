@@ -2,8 +2,6 @@ from collections import defaultdict
 from pathlib import Path
 import re
 
-
-
 # --- Top-level skill keywords ---
 SKILL_KEYWORDS = {
     "Python": ["python"],
@@ -20,7 +18,7 @@ SKILL_KEYWORDS = {
         "flask", "django", "express", "fastapi", "spring", "node",
         "api", "server", "microservices", "rest", "graphql"
     ],
-     "API Development": [
+    "API Development": [
         "rest", "graphql", "endpoint", "swagger", "postman", "jwt", "oauth"
     ],
     "Mobile Development": [
@@ -42,37 +40,32 @@ SKILL_KEYWORDS = {
 
     # --- Data & AI ---
     "Data Science": [
-        "numpy", "pandas", "matplotlib", "scipy", "dataframe",
-        "jupyter", "statistics", "data analysis"
+        "numpy", "pandas", "matplotlib", "scipy", "jupyter"
     ],
     "Machine Learning": [
-        "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
-        "regression", "classification", "model training"
+        "tensorflow", "keras", "pytorch", "sklearn", "xgboost"
     ],
     "Data Visualization": [
         "matplotlib", "seaborn", "plotly", "tableau", "dash", "ggplot"
     ],
     "Data Engineering": [
-        "airflow", "spark", "hadoop", "etl", "data pipeline", "big data", "kafka"
+        "airflow", "spark", "hadoop", "etl", "kafka"
     ],
 
     # --- DevOps / Cloud ---
     "DevOps": [
-        "docker", "kubernetes", "jenkins", "ci/cd", "github actions",
-        "pipeline", "automation", "monitoring"
+        "docker", "kubernetes", "jenkins", "ci/cd", "github actions"
     ],
     "Cloud Computing": [
-        "aws", "azure", "gcp", "google cloud", "lambda", "s3",
-        "cloud functions", "deployment", "infrastructure as code"
+        "aws", "azure", "gcp", "google cloud", "lambda", "s3", "cloud functions"
     ],
 
     # --- Software Engineering Practices ---
     "Testing & QA": [
-        "pytest", "unittest", "selenium", "cypress", "mocha",
-        "testcase", "assertion", "coverage", "jest"
+        "pytest", "unittest", "selenium", "cypress", "mocha", "jest"
     ],
     "Version Control": [
-        "git", "github", "gitlab", "bitbucket", "commit", "branch", "merge"
+        "git", "github", "gitlab", "bitbucket"
     ],
     "Security & Cybersecurity": [
         "encryption", "hashing", "vulnerability", "penetration testing",
@@ -81,73 +74,57 @@ SKILL_KEYWORDS = {
 
     # --- Game and Graphics ---
     "Game Development": [
-        "unity", "unreal", "godot", "game engine", "shader", "physics", "collision detection"
+        "unity", "unreal", "godot", "shader", "collision detection"
     ],
     "3D Rendering": [
-        "webgl", "opengl", "three.js", "blender", "shader", "ray tracing", "lighting", "camera", "vertex", "fragment"
+        "webgl", "opengl", "three.js", "blender", "ray tracing", "lighting", "vertex", "fragment", "camera"
     ],
-     "Computer Vision": [
+    "Computer Vision": [
         "opencv", "image processing", "object detection", "segmentation"
     ],
 
-    # other
-    
+    # --- AI & NLP ---
     "AI & Natural Language Processing": [
-        "nlp", "transformer", "bert", "gpt", "tokenization", "embedding"
+        "nlp", "transformer", "bert", "gpt", "tokenization", "embedding", "language model", "GEMINI"
     ],
-   
 }
-# --- Subskills / libraries per top-level skill (including multi-word) ---
+
+# --- Subskills: only include libraries/technologies ---
 SUBSKILL_KEYWORDS = {
     "Python": {
-        "libraries": ["numpy", "pandas", "scipy", "matplotlib", "seaborn", "tensorflow",
-                      "keras", "pytorch", "sklearn", "xgboost", "transformers", "randomforestclassifier"],
+        "libraries": ["numpy", "pandas", "scipy", "matplotlib", "seaborn",
+                      "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
+                      "transformers", "randomforestclassifier"],
+        "language_features": ["async", "await", "decorator", "context manager", "generator"]
     },
     "Machine Learning": {
-        "algorithms": ["regression", "classification", "clustering", "xgboost", "random forest", "RandomForestClassifier"],
-        "libraries": ["tensorflow", "keras", "pytorch", "sklearn"]
+        "libraries": ["tensorflow", "keras", "pytorch", "sklearn"],
+        "algorithms": ["xgboost", "random forest", "RandomForestClassifier"]
     },
     "Data Science": {
-        "tools": ["pandas", "numpy", "matplotlib", "seaborn", "jupyter"],
-        "techniques": ["data cleaning", "data analysis", "statistics", "visualization"]
+        "tools": ["pandas", "numpy", "matplotlib", "seaborn", "jupyter"]
     },
     "Web Development": {
         "libraries": ["react", "vue", "angular", "bootstrap", "tailwind", "nextjs", "nuxt"],
-        "multi_word": ["rest api", "webgl shader", "ruby on rails", "google cloud"]
+        "multi_word": ["rest api", "ruby on rails", "google cloud"]
     }
 }
 
 GENERIC_SKILLS = {
-    "Web Development",
-    "Backend Development",
-    "Frontend Development",
-    "API Development",
-    "Database Management",
-    "Testing & QA",
-    "Version Control",
-    "DevOps"
+    "Web Development", "Backend Development", "Frontend Development",
+    "API Development", "Database Management", "DevOps"
 }
 
-# --- Advanced coding keywords for boosting ---
 ADVANCED_KEYWORDS = [
     "async", "await", "decorator", "pipeline", "architecture", "microservice", "orm"
 ]
 
-# --- Core vs Peripheral folders ---
 CORE_FOLDERS = ["src", "app", "main"]
 PERIPHERAL_FOLDERS = ["tests", "docs", "scripts"]
 
-# --- Helper to match multi-word keywords first ---
-def find_keywords(text, keywords):
-    """Return list of keywords found in text."""
-    found = []
-    for kw in keywords:
-        pattern = r'\b' + re.escape(kw.lower()) + r'\b'
-        if re.search(pattern, text):
-            found.append(kw)
-    return found
+VALID_SUBSKILL_GROUPS = {"libraries", "tools", "multi_word", "algorithms", "language_features"}
 
-# --- Main skill analyzer ---
+# --- Skill analyzer function ---
 def analyze_coding_skills_refined(folder_path, file_extensions=None):
     folder = Path(folder_path)
     if not folder.is_dir():
@@ -179,10 +156,10 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
 
         detected_skills = set()
 
-        # 1️⃣ Top-level skills (ONLY if keyword appears)
+        # --- 1️⃣ Top-level skills ---
         for skill, keywords in SKILL_KEYWORDS.items():
             for kw in keywords:
-                pattern = r'\b' + re.escape(kw) + r'\b'
+                pattern = r'\b' + re.escape(kw.lower()) + r'\b'
                 matches = re.findall(pattern, text)
                 if matches:
                     count = len(matches)
@@ -191,11 +168,10 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
                     skill_scores[skill] += count * folder_weight
                     skill_subskills[skill]["keywords"][kw] += count
 
-        # 2️⃣ Subskills (ONLY if parent skill already detected)
+        # --- 2️⃣ Subskills (only if parent skill detected) ---
         for skill, groups in SUBSKILL_KEYWORDS.items():
             if skill not in detected_skills:
                 continue
-
             for group, keywords in groups.items():
                 for kw in keywords:
                     pattern = r'\b' + re.escape(kw.lower()) + r'\b'
@@ -210,61 +186,44 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
 
         project_detected_skills.update(detected_skills)
 
-    # 🚫 Nothing detected → safe return
+    # --- Nothing detected ---
     if not skill_scores:
         return {"skills": {}, "skill_combinations": {}}
 
-    # 3️⃣ Filter weak skills
+    # --- 3️⃣ Filter weak skills ---
     MIN_RAW_COUNT = 8
-    filtered_scores = {
-        skill: score
-        for skill, score in skill_scores.items()
-        if raw_skill_hits[skill] >= MIN_RAW_COUNT
-    }
-
+    filtered_scores = {skill: score for skill, score in skill_scores.items() if raw_skill_hits[skill] >= MIN_RAW_COUNT}
     if not filtered_scores:
         return {"skills": {}, "skill_combinations": {}}
 
-    # 4️⃣ Normalize
+    # --- 4️⃣ Normalize scores ---
     total_score = sum(filtered_scores.values())
-    normalized_scores = {
-        skill: round(score / total_score, 3)
-        for skill, score in filtered_scores.items()
-    }
+    normalized_scores = {skill: round(score / total_score, 3) for skill, score in filtered_scores.items()}
 
-    # 5️⃣ Skill combinations
+    # --- 5️⃣ Skill combinations ---
     combinations = defaultdict(float)
     skills = sorted(filtered_scores.keys())
     for i in range(len(skills)):
         for j in range(i + 1, len(skills)):
             combinations[(skills[i], skills[j])] += 1
-
     max_comb = max(combinations.values(), default=1)
-    normalized_combinations = {
-        pair: round(val / max_comb, 3)
-        for pair, val in combinations.items()
-    }
+    normalized_combinations = {pair: round(val / max_comb, 3) for pair, val in combinations.items()}
 
-        # 6️⃣ Final output
+    # --- 6️⃣ Final output ---
     final_output = {}
     for skill, score in normalized_scores.items():
         if skill in GENERIC_SKILLS:
-            continue  # Skip generic / descriptor skills
-
+            continue
         final_output[skill] = {
             "score": score,
             "subskills": {
                 group: dict(sorted(items.items(), key=lambda x: x[1], reverse=True))
                 for group, items in skill_subskills[skill].items()
-                if items
+                if items and group in VALID_SUBSKILL_GROUPS
             }
         }
 
     return {
         "skills": dict(sorted(final_output.items(), key=lambda x: x[1]["score"], reverse=True)),
-        "skill_combinations": dict(
-            sorted(normalized_combinations.items(), key=lambda x: x[1], reverse=True)
-        )
+        "skill_combinations": dict(sorted(normalized_combinations.items(), key=lambda x: x[1], reverse=True))
     }
-
-
