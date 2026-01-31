@@ -91,9 +91,19 @@ def select_projects_for_resume(projects: List[Project]) -> List[Project]:
         # Parse comma-separated numbers
         indices = [int(x.strip()) - 1 for x in choice.split(',')]
         
+        # Check for duplicates and warn user
+        seen = set()
+        unique_indices = []
+        for idx in indices:
+            if idx in seen:
+                print(f"Warning: Ignoring duplicate project number {idx + 1}")
+            else:
+                seen.add(idx)
+                unique_indices.append(idx)
+        
         # Validate indices
         selected = []
-        for idx in indices:
+        for idx in unique_indices:
             if 0 <= idx < len(projects):
                 selected.append(projects[idx])
             else:
