@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
-from src.Analysis.skillsExtractCoding import extract_skills_with_scores
+from src.Analysis.skillsExtractCodingImproved import analyze_coding_skills_refined, SUBSKILL_KEYWORDS, CORE_FOLDERS, PERIPHERAL_FOLDERS, ADVANCED_KEYWORDS, SKILL_KEYWORDS
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
@@ -112,7 +112,11 @@ class CodingProjectScanner:
         self._detect_languages_and_frameworks()
         print(f"  ✓ Languages: {', '.join(self.languages) if self.languages else 'None detected'}")
         print(f"  ✓ Frameworks: {', '.join(self.frameworks) if self.frameworks else 'None detected'}")
-        
+
+        # Step 3: Store project and files in database       
+        print("\nStep 2b: Analyzing skills...")
+        self._analyze_skills()
+
         if is_incremental:
             project_id = existing.id
 
@@ -175,6 +179,7 @@ class CodingProjectScanner:
                 'project_type': 'code',
                 'languages': list(self.languages),
                 'frameworks': list(self.frameworks),
+                'skills': sorted(self.unified_skills),
                 'date_scanned': datetime.now(timezone.utc)
             }
             
@@ -353,21 +358,71 @@ class CodingProjectScanner:
         )[:50]
     
     def _analyze_skills(self):
-        """Analyze technical skills using existing skills extractor"""
-        # Read all code file contents
-        all_code_text = []
-        
-        for file_path in self.code_files:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    all_code_text.append(f.read())
-            except Exception:
+        """Analyze technical skills using refined coding skill extractor"""
+
+        try:
+            result = analyze_coding_skills_refined(
+                folder_path=str(self.project_path),
+                file_extensions={".py", ".js", ".ts", ".java", ".cpp", ".c", ".html", ".css"}
+            )
+        except Exception as e:
+            print(f"  ⚠️ Skill analysis failed: {e}")
+            self.all_skills = {}
+            self.skill_combinations = {}
+            self.unified_skills = set()
+            return
+
+        # --- Raw outputs from analyzer ---
+        skill_details = result.get("skills", {})
+        self.skill_combinations = result.get("skill_combinations", {})
+
+        # --- Filtered skill containers ---
+        self.all_skills = {}
+        self.unified_skills = set()
+        MIN_SKILL_SCORE = 0.01   # minimum normalized score to include
+
+        # Only keep subskill groups we care about
+        ALLOWED_SUBSKILL_GROUPS = {"libraries", "tools"}
+
+        for skill, data in skill_details.items():
+            score = data.get("score", 0)
+
+            # Only include top-level skills with a significant score
+            if score < MIN_SKILL_SCORE:
                 continue
-        
-        if all_code_text:
-            # Combine all code and use existing function
-            combined_text = '\n'.join(all_code_text)
-            self.all_skills = extract_skills_with_scores(combined_text)
+
+            # --- Collect only subskills that actually appear ---
+            subskills_cleaned = {}
+            for group, items in data.get("subskills", {}).items():
+                if group not in ALLOWED_SUBSKILL_GROUPS:
+                    continue
+                for subskill, count in items.items():
+                    if count > 0:  # Only include if detected in this project
+                        subskills_cleaned[subskill] = count
+
+            # Store final top-level skill + subskills
+            self.all_skills[skill] = {
+                "score": score,
+                "subskills": subskills_cleaned
+            }
+
+            # Unified set for printing
+            self.unified_skills.add(skill)
+
+        self._print_skills()
+
+
+
+    def _print_skills(self):
+        print(f"  ✓ Skills detected ({len(self.all_skills)} total):")
+        for skill, data in sorted(self.all_skills.items(), key=lambda x: x[1]["score"], reverse=True):
+            print(f"       {skill} (score: {data['score']:.3f})")
+            if data["subskills"]:
+                subskills_sorted = sorted(data["subskills"].keys())
+                print(f"          🔧 {', '.join(subskills_sorted)}")
+
+
+
     
     def _calculate_metrics(self) -> Dict[str, Any]:
         """Calculate basic project metrics"""
@@ -422,7 +477,7 @@ class CodingProjectScanner:
             'project_type': 'code',
             'languages': list(self.languages),
             'frameworks': list(self.frameworks),
-            'skills': list(self.all_skills.keys())[:10] if self.all_skills else []
+            'skills': sorted(self.unified_skills)
         }
         
         # Create project record
