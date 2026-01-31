@@ -321,11 +321,6 @@ class Keyword(Base):
             'category': self.category,
         }
 
-# ============================================
-# PASTE THE MODELS BELOW THE Keyword CLASS
-# (after line 322, before the DATABASE MANAGER comment)
-# ============================================
-
 class User(Base):
     """Store user profile information"""
     __tablename__ = 'users'
@@ -1005,10 +1000,14 @@ class DatabaseManager:
         """Clear all data from database"""
         session = self.get_session()
         try:
+            # Child tables first (foreign key order)
             session.query(Keyword).delete()
             session.query(Contributor).delete()
             session.query(File).delete()
             session.query(Project).delete()
+            session.query(Education).delete()
+            session.query(WorkHistory).delete()
+            session.query(User).delete()
             session.commit()
         finally:
             session.close()
