@@ -169,7 +169,7 @@ class MediaProjectScanner:
                 'name': self.project_name,
                 'file_path': str(self.project_path),
                 'file_count': len(self.media_files),
-                'project_type': 'media',
+                'project_type': 'visual_media',
                 'tags': self.software_used,
                 'date_scanned': datetime.now(timezone.utc)
             }
