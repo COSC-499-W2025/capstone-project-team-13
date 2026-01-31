@@ -61,6 +61,15 @@ from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
 from src.Analysis.incrementalFileHandler import handle_add_files_to_project
 
+# Import evidence management features
+try:
+    from src.Evidence.evidenceMenu import evidence_main_menu
+    from src.Evidence.evidenceManager import evidence_manager
+    EVIDENCE_FEATURES_AVAILABLE = True
+except ImportError:
+    EVIDENCE_FEATURES_AVAILABLE = False
+    print("⚠️  Evidence management features not available (modules not found)")
+
 # Import deletion management features
 try:
     from src.deletion_manager import DeletionManager
@@ -190,6 +199,64 @@ def check_if_collaborative(project_path):
         print("Collaboration detection error:", e)
         return "Unknown"
 
+def extract_evidence_for_project(project_id: int, project_path: str):
+    """
+    Helper function to automatically extract evidence after project upload
+    
+    Args:
+        project_id: Database ID of the project
+        project_path: Path to project directory
+    """
+    if not EVIDENCE_FEATURES_AVAILABLE:
+        return
+    
+    try:
+        project = db_manager.get_project(project_id)
+        if not project:
+            return
+        
+        print("\n🔍 Extracting evidence of success from project files...")
+        evidence = evidence_manager.extract_and_store_evidence(project, project_path)
+        
+        if evidence and len(evidence) > 0:
+            print("✅ Evidence extracted successfully!")
+            
+            # Show highlights
+            if 'test_coverage' in evidence:
+                print(f"   - Test Coverage: {evidence['test_coverage']}%")
+            
+            # Note: Git statistics are shown separately in Git insights
+            
+            if 'readme_badges' in evidence and evidence['readme_badges']:
+                print(f"   - README Badges: {len(evidence['readme_badges'])} found")
+            
+            print("\n   💡 You can view full evidence details in: View & Analysis > Manage Project Evidence")
+        else:
+            print("ℹ️  No automatic evidence found.")
+            print("   💡 You can add evidence manually in: View & Analysis > Manage Project Evidence")
+    
+    except Exception as e:
+        print(f"⚠️  Could not extract evidence: {e}")
+
+
+def get_user_choice_old():
+    """Get user's choice for what to analyze (original menu preserved as backup)"""
+    print_header("Digital Artifact Mining Software")
+    print("What would you like to analyze?\n")
+    print("1.  Coding Project (folder containing code files)")
+    print("2.  Visual/Media Project (folder containing design/media files)")
+    print("3.  Single Document (text file for keyword extraction)")
+    print("4.  ZIP Archive (extract and analyze)")
+    print("5.  Any Folder (auto-detect type)")
+    print("6.  View All Projects in Database")
+    print("7.  Generate Project Summary")
+    print("8.  Resume Items")
+    print("9.  AI Project Analysis")
+    print("10. Rank Projects")  
+    print("11. Code Efficiency Analysis")
+    print("12. Delete Project")
+    print("13. Delete AI Insights Only")
+    print("14. Exit")
 # def get_user_choice_old():
 #     """Get user's choice for what to analyze (original menu preserved as backup)"""
 #     print_header("Digital Artifact Mining Software")
@@ -389,6 +456,9 @@ def handle_coding_project():
     # Update collaboration type if detected
     if collab_type != 'Unknown (no contributor data found)':
         db_manager.update_project(project_id, {'collaboration_type': collab_type})
+    
+    # Extract evidence of success
+    extract_evidence_for_project(project_id, path)
 
 # ============================================
 # PATCH FOR handle_visual_project()
@@ -437,6 +507,9 @@ def handle_visual_project():
     if not project_id:
         print("\n❌ Failed to scan project or no media files found.")
         return
+    
+    # Extract evidence of success
+    extract_evidence_for_project(project_id, path)
 
 def handle_document():
     """Handle scanning a single text document"""
@@ -479,6 +552,9 @@ def handle_document():
     if not project_id:
         print("\n❌ Failed to scan document.")
         return
+    
+    # Extract evidence of success
+    extract_evidence_for_project(project_id, os.path.dirname(path))
 
 def handle_zip_archive():
     """Handle ZIP archive extraction and analysis"""
@@ -812,6 +888,9 @@ def handle_auto_detect():
                 if collab_type != 'Unknown (no contributor data found)':
                     db_manager.update_project(project_id, {'collaboration_type': collab_type})
                 
+                # Extract evidence of success
+                extract_evidence_for_project(project_id, path)
+                
     elif project_type == 'media':
         proceed = input("\n📝 Proceed with media analysis? (yes/no): ").strip().lower()
         if proceed == 'yes':
@@ -830,6 +909,9 @@ def handle_auto_detect():
                     project = db_manager.create_project(project_data)
                     print(f"✅ Stored with ID: {project.id}")
                     
+                    # Extract evidence of success
+                    extract_evidence_for_project(project.id, path)
+                    
     elif project_type == 'mixed':
         print("\n📦 This folder contains both code and media files.")
         choice = input("Analyze as: (1) Code project, (2) Media project, (3) Both: ").strip()
@@ -837,8 +919,12 @@ def handle_auto_detect():
         if choice in ['1', '3']:
             print("\n⏳ Analyzing code files...")
             project_id = scan_coding_project(path)
-            if project_id and collab_type != 'Unknown (no contributor data found)':
-                db_manager.update_project(project_id, {'collaboration_type': collab_type})
+            if project_id:
+                if collab_type != 'Unknown (no contributor data found)':
+                    db_manager.update_project(project_id, {'collaboration_type': collab_type})
+                
+                # Extract evidence of success
+                extract_evidence_for_project(project_id, path)
         
         if choice in ['2', '3']:
             print("\n⏳ Analyzing media files...")
@@ -2280,7 +2366,8 @@ def view_and_analysis_menu():
         '2': generate_summary,
         '3': sort_and_score_projects_menu,
         '4': assign_and_view_roles,
-        '5': view_portfolio
+        '5': view_portfolio,
+        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None
     }
 
     while True:
@@ -2290,15 +2377,20 @@ def view_and_analysis_menu():
         print("3. Sort / score projects")
         print("4. Assign and View Roles")
         print("5. View portfolio")
-        print("6. Return to Main Menu")
+        if EVIDENCE_FEATURES_AVAILABLE:
+            print("6. Manage Project Evidence")
+            print("7. Exit")
+        else:
+            print("6. Return to Main Menu")
 
-        choice = input("Enter your choice (1-6): ").strip()
+        max_choice = 7 if EVIDENCE_FEATURES_AVAILABLE else 6
+        choice = input(f"Enter your choice (1-{max_choice}): ").strip()
 
-        if choice == '6':
+        if (EVIDENCE_FEATURES_AVAILABLE and choice == '7') or (not EVIDENCE_FEATURES_AVAILABLE and choice == '6'):
             print("Exiting view & analysis menu.")
             return
 
-        if choice in options:
+        if choice in options and options[choice] is not None:
             options[choice]()
         else:
             print("Invalid choice. Try again.")
