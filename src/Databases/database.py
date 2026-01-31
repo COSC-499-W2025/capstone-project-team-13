@@ -322,6 +322,117 @@ class Keyword(Base):
         }
 
 # ============================================
+# PASTE THE MODELS BELOW THE Keyword CLASS
+# (after line 322, before the DATABASE MANAGER comment)
+# ============================================
+
+class User(Base):
+    """Store user profile information"""
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+
+    # Basic info
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+
+    # Portfolio and resume (stored as JSON)
+    _portfolio = Column('portfolio', Text)
+    _resume = Column('resume', Text)
+
+    # Relationships
+    education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
+    work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')
+
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    @property
+    def portfolio(self) -> Optional[Dict[str, Any]]:
+        return json.loads(self._portfolio) if self._portfolio else None
+
+    @portfolio.setter
+    def portfolio(self, value: Optional[Dict[str, Any]]):
+        self._portfolio = json.dumps(value) if value else None
+
+    @property
+    def resume(self) -> Optional[Dict[str, Any]]:
+        return json.loads(self._resume) if self._resume else None
+
+    @resume.setter
+    def resume(self, value: Optional[Dict[str, Any]]):
+        self._resume = json.dumps(value) if value else None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'email': self.email,
+            'portfolio': self.portfolio,
+            'resume': self.resume,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+class Education(Base):
+    """Store user education history"""
+    __tablename__ = 'education'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    # Education info
+    institution = Column(String(255), nullable=False)
+    degree_type = Column(String(100), nullable=False)  # e.g. "Bachelor's", "Master's", "PhD"
+    topic = Column(String(255), nullable=False)  # e.g. "Computer Science", "Economics"
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=True)  # NULL means "present"
+
+    # Relationships
+    user = relationship('User', back_populates='education')
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'institution': self.institution,
+            'degree_type': self.degree_type,
+            'topic': self.topic,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else 'Present',
+        }
+
+class WorkHistory(Base):
+    """Store user work history"""
+    __tablename__ = 'work_history'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    # Work info
+    company = Column(String(255), nullable=False)
+    role = Column(String(255), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=True)  # NULL means "present"
+
+    # Relationships
+    user = relationship('User', back_populates='work_history')
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'company': self.company,
+            'role': self.role,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else 'Present',
+        }
+
+# ============================================
 # DATABASE MANAGER
 # ============================================
 
@@ -721,6 +832,170 @@ class DatabaseManager:
 
             return counts
 
+        finally:
+            session.close()
+
+    
+        # ============ USER OPERATIONS ============
+
+    def create_user(self, user_data: Dict[str, Any]) -> User:
+        """Create a new user"""
+        session = self.get_session()
+        try:
+            user = User(**user_data)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            return user
+        finally:
+            session.close()
+
+    def get_user(self, user_id: int) -> Optional[User]:
+        """Get user by ID with eager loading"""
+        session = self.get_session()
+        try:
+            return session.query(User).options(
+                joinedload(User.education),
+                joinedload(User.work_history)
+            ).filter(User.id == user_id).first()
+        finally:
+            session.close()
+
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get user by email"""
+        session = self.get_session()
+        try:
+            return session.query(User).filter(User.email == email).first()
+        finally:
+            session.close()
+
+    def update_user(self, user_id: int, updates: Dict[str, Any]) -> Optional[User]:
+        """Update user profile"""
+        session = self.get_session()
+        try:
+            user = session.query(User).filter(User.id == user_id).first()
+            if user:
+                for key, value in updates.items():
+                    setattr(user, key, value)
+                user.updated_at = datetime.now(timezone.utc)
+                session.commit()
+                session.refresh(user)
+            return user
+        finally:
+            session.close()
+
+    def delete_user(self, user_id: int) -> bool:
+        """Delete user and cascade to education and work history"""
+        session = self.get_session()
+        try:
+            user = session.query(User).filter(User.id == user_id).first()
+            if user:
+                session.delete(user)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
+    # ============ EDUCATION OPERATIONS ============
+
+    def add_education(self, education_data: Dict[str, Any]) -> Education:
+        """Add education entry for a user"""
+        session = self.get_session()
+        try:
+            education = Education(**education_data)
+            session.add(education)
+            session.commit()
+            session.refresh(education)
+            return education
+        finally:
+            session.close()
+
+    def get_education_for_user(self, user_id: int) -> List[Education]:
+        """Get all education entries for a user"""
+        session = self.get_session()
+        try:
+            return session.query(Education).filter(
+                Education.user_id == user_id
+            ).order_by(Education.start_date.desc()).all()
+        finally:
+            session.close()
+
+    def update_education(self, education_id: int, updates: Dict[str, Any]) -> Optional[Education]:
+        """Update an education entry"""
+        session = self.get_session()
+        try:
+            education = session.query(Education).filter(Education.id == education_id).first()
+            if education:
+                for key, value in updates.items():
+                    setattr(education, key, value)
+                session.commit()
+                session.refresh(education)
+            return education
+        finally:
+            session.close()
+
+    def delete_education(self, education_id: int) -> bool:
+        """Delete an education entry"""
+        session = self.get_session()
+        try:
+            education = session.query(Education).filter(Education.id == education_id).first()
+            if education:
+                session.delete(education)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
+    # ============ WORK HISTORY OPERATIONS ============
+
+    def add_work_history(self, work_data: Dict[str, Any]) -> WorkHistory:
+        """Add work history entry for a user"""
+        session = self.get_session()
+        try:
+            work = WorkHistory(**work_data)
+            session.add(work)
+            session.commit()
+            session.refresh(work)
+            return work
+        finally:
+            session.close()
+
+    def get_work_history_for_user(self, user_id: int) -> List[WorkHistory]:
+        """Get all work history entries for a user"""
+        session = self.get_session()
+        try:
+            return session.query(WorkHistory).filter(
+                WorkHistory.user_id == user_id
+            ).order_by(WorkHistory.start_date.desc()).all()
+        finally:
+            session.close()
+
+    def update_work_history(self, work_id: int, updates: Dict[str, Any]) -> Optional[WorkHistory]:
+        """Update a work history entry"""
+        session = self.get_session()
+        try:
+            work = session.query(WorkHistory).filter(WorkHistory.id == work_id).first()
+            if work:
+                for key, value in updates.items():
+                    setattr(work, key, value)
+                session.commit()
+                session.refresh(work)
+            return work
+        finally:
+            session.close()
+
+    def delete_work_history(self, work_id: int) -> bool:
+        """Delete a work history entry"""
+        session = self.get_session()
+        try:
+            work = session.query(WorkHistory).filter(WorkHistory.id == work_id).first()
+            if work:
+                session.delete(work)
+                session.commit()
+                return True
+            return False
         finally:
             session.close()
 
