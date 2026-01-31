@@ -239,46 +239,6 @@ def extract_evidence_for_project(project_id: int, project_path: str):
         print(f"⚠️  Could not extract evidence: {e}")
 
 
-def get_user_choice_old():
-    """Get user's choice for what to analyze (original menu preserved as backup)"""
-    print_header("Digital Artifact Mining Software")
-    print("What would you like to analyze?\n")
-    print("1.  Coding Project (folder containing code files)")
-    print("2.  Visual/Media Project (folder containing design/media files)")
-    print("3.  Single Document (text file for keyword extraction)")
-    print("4.  ZIP Archive (extract and analyze)")
-    print("5.  Any Folder (auto-detect type)")
-    print("6.  View All Projects in Database")
-    print("7.  Generate Project Summary")
-    print("8.  Resume Items")
-    print("9.  AI Project Analysis")
-    print("10. Rank Projects")  
-    print("11. Code Efficiency Analysis")
-    print("12. Delete Project")
-    print("13. Delete AI Insights Only")
-    print("14. Exit")
-# def get_user_choice_old():
-#     """Get user's choice for what to analyze (original menu preserved as backup)"""
-#     print_header("Digital Artifact Mining Software")
-#     print("What would you like to analyze?\n")
-#     print("1.  Coding Project (folder containing code files)")
-#     print("2.  Visual/Media Project (folder containing design/media files)")
-#     print("3.  Single Document (text file for keyword extraction)")
-#     print("4.  ZIP Archive (extract and analyze)")
-#     print("5.  Any Folder (auto-detect type)")
-#     print("6.  View All Projects in Database")
-#     print("7.  Generate Project Summary")
-#     print("8.  Resume Items")
-#     print("9.  AI Project Analysis")
-#     print("10. Rank Projects")  
-#     print("11. Code Efficiency Analysis")
-#     print("12. Delete Project")
-#     print("13. Delete AI Insights Only")
-#     print("14. Exit")
-
-#     choice = input("\nEnter your choice (1-14): ").strip()
-#     return choice
-
 
 def get_user_choice():
     """Simplified main menu with three submenus and exit"""
@@ -289,7 +249,7 @@ def get_user_choice():
     print("3. Resume Tools")
     print("4. AI Menu")
     print("5. Settings")
-    print("6. Return to main menu")
+    print("6. Exit")
 
     choice = input("\nEnter your choice (1-6): ").strip()
     return choice
@@ -2379,7 +2339,7 @@ def view_and_analysis_menu():
         print("5. View portfolio")
         if EVIDENCE_FEATURES_AVAILABLE:
             print("6. Manage Project Evidence")
-            print("7. Exit")
+            print("7. Return to Main Menu")
         else:
             print("6. Return to Main Menu")
 
