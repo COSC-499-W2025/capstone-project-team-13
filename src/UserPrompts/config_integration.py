@@ -29,8 +29,8 @@ def request_and_store_basic_consent() -> bool:
         print(f"  Granted on: {config.basic_consent_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Ask if they want to change it
-        response = input("\nDo you want to revoke this consent? (yes/no): ").strip().lower()
-        if response == 'yes':
+        response = input("\nDo you confirm this consent is still valid? (yes/no): ").strip().lower()
+        if response == 'no':
             config_manager.revoke_basic_consent()
             print("✗ File access consent revoked. Exiting.")
             return False
@@ -86,8 +86,8 @@ def request_and_store_ai_consent() -> bool:
         print(f"  Current model: {config.ai_model}")
         
         # Ask if they want to change it
-        response = input("\nDo you want to revoke AI consent? (yes/no): ").strip().lower()
-        if response == 'yes':
+        response = input("\nDo you confirm this consent is still valid? (yes/no): ").strip().lower()
+        if response == 'no':
             config_manager.revoke_ai_consent()
             print("✗ AI service consent revoked.")
             return False
