@@ -11,25 +11,17 @@ import re
 import math
 from datetime import datetime, timezone
 
-
-
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.Helpers.installDependencies import install_requirements
 install_requirements()
+from src.Analysis import codeIdentifier, visualMediaAnalyzer
 from src.UserPrompts.getConsent import get_user_consent
-from src.UserPrompts.config_integration import (
-    show_current_configuration,
-    configure_privacy_settings,
-    configure_analysis_preferences,
-    request_and_store_basic_consent,
-    request_and_store_ai_consent,
-    quick_setup_wizard,
-    request_and_store_basic_consent,
-    request_and_store_ai_consent,
-)
+from src.UserPrompts.config_integration import request_and_store_basic_consent
 from src.UserPrompts.externalPermissions import request_ai_consent
+from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
+from src.Helpers.fileParser import parse_file, FileParseError
 from src.Extraction.zipHandler import (
     validate_zip_file, extract_zip, get_zip_contents, 
     count_files_in_zip, ZipExtractionError
@@ -239,6 +231,28 @@ def extract_evidence_for_project(project_id: int, project_path: str):
         print(f"⚠️  Could not extract evidence: {e}")
 
 
+def get_user_choice_old():
+    """Get user's choice for what to analyze (original menu preserved as backup)"""
+    print_header("Digital Artifact Mining Software")
+    print("What would you like to analyze?\n")
+    print("1.  Coding Project (folder containing code files)")
+    print("2.  Visual/Media Project (folder containing design/media files)")
+    print("3.  Single Document (text file for keyword extraction)")
+    print("4.  ZIP Archive (extract and analyze)")
+    print("5.  Any Folder (auto-detect type)")
+    print("6.  View All Projects in Database")
+    print("7.  Generate Project Summary")
+    print("8.  Resume Items")
+    print("9.  AI Project Analysis")
+    print("10. Rank Projects")  
+    print("11. Code Efficiency Analysis")
+    print("12. Delete Project")
+    print("13. Delete AI Insights Only")
+    print("14. Exit")
+
+    choice = input("\nEnter your choice (1-14): ").strip()
+    return choice
+
 
 def get_user_choice():
     """Simplified main menu with three submenus and exit"""
@@ -248,33 +262,28 @@ def get_user_choice():
     print("2. View and Analyze Previously Uploaded Projects")
     print("3. Resume Tools")
     print("4. AI Menu")
-    print("5. Settings")
-    print("6. Exit")
+    print("5. Exit")
 
-    choice = input("\nEnter your choice (1-6): ").strip()
+    choice = input("\nEnter your choice (1-5): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
     """Get and validate path from user"""
     while True:
-        raw = input(prompt)
-        if not raw:
+        path = input(prompt).strip()
+        
+        if not path:
             print("❌ Please enter a valid path.")
             continue
-
-        # 🔧 sanitize input (handles ", ', and smart quotes)
-        path = raw.strip().strip('"\'' + "“”‘’")
-        path = os.path.abspath(os.path.expanduser(path))
-
+        
         if not os.path.exists(path):
-            print(f"❌ Path does not exist: {path}")  # print sanitized path
+            print(f"❌ Path does not exist: {path}")
             retry = input("Try again? (yes/no): ").strip().lower()
-            if retry not in ("yes", "y"):
+            if retry != 'yes':
                 return None
             continue
-
+        
         return path
-
 
 def display_project_details(project):
     """Display detailed project information"""
@@ -361,21 +370,6 @@ def display_project_details(project):
     
     print(f"\n{'='*70}")
 
-def sanitize_path(p: str) -> str:
-    if p is None:
-        return ""
-
-    # trim whitespace
-    p = p.strip()
-
-    # handle pasted “smart quotes” too
-    p = p.strip('"\'' + "“”‘’")
-
-    # also remove any remaining quote characters anywhere (rare but safe)
-    p = p.replace('"', '').replace("'", "").replace("“", "").replace("”", "").replace("‘", "").replace("’", "")
-
-    return os.path.abspath(os.path.expanduser(p))
-
 def handle_coding_project():
     """Handle scanning a coding project"""
     print_header("Scan Coding Project")
@@ -384,16 +378,8 @@ def handle_coding_project():
     if not path:
         return
     
-    print("RAW:", repr(path))
-
-    # your sanitize logic...
-    path = path.strip()
-    if (path.startswith('"') and path.endswith('"')) or (path.startswith("'") and path.endswith("'")):
-        path = path[1:-1]
-    path = os.path.abspath(os.path.expanduser(path))
-
-    print("SANITIZED:", repr(path))
-    
+    # Normalize path to absolute for consistent comparison
+    path = os.path.abspath(path)
     
     # Check if collaborative
     print("\n🔍 Analyzing collaboration type...")
@@ -1023,11 +1009,11 @@ def generate_summary():
         
         # Human-friendly time spent per type
         if activity_type == "code":
-            print(f"   Lines of Code:       {time_spent:,} lines of code")
+            print(f"   Time Spent:          {time_spent:,} lines of code")
         elif activity_type == "text":
-            print(f"   Word Count:          {time_spent:,} words written")
+            print(f"   Time Spent:          {time_spent:,} words written")
         elif activity_type == "media":
-            print(f"   Media size:          {time_spent / (1024*1024):.2f} MB of media")
+            print(f"   Time Spent:          {time_spent / (1024*1024):.2f} MB of media")
         else:
             print(f"   Time Spent:          {time_spent:,} units (unspecified)")
 
@@ -1085,7 +1071,7 @@ def ai_project_analysis_menu():
         print("6. Batch Analyze All Projects")
         print("7. View AI Statistics")
         print("8. Run AI Project Ranking Menu")
-        print("9. Return to Main Menu")
+        print("9. Back to Main Menu")
 
         
         choice = input("\nEnter your choice (1-9): ").strip()
@@ -1965,7 +1951,7 @@ def deletion_management_menu():
         print("4. Bulk Delete Projects")
         print("5. View Shared Files Report")
         print("6. View Cache Statistics")
-        print("7. Return to Main Menu")
+        print("7. Back to Main Menu")
         
         choice = input("\nEnter your choice (1-7): ").strip()
         
@@ -2162,7 +2148,7 @@ def handle_resume_items():
     print("Has the project you want resume items for already been analyzed?\n")
     print("1. Yes - Take me to the Resume menu")
     print("2. No  - I need to analyze it first")
-    print("3. Cancel - Return to Main Menu")
+    print("3. Cancel - Return to main menu")
     
     choice = input("\nSelect option (1-3): ").strip()
     
@@ -2277,7 +2263,7 @@ def project_upload_menu():
     print("  6. Add individual file(s)")       
     print("  7. Add ZIP archive")
     print("  8. Upload thumbnail for a stored project")
-    print("\n  9. Return to Main Menu")
+    print("\n  9. Back to main menu")
     print("="*70)
 
     choice = input("\nEnter your choice (1-9): ").strip()
@@ -2339,9 +2325,9 @@ def view_and_analysis_menu():
         print("5. View portfolio")
         if EVIDENCE_FEATURES_AVAILABLE:
             print("6. Manage Project Evidence")
-            print("7. Return to Main Menu")
+            print("7. Exit")
         else:
-            print("6. Return to Main Menu")
+            print("6. Exit")
 
         max_choice = 7 if EVIDENCE_FEATURES_AVAILABLE else 6
         choice = input(f"Enter your choice (1-{max_choice}): ").strip()
@@ -2375,61 +2361,7 @@ def sort_and_score_projects_menu():
         else:
             print("Invalid choice. Try again.")
 
-def settings_menu():
-    clear_screen()
-    while True:
-        print("1. View current configuration")
-        print("2. Privacy & scanning settings")
-        print("3. Analysis feature preferences")
-        print("4. Consent settings (file + AI)")
-        print("5. Quick setup wizard (rerun)")
-        print("6. Reset configuration to defaults")
-        print("7. Return to Main Menu")
 
-        choice = input("\nChoose an option (1-7): ").strip()
-
-        if choice == "1":
-            show_current_configuration()
-
-        elif choice == "2":
-            configure_privacy_settings()
-
-        elif choice == "3":
-            configure_analysis_preferences()
-
-        elif choice == "4":
-            print("\n" + "-" * 70)
-            print("CONSENT SETTINGS")
-            print("-" * 70)
-            print("1) Review / confirm file access consent")
-            print("2) Review / confirm AI consent")
-            print("3) Back")
-            sub = input("\nChoose an option (1-3): ").strip()
-
-            if sub == "1":
-                request_and_store_basic_consent()
-            elif sub == "2":
-                request_and_store_ai_consent()
-            # else back
-
-        elif choice == "5":
-            quick_setup_wizard()
-
-        elif choice == "6":
-            confirm = input(
-                "\n⚠️  This will erase your saved settings and consents. Type 'reset' to confirm: "
-            ).strip().lower()
-            if confirm == "reset":
-                config_manager.reset_to_defaults()
-                print("✓ Configuration reset to defaults.")
-            else:
-                print("Cancelled.")
-
-        elif choice == "7":
-            return
-
-        else:
-            print("Invalid choice. Please enter a number 1-7.")
 
 def ai_menu():
     clear_screen()
@@ -2437,7 +2369,7 @@ def ai_menu():
         print("\nAI Menu:")
         print("1. AI project analysis")
         print("2. Delete AI insights for a project")
-        print("3. Return to main menu")
+        print("3. Exit")
 
         choice = input("Enter your choice (1-3): ").strip()
 
@@ -2489,8 +2421,6 @@ def main():
         elif choice == '4':
             ai_menu()
         elif choice == '5':
-            settings_menu()
-        elif choice == '6':
             print("Goodbye!")
             sys.exit(0)
         else:

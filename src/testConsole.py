@@ -58,7 +58,7 @@ def test_ai_generation():
         print("2. View usage statistics")
         print("3. Clear cache")
         print("4. Run all examples")
-        print("5. Return to Main Menu")
+        print("5. Back to main menu")
         
         choice = input("\nSelect option (1-5): ").strip()
         
@@ -422,7 +422,7 @@ def test_coding_project_scanner():
         print("3. View Project Details")
         print("4. Delete a Project")
         print("5. View Database Stats")
-        print("6. Return to Main Menu")
+        print("6. Back to Main Menu")
         
         choice = input("\nSelect an option (1-6): ").strip()
         

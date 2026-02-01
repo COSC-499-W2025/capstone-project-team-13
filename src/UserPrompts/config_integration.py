@@ -14,20 +14,6 @@ from src.Databases.user_config import ConfigManager, UserConfig
 from datetime import datetime, timezone
 
 config_manager = ConfigManager(db_manager)
-
-def format_local_time(ts: datetime | None) -> str:
-    if not ts:
-        return "Unknown"
-
-    # If it's naive, assume it's UTC (common when stored in SQLite)
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
-
-    # Convert to the computer's local timezone
-    local_ts = ts.astimezone()
-    return local_ts.strftime('%Y-%m-%d %H:%M:%S')
-
-
 def request_and_store_basic_consent() -> bool:
     """
     Request basic file access consent and store result in database
@@ -40,12 +26,11 @@ def request_and_store_basic_consent() -> bool:
     # Check if consent already granted
     if config.basic_consent_granted:
         print("✓ You have previously granted file access consent.")
-        print(f"  Granted on: {format_local_time(config.basic_consent_timestamp)}")
-
+        print(f"  Granted on: {config.basic_consent_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Ask if they want to change it
-        response = input("\nDo you confirm this consent is still valid? \nTo decline, type 'no' or 'n' as any other input will be treated as consent: ").strip().lower()
-        if response == 'no' or response == 'n':
+        response = input("\nDo you confirm this consent is still valid? (yes/no): ").strip().lower()
+        if response == 'no':
             config_manager.revoke_basic_consent()
             print("✗ File access consent revoked. Exiting.")
             return False
@@ -96,12 +81,12 @@ def request_and_store_ai_consent() -> bool:
     # Check if consent already granted
     if config.ai_consent_granted:
         print("✓ You have previously granted AI service consent.")
-        print(f"  Granted on: {format_local_time(config.ai_consent_timestamp)}")
+        print(f"  Granted on: {config.ai_consent_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"  Current provider: {config.ai_provider}")
         print(f"  Current model: {config.ai_model}")
         
         # Ask if they want to change it
-        response = input("\nDo you confirm this consent is still valid? \nTo decline, type 'no' or 'n' as any other input will be treated as consent: ").strip().lower()
+        response = input("\nDo you confirm this consent is still valid? (yes/no): ").strip().lower()
         if response == 'no':
             config_manager.revoke_ai_consent()
             print("✗ AI service consent revoked.")
@@ -301,11 +286,11 @@ def show_current_configuration():
     print("\n📋 CONSENT STATUS:")
     print(f"  File Access: {'✓ Granted' if config.basic_consent_granted else '✗ Not granted'}")
     if config.basic_consent_granted:
-        print(f"    Granted: {format_local_time(config.basic_consent_timestamp)}")
+        print(f"    Granted: {config.basic_consent_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
     
     print(f"  AI Services: {'✓ Granted' if config.ai_consent_granted else '✗ Not granted'}")
     if config.ai_consent_granted:
-        print(f"    Granted: {format_local_time(config.ai_consent_timestamp)}")
+        print(f"    Granted: {config.ai_consent_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"    Provider: {config.ai_provider}")
         print(f"    Model: {config.ai_model}")
     

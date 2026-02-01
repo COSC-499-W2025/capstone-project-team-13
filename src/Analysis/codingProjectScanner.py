@@ -118,19 +118,22 @@ class CodingProjectScanner:
         self._analyze_skills()
 
         if is_incremental:
+            # Incremental update
             project_id = existing.id
-
+            
             # Get existing file hashes
             existing_files = db_manager.get_files_for_project(project_id)
             existing_hashes = {f.file_hash for f in existing_files if f.file_hash}
-
+            
             new_files_count = 0
             for file_path in self.code_files:
                 file_hash = compute_file_hash(str(file_path))
-
+                
+                # Skip if file already exists
                 if file_hash in existing_hashes:
                     continue
-
+                
+                # Add new file
                 file_data = {
                     'project_id': project_id,
                     'file_path': str(file_path),
@@ -143,30 +146,17 @@ class CodingProjectScanner:
                 }
                 db_manager.add_file_to_project(file_data)
                 new_files_count += 1
-
-            # 🔹 Recalculate metrics from ALL code files
-            print("\nStep X: Recalculating project metrics (incremental)...")
-            metrics = self._calculate_metrics()
-
-            # 🔹 Update EVERYTHING that depends on files
-            db_manager.update_project(project_id, {
-                'lines_of_code': metrics['lines_of_code'],
-                'file_count': metrics['file_count'],
-                'total_size_bytes': metrics['total_size_bytes'],
-                'date_created': metrics['date_created'],
-                'date_modified': metrics['date_modified'],
+            
+            # Update project metadata - FIX: Convert sets to lists
+            updates = {
+                'file_count': len(db_manager.get_files_for_project(project_id)),
                 'languages': list(set(existing.languages + list(self.languages))),
                 'frameworks': list(set(existing.frameworks + list(self.frameworks))),
                 'updated_at': datetime.now(timezone.utc)
-            })
-
-            print(f"  ✓ Added {new_files_count} new files")
-            print(f"  ✓ Lines of code: {metrics['lines_of_code']:,}")
-            print(f"  ✓ Date range: {metrics['date_created'].date()} → {metrics['date_modified'].date()}")
-            print(f"  ✓ Total files: {metrics['file_count']}")
-
-            print("\n✓ Incremental update complete!")
-
+            }
+            db_manager.update_project(project_id, updates)
+            
+            print(f"\n✓ Incremental update complete!")
             print(f"  Added {new_files_count} new files")
             print(f"  Total files: {updates['file_count']}")
             
@@ -205,19 +195,6 @@ class CodingProjectScanner:
                 db_manager.add_file_to_project(file_data)
             
             print(f"  ✓ Stored {len(self.code_files)} files")
-            # Step X: Calculate + store metrics
-            print("\nStep X: Calculating project metrics...")
-            metrics = self._calculate_metrics()
-
-            db_manager.update_project(project_id, {
-                'lines_of_code': metrics['lines_of_code'],
-                'total_size_bytes': metrics['total_size_bytes'],
-                'date_created': metrics['date_created'],
-                'date_modified': metrics['date_modified'],
-                'file_count': metrics['file_count'],
-            })
-            print(f"  ✓ Lines of code: {metrics['lines_of_code']:,}")
-            print(f"  ✓ Date range: {metrics['date_created'].date()} → {metrics['date_modified'].date()}")
         
         # Step 4: Extract Git contributors (if Git repository)
         if is_git_repository(str(self.project_path)):
@@ -428,30 +405,26 @@ class CodingProjectScanner:
         """Calculate basic project metrics"""
         total_lines = 0
         total_size = 0
-        created_dates = []
-        modified_dates = []
-
+        file_dates = []
+        
         for file_path in self.code_files:
             try:
-                # Count lines robustly
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    total_lines += sum(1 for _ in f)
-
+                # Count lines
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    total_lines += len(f.readlines())
+                
+                # Get size and dates
                 stat = file_path.stat()
                 total_size += stat.st_size
-
-                # NOTE:
-                # - On Windows: st_ctime is creation time
-                # - On mac/linux: st_ctime is metadata change time (not true creation)
-                created_dates.append(datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc))
-                modified_dates.append(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
-
+                file_dates.append(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
+                
             except Exception:
                 continue
-
-        date_created = min(created_dates) if created_dates else datetime.now(timezone.utc)
-        date_modified = max(modified_dates) if modified_dates else datetime.now(timezone.utc)
-
+        
+        # Determine date range
+        date_created = min(file_dates) if file_dates else datetime.now(timezone.utc)
+        date_modified = max(file_dates) if file_dates else datetime.now(timezone.utc)
+        
         return {
             'lines_of_code': total_lines,
             'file_count': len(self.code_files),
@@ -460,7 +433,6 @@ class CodingProjectScanner:
             'date_created': date_created,
             'date_modified': date_modified
         }
-
     
     def _store_in_database(self, metrics: Dict[str, Any]) -> int:
         """Store project data in database"""

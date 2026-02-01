@@ -318,7 +318,7 @@ def evidence_main_menu():
         print("4. Add Feedback/Testimonial")
         print("5. Add Achievement/Award")
         print("6. Clear Evidence for Project")
-        print("7. Return to Main Menu")
+        print("7. Back to Main Menu")
         print()
         
         choice = input("Enter your choice (1-7): ").strip()
