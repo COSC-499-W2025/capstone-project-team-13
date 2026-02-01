@@ -14,3 +14,4 @@ tests/PortfolioTest/
 
 # Project-specific files
 data/projects.db
+.github/PULL_REQUEST_TEMPLATE.md

@@ -4,23 +4,19 @@ Thank you for contributing! Please fill out this template to help us review your
 
 ## 📝 Description
 
-Similarly to keywordExtractorText, this is to create a very quick evaluation of code by analyzing comments and extracting important keywords of it. The functionality is roughly the same, and testing manually can be done through testConsole.py. To properly run, install code-to-text with:
 
-`pip install code-to-text`
 
-Also created unit test, but it is admittedly not the most extensive. Checks for no repeats, empty text, and any text.
-
-**Closes:** # 66
+**Closes:** # 
 
 ---
 
 ## 🔧 Type of Change
 
 - [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
-- [x] ✨ New feature (non-breaking change that adds functionality)
+- [ ] ✨ New feature (non-breaking change that adds functionality)
 - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] 📚 Documentation added/updated
-- [x] ✅ Test added/updated
+- [ ] ✅ Test added/updated
 - [ ] ♻️ Refactoring
 - [ ] ⚡ Performance improvement
 
@@ -28,19 +24,19 @@ Also created unit test, but it is admittedly not the most extensive. Checks for 
 
 ## 🧪 Testing
 
-Just manual testing as again, this is a file intended to be replaced. Tested all input options and seem to be working fine.
 
-- [✓] test_keywordExtractorCode.py
+
+- [ ] test_file.py
 
 ---
 
 ## ✓ Checklist
 
-- [x] 🤖 GenAI was used in generating the code and I have performed a self-review of my own code
-- [x] 💬 I have commented my code where needed
+- [ ] 🤖 GenAI was used in generating the code and I have performed a self-review of my own code
+- [ ] 💬 I have commented my code where needed
 - [ ] 📖 I have made corresponding changes to the documentation
-- [x] ⚠️ My changes generate no new warnings
-- [x] ✅ I have added tests that prove my fix is effective or that my feature works and tests are passing locally
+- [ ] ⚠️ My changes generate no new warnings
+- [ ] ✅ I have added tests that prove my fix is effective or that my feature works and tests are passing locally
 - [ ] 🔗 Any dependent changes have been merged and published in downstream modules
 - [ ] 📱 Any UI changes have been checked to work on desktop, tablet, and/or mobile
 
