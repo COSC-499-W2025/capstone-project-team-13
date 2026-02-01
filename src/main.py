@@ -730,6 +730,12 @@ def handle_zip_archive():
             
             project = db_manager.create_project(project_data)
             main_project_id = project.id
+            
+            # Calculate and store importance score
+            from src.Analysis.importanceScores import calculate_importance_score
+            importance_score = calculate_importance_score(project)
+            db_manager.update_project(main_project_id, {'importance_score': importance_score})
+            
             print(f"  ✓ Project created (ID: {main_project_id}, Type: {project_type})")
             
             # Store all files
@@ -973,7 +979,7 @@ def generate_summary():
     print("="*70)
     print(f"\n{result['summary']}\n")
     
-    print(f"Average Success Score:  {avg_success * 100:5.1f}%")
+    print(f"Average Success Score:  {avg_success:5.1f}%")
     print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
     
     print(f"{'='*70}")
@@ -1029,7 +1035,7 @@ def generate_summary():
 
 
         if success_score is not None:
-            print(f"   Success Score:       {success_score * 100:5.1f}%")
+            print(f"   Success Score:       {success_score:5.1f}%")
         if contrib_score is not None:
             print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
 
