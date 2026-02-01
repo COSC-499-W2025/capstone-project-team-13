@@ -106,10 +106,10 @@ class UserConfig(Base):
     data_retention_days = Column(Integer, default=365)
     
     # === TIMESTAMPS ===
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), 
-                       onupdate=lambda: datetime.now(timezone.utc))
-    last_accessed = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now())
+    updated_at = Column(DateTime, default=lambda: datetime.now(), 
+                       onupdate=lambda: datetime.now())
+    last_accessed = Column(DateTime, default=lambda: datetime.now())
     
     # === JSON PROPERTY HANDLERS ===
     
@@ -288,7 +288,7 @@ class ConfigManager:
                 session.refresh(config)
             else:
                 # Update last accessed timestamp
-                config.last_accessed = datetime.now(timezone.utc)
+                config.last_accessed = datetime.now()
                 session.commit()
                 session.refresh(config)
             
@@ -339,7 +339,7 @@ class ConfigManager:
                 if hasattr(config, key):
                     setattr(config, key, value)
             
-            config.updated_at = datetime.now(timezone.utc)
+            config.updated_at = datetime.now()
             session.commit()
             session.refresh(config)
             
@@ -359,7 +359,7 @@ class ConfigManager:
         """
         return self.update_config({
             'basic_consent_granted': True,
-            'basic_consent_timestamp': datetime.now(timezone.utc)
+            'basic_consent_timestamp': datetime.now()
         })
     
     def revoke_basic_consent(self) -> UserConfig:
@@ -382,7 +382,7 @@ class ConfigManager:
         """
         return self.update_config({
             'ai_consent_granted': True,
-            'ai_consent_timestamp': datetime.now(timezone.utc),
+            'ai_consent_timestamp': datetime.now(),
             'ai_enabled': True
         })
     

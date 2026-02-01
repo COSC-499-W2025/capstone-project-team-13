@@ -274,24 +274,24 @@ def customize_bullets_menu():
         print("\n" + "="*60)
         print("CUSTOMIZE OPTIONS")
         print("="*60)
-        print("a) Edit a specific bullet")
-        print("b) Regenerate all bullets")
-        print("c) Reorder bullets")
-        print("d) View ATS scores")
-        print("e) Back to main menu")
+        print("1. Edit a specific bullet")
+        print("2. Regenerate all bullets")
+        print("3. Reorder bullets")
+        print("4. View ATS scores")
+        print("5. Return to Main Menu")
         print("="*60)
         
         choice = input("\nSelect option: ").strip().lower()
         
-        if choice == 'a':
+        if choice == '1':
             edit_bullet(project)
-        elif choice == 'b':
+        elif choice == '2':
             regenerate_all_bullets(project)
-        elif choice == 'c':
+        elif choice == '3':
             reorder_bullets(project)
-        elif choice == 'd':
+        elif choice == '4':
             view_ats_scores(project)
-        elif choice == 'e':
+        elif choice == '5':
             break
         else:
             print("Invalid option. Please try again.")
@@ -596,7 +596,7 @@ def run_resume_menu():
         print("3. Customize Bullets")
         print("4. Generate Full Resume")
         print("5. Delete Stored Bullets")
-        print("6. Back to Main Menu")
+        print("6. Return to Main Menu")
         print("="*60)
         
         choice = input("Select option: ").strip()
