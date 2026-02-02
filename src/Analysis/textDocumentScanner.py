@@ -165,7 +165,7 @@ class TextDocumentScanner:
                 'name': self.document_name,
                 'file_path': str(self.document_path),
                 'file_count': len(self.text_files),
-                'project_type': 'document',
+                'project_type': 'text',
                 'date_scanned': datetime.now(timezone.utc)
             }
             

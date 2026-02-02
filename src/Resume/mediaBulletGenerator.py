@@ -78,10 +78,15 @@ class MediaBulletGenerator:
         Returns:
             Selected action verb
         """
-        # Get available verbs for this category
+        # Guard against invalid category — fall back to 'creative' if not found
+        if category not in self.ACTION_VERBS:
+            category = 'creative'
+        
+        # Filter against used_verbs globally (not just within this category)
+        # to prevent the same verb appearing across different bullet types
         available_verbs = [v for v in self.ACTION_VERBS[category] if v not in used_verbs]
         
-        # If all verbs used, reset and use category verbs
+        # If all verbs in this category are used, reset to category verbs
         if not available_verbs:
             available_verbs = self.ACTION_VERBS[category]
         
@@ -447,7 +452,7 @@ class MediaBulletGenerator:
         Generate resume bullet points for a visual media project
         
         NEW APPROACH:
-        1. Generate ALL possible bullet types (9 types)
+        1. Generate ALL possible bullet types (10 types)
         2. Score each bullet
         3. Return top N bullets based on scores
         
@@ -458,6 +463,9 @@ class MediaBulletGenerator:
         Returns:
             List of top N formatted bullet points
         """
+        # Clamp num_bullets to valid range of 2-5
+        num_bullets = max(2, min(5, num_bullets))
+        
         used_verbs = []
         all_bullets_with_scores = []
         
@@ -492,10 +500,21 @@ class MediaBulletGenerator:
         # Return top N bullets
         top_bullets = [bullet for bullet, score, bullet_type in all_bullets_with_scores[:num_bullets]]
         
-        # If we still don't have enough bullets (rare), add a generic one
-        if len(top_bullets) < num_bullets and project.languages:
-            generic = f"Leveraged {project.languages[0]} to produce professional-grade visual content"
-            top_bullets.append(generic)
+        # If we still don't have enough bullets, fill with generic fallbacks
+        generic_templates = [
+            lambda p: f"Leveraged {p.languages[0]} to produce professional-grade visual content" if p.languages else None,
+            lambda p: f"Created {p.file_count}+ visual assets maintaining consistent quality and style" if p.file_count else None,
+            lambda p: f"Utilized {', '.join(p.skills[:2])} to deliver compelling visual solutions" if p.skills and len(p.skills) >= 2 else None,
+            lambda p: f"Produced high-quality digital media assets adhering to industry standards",
+            lambda p: f"Designed and delivered visual content demonstrating creative problem-solving skills",
+        ]
+        
+        for template in generic_templates:
+            if len(top_bullets) >= num_bullets:
+                break
+            generic = template(project)
+            if generic and generic not in top_bullets:
+                top_bullets.append(generic)
         
         return top_bullets
     

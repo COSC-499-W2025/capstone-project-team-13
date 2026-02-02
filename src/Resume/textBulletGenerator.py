@@ -82,10 +82,15 @@ class TextBulletGenerator:
         Returns:
             Selected action verb
         """
-        # Get available verbs for this category
+        # Guard against invalid category — fall back to 'writing' if not found
+        if category not in self.ACTION_VERBS:
+            category = 'writing'
+        
+        # Filter against used_verbs globally (not just within this category)
+        # to prevent the same verb appearing across different bullet types
         available_verbs = [v for v in self.ACTION_VERBS[category] if v not in used_verbs]
         
-        # If all verbs used, reset and use category verbs
+        # If all verbs in this category are used, reset to category verbs
         if not available_verbs:
             available_verbs = self.ACTION_VERBS[category]
         
@@ -318,7 +323,7 @@ class TextBulletGenerator:
                                    for skill in project.skills 
                                    for keyword in audience_keywords)
         
-        if not has_audience_focus and not project.tags:
+        if not has_audience_focus:
             return None
         
         action_verb = self._select_action_verb(project, used_verbs, 'writing')
@@ -474,7 +479,7 @@ class TextBulletGenerator:
         Generate resume bullet points for a text/document project
         
         NEW APPROACH:
-        1. Generate ALL possible bullet types (9 types)
+        1. Generate ALL possible bullet types (10 types)
         2. Score each bullet
         3. Return top N bullets based on scores
         
@@ -485,6 +490,9 @@ class TextBulletGenerator:
         Returns:
             List of top N formatted bullet points
         """
+        # Clamp num_bullets to valid range of 2-5
+        num_bullets = max(2, min(5, num_bullets))
+        
         used_verbs = []
         all_bullets_with_scores = []
         
@@ -519,14 +527,21 @@ class TextBulletGenerator:
         # Return top N bullets
         top_bullets = [bullet for bullet, score, bullet_type in all_bullets_with_scores[:num_bullets]]
         
-        # If we still don't have enough bullets (rare), add a generic one
-        if len(top_bullets) < num_bullets:
-            if project.tags:
-                doc_type = project.tags[0]
-                generic = f"Produced clear and engaging {doc_type} content for diverse audiences"
-            else:
-                generic = "Developed comprehensive written materials with attention to clarity and accuracy"
-            top_bullets.append(generic)
+        # If we still don't have enough bullets, fill with generic fallbacks
+        generic_templates = [
+            lambda p: f"Produced clear and engaging {p.tags[0]} content for diverse audiences" if p.tags else None,
+            lambda p: f"Authored {p.word_count:,}+ words of written content across {p.file_count} documents" if p.word_count and p.file_count else None,
+            lambda p: f"Applied {' and '.join(p.skills[:2]).lower()} to deliver well-structured written materials" if p.skills and len(p.skills) >= 2 else None,
+            lambda p: f"Developed comprehensive written materials with attention to clarity and accuracy",
+            lambda p: f"Crafted professional content demonstrating strong communication and organizational skills",
+        ]
+        
+        for template in generic_templates:
+            if len(top_bullets) >= num_bullets:
+                break
+            generic = template(project)
+            if generic and generic not in top_bullets:
+                top_bullets.append(generic)
         
         return top_bullets
     

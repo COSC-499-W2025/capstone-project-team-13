@@ -263,6 +263,14 @@ def customize_bullets_menu():
     
     # Customization loop
     while True:
+        # Re-fetch bullets from DB each iteration to reflect any changes made by sub-functions
+        bullets_data = db_manager.get_resume_bullets(project.id)
+        
+        if not bullets_data:
+            print(f"\nNo bullets stored for '{project.name}' anymore.")
+            input("Press Enter to continue...")
+            return
+        
         bullets = bullets_data['bullets']
         
         print("\n" + "="*60)
@@ -300,7 +308,11 @@ def customize_bullets_menu():
 
 def edit_bullet(project: Project):
     """Edit a specific bullet"""
-    bullets_data = project.bullets
+    bullets_data = db_manager.get_resume_bullets(project.id)
+    if not bullets_data:
+        print("\nNo bullets found.")
+        input("Press Enter to continue...")
+        return
     bullets = bullets_data['bullets']
     
     print("\n" + "="*60)
@@ -380,7 +392,11 @@ def edit_bullet(project: Project):
 
 def regenerate_all_bullets(project: Project):
     """Regenerate all bullets for a project"""
-    bullets_data = project.bullets
+    bullets_data = db_manager.get_resume_bullets(project.id)
+    if not bullets_data:
+        print("\nNo bullets found.")
+        input("Press Enter to continue...")
+        return
     old_bullets = bullets_data['bullets']
     num_bullets = len(old_bullets)
     
@@ -443,7 +459,11 @@ def regenerate_all_bullets(project: Project):
 
 def reorder_bullets(project: Project):
     """Reorder bullets by swapping positions"""
-    bullets_data = project.bullets
+    bullets_data = db_manager.get_resume_bullets(project.id)
+    if not bullets_data:
+        print("\nNo bullets found.")
+        input("Press Enter to continue...")
+        return
     bullets = bullets_data['bullets']
     
     print("\n" + "="*60)
@@ -511,7 +531,11 @@ def reorder_bullets(project: Project):
 
 def view_ats_scores(project: Project):
     """View detailed ATS scores for current bullets"""
-    bullets_data = project.bullets
+    bullets_data = db_manager.get_resume_bullets(project.id)
+    if not bullets_data:
+        print("\nNo bullets found.")
+        input("Press Enter to continue...")
+        return
     bullets = bullets_data['bullets']
     
     print("\n" + "="*60)
