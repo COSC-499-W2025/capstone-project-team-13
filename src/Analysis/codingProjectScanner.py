@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
+from src.Analysis.importanceScores import calculate_importance_score
 from src.Analysis.skillsExtractCodingImproved import analyze_coding_skills_refined, SUBSKILL_KEYWORDS, CORE_FOLDERS, PERIPHERAL_FOLDERS, ADVANCED_KEYWORDS, SKILL_KEYWORDS
 from src.Helpers.fileFormatCheck import check_file_format, InvalidFileFormatError
 from src.Helpers.fileDataCheck import sniff_supertype
@@ -233,6 +234,20 @@ class CodingProjectScanner:
                 print(f"  ⚠️  Could not extract contributors: {e}")
         else:
             print("\nStep 4: Skipping contributor extraction (not a Git repository)")
+        
+        # Step 5: Calculate and store importance score
+        print("\nStep 5: Calculating importance score...")
+        try:
+            # Fetch project with all relationships loaded for accurate scoring
+            project = db_manager.get_project(project_id)
+            if project:
+                importance_score = calculate_importance_score(project)
+                db_manager.update_project(project_id, {'importance_score': importance_score})
+                print(f"  ✓ Importance score: {importance_score}")
+            else:
+                print("  ⚠️  Could not fetch project for scoring")
+        except Exception as e:
+            print(f"  ⚠️  Could not calculate importance score: {e}")
         
         return project_id
         
