@@ -1030,6 +1030,7 @@ def generate_summary():
     print(f"\n{result['summary']}\n")
     
     print(f"Average Success Score:  {avg_success * 100:5.1f}%")
+    print(f"  (Based on project size, completeness, testing, and documentation quality)")
     print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
     
     print(f"{'='*70}")
@@ -1092,6 +1093,7 @@ def generate_summary():
 
         if success_score is not None:
             print(f"   Success Score:       {success_score * 100:5.1f}%")
+            print(f"      (Reflects size, languages/frameworks, testing coverage, and documentation)")
         if contrib_score is not None:
             print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
 
