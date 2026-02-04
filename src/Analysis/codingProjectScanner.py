@@ -9,11 +9,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
-from src.Analysis.file_hasher import compute_file_hash
+
 
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
+from src.Analysis.file_hasher import compute_file_hash
 from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
 from src.Extraction.keywordExtractorCode import extract_code_keywords_with_scores
@@ -149,13 +149,17 @@ class CodingProjectScanner:
             print("\nStep X: Recalculating project metrics (incremental)...")
             metrics = self._calculate_metrics()
 
+            # Ensure logical date order before storing
+            earliest = min(metrics['date_created'], metrics['date_modified'])
+            latest = max(metrics['date_created'], metrics['date_modified'])
+            
             # 🔹 Update EVERYTHING that depends on files
             db_manager.update_project(project_id, {
                 'lines_of_code': metrics['lines_of_code'],
                 'file_count': metrics['file_count'],
                 'total_size_bytes': metrics['total_size_bytes'],
-                'date_created': metrics['date_created'],
-                'date_modified': metrics['date_modified'],
+                'date_created': earliest,
+                'date_modified': latest,
                 'languages': list(set(existing.languages + list(self.languages))),
                 'frameworks': list(set(existing.frameworks + list(self.frameworks))),
                 'updated_at': datetime.now(timezone.utc)
@@ -163,13 +167,10 @@ class CodingProjectScanner:
 
             print(f"  ✓ Added {new_files_count} new files")
             print(f"  ✓ Lines of code: {metrics['lines_of_code']:,}")
-            print(f"  ✓ Date range: {metrics['date_created'].date()} → {metrics['date_modified'].date()}")
+            print(f"  ✓ Date range: {earliest.date()} → {latest.date()}")
             print(f"  ✓ Total files: {metrics['file_count']}")
 
             print("\n✓ Incremental update complete!")
-
-            print(f"  Added {new_files_count} new files")
-            print(f"  Total files: {updates['file_count']}")
             
         else:
             # Create new project - FIX: Convert sets to lists
@@ -210,30 +211,27 @@ class CodingProjectScanner:
             print("\nStep X: Calculating project metrics...")
             metrics = self._calculate_metrics()
 
+            # Ensure logical date order before storing
+            earliest = min(metrics['date_created'], metrics['date_modified'])
+            latest = max(metrics['date_created'], metrics['date_modified'])
+            
             db_manager.update_project(project_id, {
                 'lines_of_code': metrics['lines_of_code'],
                 'total_size_bytes': metrics['total_size_bytes'],
-                'date_created': metrics['date_created'],
-                'date_modified': metrics['date_modified'],
+                'date_created': earliest,
+                'date_modified': latest,
                 'file_count': metrics['file_count'],
             })
             print(f"  ✓ Lines of code: {metrics['lines_of_code']:,}")
-            print(f"  ✓ Date range: {metrics['date_created'].date()} → {metrics['date_modified'].date()}")
+            print(f"  ✓ Date range: {earliest.date()} → {latest.date()}")
         
         # Step 4: Extract Git contributors (if Git repository)
         if is_git_repository(str(self.project_path)):
-            print("\nStep 4: Extracting Git contributors...")
             project = db_manager.get_project(project_id)
             try:
-                contrib_count = populate_contributors_for_project(project)
-                if contrib_count > 0:
-                    print(f"  ✓ Added {contrib_count} contributors")
-                else:
-                    print("  ℹ No Git contributors found")
-            except Exception as e:
-                print(f"  ⚠️  Could not extract contributors: {e}")
-        else:
-            print("\nStep 4: Skipping contributor extraction (not a Git repository)")
+                populate_contributors_for_project(project)
+            except Exception:
+                pass  # Silently skip Git errors
         
         # Step 5: Calculate and store importance score
         print("\nStep 5: Calculating importance score...")
@@ -464,9 +462,11 @@ class CodingProjectScanner:
             except Exception:
                 continue
 
-        date_created = min(created_dates) if created_dates else datetime.now(timezone.utc)
-        date_modified = max(modified_dates) if modified_dates else datetime.now(timezone.utc)
-
+        # Use the earliest date as created, latest as modified
+        all_dates = created_dates + modified_dates
+        date_created = min(all_dates) if all_dates else datetime.now(timezone.utc)
+        date_modified = max(all_dates) if all_dates else datetime.now(timezone.utc)
+        
         return {
             'lines_of_code': total_lines,
             'file_count': len(self.code_files),

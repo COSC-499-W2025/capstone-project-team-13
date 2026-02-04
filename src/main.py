@@ -11,6 +11,15 @@ import re
 import math
 from datetime import datetime, timezone
 
+# Filter out Git error messages globally
+_original_print = print
+def print(*args, **kwargs):
+    message = ' '.join(str(arg) for arg in args)
+    if 'Git' not in message and 'git' not in message:
+        _original_print(*args, **kwargs)
+import builtins
+builtins.print = print
+
 
 
 # Add parent directory to path so we can import from src
@@ -26,13 +35,12 @@ from src.UserPrompts.config_integration import (
     request_and_store_basic_consent,
     request_and_store_ai_consent,
     quick_setup_wizard,
-    request_and_store_basic_consent,
-    request_and_store_ai_consent,
+    config_manager,
 )
 from src.UserPrompts.externalPermissions import request_ai_consent
 from src.Extraction.zipHandler import (
     validate_zip_file, extract_zip, get_zip_contents, 
-    count_files_in_zip, ZipExtractionError
+    count_files_in_zip, ZipExtractionError, InvalidFileFormatError
 )
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
@@ -185,18 +193,28 @@ def check_if_collaborative(project_path):
     - git analysis (if .git exists)
     - file-level contributor extraction
     """
+    import sys
+    from io import StringIO
 
     try:
         from src.Analysis.projectcollabtype import identify_project_type
 
-        # Minimal metadata so the function can still run
-        project_data = {"files": []}
-
-        collab_type = identify_project_type(project_path, project_data)
+        # Suppress all output (stdout and stderr)
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = StringIO()
+        sys.stderr = StringIO()
+        
+        try:
+            project_data = {"files": []}
+            collab_type = identify_project_type(project_path, project_data)
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+        
         return collab_type
 
-    except Exception as e:
-        print("Collaboration detection error:", e)
+    except Exception:
         return "Unknown"
 
 def extract_evidence_for_project(project_id: int, project_path: str):
@@ -230,6 +248,17 @@ def extract_evidence_for_project(project_id: int, project_path: str):
             if 'readme_badges' in evidence and evidence['readme_badges']:
                 print(f"   - README Badges: {len(evidence['readme_badges'])} found")
             
+            # Calculate success score from evidence (0-100%)
+            success_score = 0.0
+            if 'test_coverage' in evidence and evidence['test_coverage']:
+                success_score += evidence['test_coverage'] * 0.6  # 60% weight
+            if 'readme_badges' in evidence and evidence['readme_badges']:
+                badge_score = min(len(evidence['readme_badges']) * 10, 40)  # up to 40%
+                success_score += badge_score
+            
+            # Store success_score in database
+            db_manager.update_project(project_id, {'success_score': success_score})
+            
             print("\n   💡 You can view full evidence details in: View & Analysis > Manage Project Evidence")
         else:
             print("ℹ️  No automatic evidence found.")
@@ -248,10 +277,11 @@ def get_user_choice():
     print("2. View and Analyze Previously Uploaded Projects")
     print("3. Resume Tools")
     print("4. AI Menu")
-    print("5. Settings")
-    print("6. Exit")
+    print("5. Delete")
+    print("6. Settings")
+    print("7. Exit")
 
-    choice = input("\nEnter your choice (1-6): ").strip()
+    choice = input("\nEnter your choice (1-7): ").strip()
     return choice
 
 def get_path_input(prompt="Enter the path: "):
@@ -304,9 +334,15 @@ def display_project_details(project):
         print(f"   File Count: {project.file_count}")
         print(f"   Total Size: {project.total_size_bytes / (1024*1024):.2f} MB")
         
-        if project.date_created:
+        if project.date_created and project.date_modified:
+            # Ensure dates are logical (created <= modified)
+            first = min(project.date_created, project.date_modified)
+            last = max(project.date_created, project.date_modified)
+            print(f"   First Created: {first.strftime('%Y-%m-%d')}")
+            print(f"   Last Modified: {last.strftime('%Y-%m-%d')}")
+        elif project.date_created:
             print(f"   First Created: {project.date_created.strftime('%Y-%m-%d')}")
-        if project.date_modified:
+        elif project.date_modified:
             print(f"   Last Modified: {project.date_modified.strftime('%Y-%m-%d')}")
         
         print(f"\n💻 Technologies:")
@@ -993,7 +1029,7 @@ def generate_summary():
     print("="*70)
     print(f"\n{result['summary']}\n")
     
-    print(f"Average Success Score:  {avg_success:5.1f}%")
+    print(f"Average Success Score:  {avg_success * 100:5.1f}%")
     print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
     
     print(f"{'='*70}")
@@ -1019,9 +1055,13 @@ def generate_summary():
             end_date = last_dt.date()
         else:
             end_date = last_dt
+        
+        # Ensure logical date order
+        if start_date and end_date and start_date > end_date:
+            start_date, end_date = end_date, start_date
 
-        # Compute duration if needed
-        if (duration_days is None or duration_days == 0) and start_date and end_date:
+        # ALWAYS recalculate duration from the (possibly swapped) dates
+        if start_date and end_date:
             duration_days = (end_date - start_date).days + 1
         
         print(f"{i}. {proj['project_name']}")
@@ -1048,8 +1088,10 @@ def generate_summary():
             print(f"   Total Duration:      {duration_days} day(s)")
 
 
+        # src/main.py (around line 485)
+
         if success_score is not None:
-            print(f"   Success Score:       {success_score:5.1f}%")
+            print(f"   Success Score:       {success_score * 100:5.1f}%")
         if contrib_score is not None:
             print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
 
@@ -2333,7 +2375,7 @@ def view_and_analysis_menu():
         '3': sort_and_score_projects_menu,
         '4': assign_and_view_roles,
         '5': view_portfolio,
-        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None
+        '6': deletion_management_menu,
     }
 
     while True:
@@ -2343,16 +2385,21 @@ def view_and_analysis_menu():
         print("3. Sort / score projects")
         print("4. Assign and View Roles")
         print("5. View portfolio")
+        print("6. Deletion Management")
         if EVIDENCE_FEATURES_AVAILABLE:
-            print("6. Manage Project Evidence")
-            print("7. Return to Main Menu")
+            print("7. Manage Project Evidence")
+            print("8. Return to Main Menu")
+            options['7'] = evidence_main_menu
+            exit_choice = '8'
+            max_choice = 8
         else:
-            print("6. Return to Main Menu")
+            print("7. Return to Main Menu")
+            exit_choice = '7'
+            max_choice = 7
 
-        max_choice = 7 if EVIDENCE_FEATURES_AVAILABLE else 6
         choice = input(f"Enter your choice (1-{max_choice}): ").strip()
 
-        if (EVIDENCE_FEATURES_AVAILABLE and choice == '7') or (not EVIDENCE_FEATURES_AVAILABLE and choice == '6'):
+        if choice == exit_choice:
             print("Exiting view & analysis menu.")
             return
 
@@ -2495,8 +2542,10 @@ def main():
         elif choice == '4':
             ai_menu()
         elif choice == '5':
-            settings_menu()
+            deletion_management_menu()
         elif choice == '6':
+            settings_menu()
+        elif choice == '7':
             print("Goodbye!")
             sys.exit(0)
         else:
