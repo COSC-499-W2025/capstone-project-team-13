@@ -218,8 +218,7 @@ def assign_importance_scores():
         for p in projects:
             score = calculate_importance_score(p)
 
-            # Save score back into DB as both importance_score and success_score
-            p.importance_score = score
+            # Save score back into DB as success_score
             p.success_score = score
             session.add(p)
 
