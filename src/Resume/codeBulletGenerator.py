@@ -88,10 +88,15 @@ class CodeBulletGenerator:
         Returns:
             Selected action verb
         """
-        # Get available verbs for this category
+        # Guard against invalid category — fall back to 'development' if not found
+        if category not in self.ACTION_VERBS:
+            category = 'development'
+        
+        # Filter against used_verbs globally (not just within this category)
+        # to prevent the same verb appearing across different bullet types
         available_verbs = [v for v in self.ACTION_VERBS[category] if v not in used_verbs]
         
-        # If all verbs used, reset and use category verbs
+        # If all verbs in this category are used, reset to category verbs
         if not available_verbs:
             available_verbs = self.ACTION_VERBS[category]
         
@@ -252,7 +257,8 @@ class CodeBulletGenerator:
         
         # Contributor metric
         contributors = self.db.get_contributors_for_project(project.id)
-        if len(contributors) > 1:
+        has_team_metric = len(contributors) > 1
+        if has_team_metric:
             metrics.append(f"{len(contributors)}-person team")
         
         if not metrics:
@@ -261,8 +267,8 @@ class CodeBulletGenerator:
         action_verb = self._select_action_verb(project, used_verbs, 'development')
         metric_text = ' and '.join(metrics[:2])  # Limit to 2 metrics
         
-        # Create impact statement
-        if len(contributors) > 1:
+        # Create impact statement — only use collaboration phrasing if the team metric was actually included
+        if has_team_metric:
             return f"{action_verb} and maintained {metric_text}, demonstrating strong collaboration and code management skills"
         else:
             return f"{action_verb} and maintained {metric_text}, ensuring code quality and project scalability"
@@ -505,7 +511,7 @@ class CodeBulletGenerator:
         Generate resume bullet points for a coding project
         
         NEW APPROACH:
-        1. Generate ALL possible bullet types (8 types)
+        1. Generate ALL possible bullet types (9 types)
         2. Score each bullet
         3. Return top N bullets based on scores
         
@@ -516,6 +522,9 @@ class CodeBulletGenerator:
         Returns:
             List of top N formatted bullet points
         """
+        # Clamp num_bullets to valid range of 2-5
+        num_bullets = max(2, min(5, num_bullets))
+        
         used_verbs = []
         all_bullets_with_scores = []
         
@@ -549,10 +558,21 @@ class CodeBulletGenerator:
         # Return top N bullets
         top_bullets = [bullet for bullet, score, bullet_type in all_bullets_with_scores[:num_bullets]]
         
-        # If we still don't have enough bullets (rare), add a generic one
-        if len(top_bullets) < num_bullets and project.frameworks:
-            generic = f"Utilized {project.frameworks[0]} framework to implement efficient and scalable solutions"
-            top_bullets.append(generic)
+        # If we still don't have enough bullets, fill with generic fallbacks
+        generic_templates = [
+            lambda p: f"Utilized {p.frameworks[0]} framework to implement efficient and scalable solutions" if p.frameworks else None,
+            lambda p: f"Developed solutions in {p.languages[0]} focusing on code quality and maintainability" if p.languages else None,
+            lambda p: f"Contributed {p.lines_of_code:,} lines of code across {p.file_count} project files" if p.lines_of_code and p.file_count else None,
+            lambda p: f"Applied technical skills to design and implement robust software solutions",
+            lambda p: f"Built and maintained software components ensuring reliability and performance",
+        ]
+        
+        for template in generic_templates:
+            if len(top_bullets) >= num_bullets:
+                break
+            generic = template(project)
+            if generic and generic not in top_bullets:
+                top_bullets.append(generic)
         
         return top_bullets
     

@@ -165,12 +165,17 @@ class TextDocumentScanner:
                 'name': self.document_name,
                 'file_path': str(self.document_path),
                 'file_count': len(self.text_files),
-                'project_type': 'document',
+                'project_type': 'text',
                 'date_scanned': datetime.now(timezone.utc)
             }
             
             project = db_manager.create_project(project_data)
             project_id = project.id
+            
+            # Calculate and store importance score
+            from src.Analysis.importanceScores import calculate_importance_score
+            importance_score = calculate_importance_score(project)
+            db_manager.update_project(project_id, {'importance_score': importance_score})
             
             print(f"\n✓ Project stored with ID: {project_id}")
             
@@ -417,6 +422,11 @@ class TextDocumentScanner:
         
         # Create project record
         project = db_manager.create_project(project_data)
+        
+        # Calculate and store importance score
+        from src.Analysis.importanceScores import calculate_importance_score
+        importance_score = calculate_importance_score(project)
+        db_manager.update_project(project.id, {'importance_score': importance_score})
         
         # Store keywords (top 30)
         if self.all_keywords:
