@@ -160,22 +160,29 @@ class TextDocumentScanner:
             print(f"  Total files: {updates['file_count']}")
             
         else:
+            # Pre-calculate metadata and metrics for accurate scoring
+            self._detect_document_types()
+            self._analyze_skills()
+            metrics = self._calculate_metrics()
+
             # Create new project
             project_data = {
                 'name': self.document_name,
                 'file_path': str(self.document_path),
-                'file_count': len(self.text_files),
+                'description': f"Text project with {metrics['file_count']} documents",
+                'date_created': metrics['date_created'],
+                'date_modified': metrics['date_modified'],
+                'word_count': metrics['word_count'],
+                'file_count': metrics['file_count'],
+                'total_size_bytes': metrics['total_size_bytes'],
                 'project_type': 'text',
+                'tags': list(self.document_types),
+                'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
                 'date_scanned': datetime.now(timezone.utc)
             }
             
             project = db_manager.create_project(project_data)
             project_id = project.id
-            
-            # Calculate and store importance score
-            from src.Analysis.importanceScores import calculate_importance_score
-            importance_score = calculate_importance_score(project)
-            db_manager.update_project(project_id, {'importance_score': importance_score})
             
             print(f"\n✓ Project stored with ID: {project_id}")
             
@@ -210,6 +217,11 @@ class TextDocumentScanner:
                         }
                         db_manager.add_keyword(keyword_data)
                     print(f"  ✓ Extracted {len(self.all_keywords)} keywords")
+
+            # Calculate and store importance score after metadata/keywords are saved
+            from src.Analysis.importanceScores import calculate_importance_score
+            importance_score = calculate_importance_score(project)
+            db_manager.update_project(project_id, {'importance_score': importance_score, 'success_score': importance_score})
         
         return project_id
     
@@ -427,7 +439,7 @@ class TextDocumentScanner:
         # Calculate and store importance score
         from src.Analysis.importanceScores import calculate_importance_score
         importance_score = calculate_importance_score(project)
-        db_manager.update_project(project.id, {'importance_score': importance_score})
+        db_manager.update_project(project.id, {'importance_score': importance_score, 'success_score': importance_score})
         
         # Store keywords (top 30)
         if self.all_keywords:

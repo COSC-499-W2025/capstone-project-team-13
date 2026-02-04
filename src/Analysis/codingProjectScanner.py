@@ -234,21 +234,7 @@ class CodingProjectScanner:
                 print(f"  ⚠️  Could not extract contributors: {e}")
         else:
             print("\nStep 4: Skipping contributor extraction (not a Git repository)")
-        
-        # Step 5: Calculate and store importance score
-        print("\nStep 5: Calculating importance score...")
-        try:
-            # Fetch project with all relationships loaded for accurate scoring
-            project = db_manager.get_project(project_id)
-            if project:
-                importance_score = calculate_importance_score(project)
-                db_manager.update_project(project_id, {'importance_score': importance_score})
-                print(f"  ✓ Importance score: {importance_score}")
-            else:
-                print("  ⚠️  Could not fetch project for scoring")
-        except Exception as e:
-            print(f"  ⚠️  Could not calculate importance score: {e}")
-        
+    
         return project_id
         
     def _find_code_files(self):

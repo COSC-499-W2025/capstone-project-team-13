@@ -67,7 +67,7 @@ def fetch_projects_for_summary():
             "project_name": p.name,
             "activity_type": activity_type,
             "time_spent": time_spent,
-            "importance_score": p.importance_score or 0,  # importance score as percentage (0-100)
+            "success_score": p.success_score or 0,  # success score as percentage (0-100)
             "contribution_score": min(1.0, total_commits / 20) if num_contributors else 0.5,
             "skills": list(set(p.languages + p.frameworks)),
             "first_activity_date": start_dt,

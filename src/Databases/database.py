@@ -48,8 +48,8 @@ class Project(Base):
     project_type = Column(String(50), index=True)
     collaboration_type = Column(String(50))
     
-    # Importance and ranking
-    importance_score = Column(Float, default=0.0)
+    # Success and ranking
+    success_score = Column(Float, default=0.0)
     user_rank = Column(Integer, nullable=True)
     is_featured = Column(Boolean, default=False)
     is_hidden = Column(Boolean, default=False)
@@ -82,7 +82,7 @@ class Project(Base):
     # Indexes
     __table_args__ = (
         Index('idx_project_type_date', 'project_type', 'date_modified'),
-        Index('idx_importance_featured', 'importance_score', 'is_featured'),
+        Index('idx_success_featured', 'success_score', 'is_featured'),
     )
     
     # Properties for JSON fields
@@ -179,7 +179,7 @@ class Project(Base):
             'total_size_bytes': self.total_size_bytes,
             'project_type': self.project_type,
             'collaboration_type': self.collaboration_type,
-            'importance_score': self.importance_score,
+            'success_score': self.success_score,
             'user_rank': self.user_rank,
             'is_featured': self.is_featured,
             'is_hidden': self.is_hidden,
@@ -579,7 +579,7 @@ class DatabaseManager:
             return session.query(Project).filter(
                 Project.is_featured == True,
                 Project.is_hidden == False
-            ).order_by(Project.importance_score.desc()).all()
+            ).order_by(Project.success_score.desc()).all()
         finally:
             session.close()
     
