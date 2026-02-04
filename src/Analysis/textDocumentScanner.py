@@ -417,7 +417,8 @@ class TextDocumentScanner:
             'total_size_bytes': metrics['total_size_bytes'],
             'project_type': 'text',
             'tags': list(self.document_types),
-            'skills': list(self.all_skills.keys())[:10] if self.all_skills else []
+            'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
+            'contributors': 1  # Set contributors to 1
         }
         
         # Create project record

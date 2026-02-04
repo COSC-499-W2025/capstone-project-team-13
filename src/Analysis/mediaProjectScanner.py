@@ -390,7 +390,8 @@ class MediaProjectScanner:
             'languages': list(self.software_used),  # Store software in languages field
             'frameworks': [],  # Not applicable
             'skills': list(self.skills_detected)[:10] if self.skills_detected else [],
-            'tags': list(self.software_used)
+            'tags': list(self.software_used),
+            'contributors': 1  # Set contributors to 1
         }
         
         # Create project record
