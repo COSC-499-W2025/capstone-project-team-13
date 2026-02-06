@@ -55,6 +55,73 @@ def delete_project_enhanced():
         print(f"❌ Failed to delete project: {error}")
 
 
+def bulk_delete_projects():
+    """
+    Bulk delete multiple projects by ID with shared file protection.
+    """
+    manager = DeletionManager()
+
+    ids_input = input("Enter project IDs to delete (comma-separated): ").strip()
+    if not ids_input:
+        print("No IDs provided. Cancelled.")
+        return
+
+    raw_ids = [s.strip() for s in ids_input.split(",") if s.strip()]
+    if not raw_ids or not all(s.isdigit() for s in raw_ids):
+        print("Invalid input. Please enter numeric IDs separated by commas.")
+        return
+
+    project_ids = [int(s) for s in raw_ids]
+
+    print("\nProjects to delete:", ", ".join(str(i) for i in project_ids))
+    confirm = input("Proceed with deletion? (yes/no): ").strip().lower()
+    if confirm != "yes":
+        print("Bulk deletion cancelled.")
+        return
+
+    deleted = 0
+    failed = []
+    for pid in project_ids:
+        result = manager.delete_project_safely(pid, delete_shared_files=False)
+        if result.get("project_deleted"):
+            deleted += 1
+        else:
+            failed.append(pid)
+
+    print(f"\nDeleted {deleted} project(s).")
+    if failed:
+        print("Failed to delete IDs:", ", ".join(str(i) for i in failed))
+
+
+def view_shared_files_report():
+    """
+    Show a report of shared files across projects.
+    """
+    manager = DeletionManager()
+    projects = db_manager.get_all_projects(include_hidden=True)
+    if not projects:
+        print("No projects found.")
+        return
+
+    any_shared = False
+    print("\nShared Files Report:")
+    print("-" * 60)
+
+    for p in projects:
+        shared = manager.get_shared_files(p.id)
+        if shared:
+            any_shared = True
+            print(f"Project {p.id}: {p.name}")
+            for path in shared[:10]:
+                print(f"  - {path}")
+            if len(shared) > 10:
+                print(f"  ... and {len(shared) - 10} more")
+            print()
+
+    if not any_shared:
+        print("No shared files detected.")
+
+
 def delete_ai_insights():
     """
     Delete AI insights for a single project.
