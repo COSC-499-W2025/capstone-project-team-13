@@ -64,6 +64,7 @@ def fetch_projects_for_summary():
 
         # Map DB fields → summarizer fields
         project_dicts.append({
+            "project_id": p.id,
             "project_name": p.name,
             "activity_type": activity_type,
             "time_spent": time_spent,
@@ -85,6 +86,7 @@ def main():
         return
 
     result = summarize_projects(projects_data, top_k=3)
+    
     print("\nSUMMARY:\n", result["summary"])
     print("\nTOP PROJECTS:")
     for proj in result["selected_projects"]:
