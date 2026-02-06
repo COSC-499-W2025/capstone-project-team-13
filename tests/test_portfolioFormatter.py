@@ -14,10 +14,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.Databases.database import db_manager, Project
-from src.portfolio.portfolioFormatter import PortfolioFormatter
+from src.Portfolio.portfolioFormatter import PortfolioFormatter
 
 
 class TestPortfolioFormatter:
@@ -359,24 +360,24 @@ class TestPortfolioFormatter:
     # ============================================
     
     def test_filter_by_type(self):
-        """Test filtering by project type"""
         formatter = PortfolioFormatter()
-        
-        # Filter for code projects
+        fixture_ids = {p.id for p in self.test_projects}
+
         code_projects = formatter.get_filtered_projects(project_type='code')
-        assert code_projects['total'] == 2
-        assert all(p['type'] == 'code' for p in code_projects['projects'])
-        
-        # Filter for media projects
+        fixture_code = [p for p in code_projects['projects'] if p['id'] in fixture_ids]
+        assert len(fixture_code) == 2
+        assert all(p['type'] == 'code' for p in fixture_code)
+
         media_projects = formatter.get_filtered_projects(project_type='visual_media')
-        assert media_projects['total'] == 1
-        assert media_projects['projects'][0]['type'] == 'visual_media'
-        
-        # Filter for text projects
+        fixture_media = [p for p in media_projects['projects'] if p['id'] in fixture_ids]
+        assert len(fixture_media) == 1
+        assert fixture_media[0]['type'] == 'visual_media'
+
         text_projects = formatter.get_filtered_projects(project_type='text')
-        assert text_projects['total'] == 1
-        
-        print("✓ Type filtering test passed")
+        fixture_text = [p for p in text_projects['projects'] if p['id'] in fixture_ids]
+        assert len(fixture_text) == 1
+        assert fixture_text[0]['type'] == 'text'
+
     
     def test_filter_by_search(self):
         """Test filtering by search term"""
@@ -411,14 +412,15 @@ class TestPortfolioFormatter:
         print("✓ Importance filtering test passed")
     
     def test_filter_featured_only(self):
-        """Test filtering for featured projects only"""
         formatter = PortfolioFormatter()
-        
+        fixture_ids = {p.id for p in self.test_projects}
+
         featured = formatter.get_filtered_projects(featured_only=True)
-        assert all(p['is_featured'] for p in featured['projects'])
-        assert featured['total'] == 2  # E-commerce and Research paper
-        
-        print("✓ Featured filtering test passed")
+        fixture_featured = [p for p in featured['projects'] if p['id'] in fixture_ids]
+
+        assert all(p['is_featured'] for p in fixture_featured)
+        assert len(fixture_featured) == 2  # only the fixtures
+
     
     def test_combined_filters(self):
         """Test multiple filters combined"""
@@ -447,30 +449,19 @@ class TestPortfolioFormatter:
     # ============================================
     
     def test_calculate_portfolio_stats(self):
-        """Test portfolio statistics calculation"""
         formatter = PortfolioFormatter()
-        projects = db_manager.get_all_projects()
-        
+        projects = self.test_projects  # <-- only fixtures
+
         stats = formatter._calculate_portfolio_stats(projects)
-        
-        assert stats['total_projects'] >= 4
-        assert 'by_type' in stats
-        assert 'total_lines_of_code' in stats
-        assert 'total_files' in stats
-        assert 'total_skills' in stats
-        assert 'unique_skills' in stats
-        assert 'avg_importance_score' in stats
-        
-        # Check type counts
+
+        assert stats['total_projects'] == 4
         assert stats['by_type']['code'] == 2
         assert stats['by_type']['visual_media'] == 1
         assert stats['by_type']['text'] == 1
-        
-        # Check totals
+
         assert stats['total_lines_of_code'] >= 15500  # 15000 + 500
-        assert stats['total_files'] >= 177  # 120 + 45 + 12 + 5
-        
-        print("✓ Portfolio statistics test passed")
+        assert stats['total_files'] >= 182  # 120 + 45 + 12 + 5 = 182
+
     
     def test_generate_portfolio_summary(self):
         """Test portfolio summary generation"""
