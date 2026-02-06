@@ -9,3 +9,6 @@ python-docx
 PyPDF2
 google-generativeai
 tqdm
+fastapi
+uvicorn
+python-multipart

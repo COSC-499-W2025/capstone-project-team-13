@@ -1,15 +1,33 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from pathlib import Path
+import uuid
+
+from src.Services.project_upload_service import process_uploaded_path
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
+UPLOAD_DIR = Path("evidence/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
 @router.post("/upload")
-def upload_project(file: UploadFile = File(...)):
-    return {"message": "Project uploaded"}
+async def upload_project(file: UploadFile = File(...)):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
 
-@router.get("")
-def get_projects():
-    return {"projects": []}
+    project_id = str(uuid.uuid4())
+    file_path = UPLOAD_DIR / f"{project_id}_{file.filename}"
 
-@router.get("/{id}")
-def get_project(id: int):
-    return {"project_id": id}
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    try:
+        result = process_uploaded_path(str(file_path))
+        return result
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal processing error")
