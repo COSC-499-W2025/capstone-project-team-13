@@ -322,6 +322,32 @@ Planned Work for Next Week:
 <img width="843" height="494" alt="image" src="https://github.com/user-attachments/assets/0445952c-9132-4158-b9d7-fbdfaa629452" />
 
 
+# Log4
 
+Date Range: Jan 26 – Feb 1, 2026
 
+Issue worked on: https://github.com/COSC-499-W2025/capstone-project-team-13/issues/296
+This week, I focused on implementing and validating incremental skill extraction to ensure that newly added or modified files correctly update a project’s skill set without requiring a full rescan. Building on the stabilized Milestone 1 pipeline, I introduced a lightweight, import-based approach for detecting new technologies during incremental updates. Despite being sick for part of the week, I remained engaged with the project and contributed where possible.
+
+Tasks Completed: Worked on issue related to incremental skill extraction
+
+Designed and implemented an incremental skill extraction module that parses Python import statements from newly added or modified files to detect newly introduced libraries.
+
+Wrote and ran an automated integration test using a real database and real files to validate that incremental skill updates behave as expected.
+
+Participated in peer testing during the in-class session and completed the associated peer review form.
+
+Attended team meetings to stay aligned on progress, design decisions, and upcoming Milestone 2 expectations.
+
+Connection to Previous Week:
+Building on last week’s work stabilizing Milestone 1 components, this week’s efforts extended the pipeline to support incremental updates. The earlier cleanup and testing work helped surface limitations in existing extraction approaches, directly informing the decision to use import-based detection for incremental skill extraction.
+
+Issues / Blockers:
+Progress was slightly limited due to illness, but core tasks were still completed. I encountered initial test failures caused by mismatches between expected extraction behavior and existing tools, which were resolved by adjusting the incremental approach to better fit the data being processed. All changes were verified locally to ensure stability.
+
+Planned Work for Next Week:
+
+Continue working Milestone 2 and putting our portfolio functionality together.
+
+No screenshot/peer eval available this week
 
