@@ -4,9 +4,11 @@ Thank you for contributing! Please fill out this template to help us review your
 
 ## 📝 Description
 
+> Please include a summary of the change and which issue is fixed.  
+> Include relevant motivation and context.  
+> List any dependencies that are required for this change.
 
-
-**Closes:** # 
+**Closes:** # (issue number)
 
 ---
 
@@ -24,9 +26,11 @@ Thank you for contributing! Please fill out this template to help us review your
 
 ## 🧪 Testing
 
+> Please describe how you tested this PR (both manually and with tests).  
+> Provide instructions so we can reproduce.
 
-
-- [ ] test_file.py
+- [ ] Test A
+- [ ] Test B
 
 ---
 
