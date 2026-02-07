@@ -20,8 +20,8 @@ def identify_project_type(project_path, project_data):
         for commit in repo.iter_commits():
             if commit.author and commit.author.email:
                 contributors.add(commit.author.email)
-    except Exception as e:
-        print("Git analysis skipped:", e)
+    except Exception:
+        pass  # Silently skip if not a git repo
 
 
 

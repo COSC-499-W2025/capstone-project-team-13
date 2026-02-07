@@ -39,6 +39,51 @@ def _infer_activity_type_and_time(p):
 
     return activity_type, max(time_spent, 1)  # avoid 0 for normalization
 
+
+def _compute_success_score(p, activity_type: str) -> float:
+    """
+    Return a normalized success score in [0, 1].
+    Preference order:
+    1) Stored success_score attribute (if present)
+    2) success_metrics evidence (test coverage + README badges)
+    3) Heuristic based on project size
+    """
+    # 1) Stored success_score (if it exists on the model)
+    raw = getattr(p, "success_score", None)
+    if raw is not None:
+        try:
+            raw_val = float(raw)
+            return raw_val / 100.0 if raw_val > 1 else raw_val
+        except (TypeError, ValueError):
+            pass
+
+    # 2) Evidence-based score from success_metrics (if available)
+    metrics = getattr(p, "success_metrics", None)
+    if isinstance(metrics, dict) and metrics:
+        score = 0.0
+        tc = metrics.get("test_coverage")
+        if tc:
+            score += float(tc) * 0.6
+        badges = metrics.get("readme_badges")
+        if badges:
+            score += min(len(badges) * 10, 40)
+        if score > 0:
+            return min(score, 100.0) / 100.0
+
+    # 3) Heuristic fallback by project type/size
+    files = p.file_count or 0
+    if activity_type == "code":
+        loc = p.lines_of_code or 0
+        return min(100.0, (files * 5) + (loc / 200.0)) / 100.0
+    if activity_type == "text":
+        words = p.word_count or 0
+        return min(100.0, (files * 5) + (words / 500.0)) / 100.0
+    if activity_type == "media":
+        size_mb = (p.total_size_bytes or 0) / (1024 * 1024)
+        return min(100.0, (files * 5) + (size_mb * 2.0)) / 100.0
+
+    return min(100.0, files * 5) / 100.0
+
 def fetch_projects_for_summary():
     """Convert database Project objects into summarizer-ready dicts."""
     projects = db_manager.get_all_projects()
@@ -50,6 +95,7 @@ def fetch_projects_for_summary():
         num_contributors = len(contributors)
 
         activity_type, time_spent = _infer_activity_type_and_time(p)
+        success_score = _compute_success_score(p, activity_type)
 
         start_dt = p.date_created or p.date_scanned
         end_dt = p.date_modified or p.date_scanned or start_dt
@@ -67,7 +113,8 @@ def fetch_projects_for_summary():
             "project_name": p.name,
             "activity_type": activity_type,
             "time_spent": time_spent,
-            "success_score": p.success_score or 0,  # success score as percentage (0-100)
+            "success_score": success_score,
+            "importance_score": p.importance_score or 0,  # importance score as percentage (0-100)
             "contribution_score": min(1.0, total_commits / 20) if num_contributors else 0.5,
             "skills": list(set(p.languages + p.frameworks)),
             "first_activity_date": start_dt,
