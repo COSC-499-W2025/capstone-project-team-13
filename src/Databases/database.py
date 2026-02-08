@@ -507,6 +507,14 @@ class DatabaseManager:
                     print("✅ Added ai_description column")
                 except Exception as e:
                     print(f"⚠️  Could not add ai_description: {e}")
+
+            if 'success_score' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN success_score FLOAT DEFAULT 0.0;"))
+                    conn.commit()
+                    print("✅ Added success_score column")
+                except Exception as e:
+                    print(f"⚠️  Could not add success_score: {e}")
         
         # Get current columns for files table
         if 'files' in inspector.get_table_names():
