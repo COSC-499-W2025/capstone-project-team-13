@@ -1,11 +1,21 @@
+import sys
 import os
+
+# Add the parent directory of `src` to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 import zipfile
+import src
+import os
+from src.Extraction.zipHandler import extract_zip, validate_zip_file, ZipExtractionError
+
 from datetime import datetime, timezone
-from src.Analysis.codingProjectScanner import CodingProjectScanner
-from src.Analysis.mediaProjectScanner import MediaProjectScanner
-from src.Analysis.textDocumentScanner import TextDocumentScanner
-from src.Databases.database import create_project, add_file_to_project, add_keyword
+from src.Analysis.codingProjectScanner import scan_coding_project
+from src.Analysis.textDocumentScanner import scan_text_document
+from src.Analysis.mediaProjectScanner import scan_media_project
+from src.Databases.database import db_manager
 from src.Analysis.file_hasher import compute_file_hash
+from src.Analysis.projectcollabtype import identify_project_type
 
 def parse_zip_and_identify_projects(zip_path, extract_to):
     """
@@ -32,45 +42,23 @@ def parse_zip_and_identify_projects(zip_path, extract_to):
         if not files:
             continue
 
-        # Determine project type
-        has_code = any(file.endswith('.py') for file in files)
-        has_media = any(file.lower().endswith(('.jpg', '.png', '.mp4')) for file in files)
-        has_text = any(file.lower().endswith(('.txt', '.md', '.docx')) for file in files)
+        # Use identify_project_type to determine the project type
+        project_type = identify_project_type(root, files)
 
-        if has_code:
-            project_type = 'code'
-            scanner = CodingProjectScanner(root)
-            scanner._find_code_files()
-            scanner._detect_languages_and_frameworks()
-            project_metadata = {
-                'project_type': project_type,
-                'languages': list(scanner.languages),
-                'frameworks': list(scanner.frameworks),
-                'files': scanner.code_files
-            }
-        elif has_media:
-            project_type = 'media'
-            scanner = MediaProjectScanner(root)
-            scanner._find_files()
-            scanner._analyze_media()
-            project_metadata = {
-                'project_type': project_type,
-                'software_used': list(scanner.software_used),
-                'skills_detected': list(scanner.skills_detected),
-                'files': scanner.media_files
-            }
-        elif has_text:
-            project_type = 'text'
-            scanner = TextDocumentScanner(root)
-            scanner._find_text_files()
-            scanner._detect_document_types()
-            project_metadata = {
-                'project_type': project_type,
-                'document_types': list(scanner.document_types),
-                'files': scanner.text_files
-            }
+        if project_type == 'code':
+            project_metadata = scan_coding_project(root)
+            print(f"Debug: scan_coding_project returned {type(project_metadata)}: {project_metadata}")
+        elif project_type == 'media':
+            project_metadata = scan_media_project(root)
+            print(f"Debug: scan_media_project returned {type(project_metadata)}: {project_metadata}")
+        elif project_type == 'text':
+            project_metadata = scan_text_document(root)
+            print(f"Debug: scan_text_document returned {type(project_metadata)}: {project_metadata}")
         else:
             continue
+
+        # Debugging: Print the type and content of project_metadata
+        print(f"Debug: project_metadata type: {type(project_metadata)}, content: {project_metadata}")
 
         # Store project metadata
         project_metadata['project_path'] = root
@@ -78,9 +66,24 @@ def parse_zip_and_identify_projects(zip_path, extract_to):
         project_metadata['total_size'] = sum(os.path.getsize(os.path.join(root, file)) for file in files)
         project_metadata['date_scanned'] = datetime.now(timezone.utc)
 
+        # Remove unsupported keys from project_metadata
+        project_metadata.pop('document_types', None)
+
         # Add project to database
-        project = create_project(project_metadata)
+        project = db_manager.create_project(project_metadata)
         project_metadata['project_id'] = project.id
+
+        # Ensure nltk data is downloaded without SSL verification
+        import nltk
+        import ssl
+        try:
+            _create_unverified_https_context = ssl._create_unverified_context
+            ssl._create_default_https_context = _create_unverified_https_context
+        except AttributeError:
+            pass
+
+        nltk.download('punkt')
+        nltk.download('stopwords')
 
         # Add files to database
         for file in files:
@@ -95,36 +98,42 @@ def parse_zip_and_identify_projects(zip_path, extract_to):
                 'file_modified': datetime.fromtimestamp(os.path.getmtime(file_path), tz=timezone.utc),
                 'file_hash': compute_file_hash(file_path)
             }
-            add_file_to_project(file_data)
+            db_manager.add_file_to_project(file_data)
 
-        # Add keywords to database (if any)
-        if hasattr(scanner, 'all_keywords') and scanner.all_keywords:
-            for keyword, score in scanner.all_keywords:
-                add_keyword({
-                    'project_id': project.id,
-                    'keyword': keyword,
-                    'score': score,
-                    'category': project_type
-                })
-
-        projects_metadata.append(project_metadata)
+        # Ensure project_metadata is a dictionary before appending
+        if isinstance(project_metadata, dict):
+            projects_metadata.append(project_metadata)
+        else:
+            print(f"⚠️ Skipping invalid project_metadata: {project_metadata}")
 
     return projects_metadata
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Test the parse_zip_and_identify_projects function.")
-    parser.add_argument("zip_path", type=str, help="Path to the zip file to parse.")
-    parser.add_argument("extract_to", type=str, help="Directory to extract the zip file to.")
-
-    args = parser.parse_args()
-
     try:
         print("\nStarting manual test for parse_zip_and_identify_projects...\n")
-        projects_metadata = parse_zip_and_identify_projects(args.zip_path, args.extract_to)
+
+        # Prompt user for input
+        zip_path = input("Enter the path to the ZIP file: ").strip()
+
+        # Validate the ZIP file
+        if not validate_zip_file(zip_path):
+            raise ZipExtractionError("Invalid ZIP file.")
+
+        # Extract the ZIP file to a temporary directory
+        print("Extracting ZIP file...")
+        extract_to = extract_zip(zip_path)
+        print(f"ZIP file extracted to: {extract_to}")
+
+        # Run the function
+        projects_metadata = parse_zip_and_identify_projects(zip_path, extract_to)
         print("\nTest completed. Projects metadata:")
         for project in projects_metadata:
             print(project)
+
+        # Cleanup extracted files
+        import shutil
+        shutil.rmtree(extract_to)
+        print("\nTemporary files cleaned up.")
+
     except Exception as e:
         print(f"\nAn error occurred during testing: {e}")
