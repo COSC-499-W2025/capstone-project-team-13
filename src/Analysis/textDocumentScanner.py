@@ -121,7 +121,11 @@ class TextDocumentScanner:
         if len(self.text_files) == 0:
             print("\n⚠️  No text files found.")
             return None
-        
+
+        # Calculate and display word count
+        metrics = self._calculate_metrics()
+        print(f"  ✓ Total word count: {metrics['word_count']:,} words")
+                
         if is_incremental:
             # Incremental update
             project_id = existing.id
@@ -166,6 +170,9 @@ class TextDocumentScanner:
                 'file_path': str(self.document_path),
                 'file_count': len(self.text_files),
                 'project_type': 'text',
+                'word_count': metrics['word_count'],
+                'date_created': metrics['date_created'],
+                'date_modified': metrics['date_modified'],
                 'date_scanned': datetime.now(timezone.utc)
             }
             
