@@ -49,7 +49,6 @@ from src.Analysis.textDocumentScanner import scan_text_document
 from src.Analysis.mediaProjectScanner import scan_media_project
 from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
-from src.Databases.database import db_manager
 from src.Analysis.summarizeProjects import summarize_projects
 from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
@@ -61,13 +60,14 @@ from src.AI.ai_enhanced_summarizer import (
 )
 from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
-from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
+from src.Analysis.rank_projects_by_date import get_ranked_timeline_from_db
 from src.Analysis.codeEfficiency import grade_efficiency
 from src.Analysis.folderEfficiency import grade_folder
 from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
 from src.Analysis.incrementalFileHandler import handle_add_files_to_project
+from src.Databases.database import db_manager
 
 # Import evidence management features
 try:
@@ -1934,19 +1934,11 @@ def run_importance_test():
     print("\nDone.")
 
 def run_project_ranking_test():
-    """Rank projects by creation/update date and display"""
+    """Rank projects by creation/update date and display (DB-backed)"""
     print("=== Project Timeline ===\n")
+    print(get_ranked_timeline_from_db())
 
-    # Sample project data — replace with real DB fetch later
-    projects = [
-        {"name": "Capstone Project", "created_at": "2023-10-03", "updated_at": "2024-05-15"},
-        {"name": "Project 1", "created_at": "2024-02-01", "updated_at": "2024-09-20"},
-        {"name": "Project 2", "created_at": "2025-01-12", "updated_at": "2025-03-02"},
-    ]
 
-    sorted_projects = rank_projects_chronologically(projects)
-    output = format_project_timeline(sorted_projects)
-    print(output)
 
 def run_code_efficiency_test():
     """
