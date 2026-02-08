@@ -122,6 +122,8 @@ def identifyProjectType(folder_path):
             ext = os.path.splitext(filename)[1].lower()
             file_type = EXT_SUPERTYPES.get(ext)
 
+            print(f"Processing file: {filename}, Extension: {ext}, Type: {file_type}")
+
             if file_type in type_counts:
                 type_counts[file_type] += 1
 
