@@ -17,6 +17,8 @@ Hyperlinks for Term 2:
 [Term 2 Week 2](#date-range-term-2-week-2---jan-12-jan-18-2026)
 
 [Term 2 Week 3](#date-range-term-2-week-3---jan-19-jan-25-2026)
+
+[Term 2 Weeks 4 and 5](#date-range-term-2-week-4-5---jan-26-feb-8-2026)
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
@@ -213,3 +215,32 @@ My main focus this week surrounded issue 24 for milstone 2, isolated around assi
 ### Plans for next week
 
 I was going to look at issue 34, parsing multiple projects within a single file. The thing I'm struggling with is determining how to differentiate multiple files? Worst comes to worst, I will prompt the user to ensure that all the first layer within the zip file are the individual projects. 
+
+
+
+
+
+
+## Log 15 & 16:
+## Date Range: Term 2 Week 4-5 - Jan 26-Feb 8, 2026
+
+## ![week 4-5 features](weeklyfeaturesimages/T2Week4-5Features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+Over this two week period, we obviously had peer testing which led to a lot of bugs for us to fix. I touched on a couple of these, but primarily my work was split between two tasks:
+
+1 - Implementing success score for text and media projects. Prina made a comprehensive formula to calculate success metrics for coding projects, so I reworked my existing code for importance scores to assign an approximate grade to the other kinds of projects. Due to their nature, this is mainly quantity over quality, but still works as a grading system nonetheless. This was my week 4 focus that bled a little bit into week 5. 
+
+2 - Implementing the milstone 2 feature for multiple projects within a single zip folder. Not too much to say about this. The flaw is it assumes that all top level folders inside the zip file count as individual projects, so anything deeper gets skipped. I just couldn't see a way around this as determining that is more of a semantic issue rather than a logical one. This was my focus in the latter half of week 5 and closed issue 232. 
+
+There were also minor bug fixes in T2 Week 4 but nothing of significant note. Some language changes mostly.
+
+I ran into a pretty consistent issue that I feel a little dumb looking back on. I'd changed a variable in the database for success score and struggled to figure out why things were loading properly on my computer but when other people tested it, they'd have errors pop up with that exact variable. Turns out it was just that the db had to be migrated, but I'd be lying if I said I didn't spend more time than I'd like on it.
+
+
+### Plans for next week
+
+Considering we are most of the way through our M2 issues, I may look into adding an extra feature to try and hit bonus marks. I was going to look into a notification system, as some parts of the process require further user input like determining which github user is you or to do some more fine extraction. 
