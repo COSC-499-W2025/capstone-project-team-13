@@ -3,6 +3,7 @@ from pathlib import Path
 import uuid
 import zipfile
 import shutil
+from src.Databases.database import db_manager
 
 from src.Services.project_upload_service import process_uploaded_path
 
@@ -11,6 +12,7 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 UPLOAD_DIR = Path("evidence/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+# post upload projects endpoint
 @router.post("/upload")
 async def upload_project(file: UploadFile = File(...)):
     project_id = str(uuid.uuid4())
@@ -34,3 +36,22 @@ async def upload_project(file: UploadFile = File(...)):
     result = process_uploaded_path(str(process_path))
     return result
 
+# get projects endpoint
+
+@router.get("")
+def list_projects():
+    projects = db_manager.get_all_projects()
+
+    return [p.to_dict() for p in projects]
+
+
+
+# get project by id endpoint
+@router.get("/{project_id}")
+def get_project(project_id: int):
+    project = db_manager.get_project(project_id)
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return project.to_dict(include_counts=True)
