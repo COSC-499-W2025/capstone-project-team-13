@@ -284,9 +284,9 @@ The code is functioning, it just needs to be added to this upcoming week to full
 I am planning on finishing Issue 29 and starting issue 27
 
 
-## Log 15
+## Log 15 
 
-## Date Range: Semester 2 Week 5 – Feb 02–08, 2026
+## Date Range: Semester 2 Week 4-5 – Jan 26 - Feb 01 & Feb 02–08, 2026
 
 ## ![week 15 features](weeklyfeaturesimages/week15features.png)
 
@@ -294,6 +294,14 @@ I am planning on finishing Issue 29 and starting issue 27
 
 ### Coding
 
+    Week 4:
+    - Updated main to have same wording + vocabulary
+    - updated analysis menu to use 1234 instead of abcd
+    - Fixed coding scanner lines of code and dates bug
+    - mostly worked on many different bugs throughout the system
+    - made settings option in main
+
+Week 5:
 - Issue 29 + 27
 - Updated main generate_summary() function to incorporate portfolioformatter
 - Also created helper functions so user has option to save or change the portfolio showcase
@@ -301,26 +309,39 @@ I am planning on finishing Issue 29 and starting issue 27
 
 ### Testing / Debugging
 
+Week 4:
+- Created settings tests to debug settings 
+- also tested manually to ensure no bugs
+
+Week 5:
 - Updated PortfolioFormatter tests (tests/test_portfolioFormatter.py) to match the changes
 - Tested manually with projects from my database the save and customize functions, tests for this to follow
 
 
 ### Review / Collaboration
 
-- Monday zoom where we decided the plan for the week, busy on the groupchat updating eachother + helping eachother
+- Monday zoom where we decided the plan for the week, busy on the groupchat updating eachother + helping eachother in both weeks. 
 
 ### Recap of Weekly Goals
+Update main to be less buggy, make settings option. 
 
 Update the portfolio view, update how it is accessed, allow save and customize functions\
 
 ### Project Plan Ownership
 
+- **Assigned Features:** Different bugs, settings
+- **Project Board Tasks:** Issue 288, 280, 282, 285, 275
+- **Status:** Done
+
 - **Assigned Features:** Portfolio display system + allow save and customize function
 - **Project Board Tasks:** Issue 29 + Issue 27
-- **Status:** In progress
+- **Status:** Done
 
 ### Blockers or Issues
 
+Week 4:
+No issues
+Week 5:
 My code had to overwrite the code of another member, as they could not attend the monday meeting and did not realize I was working on the generate_summary(). I will focus next week on incorporating their changes so they weren't for nothing. 
 
 ### Plan for Next Week
