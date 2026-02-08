@@ -1,139 +1,188 @@
 import sys
 import os
+import shutil
 
-# Add the parent directory of `src` to the Python path
+# Ensure the `src` directory is in the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-import zipfile
-import src
 import os
-from src.Extraction.zipHandler import extract_zip, validate_zip_file, ZipExtractionError
-
-from datetime import datetime, timezone
-from src.Analysis.codingProjectScanner import scan_coding_project
-from src.Analysis.textDocumentScanner import scan_text_document
-from src.Analysis.mediaProjectScanner import scan_media_project
+import zipfile
+from src.Settings.config import EXT_SUPERTYPES
 from src.Databases.database import db_manager
-from src.Analysis.file_hasher import compute_file_hash
-from src.Analysis.projectcollabtype import identify_project_type
+from src.Analysis.codingProjectScanner import scan_coding_project
+from src.Analysis.mediaProjectScanner import scan_media_project
+from src.Analysis.textDocumentScanner import scan_text_document
 
-def parse_zip_and_identify_projects(zip_path, extract_to):
+def splitZipFile(zip_path):
     """
-    Parses a zip file, identifies projects within, and scans them independently.
+    Given a zip folder, identifies distinct projects within it.
+    Ignores system files like __MACOSX.
 
     Args:
         zip_path (str): Path to the zip file.
-        extract_to (str): Directory to extract the zip file to.
 
     Returns:
-        list: A list of dictionaries containing project metadata.
+        list: List of project names.
     """
-    if not zip_path.lower().endswith('.zip'):
-        raise ValueError("File must have a .zip extension")
+    projects = set()
 
-    # Extract the zip file
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(extract_to)
+        for file in zip_ref.namelist():
+            # Ignore system files like __MACOSX
+            if file.startswith('__MACOSX') or file.startswith('.'): 
+                continue
 
-    projects_metadata = []
+            # Extract the top-level folder name (project name)
+            parts = file.split('/')
+            if len(parts) > 1:
+                projects.add(parts[0])
 
-    # Walk through extracted files and identify projects
-    for root, dirs, files in os.walk(extract_to):
-        if not files:
-            continue
+    return list(projects)
 
-        # Use identify_project_type to determine the project type
-        project_type = identify_project_type(root, files)
+def processZipFile(zipFilePath):
+    """
+    Process a zip file to identify and categorize top-level projects.
+    Use appropriate scanners to analyze and store projects in the database.
+    """
+    import zipfile
+    import os
+    import shutil
 
-        if project_type == 'code':
-            project_metadata = scan_coding_project(root)
-            print(f"Debug: scan_coding_project returned {type(project_metadata)}: {project_metadata}")
-        elif project_type == 'media':
-            project_metadata = scan_media_project(root)
-            print(f"Debug: scan_media_project returned {type(project_metadata)}: {project_metadata}")
-        elif project_type == 'text':
-            project_metadata = scan_text_document(root)
-            print(f"Debug: scan_text_document returned {type(project_metadata)}: {project_metadata}")
-        else:
-            continue
+    # Extract the zip file to a temporary directory
+    tempDir = "temp_extracted_zip"
+    if os.path.exists(tempDir):
+        shutil.rmtree(tempDir)
+    os.makedirs(tempDir)
 
-        # Debugging: Print the type and content of project_metadata
-        print(f"Debug: project_metadata type: {type(project_metadata)}, content: {project_metadata}")
+    with zipfile.ZipFile(zipFilePath, 'r') as zip_ref:
+        zip_ref.extractall(tempDir)
 
-        # Store project metadata
-        project_metadata['project_path'] = root
-        project_metadata['file_count'] = len(files)
-        project_metadata['total_size'] = sum(os.path.getsize(os.path.join(root, file)) for file in files)
-        project_metadata['date_scanned'] = datetime.now(timezone.utc)
+    # Analyze only top-level directories within the extracted zip file
+    extracted_root = os.path.join(tempDir, os.listdir(tempDir)[0])
+    results = []
+    for item in os.listdir(extracted_root):
+        itemPath = os.path.join(extracted_root, item)
+        if os.path.isdir(itemPath):
+            project_info = identifyProjectType(itemPath)
+            project_type = project_info['type']
 
-        # Remove unsupported keys from project_metadata
-        project_metadata.pop('document_types', None)
+            # Use the appropriate scanner based on project type
+            if project_type == 'code':
+                project_id = scan_coding_project(itemPath)
+            elif project_type == 'media':
+                project_id = scan_media_project(itemPath)
+            elif project_type == 'text':
+                project_id = scan_text_document(itemPath)
+            else:
+                project_id = scan_text_document(itemPath)  # Default to text scanner
 
-        # Add project to database
-        project = db_manager.create_project(project_metadata)
-        project_metadata['project_id'] = project.id
+            results.append({
+                "Project Name": item,
+                "Type": project_type,
+                "Details": project_info['details'],
+                "Database ID": project_id
+            })
 
-        # Ensure nltk data is downloaded without SSL verification
-        import nltk
-        import ssl
-        try:
-            _create_unverified_https_context = ssl._create_unverified_context
-            ssl._create_default_https_context = _create_unverified_https_context
-        except AttributeError:
-            pass
+    # Clean up temporary directory
+    shutil.rmtree(tempDir)
 
-        nltk.download('punkt')
-        nltk.download('stopwords')
+    return results
 
-        # Add files to database
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_data = {
-                'project_id': project.id,
-                'file_path': file_path,
-                'file_name': os.path.basename(file_path),
-                'file_type': os.path.splitext(file_path)[1],
-                'file_size': os.path.getsize(file_path),
-                'file_created': datetime.fromtimestamp(os.path.getctime(file_path), tz=timezone.utc),
-                'file_modified': datetime.fromtimestamp(os.path.getmtime(file_path), tz=timezone.utc),
-                'file_hash': compute_file_hash(file_path)
-            }
-            db_manager.add_file_to_project(file_data)
+def identifyProjectType(folder_path):
+    """
+    Identifies the type of a project based on its contents.
 
-        # Ensure project_metadata is a dictionary before appending
-        if isinstance(project_metadata, dict):
-            projects_metadata.append(project_metadata)
-        else:
-            print(f"⚠️ Skipping invalid project_metadata: {project_metadata}")
+    Args:
+        folder_path (str): Path to the folder or project.
 
-    return projects_metadata
+    Returns:
+        dict: {
+            'type': 'code', 'media', 'mixed', or 'unknown',
+            'code_count': int,
+            'media_count': int,
+            'text_count': int,
+            'details': str (description)
+        }
+    """
+    type_counts = {'code': 0, 'media': 0, 'text': 0}
+    skip_dirs = {'node_modules', '__pycache__', '.git', '.venv', 'venv', 'env', 
+                 'dist', 'build', '.next', '.cache', 'vendor', '__MACOSX'}
+
+    # Scan folder and count file types
+    for root, dirs, files in os.walk(folder_path):
+        # Remove skip directories from dirs list
+        dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
+
+        for filename in files:
+            if filename.startswith('.'):
+                continue
+
+            ext = os.path.splitext(filename)[1].lower()
+            file_type = EXT_SUPERTYPES.get(ext)
+
+            if file_type in type_counts:
+                type_counts[file_type] += 1
+
+    total_files = sum(type_counts.values())
+
+    if total_files == 0:
+        return {
+            'type': 'unknown',
+            'code_count': 0,
+            'media_count': 0,
+            'text_count': 0,
+            'details': 'No recognizable files found'
+        }
+
+    # Calculate percentages
+    code_pct = type_counts['code'] / total_files
+    media_pct = type_counts['media'] / total_files
+
+    # Determine project type
+    if code_pct > 0.7:  # More than 70% code files
+        project_type = 'code'
+        details = f"Primarily code ({type_counts['code']} code files)"
+    elif media_pct > 0.7:  # More than 70% media files
+        project_type = 'media'
+        details = f"Primarily media ({type_counts['media']} media files)"
+    elif code_pct > 0.2 and media_pct > 0.2:  # Both significant
+        project_type = 'mixed'
+        details = f"Mixed project ({type_counts['code']} code, {type_counts['media']} media files)"
+    elif type_counts['code'] > 0:  # Any code files present
+        project_type = 'code'
+        details = f"Small code project ({type_counts['code']} code files)"
+    elif type_counts['media'] > 0:  # Any media files present
+        project_type = 'media'
+        details = f"Small media project ({type_counts['media']} media files)"
+    else:
+        project_type = 'unknown'
+        details = f"Unrecognized project type ({total_files} files)"
+
+    return {
+        'type': project_type,
+        'code_count': type_counts['code'],
+        'media_count': type_counts['media'],
+        'text_count': type_counts['text'],
+        'details': details
+    }
 
 if __name__ == "__main__":
-    try:
-        print("\nStarting manual test for parse_zip_and_identify_projects...\n")
+    import argparse
 
-        # Prompt user for input
-        zip_path = input("Enter the path to the ZIP file: ").strip()
+    parser = argparse.ArgumentParser(description="Test the processZipFile function manually.")
+    parser.add_argument("zip_path", type=str, help="Path to the zip file to process.")
+    args = parser.parse_args()
 
-        # Validate the ZIP file
-        if not validate_zip_file(zip_path):
-            raise ZipExtractionError("Invalid ZIP file.")
-
-        # Extract the ZIP file to a temporary directory
-        print("Extracting ZIP file...")
-        extract_to = extract_zip(zip_path)
-        print(f"ZIP file extracted to: {extract_to}")
-
-        # Run the function
-        projects_metadata = parse_zip_and_identify_projects(zip_path, extract_to)
-        print("\nTest completed. Projects metadata:")
-        for project in projects_metadata:
-            print(project)
-
-        # Cleanup extracted files
-        import shutil
-        shutil.rmtree(extract_to)
-        print("\nTemporary files cleaned up.")
-
-    except Exception as e:
-        print(f"\nAn error occurred during testing: {e}")
+    if not os.path.exists(args.zip_path):
+        print(f"Error: The file {args.zip_path} does not exist.")
+    elif not zipfile.is_zipfile(args.zip_path):
+        print(f"Error: The file {args.zip_path} is not a valid zip file.")
+    else:
+        print("Processing zip file...")
+        results = processZipFile(args.zip_path)
+        print("Results:")
+        for project in results:
+            print(f"Project Name: {project['Project Name']}")
+            print(f"Type: {project['Type']}")
+            print(f"Details: {project['Details']}")
+            print("-")
