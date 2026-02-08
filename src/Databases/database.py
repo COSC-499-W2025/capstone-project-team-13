@@ -192,8 +192,12 @@ class Project(Base):
             'thumbnail_path': self.thumbnail_path,
             'custom_description': self.custom_description,
             'user_role': self.user_role,
-        }
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+}
+
         
+    
         # Only include counts if explicitly requested and relationships are loaded
         if include_counts:
             try:
