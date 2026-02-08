@@ -1,8 +1,8 @@
 ## Weekly Navigation
 
 ### Term 2 (Semester 2)
-
-- [Log 14 – Semester 2 Week 1 (Jan 05–11, 2026)](#log-14)
+- [Log 15 – Semester 2 Week 5 (Feb 02-08, 2026)](#log-15)
+- [Log 14 – Semester 2 Week 3 (Jan 19–25, 2026)](#log-14)
 - [Log 13 – Semester 2 Week 2 (Jan 12–18, 2026)](#log-13)
 - [Log 12 – Semester 2 Week 1 (Jan 05–11, 2026)](#log-12)
 
@@ -282,3 +282,47 @@ The code is functioning, it just needs to be added to this upcoming week to full
 ### Plan for Next Week
 
 I am planning on finishing Issue 29 and starting issue 27
+
+
+## Log 15
+
+## Date Range: Semester 2 Week 5 – Feb 02–08, 2026
+
+## ![week 15 features](weeklyfeaturesimages/week15features.png)
+
+### Tasks Worked On
+
+### Coding
+
+- Issue 29 + 27
+- Updated main generate_summary() function to incorporate portfolioformatter
+- Also created helper functions so user has option to save or change the portfolio showcase
+- When the user updates the showcase, the project gets saved with the user changes in DB
+
+### Testing / Debugging
+
+- Updated PortfolioFormatter tests (tests/test_portfolioFormatter.py) to match the changes
+- Tested manually with projects from my database the save and customize functions, tests for this to follow
+
+
+### Review / Collaboration
+
+- Monday zoom where we decided the plan for the week, busy on the groupchat updating eachother + helping eachother
+
+### Recap of Weekly Goals
+
+Update the portfolio view, update how it is accessed, allow save and customize functions\
+
+### Project Plan Ownership
+
+- **Assigned Features:** Portfolio display system + allow save and customize function
+- **Project Board Tasks:** Issue 29 + Issue 27
+- **Status:** In progress
+
+### Blockers or Issues
+
+My code had to overwrite the code of another member, as they could not attend the monday meeting and did not realize I was working on the generate_summary(). I will focus next week on incorporating their changes so they weren't for nothing. 
+
+### Plan for Next Week
+
+I will finish the portfolio view (adding the success score) + work on APIs with Sana
