@@ -77,10 +77,12 @@ def processZipFile(zipFilePath):
                 project_id = scan_text_document(itemPath)  # Default to text scanner
 
             results.append({
-                "Project Name": item,
-                "Type": project_type,
-                "Details": project_info['details'],
-                "Database ID": project_id
+                "name": item,  # Changed key to match handle_multi_zip
+                "type": project_type,
+                "file_count": len(os.listdir(itemPath)),  # Added file count
+                "path": itemPath,  # Added project path
+                "details": project_info['details'],
+                "database_id": project_id  # Changed key to snake_case for consistency
             })
 
     # Clean up temporary directory
@@ -182,7 +184,7 @@ if __name__ == "__main__":
         results = processZipFile(args.zip_path)
         print("Results:")
         for project in results:
-            print(f"Project Name: {project['Project Name']}")
-            print(f"Type: {project['Type']}")
-            print(f"Details: {project['Details']}")
+            print(f"Project Name: {project['name']}")
+            print(f"Type: {project['type']}")
+            print(f"Details: {project['details']}")
             print("-")
