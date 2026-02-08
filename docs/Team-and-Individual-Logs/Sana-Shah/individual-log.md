@@ -2,6 +2,8 @@
 - [T2 Week 1](#log-12)
 - [T2 Week 2](#log-13)
 - [T2 Week 3](#log-14)
+- [T2 Week 4](#log-15)
+- [T2 Week 5](#log-16)
 
 
 ## Log 1:
@@ -201,3 +203,35 @@ I am in-progress of updating main.py to manage how interactions with the databas
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to continue implementing functions that fulfull milestone 2 requirements, such as implementing and utilizing a FastAPI and adding supporting API endpoints, as per the milestone 2 requirements.
+
+
+## Log 15:
+## Date Range: T2 Week 4 - Jan 26 - Feb 1, 2026
+
+### Which features were yours in the project plan for this milestone?
+This week, my group and I prepared for peer testing by cleaning up and reviewing our overall system. This week the feature that I worked on was fixing bugs with the coding project scanner. Our scanner was not displaying skills at all once scanned and wasn't getting stored correctly in the database. I refactored the coding project scanner to now display skills exercised, as well as implemented my updated coding skills extractor into main.py.
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to continue implementing functions that fulfull milestone 2 requirements, such as implementing and utilizing a FastAPI and adding supporting API endpoints.
+
+## Log 16:
+## Date Range: T2 Week 5 - Feb 2 - Feb 8, 2026
+
+## ![week 5 features](499-week5-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+This week, the features that I contributed were beginning inplementation of the fastapi endpoints for our project. Currenty I have so far implemented these following endpoints: 
+
+POST /projects/upload
+GET /projects
+GET /projects/{id}
+
+Additionally I also reviewed my team members code and helped with errors that I was seeing on my end.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/229)
+
+### In-progress tasks
+I am in-progress of implementing the remaining endpoints using fastapi for our system, as well as developing unit tests for them as well. So far, the testing has been manually through browser.
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to continue implementing endpoints, with fastapi, as well as start implementing different functions that would make our system more unique. 
