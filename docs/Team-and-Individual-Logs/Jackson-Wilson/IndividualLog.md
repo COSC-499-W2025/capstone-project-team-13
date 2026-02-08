@@ -17,6 +17,8 @@ Hyperlinks for Term 2:
 [Term 2 Week 2](#date-range-term-2-week-2---jan-12-jan-18-2026)
 
 [Term 2 Week 3](#date-range-term-2-week-3---jan-19-jan-25-2026)
+
+[Term 2 Weeks 4 and 5](#date-range-term-2-week-4-5---jan-26-feb-8-2026)
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
