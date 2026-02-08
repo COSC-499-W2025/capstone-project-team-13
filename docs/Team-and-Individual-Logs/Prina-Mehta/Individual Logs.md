@@ -3,6 +3,8 @@
 - [Term 2 – Week 1 (Jan 5–Jan 11, 2026)](#log-12)
 - [Term 2 – Week 2 (Jan 12–Jan 18, 2026)](#log-13)
 - [Term 2 – Week 3 (Jan 19–Jan 25, 2026)](#log-14)
+- [Term 2 – Week 4 (Jan 26–Feb 1, 2026)](#log-15)
+- [Term 2 – Week 5 (Feb 2–Feb 8, 2026)](#log-16)
 
 - [Week 11 (Dec 1–Dec 7, 2025)](#log-11)
 - [Week 10 (Nov 24–Nov 30, 2025)](#log-10)
@@ -216,3 +218,80 @@ I’ll also begin working on the requirement to recognize duplicate files and en
 - Implement FastAPI to facilitate structured communication between the backend and frontend.
 - Define and expose API endpoints for project uploads, incremental updates, and project metadata retrieval.
 - Add initial API-level tests to ensure backend stability as frontend integration begins.
+
+## Log 15:
+## Date Range: Term 2 Week 4 – Jan 26 – Feb 2, 2026
+
+## ![week 1 features](T2week4tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/223
+- Implemented an Evidence Management System to automatically extract and store success metrics from project files.
+- Built automatic evidence extraction for:
+
+    - README badge detection and classification (build status, coverage, quality, downloads, version, license, popularity).
+    - Test coverage parsing from coverage.xml and coverage.json.
+    - README text metric extraction (e.g., user counts, performance improvements).
+    - CI/CD platform detection (GitHub Actions, GitLab CI, Travis CI, CircleCI, Jenkins).
+    
+- Added manual evidence entry support via an interactive CLI, allowing users to:
+
+    - Add custom metrics with descriptions.
+    - Record feedback with source attribution and 1–5 star ratings.
+    - Log achievements, awards, and milestones with dates.
+
+- Developed an evidence management interface to:
+
+    - View project evidence summaries.
+    - Trigger automatic evidence extraction.
+    - Add or clear evidence for individual projects.
+
+### Testing
+- Wrote comprehensive unit tests for evidence manager (test_evidenceManager.py)
+
+### Reviewing
+- Reviewed PR **#292**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/292 
+- Reviewed PR **#295**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/295
+- Reviewed PR **#300**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/300
+- Reviewed PR **#301**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/301
+- Reviewed PR **#302**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/302
+- Reviewed PR **#304**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/304
+
+### Plan for Next Week
+- Fix bugs brought up during peer testing
+
+## Log 16:
+## Date Range: Term 2 Week 5 – Feb 2 – Feb 8, 2026
+
+## ![week 1 features](T2week5tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/278
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/279
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/289
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/307
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/308
+- Following bugs were fixed:
+
+    - Removed git error message during initial scan
+    - Date created and date modified for coding projects
+    - Success score is now being calculated and displayed
+    - Added definition for contribution score
+    - Deletion option and sub-menu can now be accessed by users
+
+### Testing
+- Unit tests already existed for core implementation. Bug fixes were majorly integration issues that would not have been caught by unit tests
+
+### Reviewing
+- Reviewed PR **#320**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/320 
+- Reviewed PR **#319**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/319
+- Reviewed PR **#303**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/303
+- Reviewed PR **#314**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/314
+- Reviewed PR **#317**: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/317
+
+### Plan for Next Week
+- Fixing other bugs still present such as https://github.com/COSC-499-W2025/capstone-project-team-13/pull/286, https://github.com/COSC-499-W2025/capstone-project-team-13/pull/287, https://github.com/COSC-499-W2025/capstone-project-team-13/pull/290 and whatever else the team decides to prioritize during the team meeting.
