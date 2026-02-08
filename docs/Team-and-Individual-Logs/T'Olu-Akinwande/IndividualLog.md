@@ -351,3 +351,31 @@ Continue working Milestone 2 and putting our portfolio functionality together.
 
 No screenshot/peer eval available this week
 
+
+# Log5
+
+Date Range: Feb 1 – Feb 7, 2026
+Issues worked on: #276, #323, #324
+https://github.com/COSC-499-W2025/capstone-project-team-13/issues/324
+https://github.com/COSC-499-W2025/capstone-project-team-13/issues/323
+https://github.com/COSC-499-W2025/capstone-project-team-13/issues/276y.
+
+This week, I focused on fixing scanner display bugs and resolving a date sorting issue from the previous week. I debugged database schema mismatches and improved scanner output to show essential metrics during scanning.  Work involved resolving import path issues, executing migration scripts, running direct SQL queries to verify data integrity, and systematically testing each fix through the complete user workflow.Manually tested all scanner changes through the main menu to validate display output and database updates. Automated testing was not necessary for this work as the changes primarily involved modifying statements and adding fields to existing database operations rather than creating new testable units of functionality.
+
+
+Tasks Completed:
+ -Fixed project date sorting by adding missing created_at and updated_at fields to the Project model's to_dict() method and adding the user_contribution_percent column to the database
+- Implemented word count display in text scanner 
+- Implemented file size display in media scanner 
+- Added accurate date calculation from file timestamps for both scanners
+
+
+Connection to Previous Week: Built on last week's database and pipeline work to quickly identify and resolve schema issues.
+Issues / Blockers: Encountered database session errors with importance score calculation, but this is being handled in a separate PR. Core scanner functionality is working as expected.
+
+Planned Work for Next Week:
+Prepare for Milestone 2 presentation after reading break
+Address backlog items and bug fixes - e.g. Work on portfolio showcase display functionality, Implement API endpoint support
+
+<img width="861" height="426" alt="image" src="https://github.com/user-attachments/assets/81aee4e5-75f8-4234-b0ab-2db00ab1c299" />
+
