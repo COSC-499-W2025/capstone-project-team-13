@@ -191,7 +191,7 @@ class MediaProjectScanner:
             # Calculate and store importance score
             from src.Analysis.importanceScores import calculate_importance_score
             importance_score = calculate_importance_score(project)
-            db_manager.update_project(project_id, {'success_score': importance_score})
+            db_manager.update_project(project_id, {'importance_score': importance_score})
             
             print(f"\n✓ Project stored with ID: {project_id}")
             
@@ -453,7 +453,7 @@ class MediaProjectScanner:
         # Calculate and store importance score
         from src.Analysis.importanceScores import calculate_importance_score
         importance_score = calculate_importance_score(project)
-        db_manager.update_project(project.id, {'success_score': importance_score})
+        db_manager.update_project(project.id, {'importance_score': importance_score})
         
         # Store keywords (top 20)
         if self.all_keywords:

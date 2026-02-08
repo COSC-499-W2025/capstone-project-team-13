@@ -221,7 +221,7 @@ class TextDocumentScanner:
             # Calculate and store importance score after metadata/keywords are saved
             from src.Analysis.importanceScores import calculate_importance_score
             importance_score = calculate_importance_score(project)
-            db_manager.update_project(project_id, {'success_score': importance_score})
+            db_manager.update_project(project_id, {'importance_score': importance_score})
         
         return project_id
     
@@ -449,7 +449,7 @@ class TextDocumentScanner:
         # Calculate and store importance score
         from src.Analysis.importanceScores import calculate_importance_score
         importance_score = calculate_importance_score(project)
-        db_manager.update_project(project.id, {'success_score': importance_score})
+        db_manager.update_project(project.id, {'importance_score': importance_score})
         
         # Store keywords (top 30)
         if self.all_keywords:
