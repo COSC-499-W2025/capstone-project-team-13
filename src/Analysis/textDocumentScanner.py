@@ -160,22 +160,29 @@ class TextDocumentScanner:
             print(f"  Total files: {updates['file_count']}")
             
         else:
+            # Pre-calculate metadata and metrics for accurate scoring
+            self._detect_document_types()
+            self._analyze_skills()
+            metrics = self._calculate_metrics()
+
             # Create new project
             project_data = {
                 'name': self.document_name,
                 'file_path': str(self.document_path),
-                'file_count': len(self.text_files),
+                'description': f"Text project with {metrics['file_count']} documents",
+                'date_created': metrics['date_created'],
+                'date_modified': metrics['date_modified'],
+                'word_count': metrics['word_count'],
+                'file_count': metrics['file_count'],
+                'total_size_bytes': metrics['total_size_bytes'],
                 'project_type': 'text',
+                'tags': list(self.document_types),
+                'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
                 'date_scanned': datetime.now(timezone.utc)
             }
             
             project = db_manager.create_project(project_data)
             project_id = project.id
-            
-            # Calculate and store importance score
-            from src.Analysis.importanceScores import calculate_importance_score
-            importance_score = calculate_importance_score(project)
-            db_manager.update_project(project_id, {'importance_score': importance_score})
             
             print(f"\n✓ Project stored with ID: {project_id}")
             
@@ -210,6 +217,11 @@ class TextDocumentScanner:
                         }
                         db_manager.add_keyword(keyword_data)
                     print(f"  ✓ Extracted {len(self.all_keywords)} keywords")
+
+            # Calculate and store importance score after metadata/keywords are saved
+            from src.Analysis.importanceScores import calculate_importance_score
+            importance_score = calculate_importance_score(project)
+            db_manager.update_project(project_id, {'importance_score': importance_score})
         
         return project_id
     
@@ -219,6 +231,7 @@ class TextDocumentScanner:
         def _maybe_add_text_file(path: Path):
             """Validate a path as a 'text' file and add to self.text_files if valid."""
             path_str = str(path)
+            file_ext = path.suffix.lower()
 
             # 1) First: global format check (ALLOWED_FORMATS)
             try:
@@ -236,14 +249,17 @@ class TextDocumentScanner:
                 return
 
             # 3) Finally: sniff content to confirm it's actually text
+            # If sniffing fails, allow the file if extension is text
             try:
                 sniffed_supertype = sniff_supertype(path_str)
                 if sniffed_supertype != "text":
-                    print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
-                    return
-            except Exception as e:
-                print(f"Skipping file due to sniffing error: {path_str} — {e}")
-                return
+                    # Allow common text extensions even if sniffing is inconclusive
+                    if file_ext not in {'.txt', '.md', '.xml', '.pdf', '.doc', '.docx'}:
+                        print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
+                        return
+            except Exception:
+                # Allow based on extension if sniffing fails
+                pass
 
             # If all checks pass, store the file
             self.text_files.append(path)
@@ -347,7 +363,13 @@ class TextDocumentScanner:
     def _read_file_content(self, file_path: Path) -> Optional[str]:
         """Read content from various file types using extract_text"""
         try:
-            return extract_text(str(file_path))
+            content = extract_text(str(file_path))
+            if content:
+                return content
+            # Fallback for plain text formats when extract_text returns empty
+            if file_path.suffix.lower() in {'.txt', '.md', '.xml'}:
+                return file_path.read_text(encoding='utf-8', errors='ignore')
+            return content
         except Exception as e:
             print(f"    ⚠️  Error reading {file_path.name}: {str(e)}")
             return None
@@ -417,7 +439,8 @@ class TextDocumentScanner:
             'total_size_bytes': metrics['total_size_bytes'],
             'project_type': 'text',
             'tags': list(self.document_types),
-            'skills': list(self.all_skills.keys())[:10] if self.all_skills else []
+            'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
+            'contributors': 1  # Set contributors to 1
         }
         
         # Create project record

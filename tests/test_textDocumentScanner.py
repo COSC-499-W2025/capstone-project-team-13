@@ -119,7 +119,7 @@ This report summarizes the key findings and recommendations.
         test_file.write_text("test")
         
         with self.assertRaises(ValueError):
-            TextDocumentScanner(str(test_file))
+            TextDocumentScanner(str(test_file), single_file=False)
     
     def test_find_text_files(self):
         """Test that text files are found correctly"""
@@ -219,6 +219,10 @@ This report summarizes the key findings and recommendations.
         self.assertIsNotNone(project)
         self.assertEqual(project.name, "test_documents")
         self.assertEqual(project.project_type, "text")
+        self.assertIsNotNone(project.date_created)
+        self.assertIsNotNone(project.date_modified)
+        self.assertIsNotNone(project.description)
+        self.assertGreater(project.total_size_bytes, 0)
         
         # Verify document types were stored as tags
         self.assertIn("Text", project.tags)
@@ -230,6 +234,9 @@ This report summarizes the key findings and recommendations.
         # Verify keywords were stored
         keywords = db_manager.get_keywords_for_project(project_id)
         self.assertGreater(len(keywords), 0)
+
+        # Verify scores were stored
+        self.assertIsNotNone(project.importance_score)
     
     def test_scan_text_document_function(self):
         """Test convenience function"""

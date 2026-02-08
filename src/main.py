@@ -1092,8 +1092,12 @@ def generate_summary():
         # src/main.py (around line 485)
 
         if success_score is not None:
-            print(f"   Success Score:       {success_score * 100:5.1f}%")
-            print(f"      (Reflects size, languages/frameworks, testing coverage, and documentation)")
+            if activity_type in ["text", "media"]:
+                print(f"   Quality Score:       {success_score * 100:5.1f}%")
+                print(f"      (Reflects primarily quantity)")
+            else:
+                print(f"   Success Score:       {success_score * 100:5.1f}%")
+                print(f"      (Reflects size, languages/frameworks, testing coverage, and documentation)")
         if contrib_score is not None:
             print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
 
@@ -1912,7 +1916,6 @@ def run_ai_project_ranking_menu():
 
     print("Done.")
     input("\nPress Enter to continue...")
- 
 
 def run_importance_test():
     print("=== Running Importance Score Test ===")
