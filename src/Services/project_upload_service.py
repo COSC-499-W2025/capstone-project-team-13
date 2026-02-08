@@ -30,7 +30,6 @@ def process_uploaded_path(path: str):
         }
 
     supertype = sniff_supertype(path)
-
     if supertype == "code":
         project_id = scan_coding_project(path)
     elif supertype == "text":
@@ -40,6 +39,11 @@ def process_uploaded_path(path: str):
     else:
         raise ValueError("Unsupported project type")
 
+    if not project_id:
+        return {
+            "status": "skipped",
+            "reason": "No supported files found in uploaded path"
+        }
     project = db_manager.get_project(project_id)
 
     return {
