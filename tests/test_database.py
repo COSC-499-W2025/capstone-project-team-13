@@ -16,12 +16,11 @@ src_dir = os.path.join(parent_dir, 'src')
 if os.path.exists(src_dir) and src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-# Try importing the database module
 try:
-    from Databases.database import DatabaseManager, Project, File, Contributor, Keyword
+    from Databases.database import DatabaseManager, Project, File, Contributor, Keyword, User, Education, WorkHistory
 except ImportError:
     try:
-        from database import DatabaseManager, Project, File, Contributor, Keyword
+        from database import DatabaseManager, Project, File, Contributor, Keyword, User, Education, WorkHistory
     except ImportError:
         print("ERROR: Could not import database modules.")
         sys.exit(1)
@@ -489,6 +488,627 @@ class TestDatabaseEnhanced(unittest.TestCase):
         # Verify deletion
         bullets_data = self.db.get_resume_bullets(project.id)
         self.assertIsNone(bullets_data)
+
+    # ============ USER TESTS ============
+
+    def test_create_user(self):
+        """Test creating a user with required fields"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'jane@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        self.assertIsNotNone(user.id)
+        self.assertEqual(user.first_name, 'Jane')
+        self.assertEqual(user.last_name, 'Doe')
+        self.assertEqual(user.email, 'jane@example.com')
+        self.assertEqual(user.password_hash, 'hashed_password_123')
+        self.assertIsNone(user.portfolio)
+        self.assertIsNone(user.resume)
+
+    def test_create_user_duplicate_email(self):
+        """Test that creating two users with the same email fails"""
+        self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'duplicate@example.com',
+            'password_hash': 'hash1',
+        })
+
+        with self.assertRaises(Exception):
+            self.db.create_user({
+                'first_name': 'John',
+                'last_name': 'Smith',
+                'email': 'duplicate@example.com',
+                'password_hash': 'hash2',
+            })
+
+    def test_get_user_by_id(self):
+        """Test retrieving a user by ID"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'getbyid@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        retrieved = self.db.get_user(user.id)
+        self.assertIsNotNone(retrieved)
+        self.assertEqual(retrieved.id, user.id)
+        self.assertEqual(retrieved.email, 'getbyid@example.com')
+
+    def test_get_user_nonexistent_id(self):
+        """Test that retrieving a nonexistent user returns None"""
+        retrieved = self.db.get_user(99999)
+        self.assertIsNone(retrieved)
+
+    def test_get_user_by_email(self):
+        """Test retrieving a user by email"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'byemail@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        retrieved = self.db.get_user_by_email('byemail@example.com')
+        self.assertIsNotNone(retrieved)
+        self.assertEqual(retrieved.id, user.id)
+
+    def test_get_user_by_email_nonexistent(self):
+        """Test that retrieving a nonexistent email returns None"""
+        retrieved = self.db.get_user_by_email('nobody@example.com')
+        self.assertIsNone(retrieved)
+
+    def test_update_user(self):
+        """Test updating user fields"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'update@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        updated = self.db.update_user(user.id, {
+            'first_name': 'Janet',
+            'last_name': 'Smith',
+        })
+
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.first_name, 'Janet')
+        self.assertEqual(updated.last_name, 'Smith')
+        # Email should remain unchanged
+        self.assertEqual(updated.email, 'update@example.com')
+
+    def test_update_user_nonexistent(self):
+        """Test that updating a nonexistent user returns None"""
+        result = self.db.update_user(99999, {'first_name': 'Ghost'})
+        self.assertIsNone(result)
+
+    def test_update_user_portfolio_and_resume(self):
+        """Test setting portfolio and resume JSON fields"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'portfolio@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        portfolio_data = {
+            'projects': ['Project A', 'Project B'],
+            'summary': 'Full-stack developer'
+        }
+        resume_data = {
+            'objective': 'Seeking a senior role',
+            'skills': ['Python', 'Django', 'SQLite']
+        }
+
+        updated = self.db.update_user(user.id, {
+            'portfolio': portfolio_data,
+            'resume': resume_data,
+        })
+
+        self.assertEqual(updated.portfolio, portfolio_data)
+        self.assertEqual(updated.resume, resume_data)
+
+        # Verify persistence by re-fetching
+        fetched = self.db.get_user(user.id)
+        self.assertEqual(fetched.portfolio, portfolio_data)
+        self.assertEqual(fetched.resume, resume_data)
+
+    def test_delete_user(self):
+        """Test deleting a user"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'delete@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        result = self.db.delete_user(user.id)
+        self.assertTrue(result)
+        self.assertIsNone(self.db.get_user(user.id))
+
+    def test_delete_user_nonexistent(self):
+        """Test that deleting a nonexistent user returns False"""
+        result = self.db.delete_user(99999)
+        self.assertFalse(result)
+
+    def test_delete_user_cascades_to_education_and_work(self):
+        """Test that deleting a user also deletes their education and work history"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'cascade@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        self.db.add_education({
+            'user_id': user.id,
+            'institution': 'UBC',
+            'degree_type': "Bachelor's",
+            'topic': 'Computer Science',
+            'start_date': datetime(2020, 9, 1),
+            'end_date': datetime(2024, 4, 30),
+        })
+
+        self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Acme Corp',
+            'role': 'Developer',
+            'start_date': datetime(2022, 6, 1),
+            'end_date': None,
+        })
+
+        # Verify they exist
+        self.assertEqual(len(self.db.get_education_for_user(user.id)), 1)
+        self.assertEqual(len(self.db.get_work_history_for_user(user.id)), 1)
+
+        # Delete user
+        self.db.delete_user(user.id)
+
+        # Verify cascade
+        self.assertEqual(len(self.db.get_education_for_user(user.id)), 0)
+        self.assertEqual(len(self.db.get_work_history_for_user(user.id)), 0)
+
+    def test_user_to_dict(self):
+        """Test User to_dict excludes password_hash"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'todict@example.com',
+            'password_hash': 'secret_hash',
+        })
+
+        user_dict = user.to_dict()
+
+        self.assertEqual(user_dict['first_name'], 'Jane')
+        self.assertEqual(user_dict['email'], 'todict@example.com')
+        self.assertNotIn('password_hash', user_dict)
+
+    # ============ EDUCATION TESTS ============
+
+    def test_add_education(self):
+        """Test adding an education entry"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'edu@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        education = self.db.add_education({
+            'user_id': user.id,
+            'institution': 'UBC Okanagan',
+            'degree_type': "Bachelor's",
+            'topic': 'Computer Science',
+            'start_date': datetime(2020, 9, 1),
+            'end_date': datetime(2024, 4, 30),
+        })
+
+        self.assertIsNotNone(education.id)
+        self.assertEqual(education.institution, 'UBC Okanagan')
+        self.assertEqual(education.degree_type, "Bachelor's")
+        self.assertEqual(education.topic, 'Computer Science')
+        self.assertEqual(education.end_date, datetime(2024, 4, 30))
+
+    def test_add_education_present(self):
+        """Test adding an education entry with no end date (present)"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'edupresent@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        education = self.db.add_education({
+            'user_id': user.id,
+            'institution': 'UBC Okanagan',
+            'degree_type': "Master's",
+            'topic': 'Computer Science',
+            'start_date': datetime(2024, 9, 1),
+            'end_date': None,
+        })
+
+        self.assertIsNone(education.end_date)
+        # to_dict should show 'Present'
+        edu_dict = education.to_dict()
+        self.assertEqual(edu_dict['end_date'], 'Present')
+
+    def test_get_education_for_user(self):
+        """Test retrieving all education entries for a user, sorted by start_date descending"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'edulist@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        # Add older entry first
+        self.db.add_education({
+            'user_id': user.id,
+            'institution': 'College A',
+            'degree_type': 'Diploma',
+            'topic': 'Business',
+            'start_date': datetime(2018, 1, 1),
+            'end_date': datetime(2020, 6, 30),
+        })
+
+        # Add newer entry second
+        self.db.add_education({
+            'user_id': user.id,
+            'institution': 'University B',
+            'degree_type': "Bachelor's",
+            'topic': 'Economics',
+            'start_date': datetime(2020, 9, 1),
+            'end_date': datetime(2024, 4, 30),
+        })
+
+        education_list = self.db.get_education_for_user(user.id)
+        self.assertEqual(len(education_list), 2)
+        # Newer entry should come first (descending order)
+        self.assertEqual(education_list[0].institution, 'University B')
+        self.assertEqual(education_list[1].institution, 'College A')
+
+    def test_get_education_for_user_empty(self):
+        """Test retrieving education for a user with no entries"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'eduempty@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        education_list = self.db.get_education_for_user(user.id)
+        self.assertEqual(len(education_list), 0)
+
+    def test_update_education(self):
+        """Test updating an education entry"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'eduupdate@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        education = self.db.add_education({
+            'user_id': user.id,
+            'institution': 'Old University',
+            'degree_type': "Bachelor's",
+            'topic': 'Physics',
+            'start_date': datetime(2019, 9, 1),
+            'end_date': None,
+        })
+
+        updated = self.db.update_education(education.id, {
+            'institution': 'New University',
+            'topic': 'Mathematics',
+            'end_date': datetime(2023, 6, 30),
+        })
+
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.institution, 'New University')
+        self.assertEqual(updated.topic, 'Mathematics')
+        self.assertEqual(updated.end_date, datetime(2023, 6, 30))
+
+    def test_update_education_nonexistent(self):
+        """Test that updating a nonexistent education entry returns None"""
+        result = self.db.update_education(99999, {'institution': 'Ghost'})
+        self.assertIsNone(result)
+
+    def test_delete_education(self):
+        """Test deleting an education entry"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'edudel@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        education = self.db.add_education({
+            'user_id': user.id,
+            'institution': 'UBC',
+            'degree_type': "Bachelor's",
+            'topic': 'Computer Science',
+            'start_date': datetime(2020, 9, 1),
+            'end_date': datetime(2024, 4, 30),
+        })
+
+        result = self.db.delete_education(education.id)
+        self.assertTrue(result)
+        self.assertEqual(len(self.db.get_education_for_user(user.id)), 0)
+
+    def test_delete_education_nonexistent(self):
+        """Test that deleting a nonexistent education entry returns False"""
+        result = self.db.delete_education(99999)
+        self.assertFalse(result)
+
+    def test_education_to_dict(self):
+        """Test Education to_dict with and without end date"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'edudict@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        # With end date
+        edu_completed = self.db.add_education({
+            'user_id': user.id,
+            'institution': 'UBC',
+            'degree_type': "Bachelor's",
+            'topic': 'Computer Science',
+            'start_date': datetime(2020, 9, 1),
+            'end_date': datetime(2024, 4, 30),
+        })
+
+        edu_dict = edu_completed.to_dict()
+        self.assertEqual(edu_dict['institution'], 'UBC')
+        self.assertIn('2024', edu_dict['end_date'])
+
+        # Without end date
+        edu_current = self.db.add_education({
+            'user_id': user.id,
+            'institution': 'MIT',
+            'degree_type': "Master's",
+            'topic': 'AI',
+            'start_date': datetime(2024, 9, 1),
+            'end_date': None,
+        })
+
+        edu_dict_current = edu_current.to_dict()
+        self.assertEqual(edu_dict_current['end_date'], 'Present')
+
+    # ============ WORK HISTORY TESTS ============
+
+    def test_add_work_history(self):
+        """Test adding a work history entry"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'work@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        work = self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Acme Corp',
+            'role': 'Software Developer',
+            'start_date': datetime(2022, 6, 1),
+            'end_date': datetime(2024, 1, 15),
+        })
+
+        self.assertIsNotNone(work.id)
+        self.assertEqual(work.company, 'Acme Corp')
+        self.assertEqual(work.role, 'Software Developer')
+        self.assertEqual(work.end_date, datetime(2024, 1, 15))
+
+    def test_add_work_history_present(self):
+        """Test adding a work history entry with no end date (present)"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'workpresent@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        work = self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Tech Inc',
+            'role': 'Senior Developer',
+            'start_date': datetime(2023, 3, 1),
+            'end_date': None,
+        })
+
+        self.assertIsNone(work.end_date)
+        work_dict = work.to_dict()
+        self.assertEqual(work_dict['end_date'], 'Present')
+
+    def test_get_work_history_for_user(self):
+        """Test retrieving all work history entries for a user, sorted by start_date descending"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'worklist@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        # Add older job first
+        self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Old Company',
+            'role': 'Intern',
+            'start_date': datetime(2020, 5, 1),
+            'end_date': datetime(2020, 8, 31),
+        })
+
+        # Add newer job second
+        self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'New Company',
+            'role': 'Developer',
+            'start_date': datetime(2022, 1, 10),
+            'end_date': None,
+        })
+
+        work_list = self.db.get_work_history_for_user(user.id)
+        self.assertEqual(len(work_list), 2)
+        # Newer entry should come first (descending order)
+        self.assertEqual(work_list[0].company, 'New Company')
+        self.assertEqual(work_list[1].company, 'Old Company')
+
+    def test_get_work_history_for_user_empty(self):
+        """Test retrieving work history for a user with no entries"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'workempty@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        work_list = self.db.get_work_history_for_user(user.id)
+        self.assertEqual(len(work_list), 0)
+
+    def test_update_work_history(self):
+        """Test updating a work history entry"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'workupdate@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        work = self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Old Corp',
+            'role': 'Junior Dev',
+            'start_date': datetime(2021, 3, 1),
+            'end_date': None,
+        })
+
+        updated = self.db.update_work_history(work.id, {
+            'company': 'New Corp',
+            'role': 'Senior Dev',
+            'end_date': datetime(2024, 12, 31),
+        })
+
+        self.assertIsNotNone(updated)
+        self.assertEqual(updated.company, 'New Corp')
+        self.assertEqual(updated.role, 'Senior Dev')
+        self.assertEqual(updated.end_date, datetime(2024, 12, 31))
+
+    def test_update_work_history_nonexistent(self):
+        """Test that updating a nonexistent work history entry returns None"""
+        result = self.db.update_work_history(99999, {'company': 'Ghost'})
+        self.assertIsNone(result)
+
+    def test_delete_work_history(self):
+        """Test deleting a work history entry"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'workdel@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        work = self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Acme',
+            'role': 'Developer',
+            'start_date': datetime(2022, 6, 1),
+            'end_date': datetime(2024, 1, 15),
+        })
+
+        result = self.db.delete_work_history(work.id)
+        self.assertTrue(result)
+        self.assertEqual(len(self.db.get_work_history_for_user(user.id)), 0)
+
+    def test_delete_work_history_nonexistent(self):
+        """Test that deleting a nonexistent work history entry returns False"""
+        result = self.db.delete_work_history(99999)
+        self.assertFalse(result)
+
+    def test_work_history_to_dict(self):
+        """Test WorkHistory to_dict with and without end date"""
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'workdict@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        # With end date
+        work_completed = self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Acme',
+            'role': 'Developer',
+            'start_date': datetime(2020, 1, 1),
+            'end_date': datetime(2022, 6, 30),
+        })
+
+        work_dict = work_completed.to_dict()
+        self.assertEqual(work_dict['company'], 'Acme')
+        self.assertIn('2022', work_dict['end_date'])
+
+        # Without end date
+        work_current = self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Tech Inc',
+            'role': 'Senior Dev',
+            'start_date': datetime(2023, 1, 1),
+            'end_date': None,
+        })
+
+        work_dict_current = work_current.to_dict()
+        self.assertEqual(work_dict_current['end_date'], 'Present')
+
+    # ============ CLEAR ALL DATA TEST (UPDATED) ============
+
+    def test_clear_all_data_includes_user_tables(self):
+        """Test that clear_all_data also clears users, education, and work history"""
+        # Create a user with education and work history
+        user = self.db.create_user({
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'clearuser@example.com',
+            'password_hash': 'hashed_password_123',
+        })
+
+        self.db.add_education({
+            'user_id': user.id,
+            'institution': 'UBC',
+            'degree_type': "Bachelor's",
+            'topic': 'Computer Science',
+            'start_date': datetime(2020, 9, 1),
+            'end_date': datetime(2024, 4, 30),
+        })
+
+        self.db.add_work_history({
+            'user_id': user.id,
+            'company': 'Acme',
+            'role': 'Developer',
+            'start_date': datetime(2022, 6, 1),
+            'end_date': None,
+        })
+
+        # Also create a project so we verify everything clears together
+        self.db.create_project({
+            'name': 'Clear Test',
+            'file_path': '/test/clearall',
+            'project_type': 'code',
+        })
+
+        # Clear everything
+        self.db.clear_all_data()
+
+        # Verify all tables are empty
+        self.assertIsNone(self.db.get_user(user.id))
+        self.assertEqual(len(self.db.get_education_for_user(user.id)), 0)
+        self.assertEqual(len(self.db.get_work_history_for_user(user.id)), 0)
+        stats = self.db.get_stats()
+        self.assertEqual(stats['total_projects'], 0)
 
 
 if __name__ == '__main__':
