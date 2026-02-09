@@ -19,8 +19,8 @@ class TestMultiProjectZip(unittest.TestCase):
     def test_splitZipFile(self):
         """Test the splitZipFile function."""
         with zipfile.ZipFile(self.zip_file, 'w') as zf:
-            zf.writestr("project1/file1.txt", "content1")
-            zf.writestr("project2/file2.txt", "content2")
+            zf.writestr(os.path.join("project1", "file1.txt"), "content1")
+            zf.writestr(os.path.join("project2", "file2.txt"), "content2")
 
         projects = splitZipFile(self.zip_file)
         self.assertIn("project1", projects)
@@ -40,8 +40,8 @@ class TestMultiProjectZip(unittest.TestCase):
     def test_processZipFile(self):
         """Test the processZipFile function."""
         with zipfile.ZipFile(self.zip_file, 'w') as zf:
-            zf.writestr("top_level/project1/file1.txt", "content1")
-            zf.writestr("top_level/project2/file2.txt", "content2")
+            zf.writestr(os.path.join("top_level", "project1", "file1.txt"), "content1")
+            zf.writestr(os.path.join("top_level", "project2", "file2.txt"), "content2")
 
         result = processZipFile(self.zip_file)
         self.assertIsInstance(result, list)
@@ -55,7 +55,6 @@ class TestMultiProjectZip(unittest.TestCase):
             self.assertIn("path", project)
             self.assertIn("details", project)
             self.assertIn("database_id", project)
-
 
 
 if __name__ == '__main__':
