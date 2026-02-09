@@ -118,6 +118,12 @@ class MediaProjectScanner:
             print("\n⚠️  No media files found.")
             return None
         
+        #Calculate and display total size 
+        total_size = sum(f.stat().st_size for f in self.media_files)
+        total_size_mb = total_size / (1024 * 1024)
+        print(f"  ✓ Total size: {total_size_mb:.2f} MB ({total_size:,} bytes)")
+
+        
         # Step 2: Detect software/tools
         print("\nStep 2: Detecting software used...")
         self._analyze_media()
@@ -163,6 +169,18 @@ class MediaProjectScanner:
             print(f"  Added {new_files_count} new files")
             print(f"  Total files: {updates['file_count']}")
             
+# Calculate project dates from files
+            file_dates = []
+            for file_path in self.media_files:
+                try:
+                    stat = file_path.stat()
+                    file_dates.append(datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc))
+                except Exception:
+                    continue
+            
+            date_created = min(file_dates) if file_dates else datetime.now(timezone.utc)
+            date_modified = max(file_dates) if file_dates else datetime.now(timezone.utc)
+
         else:
             # Create new project
             project_data = {
