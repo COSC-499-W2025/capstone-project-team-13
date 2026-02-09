@@ -2,6 +2,8 @@
 
 ## Term 2 Logs
 - [T2 Week 3](#term-2-week-3-team-log)
+- [T2 Week 4](#term-2-week-4-team-log)
+- [T2 Week 5](#term-2-week-5-team-log)
 
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
@@ -425,3 +427,93 @@ All tests were written in Python and executed successfully, other than analysis 
 
 **What didn't go as planned:**  
 - because we didn't have the above meeting, our work the previous week was a little disorganized until we met about it.
+
+## Term 2 Week 4 Team Log  
+**Date Range:** Jan 26 - Feb 1, 2026  
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T’Olu Akinwande** | Implemented an incremental skill extraction module to ensure that newly added or modified files. This adds support for incremental skill extraction by detecting newly introduced libarries from import statements in newly added or modified files. This ensures project skills stay up to date during incremental scans without requiring a full re-scan | #296 |
+| **Prina Mehta** | Implemented evidence management system that automatically extracts and stores success metrics from project files and allows users to manually add metrics, feedback and achievements to their project | #223 |
+| **Maya Knutsvig** | Focus was bugs that were detected during peer testing. This includes having consistent wording in our user-menu as well as consistent numbering. Added settings in the main menu as well as changed coding scanner to fix "lines of code" and "date" bug. Also formatted the time to use the user's time for displaying and not UTC. | #288 #285 #282 #275|
+| **Jackson Wilson** | Changed success score which was initially arbitrary into using importance score and changed the scale to be out of 100% rather than 0-1. Additionally did some housekeeping, by deleting testConsole which was a redundant file and modified the PR template so that it did not have pre-existing example.  | #284  |
+| **Illina Islam** | Worked on fixing bugs in the resume bullet and generation functions caught during peer testing. Additionally, added necessary function in database to begin generation of user profiles. | #299 #281 #297 |
+| **Sana Shah** | Refactored coding projet scanner and skill extractor. Skills were not previously available, displayed nor stored properly in the database for coding projects. This update changed coding project scanner to correctly call skills extraction function and properly store it in the database. The coding skills extraction function now properly counts top-level skills and displays corresponding sub-skills for that category | #337|
+
+---
+Backlog
+![alt text](teamLogImages/backlogT2W4.png)
+
+
+Burnup Chart:
+![alt text](teamLogImages/burnupT2W4.png)
+
+In-Progress Tasks: 
+![alt text](teamLogImages/inProgressT2W4.png)
+
+Completed Tasks:
+![alt text](teamLogImages/completedT2W4.png)
+![alt text](teamLogImages/completed2T2W4.png)
+
+
+
+# Test Report
+All tests were written in Python and executed successfully.  
+Unit tests were created for each major function (e.g., `test_configurationsMenu(), test_evidenceManager(), etc`).  
+Manual testing through `main.py` also confirmed that all modules work as expected with sample project data.
+![alt text](teamLogImages/testsT2W4.png)
+
+
+### Reflection Points
+**What went well:**  
+- Each member worked independently on key components that connected successfully during testing.  
+- We were able to incorporate major bug fixes that were a point of contention during peer testing
+
+**What didn’t go as planned:**  
+- Our tests need to be updated so that they all pass.
+- PRs were being put up too close too the deadline
+
+
+## Term 2 Week 5 Team Log  
+**Date Range:** Feb 2 - Feb 8, 2026
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T’Olu Akinwande** | Bug fixes, including "sort by date" bug for getting rid of the hardcoded values as well as fixing the mediaScanner so it now shows proper file size after scanning and textScaner to display word count and date of creation | #323, #324 |
+| **Prina Mehta** | Fixed bugs that came up during peer testing. This included removing git error message during intial scabn, changed date created and date modified for coding projects, added definitions for contribution and success score and displayed the deletion module. | #278, #279, #289, #307, #308 |
+| **Maya Knutsvig** | Portfolio formatter updated to have a better display card for a more visually appealing effect for the user. Updated main.py to include helper functions to save portfolio showcases and allow for customization. | #227 #225 |
+| **Jackson Wilson** | Adds an option to upload a zip folder and have it scan multiple projects within that zip folder. | #232 |
+| **Illina Islam** | Implemetation of user profile. This includes options for sign-up, login, add work history and add education as well as password and email validation using password hashing. | #290 |
+| **Sana Shah** | Implementation of API endpoints with FastAPI specifically including endpoints for POST/projects/upload, GET/projects and GET/projects/{id} | #229 |
+
+---
+Backlog
+![alt text](teamLogImages/backlogT2W4.png)
+
+
+Burnup Chart:
+![alt text](teamLogImages/burnupT2W4.png)
+
+In-Progress Tasks: 
+![alt text](teamLogImages/inProgressT2W4.png)
+
+Completed Tasks:
+![alt text](teamLogImages/completedT2W4.png)
+![alt text](teamLogImages/completed2T2W4.png)
+
+
+
+# Test Report
+All tests were written in Python and executed successfully.  
+Unit tests were created for each major function (e.g., `test_portofolioFormatter(), test_database(), etc`).  
+Manual testing through `main.py` also confirmed that all modules work as expected with sample project data.
+![alt text](teamLogImages/testsT2W4.png)
+
+
+### Reflection Points
+**What went well:**  
+- Positive contributions this week toward bugb fixing and milestone 2 requirements keeping the team on track
+- PR sent in at proper times
+
+**What didn’t go as planned:**  
+- Better communication on who is doing what needs to be implemented in future sprint because the team encountered 2 people working on the same file and over-writing each other's work.
