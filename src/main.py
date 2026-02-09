@@ -69,6 +69,7 @@ from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
 from src.Analysis.incrementalFileHandler import handle_add_files_to_project
+from src.Analysis.multiProjectZip import processZipFile, identifyProjectType, splitZipFile
 from src.Databases.database import db_manager
 
 # Import evidence management features
@@ -2381,10 +2382,11 @@ def project_upload_menu():
         '2': handle_visual_project,
         '3': handle_document,
         '4': handle_zip_archive,
-        '5': handle_auto_detect,
-        '6': handle_add_files_to_project,     
-        '7': handle_incremental_zip_upload,
-        '8': handle_thumbnail_upload,
+        '5': handle_multi_zip,
+        '6': handle_auto_detect,
+        '7': handle_add_files_to_project,     
+        '8': handle_incremental_zip_upload,
+        '9': handle_thumbnail_upload,
     }
     
     print("UPLOAD NEW PROJECT:")
@@ -2392,16 +2394,17 @@ def project_upload_menu():
     print("  2. Visual/media project")
     print("  3. Text document")
     print("  4. ZIP archive")
-    print("  5. Auto-detect type")
+    print("  5. Upload multiple projects from a ZIP archive (auto-detect types)")
+    print("  6. Auto-detect type")
     print("\nADD TO EXISTING PROJECT:")
-    print("  6. Add individual file(s)")       
-    print("  7. Add ZIP archive")
-    print("  8. Upload thumbnail for a stored project")
-    print("\n  9. Return to Main Menu")
+    print("  7. Add individual file(s)")       
+    print("  8. Add ZIP archive")
+    print("  9. Upload thumbnail for a stored project")
+    print("\n  10. Return to Main Menu")
     print("="*70)
 
-    choice = input("\nEnter your choice (1-9): ").strip()
-    if choice == '9':
+    choice = input("\nEnter your choice (1-10): ").strip()
+    if choice == '10':
         print("\nReturning to main menu...")
         return
 
@@ -2413,6 +2416,37 @@ def project_upload_menu():
             options[choice]()
         else:
             print("Invalid choice. Try again.")
+
+def handle_multi_zip():
+    """Handle uploading multiple projects from a ZIP archive"""
+    print_header("Upload Multiple Projects from ZIP Archive")
+    
+    # Prompt user for ZIP file path
+    zip_file_path = get_path_input("Enter the path to the ZIP file: ")
+    if not zip_file_path:
+        print("❌ No path provided. Returning to menu.")
+        return
+    
+    if not zip_file_path.lower().endswith('.zip'):
+        print("❌ The file must have a .zip extension.")
+        return
+    
+    # Process the ZIP file
+    try:
+        print("\n⏳ Processing ZIP file...")
+        results = processZipFile(zip_file_path)
+        
+        # Print results
+        print("\n✅ ZIP file processed successfully.")
+        print("\n📊 Results:")
+        if not results:
+            print("   No projects were detected in the ZIP file.")
+        else:
+            for project in results:
+                print(f"   - Project Name: {project['name']}")
+                print(f"     Type: {project['type']}")
+    except Exception as e:
+        print(f"❌ Failed to process ZIP file: {e}")
 
 def assign_and_view_roles():
     from src.Analysis.roleAttribution import test_role_attribution, lookup_roles
