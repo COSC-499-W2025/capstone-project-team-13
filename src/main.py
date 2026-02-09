@@ -1185,17 +1185,6 @@ def customize_portfolio_project():
     print("\n✅ Saved! Your project is updated for portfolio display.\n")
 
 
-        if success_score is not None:
-            if activity_type in ["text", "media"]:
-                print(f"   Quality Score:       {success_score * 100:5.1f}%")
-                print(f"      (Reflects primarily quantity)")
-            else:
-                print(f"   Success Score:       {success_score * 100:5.1f}%")
-                print(f"      (Reflects size, languages/frameworks, testing coverage, and documentation)")
-        if contrib_score is not None:
-            print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
-
-
 def ai_project_analysis_menu():
     """AI Project Analysis submenu"""
     # Optional AI service consent (not required for basic functionality)
