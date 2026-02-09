@@ -1,4 +1,5 @@
 # Log navigation
+- [Term 2, week 4/5](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-4/5---jan-26-feb-8-2026)
 - [Term 2, week 3](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-3---jan-19-jan-25-2026)
 - [Term 2, week 2](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-2---jan-12-jan-18-2026)
 
@@ -188,6 +189,26 @@
   * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/224
 * This week we had a team meeting to explain our contributions and prepare for the peer testing
 * for next week: have a team meeting, prepare for and start peer testing, add a table or column to the database for storing resumes
+
+
+## Week 4/5 - Jan 26-Feb 8, 2026
+<img width="1070" height="550" alt="Screenshot 2026-02-08 at 5 17 04 PM" src="https://github.com/user-attachments/assets/020d22b9-32fb-441f-9a0b-e03e2f5d682e" />
+
+* I worked on fixing some bugs found in the resume system, adding tables to the database for user profiles, creating tests for the new database tables and functions, and creating a module for the creating user profiles
+  * the bugs in the resume system were mainly relating to bullet generation and verbs being used; all these edits can be found within src/Resume
+  * the tables added to the database are called user, work history, and education; there were also some utility functions added (database.py)
+  * tests were created to make sure that the utility functions and user tables worked properly (test_database.py)
+  * profileMenu.py contains basic sign up, login, and add work history and education functions; these will be very important for when we start working on the front end
+* My contributions closes:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/299
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/281
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/297
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/298
+* this week we had a team meeting to implement a new PR review system
+  * we now have a deadline for PR approvals and designated groups within our groups for PR reviews
+* for next week: have a team meeting, attend lectures, further improve user profile system
+
+
 
 
 
