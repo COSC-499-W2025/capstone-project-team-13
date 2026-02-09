@@ -15,8 +15,8 @@ def load_project_metadata_from_db():
         project_dicts.append({
             "name": pd.get("name"),
             # These fields may be stored as datetime or string — handle both
-            "created_at": pd.get("date_created") or pd.get("created_at"),
-            "updated_at": pd.get("date_modified") or pd.get("updated_at"),
+            "created_at": pd.get("created_at") or pd.get("date_created"),
+            "updated_at": pd.get("updated_at") or pd.get("date_modified"),
         })
     return project_dicts
 
@@ -38,11 +38,29 @@ def rank_projects_chronologically(projects):
 
 def format_project_timeline(projects):
     """Format project info for display."""
+    from datetime import datetime
+    
     lines = []
     for idx, p in enumerate(projects, start=1):
         name = p.get("name", "Unnamed Project")
         created = p.get("created_at", "Unknown")
         updated = p.get("updated_at", "Unknown")
+        
+        # Format dates nicely
+        if created != "Unknown":
+            try:
+                created_dt = datetime.fromisoformat(created)
+                created = created_dt.strftime("%B %d, %Y at %I:%M %p")
+            except:
+                pass
+        
+        if updated != "Unknown":
+            try:
+                updated_dt = datetime.fromisoformat(updated)
+                updated = updated_dt.strftime("%B %d, %Y at %I:%M %p")
+            except:
+                pass
+        
         lines.append(
             f"{idx}. {name}\n"
             f"    Created: {created}\n"

@@ -24,6 +24,7 @@ builtins.print = print
 
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.Databases.user_config import ConfigManager
 
 from src.Helpers.installDependencies import install_requirements
 install_requirements()
@@ -42,6 +43,7 @@ from src.Extraction.zipHandler import (
     validate_zip_file, extract_zip, get_zip_contents, 
     count_files_in_zip, ZipExtractionError, InvalidFileFormatError
 )
+from src.Portfolio.portfolioFormatter import PortfolioFormatter
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Helpers.classifier import supertype_from_extension
 from src.Analysis.codingProjectScanner import scan_coding_project
@@ -49,7 +51,6 @@ from src.Analysis.textDocumentScanner import scan_text_document
 from src.Analysis.mediaProjectScanner import scan_media_project
 from src.Analysis.visualMediaAnalyzer import analyze_visual_project
 from src.Extraction.keywordExtractorText import extract_keywords_with_scores
-from src.Databases.database import db_manager
 from src.Analysis.summarizeProjects import summarize_projects
 from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
@@ -61,13 +62,14 @@ from src.AI.ai_enhanced_summarizer import (
 )
 from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
-from src.Analysis.rank_projects_by_date import rank_projects_chronologically, format_project_timeline
+from src.Analysis.rank_projects_by_date import get_ranked_timeline_from_db
 from src.Analysis.codeEfficiency import grade_efficiency
 from src.Analysis.folderEfficiency import grade_folder
 from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
 from src.Analysis.incrementalFileHandler import handle_add_files_to_project
+from src.Databases.database import db_manager
 
 # Import evidence management features
 try:
@@ -948,18 +950,6 @@ def handle_auto_detect():
         print("\n⚠️  Unable to analyze this folder.")
         print("   It may not contain recognizable project files.")
 
-def view_portfolio():
-    """View portfolio-style formatted projects"""
-    print_header("📂 Portfolio View")
-
-    try:
-        from src.Portfolio.portfolioFormatter import PortfolioFormatter
-        formatter = PortfolioFormatter()
-        formatter.display_portfolio_view()
-    except Exception as e:
-        print(f"\n❌ Failed to load portfolio view: {e}")
-        import traceback
-        traceback.print_exc()
 
 def view_all_projects():
     """View all projects in database"""
@@ -997,99 +987,203 @@ def view_all_projects():
         if project:
             display_project_details(project)
 
+def view_saved_showcases():
+    print_header("Saved Showcase Projects")
+
+    formatter = PortfolioFormatter()
+
+    # pull only featured projects
+    featured_projects = db_manager.get_featured_projects()
+
+    if not featured_projects:
+        print("📭 No showcase projects saved yet.")
+        print("Tip: Customize a project and set Featured = y (and Hidden = n).")
+        return
+
+    # format as cards (reuse your portfolio formatter)
+    cards = [formatter._format_project_card(p) for p in featured_projects]
+
+    # sort by rank (if set), then importance
+    def sort_key(card):
+        rank = card.get("user_rank")
+        rank_key = rank if rank is not None else 10**9
+        return (rank_key, -card.get("importance_score", 0))
+
+    cards.sort(key=sort_key)
+
+    print(f"⭐ Showcase projects found: {len(cards)}\n")
+    for i, card in enumerate(cards, 1):
+        formatter._display_project_card(card, i, featured=True)
+
+def _apply_showcase_preset(selected_projects: list[dict]):
+    """
+    Marks selected projects as featured and assigns rank.
+    """
+    if not selected_projects:
+        print("⚠️ No projects to save.")
+        return
+
+    print("DEBUG saving projects:", selected_projects)
+
+    for i, p in enumerate(selected_projects, start=1):
+        pid = p.get("project_id") 
+
+        if not pid:
+            print(f"⚠️ Skipping project without ID: {p.get('project_name')}")
+            continue
+
+        db_manager.update_project(pid, {
+            "is_featured": True,
+            "is_hidden": False,   # ensure visible
+            "user_rank": i,
+        })
+
+        print(f"Saved: {p.get('project_name')} (ID {pid}) as rank {i}")
+
+
 def generate_summary():
-    """Generate summary of all projects using existing module"""
-    print_header("Generate Project Summary")
-    
-    # Use existing fetch function instead of duplicating logic
-    project_dicts = fetch_projects_for_summary()
+    print_header("Generate Project Summary + Portfolio")
+
+    formatter = PortfolioFormatter()
+    project_dicts = formatter.get_projects_for_summary_input(include_hidden=False)
     
     if not project_dicts:
         print("📭 No projects found in database.")
-        print("\nTip: Scan some projects first!")
         return
-    
-    print(f"Found {len(project_dicts)} project(s). Generating summary...\n")
-    
+        
+
     result = summarize_projects(project_dicts, top_k=min(5, len(project_dicts)))
-    all_scored = result.get("all_projects_scored", [])
-   
-    avg_success = (
-        sum(p.get("success_score", 0.0) for p in all_scored) / len(all_scored)
-        if all_scored else 0.0
-    )
-    avg_contrib = (
-        sum(p.get("contribution_score", 0.0) for p in all_scored) / len(all_scored)
-        if all_scored else 0.0
-    )
-    # Generate summary
-    
-    print("="*70)
+    print("DEBUG selected IDs:", [(p.get("project_id"), p.get("project_name")) for p in result.get("selected_projects", [])])
+
+    print("=" * 70)
     print("  📊 PROJECT PORTFOLIO SUMMARY")
-    print("="*70)
-    print(f"\n{result['summary']}\n")
-    
-    print(f"Average Success Score:  {avg_success * 100:5.1f}%")
-    print(f"  (Based on project size, completeness, testing, and documentation quality)")
-    print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
-    
-    print(f"{'='*70}")
-    print(f"  🏆 Top {len(result['selected_projects'])} Projects")
-    print(f"{'='*70}\n")
-    
-    for i, proj in enumerate(result['selected_projects'], 1):
-        activity_type = proj.get("activity_type")
-        time_spent = proj.get("time_spent")
-        success_score = proj.get("success_score")
-        contrib_score = proj.get("contribution_score")
-        first_dt = proj.get("first_activity_date")
-        last_dt = proj.get("last_activity_date")
-        duration_days = proj.get("duration_days")
+    print("=" * 70)
+    print(f"\n{result.get('summary', '')}\n")
 
-        # Convert datetime objects → date only for cleaner printing
-        if hasattr(first_dt, "date"):
-            start_date = first_dt.date()
-        else:
-            start_date = first_dt
+    # Show portfolio view (your new style)
+    formatter.display_portfolio_view()
 
-        if hasattr(last_dt, "date"):
-            end_date = last_dt.date()
-        else:
-            end_date = last_dt
-        
-        # Ensure logical date order
-        if start_date and end_date and start_date > end_date:
-            start_date, end_date = end_date, start_date
+    print("\nWhat would you like to do next?")
+    print("  S) Save top projects as Showcase (feature + rank them)")
+    print("  C) Customize a project")
+    print("  Enter) Back")
+    choice = input("Choice: ").strip().lower()
 
-        # ALWAYS recalculate duration from the (possibly swapped) dates
-        if start_date and end_date:
-            duration_days = (end_date - start_date).days + 1
-        
-        print(f"{i}. {proj['project_name']}")
-        print(f"   Overall Score: {proj['overall_score']:.3f}")
-        
-        # Human-friendly time spent per type
-        if activity_type == "code":
-            print(f"   Lines of Code:       {time_spent:,} lines of code")
-        elif activity_type == "text":
-            print(f"   Word Count:          {time_spent:,} words written")
-        elif activity_type == "media":
-            print(f"   Media size:          {time_spent / (1024*1024):.2f} MB of media")
-        else:
-            print(f"   Time Spent:          {time_spent:,} units (unspecified)")
-
-        # Activity window printing
-        if start_date:
-            print(f"   Start Date:          {start_date}")
-
-        if end_date:
-            print(f"   End Date:            {end_date}")
-
-        if duration_days:
-            print(f"   Total Duration:      {duration_days} day(s)")
+    if choice == "s":
+        _apply_showcase_preset(result.get("selected_projects", []))
+        print("✅ Saved! Top projects are now Featured and Ranked.")
+    elif choice == "c":
+        customize_portfolio_project()
 
 
-        # src/main.py (around line 485)
+def _prompt_bool(label: str, current: bool) -> bool:
+    val = input(f"{label} [{ 'y' if current else 'n' }]: ").strip().lower()
+    if val in ("y", "yes", "1", "true", "t"): return True
+    if val in ("n", "no", "0", "false", "f"): return False
+    return current
+
+def _prompt_int(label: str, current: int | None) -> int | None:
+    val = input(f"{label} [{'' if current is None else current}]: ").strip()
+    if val == "":
+        return current
+    try:
+        return int(val)
+    except ValueError:
+        print("⚠️  Please enter a valid integer.")
+        return current
+
+def _prompt_float(label: str, current: float | None) -> float | None:
+    val = input(f"{label} [{'' if current is None else current}]: ").strip()
+    if val == "":
+        return current
+    try:
+        return float(val)
+    except ValueError:
+        print("⚠️  Please enter a valid number.")
+        return current
+
+def _prompt_list_csv(label: str, current_list: list[str]) -> list[str]:
+    current_str = ", ".join(current_list) if current_list else ""
+    val = input(f"{label} (comma-separated) [{current_str}]: ").strip()
+    if val == "":
+        return current_list
+    return [v.strip() for v in val.split(",") if v.strip()]
+
+def customize_portfolio_project():
+    print("\n🎯 Customize Portfolio Showcase Project")
+    project_id_str = input("Enter project ID: ").strip()
+    if not project_id_str.isdigit():
+        print("⚠️  Invalid ID.")
+        return
+
+    project_id = int(project_id_str)
+    project = db_manager.get_project(project_id)
+
+    if not project:
+        print("📭 Project not found.")
+        return
+
+    print("\nCurrent settings")
+    print("─" * 70)
+    print(f"ID: {project.id}")
+    print(f"Name: {project.name}")
+    print(f"Type: {project.project_type}")
+    print(f"Featured: {project.is_featured}")
+    print(f"Hidden: {project.is_hidden}")
+    print(f"User rank: {project.user_rank}")
+    print(f"Role: {project.user_role}")
+    print(f"Contribution %: {project.user_contribution_percent}")
+    print(f"Custom description: {(project.custom_description or '').strip()[:120]}")
+    print(f"Skills: {', '.join(project.skills) if project.skills else '—'}")
+    print(f"Tags: {', '.join(project.tags) if project.tags else '—'}")
+    print("─" * 70)
+
+    print("\nEnter new values (press Enter to keep current)\n")
+
+    # Showcase controls
+    new_featured = _prompt_bool("Featured?", bool(project.is_featured))
+    new_hidden = _prompt_bool("Hidden?", bool(project.is_hidden))
+    new_rank = _prompt_int("User rank (lower = higher priority)", project.user_rank)
+
+    # Role + contribution
+    new_role = input(f"Your role [{project.user_role or ''}]: ").strip() or project.user_role
+    contrib = _prompt_float("Your contribution % (0-100)", project.user_contribution_percent)
+    if contrib is not None:
+        contrib = max(0.0, min(100.0, contrib))
+
+    # Descriptions
+    cd = input("Custom description (one paragraph) [leave blank to keep]: ").strip()
+    new_custom_desc = project.custom_description if cd == "" else cd
+
+    # Skills/tags (portfolio-facing)
+    new_skills = _prompt_list_csv("Skills", project.skills or [])
+    new_tags = _prompt_list_csv("Tags", project.tags or [])
+
+    # Optional: allow languages/frameworks only for code projects
+    new_languages = project.languages
+    new_frameworks = project.frameworks
+    if (project.project_type or "").lower() == "code":
+        new_languages = _prompt_list_csv("Languages", project.languages or [])
+        new_frameworks = _prompt_list_csv("Frameworks", project.frameworks or [])
+
+    updates = {
+        "is_featured": new_featured,
+        "is_hidden": new_hidden,
+        "user_rank": new_rank,
+        "user_role": new_role,
+        "user_contribution_percent": contrib,
+        "custom_description": new_custom_desc,
+        "skills": new_skills,
+        "tags": new_tags,
+    }
+
+    if (project.project_type or "").lower() == "code":
+        updates["languages"] = new_languages
+        updates["frameworks"] = new_frameworks
+
+    db_manager.update_project(project_id, updates)
+    print("\n✅ Saved! Your project is updated for portfolio display.\n")
+
 
         if success_score is not None:
             if activity_type in ["text", "media"]:
@@ -1101,14 +1195,6 @@ def generate_summary():
         if contrib_score is not None:
             print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
 
-        if len(proj['skills']) > 5:
-            print(f"           {', '.join(proj['skills'][5:])}")
-        print()
-        
-    print(f"{'='*70}")
-    print(f"  🎯 All Unique Skills ({len(result['unique_skills'])} total)")
-    print(f"{'='*70}")
-    print(f"{', '.join(result['unique_skills'])}\n")
 
 def ai_project_analysis_menu():
     """AI Project Analysis submenu"""
@@ -1937,19 +2023,11 @@ def run_importance_test():
     print("\nDone.")
 
 def run_project_ranking_test():
-    """Rank projects by creation/update date and display"""
+    """Rank projects by creation/update date and display (DB-backed)"""
     print("=== Project Timeline ===\n")
+    print(get_ranked_timeline_from_db())
 
-    # Sample project data — replace with real DB fetch later
-    projects = [
-        {"name": "Capstone Project", "created_at": "2023-10-03", "updated_at": "2024-05-15"},
-        {"name": "Project 1", "created_at": "2024-02-01", "updated_at": "2024-09-20"},
-        {"name": "Project 2", "created_at": "2025-01-12", "updated_at": "2025-03-02"},
-    ]
 
-    sorted_projects = rank_projects_chronologically(projects)
-    output = format_project_timeline(sorted_projects)
-    print(output)
 
 def run_code_efficiency_test():
     """
@@ -2377,20 +2455,19 @@ def view_and_analysis_menu():
     options = {
         '1': view_all_projects,
         '2': generate_summary,
-        '3': sort_and_score_projects_menu,
-        '4': assign_and_view_roles,
-        '5': view_portfolio,
-        '6': deletion_management_menu,
+        '3': view_saved_showcases,
+        '4': sort_and_score_projects_menu,
+        '5': assign_and_view_roles,
+        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None
     }
 
     while True:
         print("\nView & Analysis Menu:")
         print("1. View all projects")
-        print("2. Generate summary")
-        print("3. Sort / score projects")
-        print("4. Assign and View Roles")
-        print("5. View portfolio")
-        print("6. Deletion Management")
+        print("2. Generate Portfolio")
+        print("3. View saved showcases")
+        print("4. Sort / score projects")
+        print("5. Assign and View Roles")
         if EVIDENCE_FEATURES_AVAILABLE:
             print("7. Manage Project Evidence")
             print("8. Return to Main Menu")
@@ -2478,7 +2555,7 @@ def settings_menu():
                 "\n⚠️  This will erase your saved settings and consents. Type 'reset' to confirm: "
             ).strip().lower()
             if confirm == "reset":
-                config_manager.reset_to_defaults()
+                ConfigManager.reset_to_defaults()
                 print("✓ Configuration reset to defaults.")
             else:
                 print("Cancelled.")
