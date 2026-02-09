@@ -31,7 +31,7 @@ class MediaProjectScanner:
     # Text file extensions ONLY for keyword extraction (not counted as media)
     TEXT_EXTENSIONS = {'.txt', '.md'}
     
-    def __init__(self, project_path: str):
+    def __init__(self, project_path: str, single_file: Optional[bool] = None):
         """
         Initialize scanner for a VISUAL media project folder
         
@@ -46,10 +46,15 @@ class MediaProjectScanner:
         if not self.project_path.exists():
             raise ValueError(f"Project path does not exist: {project_path}")
         
-        #allow directory OR single file
-        self.single_file = self.project_path.is_file()
+        # allow directory OR single file (overrideable)
+        if single_file is None:
+            self.single_file = self.project_path.is_file()
+        else:
+            self.single_file = single_file
         
         if self.single_file:
+            if not self.project_path.is_file():
+                raise ValueError(f"Single file mode requires a file path: {project_path}")
             # Use the file name without extension as project name
             self.project_name = self.project_path.stem
         else:
@@ -122,6 +127,10 @@ class MediaProjectScanner:
         print("\nStep 2: Detecting software used...")
         self._analyze_media()
         print(f"  ✓ Software detected: {', '.join(self.software_used) if self.software_used else 'None'}")
+
+        # Step 3: Extract keywords from text files (if enabled)
+        if config_manager.get_or_create_config().enable_keyword_extraction:
+            self._extract_keywords()
         
         if is_incremental:
             # Incremental update
@@ -170,7 +179,9 @@ class MediaProjectScanner:
                 'file_path': str(self.project_path),
                 'file_count': len(self.media_files),
                 'project_type': 'visual_media',
-                'tags': self.software_used,
+                'languages': list(self.software_used),  # store software in languages
+                'skills': list(self.skills_detected)[:10] if self.skills_detected else [],
+                'tags': list(self.software_used),
                 'date_scanned': datetime.now(timezone.utc)
             }
             
@@ -201,6 +212,16 @@ class MediaProjectScanner:
                 db_manager.add_file_to_project(file_data)
             
             print(f"  ✓ Stored {len(self.media_files)} files")
+
+            # Store keywords (top 20)
+            if self.all_keywords:
+                print(f"  → Storing {min(len(self.all_keywords), 20)} keywords...")
+                for keyword, score in self.all_keywords[:20]:
+                    db_manager.add_keyword({
+                        'project_id': project_id,
+                        'keyword': keyword,
+                        'score': float(score),
+                    })
         
         return project_id
     
@@ -210,6 +231,7 @@ class MediaProjectScanner:
         def _maybe_add_media_file(path: Path):
             """Validate a path as a 'media' file and add to self.media_files if valid."""
             path_str = str(path)
+            file_ext = path.suffix.lower()
             
             # 1) First: global format check (ALLOWED_FORMATS)
             try:
@@ -227,15 +249,23 @@ class MediaProjectScanner:
                 return
             
             # 3) Finally: sniff content to confirm it's actually media
+            # If sniffing fails, allow based on extension
             try:
                 sniffed_supertype = sniff_supertype(path_str)
                 if sniffed_supertype != "media":
-                    # e.g. text file with media extension
-                    print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
-                    return
-            except Exception as e:
-                print(f"Skipping file due to sniffing error: {path_str} — {e}")
-                return
+                    # allow known media extensions even if sniffing disagrees
+                    if file_ext not in {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.ico',
+                                        '.raw', '.cr2', '.nef', '.arw', '.dng', '.orf', '.rw2',
+                                        '.psd', '.psb', '.xcf', '.afphoto', '.ai', '.svg', '.eps', '.cdr',
+                                        '.fig', '.sketch', '.xd', '.blend', '.obj', '.fbx', '.max', '.ma', '.mb',
+                                        '.c4d', '.3ds', '.stl', '.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv',
+                                        '.wmv', '.m4v', '.mpg', '.mpeg', '.aep', '.prproj', '.veg', '.drp',
+                                        '.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a'}:
+                        print(f"Skipping file due to content mismatch: {path_str} (sniffed as {sniffed_supertype})")
+                        return
+            except Exception:
+                # Allow based on extension if sniffing fails
+                pass
             
             # All checks passed → track it
             self.media_files.append(path)
@@ -269,9 +299,9 @@ class MediaProjectScanner:
                 sniffed_supertype = sniff_supertype(path_str)
                 if sniffed_supertype != "text":
                     return
-            except Exception as e:
-                # Skip files that fail sniffing
-                return
+            except Exception:
+                # Allow based on extension if sniffing fails
+                pass
             
             # All checks passed → track it
             self.text_files.append(path)
@@ -318,6 +348,29 @@ class MediaProjectScanner:
         except Exception as e:
             print(f"  ⚠️  Error during media analysis: {e}")
             # Continue anyway with what we have
+
+        # Fallback: infer tools/skills from extensions if analyzer returns nothing
+        if not self.software_used or not self.skills_detected:
+            ext_set = {p.suffix.lower() for p in self.media_files}
+            tool_map = {
+                '.psd': 'Photoshop', '.psb': 'Photoshop', '.ai': 'Illustrator', '.svg': 'Illustrator', '.eps': 'Illustrator',
+                '.fig': 'Figma', '.sketch': 'Sketch', '.xd': 'Adobe XD',
+                '.blend': 'Blender', '.obj': '3D Modeling', '.fbx': '3D Modeling', '.stl': '3D Modeling',
+                '.mp4': 'Premiere', '.mov': 'Premiere', '.mkv': 'Video Editing', '.avi': 'Video Editing',
+                '.png': 'Photography', '.jpg': 'Photography', '.jpeg': 'Photography', '.tif': 'Photography', '.tiff': 'Photography'
+            }
+            skill_map = {
+                '.psd': 'Image Editing', '.psb': 'Image Editing', '.ai': 'Vector Design', '.svg': 'Vector Design',
+                '.fig': 'UI/UX Design', '.sketch': 'UI/UX Design', '.xd': 'UI/UX Design',
+                '.blend': '3D Modeling', '.obj': '3D Modeling', '.fbx': '3D Modeling', '.stl': '3D Modeling',
+                '.mp4': 'Video Editing', '.mov': 'Video Editing', '.mkv': 'Video Editing', '.avi': 'Video Editing',
+                '.png': 'Photography', '.jpg': 'Photography', '.jpeg': 'Photography', '.tif': 'Photography', '.tiff': 'Photography'
+            }
+            for ext in ext_set:
+                if ext in tool_map:
+                    self.software_used.add(tool_map[ext])
+                if ext in skill_map:
+                    self.skills_detected.add(skill_map[ext])
     
     def _extract_keywords(self):
         """Extract keywords from text files in the project"""
@@ -390,7 +443,8 @@ class MediaProjectScanner:
             'languages': list(self.software_used),  # Store software in languages field
             'frameworks': [],  # Not applicable
             'skills': list(self.skills_detected)[:10] if self.skills_detected else [],
-            'tags': list(self.software_used)
+            'tags': list(self.software_used),
+            'contributors': 1  # Set contributors to 1
         }
         
         # Create project record
