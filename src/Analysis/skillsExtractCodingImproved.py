@@ -110,6 +110,12 @@ SUBSKILL_KEYWORDS = {
     "Web Development": {
         "libraries": ["react", "vue", "angular", "bootstrap", "tailwind", "nextjs", "nuxt"],
         "multi_word": ["rest api", "ruby on rails", "google cloud"]
+    },
+    "SQL": {
+        "commands": ["select", "join", "create", "insert", "delete", "update", "where"]
+    },
+    "Relational Databases": {
+        "commands": ["select", "join", "create", "insert", "delete", "update", "where"]
     }
 }
 
@@ -125,7 +131,7 @@ ADVANCED_KEYWORDS = [
 CORE_FOLDERS = ["src", "app", "main"]
 PERIPHERAL_FOLDERS = ["tests", "docs", "scripts"]
 
-VALID_SUBSKILL_GROUPS = {"libraries", "tools", "multi_word", "algorithms", "language_features"}
+VALID_SUBSKILL_GROUPS = {"libraries", "tools", "multi_word", "algorithms", "language_features", "commands"}
 
 # --- Skill analyzer function ---
 def analyze_coding_skills_refined(folder_path, file_extensions=None):
