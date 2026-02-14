@@ -253,6 +253,10 @@ class TestAIServiceIntegration(unittest.TestCase):
         try:
             ai = AIService()
             
+            # Check if API is properly initialized
+            if not hasattr(ai, 'model') or ai.model is None:
+                self.skipTest("Gemini API not properly initialized")
+            
             prompt = "Say 'Hello, World!' and nothing else."
             response = ai.generate_text(prompt, temperature=0.0, max_tokens=50)
             
@@ -260,13 +264,22 @@ class TestAIServiceIntegration(unittest.TestCase):
             self.assertGreater(len(response), 0)
             self.assertIn('hello', response.lower())
             
+        except ImportError:
+            self.skipTest("google-generativeai not installed or API key not available")
         except Exception as e:
-            self.fail(f"Generation failed: {e}")
+            if "API" in str(e) or "key" in str(e).lower():
+                self.skipTest(f"API not available: {e}")
+            else:
+                self.fail(f"Generation failed: {e}")
     
     def test_cache_effectiveness(self):
         """Test that caching works for identical requests"""
         try:
             ai = AIService()
+            
+            # Check if API is properly initialized
+            if not hasattr(ai, 'model') or ai.model is None:
+                self.skipTest("Gemini API not properly initialized")
             
             prompt = "Count to 3"
             
@@ -282,8 +295,13 @@ class TestAIServiceIntegration(unittest.TestCase):
             self.assertEqual(api_calls_after_first, api_calls_after_second)
             self.assertGreater(ai.usage_stats.cached_responses, 0)
             
+        except ImportError:
+            self.skipTest("google-generativeai not installed or API key not available")
         except Exception as e:
-            self.fail(f"Cache test failed: {e}")
+            if "API" in str(e) or "key" in str(e).lower():
+                self.skipTest(f"API not available: {e}")
+            else:
+                self.fail(f"Cache test failed: {e}")
 
 
 def run_integration_tests():
