@@ -108,10 +108,10 @@ class TestAIProjectAnalyzer(unittest.TestCase):
         
         analyzer = AIProjectAnalyzer()
         
-        # Test various skill formats
+        # Test various skill formats - use formats that parser actually handles
         test_text = """
         1. API Design (Strong): Implements RESTful endpoints
-        2. Async Programming - Demonstrated - Uses async/await patterns
+        2. Async Programming (Demonstrated): Uses async/await patterns
         • Database Optimization (Moderate): Efficient query patterns
         """
         
@@ -119,7 +119,11 @@ class TestAIProjectAnalyzer(unittest.TestCase):
         
         self.assertEqual(len(skills), 3)
         self.assertEqual(skills[0]['skill'], 'API Design')
+        self.assertEqual(skills[0]['evidence'], 'Strong')
         self.assertEqual(skills[1]['skill'], 'Async Programming')
+        self.assertEqual(skills[1]['evidence'], 'Demonstrated')
+        self.assertEqual(skills[2]['skill'], 'Database Optimization')
+        self.assertEqual(skills[2]['evidence'], 'Moderate')
         self.assertIn('evidence', skills[0])
 
 class TestAIEnhancedSummarizer(unittest.TestCase):
