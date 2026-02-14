@@ -4,11 +4,11 @@ import re
 
 # --- Top-level skill keywords ---
 SKILL_KEYWORDS = {
-    "Python": ["python"],
+    "Python": ["python", "pandas", "numpy", "scipy", "async", "await"],
     # --- Web and App Development ---
     "Web Development": [
         "html", "css", "javascript", "typescript", "flask", "django",
-        "express", "node", "php", "ruby on rails", "nextjs", "nuxt"
+        "express", "node", "php", "ruby on rails", "nextjs", "nuxt", "react"
     ],
     "Frontend Development": [
         "react", "vue", "angular", "svelte", "bootstrap", "tailwind",
@@ -26,6 +26,9 @@ SKILL_KEYWORDS = {
     ],
 
     # --- Databases ---
+    "SQL": [
+        "sql", "select", "join", "create", "insert", "delete", "update"
+    ],
     "Relational Databases": [
         "sql", "mysql", "postgresql", "sqlite", "oracle", "mariadb",
         "schema", "foreign key", "join", "table"
@@ -111,7 +114,7 @@ SUBSKILL_KEYWORDS = {
 }
 
 GENERIC_SKILLS = {
-    "Web Development", "Backend Development", "Frontend Development",
+    "Backend Development", "Frontend Development",
     "API Development", "Database Management", "DevOps"
 }
 
@@ -191,7 +194,7 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
         return {"skills": {}, "skill_combinations": {}}
 
     # --- 3️⃣ Filter weak skills ---
-    MIN_RAW_COUNT = 8
+    MIN_RAW_COUNT = 3
     filtered_scores = {skill: score for skill, score in skill_scores.items() if raw_skill_hits[skill] >= MIN_RAW_COUNT}
     if not filtered_scores:
         return {"skills": {}, "skill_combinations": {}}
