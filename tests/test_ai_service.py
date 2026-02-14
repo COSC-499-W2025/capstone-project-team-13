@@ -247,6 +247,16 @@ class TestAIServiceIntegration(unittest.TestCase):
         """Setup for each test"""
         if not self.has_api_key:
             self.skipTest("GEMINI_API_KEY not set")
+        
+        # Reset global singleton to avoid test pollution from other test files
+        import src.AI.ai_service as ai_service_module
+        ai_service_module._ai_service = None
+    
+    def tearDown(self):
+        """Cleanup after each test"""
+        # Reset global singleton
+        import src.AI.ai_service as ai_service_module
+        ai_service_module._ai_service = None
     
     def test_basic_generation(self):
         """Test actual text generation (requires API key)"""
