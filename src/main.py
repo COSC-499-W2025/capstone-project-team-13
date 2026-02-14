@@ -102,6 +102,14 @@ except ImportError:
     RESUME_FEATURES_AVAILABLE = False
     print("⚠️  Resume features not available (modules not found)")
 
+# Import showcase selector
+try:
+    from src.Portfolio.showcaseSelector import run_showcase_selector
+    SHOWCASE_FEATURES_AVAILABLE = True
+except ImportError:
+    SHOWCASE_FEATURES_AVAILABLE = False
+    print("⚠️  Showcase selector not available (module not found)")
+
 def clear_screen():
     """Clear console screen"""
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -2481,7 +2489,8 @@ def view_and_analysis_menu():
         '3': view_saved_showcases,
         '4': sort_and_score_projects_menu,
         '5': assign_and_view_roles,
-        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None
+        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None,
+        '7': run_showcase_selector if SHOWCASE_FEATURES_AVAILABLE else None
     }
 
     while True:
@@ -2492,15 +2501,19 @@ def view_and_analysis_menu():
         print("4. Sort / score projects")
         print("5. Assign and View Roles")
         if EVIDENCE_FEATURES_AVAILABLE:
-            print("7. Manage Project Evidence")
+            print("6. Manage Project Evidence")
+        if SHOWCASE_FEATURES_AVAILABLE:
+            print("7. Select Projects for Showcase")
+        
+        # Determine exit option
+        if EVIDENCE_FEATURES_AVAILABLE or SHOWCASE_FEATURES_AVAILABLE:
             print("8. Return to Main Menu")
-            options['7'] = evidence_main_menu
             exit_choice = '8'
             max_choice = 8
         else:
-            print("7. Return to Main Menu")
-            exit_choice = '7'
-            max_choice = 7
+            print("6. Return to Main Menu")
+            exit_choice = '6'
+            max_choice = 6
 
         choice = input(f"Enter your choice (1-{max_choice}): ").strip()
 
