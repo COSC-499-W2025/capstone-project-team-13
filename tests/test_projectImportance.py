@@ -11,11 +11,14 @@ from Analysis.importanceScores import calculate_importance_score
 class SimpleProject:
     """Lightweight project class for unit testing importance scoring"""
     def __init__(self, name):
+        self.id = None  
         self.name = name
         self.date_modified = None
         self.lines_of_code = 0
         self.word_count = 0
         self.file_count = 0
+        self.total_size_bytes = 0
+        self.project_type = 'text'  # Default to text project for testing
         self.contributors = []
         self.keywords = []
         self.files = []

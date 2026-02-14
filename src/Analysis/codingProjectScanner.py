@@ -28,26 +28,23 @@ class CodingProjectScanner:
     
     def __init__(self, project_path: str):
         """
-        Initialize scanner for a coding project folder or single file
+        Initialize scanner for a coding project directory
         
         Args:
-            project_path: Path to coding project root directory or single code file
+            project_path: Path to coding project root directory
         
         Raises:
-            ValueError: If path doesn't exist or isn't a directory/file as expected
+            ValueError: If path doesn't exist or isn't a directory
         """
         self.project_path = Path(project_path).resolve()
         if not self.project_path.exists():
             raise ValueError(f"Project path does not exist: {project_path}")
         
-        #allow either dir or single file
-        self.single_file = self.project_path.is_file()
-        if self.single_file:
-            self.project_name = self.project_path.stem
-        else:
-            if not self.project_path.is_dir():
-                raise ValueError(f"Project path is not a directory: {project_path}")
-            self.project_name = self.project_path.name
+        if not self.project_path.is_dir():
+            raise ValueError(f"Project path must be a directory, not a file: {project_path}")
+        
+        self.project_name = self.project_path.name
+        self.single_file = False
         
         # Data storage
         self.code_files = []  # List of code file paths
@@ -113,8 +110,9 @@ class CodingProjectScanner:
         print(f"  ✓ Languages: {', '.join(self.languages) if self.languages else 'None detected'}")
         print(f"  ✓ Frameworks: {', '.join(self.frameworks) if self.frameworks else 'None detected'}")
 
-        # Step 3: Store project and files in database       
+        # Step 2b: Extract keywords and analyze skills
         print("\nStep 2b: Analyzing skills...")
+        self._extract_keywords()
         self._analyze_skills()
 
         if is_incremental:
@@ -223,8 +221,20 @@ class CodingProjectScanner:
             })
             print(f"  ✓ Lines of code: {metrics['lines_of_code']:,}")
             print(f"  ✓ Date range: {earliest.date()} → {latest.date()}")
+            
+            # Step 4: Store keywords
+            if self.all_keywords:
+                print(f"\nStep 4: Storing keywords...")
+                for keyword, score in self.all_keywords[:30]:
+                    db_manager.add_keyword({
+                        'project_id': project_id,
+                        'keyword': keyword,
+                        'score': float(score),
+                        'category': 'code'
+                    })
+                print(f"  ✓ Stored {min(len(self.all_keywords), 30)} keywords")
         
-        # Step 4: Extract Git contributors (if Git repository)
+        # Step 5: Extract Git contributors (if Git repository)
         if is_git_repository(str(self.project_path)):
             project = db_manager.get_project(project_id)
             try:
@@ -237,39 +247,7 @@ class CodingProjectScanner:
     def _find_code_files(self):
         """Find all code files in the project directory using existing config"""
         
-        # --- Single-file mode ---
-        if self.single_file:
-            file_path = self.project_path
-
-            # 1) First: global format check (ALLOWED_FORMATS)
-            try:
-                check_file_format(str(file_path))
-            except InvalidFileFormatError as e:
-                # This is where unsupported formats like .zip will show
-                print(f"Skipping unsupported file: {file_path} — {e}")
-                return
-
-            file_ext = file_path.suffix.lower()
-
-            # 2) Then: is this a code extension we care about?
-            if file_ext not in LANGUAGE_BY_EXTENSION:
-                print(f"Skipping file with unsupported code extension: {file_path} (ext={file_ext})")
-                return
-
-            # 3) Finally: sniff content to confirm it's actually code
-            try:
-                sniff_type = sniff_supertype(str(file_path))
-                if sniff_type != "code":
-                    print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
-                    return
-            except Exception as e:
-                print(f"Skipping file due to sniffing error: {file_path} — {e}")
-                return
-
-            self.code_files.append(file_path)
-            return
-
-        # --- Directory mode ---
+        # Directory mode
         for root, dirs, files in os.walk(self.project_path):
             # Remove skip directories from dirs list
             dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
