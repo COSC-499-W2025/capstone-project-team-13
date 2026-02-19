@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Digital Artifact Mining Demo</title>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 800px; margin: auto; }
+    button { margin: 5px; padding: 8px 12px; }
+    .response { margin-top: 10px; background: #f0f0f0; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Digital Artifact Mining Demo</h1>
+
+  <h3>1. Test File Upload</h3>
+  <input type="file" id="fileUpload">
+  <button onclick="testFileUpload()">Upload & Test</button>
+  <div id="uploadResponse" class="response">Upload response will appear here...</div>
+
+  <h3>2. Test Artifact Analysis</h3>
+  <button onclick="testAnalysis()">Run Analysis (sample)</button>
+  <div id="analysisResponse" class="response">Analysis results will appear here...</div>
+
+  <h3>3. Test Other API Function</h3>
+  <button onclick="testOther()">Run Other Function</button>
+  <div id="otherResponse" class="response">Other API results will appear here...</div>
+
+  <script>
+    // ---- 1. File Upload Test ----
+    async function testFileUpload() {
+      const fileInput = document.getElementById('fileUpload');
+      const file = fileInput.files[0];
+      const responseDiv = document.getElementById('uploadResponse');
+
+      if (!file) { alert("Select a file first"); return; }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("http://localhost:8000/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        responseDiv.textContent = "Error: " + err.message;
+      }
+    }
+
+    // ---- 2. Artifact Analysis Test ----
+    async function testAnalysis() {
+      const responseDiv = document.getElementById('analysisResponse');
+      try {
+        // Example: POST sample data to analysis endpoint
+        const res = await fetch("http://localhost:8000/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sample: "test data" })
+        });
+        const data = await res.json();
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        responseDiv.textContent = "Error: " + err.message;
+      }
+    }
+
+    // ---- 3. Other API Test ----
+    async function testOther() {
+      const responseDiv = document.getElementById('otherResponse');
+      try {
+        const res = await fetch("http://localhost:8000/api/other"); // GET request example
+        const data = await res.json();
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        responseDiv.textContent = "Error: " + err.message;
+      }
+    }
+
+    // Optional: auto-run some tests on page load
+    // window.onload = testAnalysis;
+  </script>
+</body>
+</html>
