@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.Services.analytics_service import get_skill_cooccurrence, get_skill_analytics
+from src.Services.analytics_service import get_skill_cooccurrence, get_full_skill_analytics
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -14,8 +14,10 @@ def skill_cooccurrence():
     }
 
 
-
-
 @router.get("/skills")
 def skills_analytics():
-    return get_skill_analytics()
+    """
+    Returns raw skill data with projects and co-occurrence,
+    plus insights like top skills and diversity
+    """
+    return get_full_skill_analytics()

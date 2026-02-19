@@ -38,46 +38,59 @@ def get_skill_cooccurrence():
     return result
 
 
-# for skill analytics /produces deeper insight. 
-def get_skill_analytics():
+# for skill analytics /produces deeper insight. This function gathers raw skills first
+def get_raw_skills_with_projects():
+    skills_map = defaultdict(list)
     projects = db_manager.get_all_projects()
-
-    skill_counts = defaultdict(int)
 
     for project in projects:
         for skill in project.skills or []:
-            skill_counts[skill] += 1
+            skills_map[skill].append({
+                "project_id": project.id,
+                "project_name": project.name
+            })
 
+    raw_skills = []
+    for skill, project_list in skills_map.items():
+        raw_skills.append({
+            "skill": skill,
+            "count": len(project_list),
+            "projects": project_list
+        })
+
+    raw_skills.sort(key=lambda x: x["count"], reverse=True)
+    return raw_skills
+
+# this function generates the insights
+
+def get_skill_insights():
+    raw_skills = get_raw_skills_with_projects()
     co_occurrence = get_skill_cooccurrence()
 
-    total_projects = len(projects)
-    total_skills = len(skill_counts)
-
-    top_skills = sorted(
-        skill_counts.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:5]
-
-    diversity = round(total_skills / total_projects, 3) if total_projects else 0
-
+    top_skills = raw_skills[:5]  # top 5 most common skills
     most_common_pair = co_occurrence[0] if co_occurrence else None
 
+    # skill diversity: # of distinct skills / # of projects
+    total_skills = len(raw_skills)
+    total_projects = len(db_manager.get_all_projects())
+    skill_diversity = round(total_skills / total_projects, 3) if total_projects else 0
+
+    return {
+        "top_skills": top_skills,
+        "most_common_pair": most_common_pair,
+        "skill_diversity": skill_diversity
+    }
+
+
+# function gathers both to display to user.
+def get_full_skill_analytics():
+    raw = get_raw_skills_with_projects()
+    insights = get_skill_insights()
     return {
         "raw": {
-            "skill_counts": [
-                {"skill": s, "count": c}
-                for s, c in skill_counts.items()
-            ],
-            "co_occurrence": co_occurrence
+            "skills": raw,
+            "co_occurrence": get_skill_cooccurrence()
         },
-        "insights": {
-            "top_skills": [
-                {"skill": s, "count": c}
-                for s, c in top_skills
-            ],
-            "most_common_pair": most_common_pair,
-            "skill_diversity": diversity
-        }
+        "insights": insights
     }
 
