@@ -36,3 +36,34 @@ def get_skills():
             )
         ]
     }
+
+def get_skill_detail(skill_name: str):
+    projects = db_manager.get_all_projects()
+
+    matching_projects = []
+
+    for project in projects:
+        if not project.skills:
+            continue
+
+        if skill_name in project.skills:
+            matching_projects.append({
+                "project_id": project.id,
+                "project_name": project.name,
+                "project_type": project.project_type,
+                "file_count": project.file_count
+            })
+
+    if not matching_projects:
+        return {
+            "skill": skill_name,
+            "project_count": 0,
+            "projects": []
+        }
+
+    return {
+        "skill": skill_name,
+        "project_count": len(matching_projects),
+        "projects": matching_projects
+    }
+
