@@ -10,12 +10,16 @@ def get_skills():
     })
 
     for project in projects:
-        # If skills are stored as JSON/list → this works directly
+        # project.skills is list
+        if not project.skills:
+            continue
+
         for skill in project.skills:
             skill_map[skill]["count"] += 1
             skill_map[skill]["projects"].append({
                 "project_id": project.id,
-                "project_name": project.name
+                "project_name": project.name,
+                "project_type": project.project_type
             })
 
     return {
@@ -25,6 +29,10 @@ def get_skills():
                 "count": data["count"],
                 "projects": data["projects"]
             }
-            for skill, data in skill_map.items()
+            for skill, data in sorted(
+                skill_map.items(),
+                key=lambda x: x[1]["count"],
+                reverse=True
+            )
         ]
     }
