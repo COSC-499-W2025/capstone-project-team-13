@@ -1047,23 +1047,61 @@ def generate_summary():
 
     formatter = PortfolioFormatter()
     project_dicts = formatter.get_projects_for_summary_input(include_hidden=False)
-    
+
     if not project_dicts:
         print("📭 No projects found in database.")
         return
-        
 
+    # --- Run summarizer (top-k + narrative summary) ---
     result = summarize_projects(project_dicts, top_k=min(5, len(project_dicts)))
-    print("DEBUG selected IDs:", [(p.get("project_id"), p.get("project_name")) for p in result.get("selected_projects", [])])
 
-    print("=" * 70)
-    print("  📊 PROJECT PORTFOLIO SUMMARY")
-    print("=" * 70)
-    print(f"\n{result.get('summary', '')}\n")
+    # --- Compute averages from ALL projects (not just selected top-k) ---
+    success_vals = [p.get("success_score") for p in project_dicts if p.get("success_score") is not None]
+    contrib_vals = [p.get("contribution_score") for p in project_dicts if p.get("contribution_score") is not None]
 
-    # Show portfolio view (your new style)
+    avg_success = (sum(success_vals) / len(success_vals)) if success_vals else None
+    avg_contrib = (sum(contrib_vals) / len(contrib_vals)) if contrib_vals else None
+
+    if avg_success is not None:
+        print(f"Average Success Score:  {avg_success * 100:5.1f}%")
+        print(f"  (Based on project size, completeness, testing, and documentation quality)")
+    if avg_contrib is not None:
+        print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
+
+    print(f"{'='*70}")
+
+    # --- Optional: print per-project scores for the selected projects (if present) ---
+    selected = result.get("selected_projects", [])
+    if selected:
+        print("\nTOP PROJECTS:")
+        for proj in selected:
+            name = proj.get("project_name") or proj.get("name") or "Unnamed Project"
+            overall = proj.get("overall_score", "N/A")
+            skills = proj.get("skills", [])
+
+            print(f" - {name} ({overall}) → {', '.join(skills) if skills else 'No skills listed'}")
+
+            # These keys depend on summarize_projects output;
+            # we try a couple common variants safely:
+            success_score = (
+                proj.get("success_score")
+                or (proj.get("metrics", {}).get("success_score") if isinstance(proj.get("metrics"), dict) else None)
+            )
+            contrib_score = (
+                proj.get("contribution_score")
+                or (proj.get("metrics", {}).get("contribution_score") if isinstance(proj.get("metrics"), dict) else None)
+            )
+
+            if success_score is not None:
+                print(f"   Success Score:       {success_score * 100:5.1f}%")
+                print(f"      (Reflects size, languages/frameworks, testing coverage, and documentation)")
+            if contrib_score is not None:
+                print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
+
+    # --- Show portfolio view (your new style) ---
     formatter.display_portfolio_view()
 
+    # --- Menu options ---
     print("\nWhat would you like to do next?")
     print("  S) Save top projects as Showcase (feature + rank them)")
     print("  C) Customize a project")
@@ -1075,6 +1113,7 @@ def generate_summary():
         print("✅ Saved! Top projects are now Featured and Ranked.")
     elif choice == "c":
         customize_portfolio_project()
+
 
 
 def _prompt_bool(label: str, current: bool) -> bool:
