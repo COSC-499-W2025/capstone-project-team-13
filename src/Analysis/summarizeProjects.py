@@ -108,6 +108,7 @@ def summarize_projects(
     return {
         "selected_projects": [
             {
+                "project_id": p.get("project_id"),
                 "project_name": p["project_name"],
                 "overall_score": round(p["_overall_score"], 4),
                 "skills": p["skills"],
