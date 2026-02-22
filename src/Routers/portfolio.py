@@ -4,7 +4,6 @@ from typing import Optional
 from src.Services.portfolio_service import (
     get_portfolio,
     get_portfolio_project,
-    update_portfolio_project,
     get_portfolio_stats,
     get_portfolio_summary,
 )
