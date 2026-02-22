@@ -24,28 +24,6 @@ def get_portfolio_project(project_id: int) -> Optional[dict]:
     return _portfolio_service._format_project_card(project)
 
 
-def update_portfolio_project(project_id: int, updates: dict) -> dict:
-    """Update portfolio-specific fields for a project."""
-    project = db_manager.get_project(project_id)
-    if not project:
-        return {"success": False, "error": f"Project {project_id} not found"}
-
-    try:
-        db_manager.update_project(project_id, updates)
-        updated_project = db_manager.get_project(project_id)
-        return {
-            "success": True,
-            "project_id": project_id,
-            "project_name": updated_project.name,
-            "is_featured": updated_project.is_featured,
-            "is_hidden": updated_project.is_hidden,
-            "user_rank": updated_project.user_rank,
-            "user_role": updated_project.user_role,
-            "user_contribution_percent": updated_project.user_contribution_percent,
-            "custom_description": updated_project.custom_description,
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e)}
 
 
 def get_portfolio_stats(include_hidden: bool = False) -> dict:
