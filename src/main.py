@@ -69,6 +69,7 @@ from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
 from src.Analysis.incrementalFileHandler import handle_add_files_to_project
+from src.Analysis.multiProjectZip import processZipFile, identifyProjectType, splitZipFile
 from src.Databases.database import db_manager
 
 # Import evidence management features
@@ -100,6 +101,14 @@ try:
 except ImportError:
     RESUME_FEATURES_AVAILABLE = False
     print("⚠️  Resume features not available (modules not found)")
+
+# Import showcase selector
+try:
+    from src.Portfolio.showcaseSelector import run_showcase_selector
+    SHOWCASE_FEATURES_AVAILABLE = True
+except ImportError:
+    SHOWCASE_FEATURES_AVAILABLE = False
+    print("⚠️  Showcase selector not available (module not found)")
 
 def clear_screen():
     """Clear console screen"""
@@ -1046,23 +1055,61 @@ def generate_summary():
 
     formatter = PortfolioFormatter()
     project_dicts = formatter.get_projects_for_summary_input(include_hidden=False)
-    
+
     if not project_dicts:
         print("📭 No projects found in database.")
         return
-        
 
+    # --- Run summarizer (top-k + narrative summary) ---
     result = summarize_projects(project_dicts, top_k=min(5, len(project_dicts)))
-    print("DEBUG selected IDs:", [(p.get("project_id"), p.get("project_name")) for p in result.get("selected_projects", [])])
 
-    print("=" * 70)
-    print("  📊 PROJECT PORTFOLIO SUMMARY")
-    print("=" * 70)
-    print(f"\n{result.get('summary', '')}\n")
+    # --- Compute averages from ALL projects (not just selected top-k) ---
+    success_vals = [p.get("success_score") for p in project_dicts if p.get("success_score") is not None]
+    contrib_vals = [p.get("contribution_score") for p in project_dicts if p.get("contribution_score") is not None]
 
-    # Show portfolio view (your new style)
+    avg_success = (sum(success_vals) / len(success_vals)) if success_vals else None
+    avg_contrib = (sum(contrib_vals) / len(contrib_vals)) if contrib_vals else None
+
+    if avg_success is not None:
+        print(f"Average Success Score:  {avg_success * 100:5.1f}%")
+        print(f"  (Based on project size, completeness, testing, and documentation quality)")
+    if avg_contrib is not None:
+        print(f"Average Contribution:   {avg_contrib * 100:5.1f}%\n")
+
+    print(f"{'='*70}")
+
+    # --- Optional: print per-project scores for the selected projects (if present) ---
+    selected = result.get("selected_projects", [])
+    if selected:
+        print("\nTOP PROJECTS:")
+        for proj in selected:
+            name = proj.get("project_name") or proj.get("name") or "Unnamed Project"
+            overall = proj.get("overall_score", "N/A")
+            skills = proj.get("skills", [])
+
+            print(f" - {name} ({overall}) → {', '.join(skills) if skills else 'No skills listed'}")
+
+            # These keys depend on summarize_projects output;
+            # we try a couple common variants safely:
+            success_score = (
+                proj.get("success_score")
+                or (proj.get("metrics", {}).get("success_score") if isinstance(proj.get("metrics"), dict) else None)
+            )
+            contrib_score = (
+                proj.get("contribution_score")
+                or (proj.get("metrics", {}).get("contribution_score") if isinstance(proj.get("metrics"), dict) else None)
+            )
+
+            if success_score is not None:
+                print(f"   Success Score:       {success_score * 100:5.1f}%")
+                print(f"      (Reflects size, languages/frameworks, testing coverage, and documentation)")
+            if contrib_score is not None:
+                print(f"   Contribution Score:  {contrib_score * 100:5.1f}%")
+
+    # --- Show portfolio view (your new style) ---
     formatter.display_portfolio_view()
 
+    # --- Menu options ---
     print("\nWhat would you like to do next?")
     print("  S) Save top projects as Showcase (feature + rank them)")
     print("  C) Customize a project")
@@ -1074,6 +1121,7 @@ def generate_summary():
         print("✅ Saved! Top projects are now Featured and Ranked.")
     elif choice == "c":
         customize_portfolio_project()
+
 
 
 def _prompt_bool(label: str, current: bool) -> bool:
@@ -2381,10 +2429,11 @@ def project_upload_menu():
         '2': handle_visual_project,
         '3': handle_document,
         '4': handle_zip_archive,
-        '5': handle_auto_detect,
-        '6': handle_add_files_to_project,     
-        '7': handle_incremental_zip_upload,
-        '8': handle_thumbnail_upload,
+        '5': handle_multi_zip,
+        '6': handle_auto_detect,
+        '7': handle_add_files_to_project,     
+        '8': handle_incremental_zip_upload,
+        '9': handle_thumbnail_upload,
     }
     
     print("UPLOAD NEW PROJECT:")
@@ -2392,16 +2441,17 @@ def project_upload_menu():
     print("  2. Visual/media project")
     print("  3. Text document")
     print("  4. ZIP archive")
-    print("  5. Auto-detect type")
+    print("  5. Upload multiple projects from a ZIP archive (auto-detect types)")
+    print("  6. Auto-detect type")
     print("\nADD TO EXISTING PROJECT:")
-    print("  6. Add individual file(s)")       
-    print("  7. Add ZIP archive")
-    print("  8. Upload thumbnail for a stored project")
-    print("\n  9. Return to Main Menu")
+    print("  7. Add individual file(s)")       
+    print("  8. Add ZIP archive")
+    print("  9. Upload thumbnail for a stored project")
+    print("\n  10. Return to Main Menu")
     print("="*70)
 
-    choice = input("\nEnter your choice (1-9): ").strip()
-    if choice == '9':
+    choice = input("\nEnter your choice (1-10): ").strip()
+    if choice == '10':
         print("\nReturning to main menu...")
         return
 
@@ -2413,6 +2463,37 @@ def project_upload_menu():
             options[choice]()
         else:
             print("Invalid choice. Try again.")
+
+def handle_multi_zip():
+    """Handle uploading multiple projects from a ZIP archive"""
+    print_header("Upload Multiple Projects from ZIP Archive")
+    
+    # Prompt user for ZIP file path
+    zip_file_path = get_path_input("Enter the path to the ZIP file: ")
+    if not zip_file_path:
+        print("❌ No path provided. Returning to menu.")
+        return
+    
+    if not zip_file_path.lower().endswith('.zip'):
+        print("❌ The file must have a .zip extension.")
+        return
+    
+    # Process the ZIP file
+    try:
+        print("\n⏳ Processing ZIP file...")
+        results = processZipFile(zip_file_path)
+        
+        # Print results
+        print("\n✅ ZIP file processed successfully.")
+        print("\n📊 Results:")
+        if not results:
+            print("   No projects were detected in the ZIP file.")
+        else:
+            for project in results:
+                print(f"   - Project Name: {project['name']}")
+                print(f"     Type: {project['type']}")
+    except Exception as e:
+        print(f"❌ Failed to process ZIP file: {e}")
 
 def assign_and_view_roles():
     from src.Analysis.roleAttribution import test_role_attribution, lookup_roles
@@ -2447,7 +2528,8 @@ def view_and_analysis_menu():
         '3': view_saved_showcases,
         '4': sort_and_score_projects_menu,
         '5': assign_and_view_roles,
-        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None
+        '6': evidence_main_menu if EVIDENCE_FEATURES_AVAILABLE else None,
+        '7': run_showcase_selector if SHOWCASE_FEATURES_AVAILABLE else None
     }
 
     while True:
@@ -2458,15 +2540,19 @@ def view_and_analysis_menu():
         print("4. Sort / score projects")
         print("5. Assign and View Roles")
         if EVIDENCE_FEATURES_AVAILABLE:
-            print("7. Manage Project Evidence")
+            print("6. Manage Project Evidence")
+        if SHOWCASE_FEATURES_AVAILABLE:
+            print("7. Select Projects for Showcase")
+        
+        # Determine exit option
+        if EVIDENCE_FEATURES_AVAILABLE or SHOWCASE_FEATURES_AVAILABLE:
             print("8. Return to Main Menu")
-            options['7'] = evidence_main_menu
             exit_choice = '8'
             max_choice = 8
         else:
-            print("7. Return to Main Menu")
-            exit_choice = '7'
-            max_choice = 7
+            print("6. Return to Main Menu")
+            exit_choice = '6'
+            max_choice = 6
 
         choice = input(f"Enter your choice (1-{max_choice}): ").strip()
 

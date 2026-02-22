@@ -5,7 +5,7 @@ import zipfile
 import shutil
 from src.Databases.database import db_manager
 
-from src.Services.project_upload_service import process_uploaded_path
+from src.Services.projects_service import process_uploaded_path
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
