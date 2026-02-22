@@ -11,16 +11,6 @@ from src.Services.portfolio_service import (
 
 router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
 
-
-class UpdateProjectRequest(BaseModel):
-    is_featured: Optional[bool] = None
-    is_hidden: Optional[bool] = None
-    user_rank: Optional[int] = None
-    user_role: Optional[str] = None
-    user_contribution_percent: Optional[float] = None
-    custom_description: Optional[str] = None
-
-
 @router.get("")
 def get_portfolio_endpoint(include_hidden: bool = Query(default=False)):
     """Return full portfolio: all projects, stats, and summary."""
@@ -47,14 +37,3 @@ def get_portfolio_project_endpoint(project_id: int):
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return result
 
-
-@router.patch("/{project_id}")
-def update_portfolio_project_endpoint(project_id: int, body: UpdateProjectRequest):
-    """Update portfolio display settings for a project."""
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    if not updates:
-        raise HTTPException(status_code=400, detail="No fields provided to update")
-    result = update_portfolio_project(project_id, updates)
-    if not result.get("success"):
-        raise HTTPException(status_code=404, detail=result.get("error"))
-    return result
