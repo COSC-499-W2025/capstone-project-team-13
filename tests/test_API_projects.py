@@ -3,7 +3,6 @@ import os
 import sys
 import zipfile
 from pathlib import Path
-git p
 import pytest
 from fastapi.testclient import TestClient
 
