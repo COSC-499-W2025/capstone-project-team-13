@@ -51,11 +51,36 @@ def migrate_add_user_contribution_percent():
         session.close()
 
 
+def migrate_add_importance_score():
+    """Add importance_score column to projects table if it doesn't exist"""
+    db = DatabaseManager()
+    session = db.get_session()
+
+    try:
+        # Check if column exists
+        result = session.execute(text("PRAGMA table_info(projects)"))
+        columns = [row[1] for row in result]
+
+        if 'importance_score' not in columns:
+            print("Adding importance_score column to projects table...")
+            session.execute(text("ALTER TABLE projects ADD COLUMN importance_score FLOAT DEFAULT 0"))
+            session.commit()
+            print("✓ Migration complete")
+        else:
+            print("✓ importance_score column already exists")
+    except Exception as e:
+        print(f"Migration error: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
 def run_all_migrations():
     """Run all migrations in order"""
     print("Running database migrations...")
     migrate_add_file_hash()
     migrate_add_user_contribution_percent()
+    migrate_add_importance_score()
     print("\nAll migrations complete!")
 
 

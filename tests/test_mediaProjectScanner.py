@@ -116,7 +116,7 @@ Professional photography portfolio featuring landscape and portrait work.
         test_file.write_text("test")
         
         with self.assertRaises(ValueError):
-            MediaProjectScanner(str(test_file))
+            MediaProjectScanner(str(test_file), single_file=False)
     
     def test_find_media_files(self):
         """Test that media files are found correctly"""
