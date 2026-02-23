@@ -1,4 +1,9 @@
 from fastapi import FastAPI
+from src.Routers import projects, resumes
+
+app = FastAPI(title="Digital Artifact Mining API")
+app.include_router(projects.router)
+app.include_router(resumes.router)
 from src.Routers import projects, resumes, portfolio, skills, analytics
 
 app = FastAPI(title="Digital Artifact Mining API")
