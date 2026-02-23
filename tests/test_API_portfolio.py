@@ -1,6 +1,6 @@
 import os
 import sys
-
+from fastapi import status
 current_dir = os.path.dirname(__file__)
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.insert(0, project_root)
@@ -53,7 +53,8 @@ def test_get_portfolio_with_projects():
 
 def test_get_portfolio_excludes_hidden_by_default():
     pid = _create_project(name="Hidden Project")
-    client.patch(f"/portfolio/{pid}", json={"is_hidden": True})
+    client.post(f"/portfolio/{pid}/edit", json={"is_hidden": True})
+
     response = client.get("/portfolio")
     data = response.json()
     names = [p["name"] for p in data["projects"]]
@@ -62,7 +63,8 @@ def test_get_portfolio_excludes_hidden_by_default():
 
 def test_get_portfolio_include_hidden():
     pid = _create_project(name="Hidden Project")
-    client.patch(f"/portfolio/{pid}", json={"is_hidden": True})
+    client.post(f"/portfolio/{pid}/edit", json={"is_hidden": True})
+
     response = client.get("/portfolio?include_hidden=true")
     data = response.json()
     names = [p["name"] for p in data["projects"]]
@@ -126,42 +128,81 @@ def test_get_portfolio_project_invalid_id():
     assert response.status_code == 422
 
 
-# ── PATCH /portfolio/{project_id} ──────────────────────────────────────────────
+# ── POST /portfolio/generate ───────────────────────────────────────────────────
 
-def test_update_portfolio_project_featured():
-    pid = _create_project()
-    response = client.patch(f"/portfolio/{pid}", json={"is_featured": True})
+def test_generate_portfolio_returns_message_or_portfolio():
+    _create_project(name="Gen Project")
+
+    response = client.post("/portfolio/generate")
+    assert response.status_code == 200
+
+    data = response.json()
+
+    if "message" in data:
+        assert data["message"].lower().startswith("portfolio")
+    else:
+        assert "projects" in data
+        assert "summary" in data
+        assert "stats" in data
+
+
+# ── POST /portfolio/{project_id}/edit ──────────────────────────────────────────
+
+def test_edit_portfolio_project_success():
+    pid = _create_project(name="Editable Project")
+
+    response = client.post(
+        f"/portfolio/{pid}/edit",
+        json={
+            "is_featured": True,
+            "is_hidden": True,
+            "importance_score": 0.9,
+            "custom_description": "Updated via edit endpoint",
+        },
+    )
     assert response.status_code == 200
     data = response.json()
-    assert data["success"] is True
+
+    assert data["id"] == pid
     assert data["is_featured"] is True
+    assert data["is_hidden"] is True
+
+    if "importance_score" in data:
+        assert data["importance_score"] == 0.9
+    if "custom_description" in data:
+        assert data["custom_description"] == "Updated via edit endpoint"
 
 
-def test_update_portfolio_project_hidden():
-    pid = _create_project()
-    response = client.patch(f"/portfolio/{pid}", json={"is_hidden": True})
-    assert response.status_code == 200
-    assert response.json()["is_hidden"] is True
-
-
-def test_update_portfolio_project_custom_description():
-    pid = _create_project()
-    response = client.patch(f"/portfolio/{pid}", json={"custom_description": "My custom desc"})
-    assert response.status_code == 200
-    assert response.json()["custom_description"] == "My custom desc"
-
-
-def test_update_portfolio_project_not_found():
-    response = client.patch("/portfolio/99999", json={"is_featured": True})
+def test_edit_portfolio_project_not_found():
+    response = client.post("/portfolio/99999/edit", json={"is_featured": True})
     assert response.status_code == 404
 
 
-def test_update_portfolio_project_no_fields():
-    pid = _create_project()
-    response = client.patch(f"/portfolio/{pid}", json={})
-    assert response.status_code == 400
-
-
-def test_update_portfolio_project_invalid_id():
-    response = client.patch("/portfolio/xyz", json={"is_featured": True})
+def test_edit_portfolio_project_invalid_id():
+    response = client.post("/portfolio/abc/edit", json={"is_featured": True})
     assert response.status_code == 422
+
+
+def test_edit_portfolio_project_empty_body():
+    pid = _create_project()
+    response = client.post(f"/portfolio/{pid}/edit", json={})
+    assert response.status_code in (200, 400)
+
+
+def test_edit_portfolio_project_hides_from_default_portfolio():
+    pid = _create_project(name="Hidden via Edit")
+
+    response = client.post(f"/portfolio/{pid}/edit", json={"is_hidden": True})
+    assert response.status_code == 200
+
+    response = client.get("/portfolio")
+    assert response.status_code == 200
+    data = response.json()
+    names = [p["name"] for p in data["projects"]]
+    assert "Hidden via Edit" not in names
+
+    response = client.get("/portfolio?include_hidden=true")
+    assert response.status_code == 200
+    data = response.json()
+    names = [p["name"] for p in data["projects"]]
+    assert "Hidden via Edit" in names

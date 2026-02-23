@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from pydantic import BaseModel
 from typing import Optional
 from src.Services.portfolio_service import (
@@ -6,6 +6,8 @@ from src.Services.portfolio_service import (
     get_portfolio_project,
     get_portfolio_stats,
     get_portfolio_summary,
+    generate_portfolio,
+    edit_portfolio_project
 )
 
 router = APIRouter(prefix="/portfolio", tags=["Portfolio"])
@@ -36,3 +38,14 @@ def get_portfolio_project_endpoint(project_id: int):
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return result
 
+@router.post("/generate")
+def generate_portfolio_endpoint():
+    return generate_portfolio()
+
+
+@router.post("/{project_id}/edit")
+def edit_portfolio_project_endpoint(project_id: int, updates: dict = Body(...)):
+    result = edit_portfolio_project(project_id, updates)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return result
