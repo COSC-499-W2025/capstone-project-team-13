@@ -39,7 +39,7 @@
       formData.append("file", file);
 
       try {
-        const res = await fetch("http://localhost:8000/api/upload", {
+        const res = await fetch("http://localhost:8000/projects/upload", {
           method: "POST",
           body: formData
         });
