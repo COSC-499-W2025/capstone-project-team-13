@@ -178,9 +178,13 @@ def calculate(a, b):
         
         # Should detect some skills
         if scanner.all_skills:
-            # Skills should be dict with string keys and float values
-            for skill, score in scanner.all_skills.items():
+            # Skills should be dict with string keys and dict values containing score and subskills
+            for skill, data in scanner.all_skills.items():
                 self.assertIsInstance(skill, str)
+                self.assertIsInstance(data, dict)
+                self.assertIn("score", data)
+                self.assertIn("subskills", data)
+                score = data["score"]
                 self.assertIsInstance(score, float)
                 self.assertGreaterEqual(score, 0.0)
                 self.assertLessEqual(score, 1.0)

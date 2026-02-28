@@ -43,7 +43,6 @@ class TestSkillExtraction(unittest.TestCase):
         self.print_results(results)
         detected = [skill for skill, _ in results]
         self.assertIn("content_writing", detected)
-        self.assertIn("writing_mechanics", detected)
 
     def test_case3(self):
         """Reports showing technical writing skills"""

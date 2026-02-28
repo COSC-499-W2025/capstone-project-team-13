@@ -1,0 +1,80 @@
+/* Reset and base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #121212;
+  color: #fff;
+  font-family: 'Arial', sans-serif;
+  min-height: 100vh;
+}
+
+/* Header/Nav */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 30px;
+  border-bottom: 1px solid #333;
+}
+
+header h1 {
+  font-size: 1.8em;
+}
+
+nav {
+  display: flex;
+  gap: 20px;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1em;
+  transition: color 0.2s;
+}
+
+nav a:hover {
+  color: #1db954;
+}
+
+.account-icon {
+  font-size: 1.8em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.account-icon:hover {
+  color: #1db954;
+}
+
+/* Main content */
+main {
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  background-color: #1e1e1e;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.container h2 {
+  margin-bottom: 20px;
+}
+
+.response {
+  margin-top: 15px;
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
