@@ -64,6 +64,32 @@ def normalize_keywords(keywords):
     return normalized
 
 
+def boost_repeated_technical_terms(text, keywords):
+    """
+    Detect repeated technical terms in the text and ensure they appear in results.
+    This handles cases where RAKE doesn't extract single repeated words well.
+    """
+    text_lower = text.lower()
+    found_terms = {}
+    
+    # Count occurrences of each technical term
+    for term in TECH_TERMS:
+        count = text_lower.count(term)
+        if count > 0:
+            found_terms[term] = count
+    
+    # Add technical terms that appeared but weren't extracted
+    extracted_lower = {kw.lower() for _, kw in keywords}
+    
+    for term, count in found_terms.items():
+        if term not in extracted_lower:
+            # Score based on frequency (minimum 3 to ensure visibility)
+            score = max(3, count * 2)
+            keywords.append((score, term.title()))
+    
+    return keywords
+
+
 
 # Ensure necessary NLTK data is available
 try:
@@ -91,10 +117,11 @@ def extract_keywords_with_scores(text: str):
     r.extract_keywords_from_text(text)
     keywords = r.get_ranked_phrases_with_scores()
 
-       # Post-processing steps (YOUR contribution)
+    # Post-processing steps (YOUR contribution)
     keywords = filter_by_phrase_length(keywords)
     keywords = filter_generic_phrases(keywords)
     keywords = normalize_keywords(keywords)
+    keywords = boost_repeated_technical_terms(text, keywords)
 
     return sorted(keywords, reverse=True)
 
