@@ -79,7 +79,7 @@ class TextDocumentScanner:
             'temp', 'tmp', '.tmp',  # Temporary folders
         }
     
-    def scan_and_store(self) -> int:
+    def scan_and_store(self, user_id: Optional[int] = None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
         Supports incremental updates.
@@ -178,7 +178,8 @@ class TextDocumentScanner:
                 'project_type': 'text',
                 'tags': list(self.document_types),
                 'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
-                'date_scanned': datetime.now(timezone.utc)
+                'date_scanned': datetime.now(timezone.utc),
+                'user_id': user_id
             }
             
             project = db_manager.create_project(project_data)
@@ -440,7 +441,8 @@ class TextDocumentScanner:
             'project_type': 'text',
             'tags': list(self.document_types),
             'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
-            'contributors': 1  # Set contributors to 1
+            'contributors': 1,  # Set contributors to 1
+            'user_id': user_id
         }
         
         # Create project record
@@ -465,7 +467,7 @@ class TextDocumentScanner:
         return project.id
 
 
-def scan_text_document(document_path: str, single_file: Optional[bool] = None) -> Optional[int]:
+def scan_text_document(document_path: str, single_file: Optional[bool] = None, user_id: Optional[int] = None) -> Optional[int]:
     """
     Convenience function to scan a text document or folder
     
@@ -478,7 +480,7 @@ def scan_text_document(document_path: str, single_file: Optional[bool] = None) -
     """
     try:
         scanner = TextDocumentScanner(document_path)
-        return scanner.scan_and_store()
+        return scanner.scan_and_store(user_id=user_id)
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
         return None

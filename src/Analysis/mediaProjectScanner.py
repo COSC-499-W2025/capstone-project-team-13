@@ -80,7 +80,7 @@ class MediaProjectScanner:
             'archives', '.trash', 'trash', 'temp', 'tmp', '.tmp'
         }
     
-    def scan_and_store(self) -> int:
+    def scan_and_store(self, user_id: Optional[int] = None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
         Supports incremental updates.
@@ -200,7 +200,8 @@ class MediaProjectScanner:
                 'languages': list(self.software_used),  # store software in languages
                 'skills': list(self.skills_detected)[:10] if self.skills_detected else [],
                 'tags': list(self.software_used),
-                'date_scanned': datetime.now(timezone.utc)
+                'date_scanned': datetime.now(timezone.utc),
+                'user_id': user_id
             }
             
             project = db_manager.create_project(project_data)
@@ -462,7 +463,8 @@ class MediaProjectScanner:
             'frameworks': [],  # Not applicable
             'skills': list(self.skills_detected)[:10] if self.skills_detected else [],
             'tags': list(self.software_used),
-            'contributors': 1  # Set contributors to 1
+            'contributors': 1,  # Set contributors to 1
+            'user_id': user_id
         }
         
         # Create project record
@@ -486,7 +488,7 @@ class MediaProjectScanner:
         return project.id
 
 
-def scan_media_project(project_path: str) -> Optional[int]:
+def scan_media_project(project_path: str, user_id: Optional[int] = None) -> Optional[int]:
     """
     Convenience function to scan a visual media project
     
@@ -499,7 +501,7 @@ def scan_media_project(project_path: str) -> Optional[int]:
     """
     try:
         scanner = MediaProjectScanner(project_path)
-        return scanner.scan_and_store()
+        return scanner.scan_and_store(user_id=user_id)
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
         return None

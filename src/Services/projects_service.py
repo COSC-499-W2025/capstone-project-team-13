@@ -1,8 +1,11 @@
 # src/services/project_upload_service.py
 
+from importlib.resources import path
 from pathlib import Path
 from datetime import datetime, timezone
 import os
+
+from typing import Optional
 
 from src.Helpers.fileDataCheck import sniff_supertype
 from src.Analysis.codingProjectScanner import scan_coding_project
@@ -11,7 +14,7 @@ from src.Analysis.mediaProjectScanner import scan_media_project
 from src.Databases.database import db_manager
 
 
-def process_uploaded_path(path: str):
+def process_uploaded_path(path: str, user_id: Optional[int] = None):
     """
     Core logic used by BOTH:
     - CLI (old main.py)
@@ -31,11 +34,11 @@ def process_uploaded_path(path: str):
 
     supertype = sniff_supertype(path)
     if supertype == "code":
-        project_id = scan_coding_project(path)
+        project_id = scan_coding_project(path, user_id=user_id)
     elif supertype == "text":
-        project_id = scan_text_document(path, single_file=True)
+        project_id = scan_text_document(path, single_file=True, user_id=user_id)
     elif supertype == "media":
-        project_id = scan_media_project(path)
+        project_id = scan_media_project(path, user_id=user_id)
     else:
         raise ValueError("Unsupported project type")
 
