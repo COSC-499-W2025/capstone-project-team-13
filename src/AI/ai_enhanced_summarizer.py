@@ -1,99 +1,358 @@
 """
 AI-Enhanced Project Summarizer
-========================================
+================================
+Enhances project summaries and resume bullets using the Gemini AI service.
 
-Enhances the existing summarizeProjects.py with AI-powered natural language
-descriptions and deep technical insights.
+Two bullet-generation paths:
+  - generate_bullets_for_project(project, num_bullets)
+      Accepts a Project ORM object. Uses the project-type-specific
+      bullet generators as a base, then optionally enriches them with
+      AI rewriting. Integrates with the ATS scorer and persists results
+      via db_manager.  This is the primary path used by the Resume API.
 
-This module maintains backward compatibility with the original summarizer
-while adding optional AI enhancement capabilities.
+  - generate_resume_bullets(project_dict, num_bullets)  [kept for backward compat]
+      Accepts a plain dict (legacy summarizer pipeline).
 
-Integration Strategy:
-1. Use original summarizer for scoring and ranking
-2. Enhance top projects with AI-generated descriptions
-3. Cache results to minimize API costs
-4. Provide both AI and non-AI modes
+Summarizer path:
+  - summarize_projects_with_ai(projects, ...) wraps the original
+    summarize_projects scorer and optionally enriches top-k results
+    with AI descriptions and a portfolio narrative.
 """
 
+import re
 import sys
 import os
-import re
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 
-# Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 try:
-    from src.Analysis.summarizeProjects import summarize_projects as original_summarize
+    from src.Analysis.summarizeProjects import summarize_projects as _original_summarize
     from src.AI.ai_service import get_ai_service
     from src.Databases.database import db_manager
-except ImportError as e:
-    print(f"⚠️ Import error: {e}")
-    print("Make sure you're running from the project root")
-    sys.exit(1)
+    from src.Resume.codeBulletGenerator import CodeBulletGenerator
+    from src.Resume.mediaBulletGenerator import MediaBulletGenerator
+    from src.Resume.textBulletGenerator import TextBulletGenerator
+    from src.Resume.resumeAnalytics import score_all_bullets
+except ImportError as e:  # pragma: no cover
+    raise ImportError(f"ai_enhanced_summarizer: missing dependency – {e}") from e
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+# Map project type strings to their generator class *names* in this module's
+# namespace. Looking up the name at call time (rather than storing the class
+# directly) means unittest.mock.patch can replace the class and _get_generator
+# will pick up the patched version.
+_GENERATOR_MAP = {
+    "code": "CodeBulletGenerator",
+    "visual_media": "MediaBulletGenerator",
+    "text": "TextBulletGenerator",
+}
+
+
+def _get_generator(project_type: str):
+    """Return the matching bullet generator instance, or raise ValueError."""
+    import sys
+    cls_name = _GENERATOR_MAP.get(project_type)
+    if cls_name is None:
+        raise ValueError(
+            f"No bullet generator for project type '{project_type}'. "
+            f"Supported: {list(_GENERATOR_MAP)}"
+        )
+    # Resolve the class from this module so patches applied via
+    # unittest.mock.patch are honoured at call time.
+    module = sys.modules[__name__]
+    cls = getattr(module, cls_name)
+    return cls()
+
+
+# Preamble phrases the AI sometimes outputs instead of bullets.
+# Lines starting with these are skipped by the parser.
+_PREAMBLE_PREFIXES = (
+    "here are", "below are", "the following", "these are",
+    "sure", "certainly", "of course", "i have", "i've",
+    "note:", "please", "based on",
+)
+
+
+def _parse_bullets_from_text(text: str, expected: int) -> List[str]:
+    """
+    Extract bullet strings from raw AI text.
+
+    Handles numbered lists (1. / 1) ), dash/bullet lists, and plain lines.
+    Skips preamble sentences ("Here are three bullet points…") and lines
+    shorter than 15 characters.
+    Returns up to `expected` clean bullet strings.
+    """
+    bullets: List[str] = []
+    for line in text.strip().splitlines():
+        line = line.strip()
+        if not line or line.startswith("```"):
+            continue
+        # Strip leading list markers: "1.", "1)", "-", "•", "*"
+        cleaned = re.sub(r"^\s*(?:\d+[.)\-]|[-•*])\s*", "", line).strip()
+        if len(cleaned) < 15:
+            continue
+        # Skip preamble / meta sentences
+        if cleaned.lower().startswith(_PREAMBLE_PREFIXES):
+            continue
+        bullets.append(cleaned)
+        if len(bullets) >= expected:
+            break
+    return bullets
+
+
+def _ai_rewrite_bullets(bullets: List[str], project_name: str, skills: List[str]) -> List[str]:
+    """
+    Ask the AI to rewrite/polish a list of bullets.
+
+    The prompt is strictly formatted so the AI returns only numbered lines —
+    no preamble, no explanation. Falls back to original bullets on any error.
+    """
+    ai = get_ai_service()
+    numbered = "\n".join(f"{i + 1}. {b}" for i, b in enumerate(bullets))
+    n = len(bullets)
+    prompt = (
+        f"You are a resume writing assistant. Rewrite the {n} bullet points below "
+        f"to be more achievement-focused and quantified where possible.\n\n"
+        f"RULES:\n"
+        f"- Output ONLY the {n} rewritten bullet points, numbered 1 to {n}.\n"
+        f"- Do NOT include any introduction, explanation, or closing remarks.\n"
+        f"- Each bullet must start with a strong past-tense action verb.\n"
+        f"- Each bullet must be 10-20 words long.\n\n"
+        f"Project: {project_name}\n"
+        f"Technologies: {', '.join(skills[:6])}\n\n"
+        f"Original bullets:\n{numbered}\n\n"
+        f"Rewritten bullets (numbered list only):"
+    )
+    try:
+        response = ai.generate_text(prompt, temperature=0.4, max_tokens=400)
+        if response:
+            rewritten = _parse_bullets_from_text(response, n)
+            if len(rewritten) == n:
+                return rewritten
+            # Count mismatch — AI didn't return the right number of bullets.
+            # Fall through to the safe fallback below.
+    except Exception as exc:  # pragma: no cover
+        print(f"⚠️  AI rewrite failed for '{project_name}': {exc}")
+    return bullets  # safe fallback
+
+
+def _get_cached_ai_description(project_name: str) -> Optional[str]:
+    """Return a cached AI description from the database, if available."""
+    try:
+        for p in db_manager.get_all_projects():
+            if p.name == project_name:
+                desc = getattr(p, "ai_description", None)
+                if desc:
+                    return desc
+    except Exception:
+        pass
+    return None
+
+
+def _cache_ai_description(project_name: str, description: str) -> None:
+    """Persist an AI description to the matching database project."""
+    try:
+        for p in db_manager.get_all_projects():
+            if p.name == project_name:
+                db_manager.update_project(p.id, {"ai_description": description})
+                break
+    except Exception as exc:  # pragma: no cover
+        print(f"⚠️  Cache write warning: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Primary public API: ORM-based bullet generation
+# ---------------------------------------------------------------------------
+
+def generate_bullets_for_project(
+    project,
+    num_bullets: int = 3,
+    use_ai: bool = True,
+    persist: bool = True,
+) -> Dict[str, Any]:
+    """
+    Generate resume bullets for a Project ORM object.
+
+    Steps:
+      1. Use the project-type-specific generator to produce base bullets.
+      2. Optionally rewrite them with AI for richer language.
+      3. Score with the ATS scorer.
+      4. Optionally persist to the database.
+
+    Args:
+        project:     A Project ORM instance (must have .id, .name,
+                     .project_type, .skills, etc.)
+        num_bullets: Number of bullets to generate (2–5).
+        use_ai:      Whether to AI-rewrite the base bullets.
+        persist:     Whether to save results via db_manager.
+
+    Returns:
+        {
+            "success": bool,
+            "project_id": int,
+            "project_name": str,
+            "header": str,
+            "bullets": List[str],
+            "ats_score": float,
+            "ai_enhanced": bool,
+            "error": str   # only present on failure
+        }
+    """
+    if num_bullets < 2 or num_bullets > 5:
+        return {"success": False, "error": "num_bullets must be between 2 and 5"}
+
+    try:
+        generator = _get_generator(project.project_type)
+    except ValueError as exc:
+        return {"success": False, "error": str(exc)}
+
+    try:
+        bullets: List[str] = generator.generate_resume_bullets(project, num_bullets)
+        header: str = generator.generate_project_header(project)
+    except Exception as exc:
+        return {"success": False, "error": f"Base generation failed: {exc}"}
+
+    ai_enhanced = False
+    if use_ai:
+        skills = getattr(project, "skills", []) or []
+        rewritten = _ai_rewrite_bullets(bullets, project.name, skills)
+        if rewritten != bullets:
+            bullets = rewritten
+            ai_enhanced = True
+
+    scoring = score_all_bullets(bullets, project.project_type)
+    ats_score: float = scoring.get("overall_score", 0.0)
+
+    if persist:
+        db_manager.save_resume_bullets(
+            project_id=project.id,
+            bullets=bullets,
+            header=header,
+            ats_score=ats_score,
+        )
+
+    return {
+        "success": True,
+        "project_id": project.id,
+        "project_name": project.name,
+        "header": header,
+        "bullets": bullets,
+        "ats_score": ats_score,
+        "ai_enhanced": ai_enhanced,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Legacy API: dict-based bullet generation (backward compat)
+# ---------------------------------------------------------------------------
+
+def generate_resume_bullets(project: Dict[str, Any], num_bullets: int = 3) -> List[str]:
+    """
+    Generate resume bullets from a plain project dict (legacy pipeline).
+
+    Used by summarize_projects_with_ai demo flow. Does NOT persist to DB.
+    """
+    ai = get_ai_service()
+    skills = project.get("skills", [])
+    name = project.get("project_name", "Project")
+    context = project.get("ai_description", "")
+
+    prompt = (
+        f"Generate exactly {num_bullets} resume bullet points for this project.\n"
+        f"Start each with a number and period (1. 2. 3.).\n\n"
+        f"Project: {name}\n"
+        f"Technologies: {', '.join(skills[:6])}\n"
+        f"Context: {context}\n\n"
+        f"Resume Bullets:"
+    )
+    try:
+        response = ai.generate_text(prompt, temperature=0.6, max_tokens=250)
+        if response:
+            parsed = _parse_bullets_from_text(response, num_bullets)
+            if parsed:
+                return parsed[:num_bullets]
+    except Exception as exc:
+        print(f"⚠️  Resume bullet generation failed: {exc}")
+
+    # Fallback
+    fallback_skills = ", ".join(skills[:3]) or "various technologies"
+    return [
+        f"Developed {name} using {fallback_skills}",
+        f"Implemented core features for {name}",
+        f"Contributed to {name} project development",
+    ][:num_bullets]
+
+
+# ---------------------------------------------------------------------------
+# AI project description enrichment
+# ---------------------------------------------------------------------------
 
 def ai_enhance_project_summary(
     project_dict: Dict[str, Any],
     ai_service=None,
-    include_technical_depth: bool = False
+    include_technical_depth: bool = False,
 ) -> Dict[str, Any]:
     """
-    Enhance a single project dictionary with AI-generated description.
-    
+    Enrich a project dict in-place with an AI-generated description.
+
     Args:
-        project_dict: Project data (must have 'project_name' and other fields)
-        ai_service: Optional AI service instance (will create if None)
-        include_technical_depth: If True, adds technical analysis
-    
+        project_dict:            Dict with at least 'project_name' and 'skills'.
+        ai_service:              Optional pre-initialised AIService instance.
+        include_technical_depth: If True, also add 'technical_insights'.
+
     Returns:
-        Enhanced project dictionary with 'ai_description' field
+        The same dict, now containing 'ai_description' (and optionally
+        'technical_insights').
     """
     if ai_service is None:
         ai_service = get_ai_service()
-    
-    # Create a concise prompt focusing on portfolio/resume context
-    prompt = f"""Write a 2-3 sentence professional description for this project suitable for a portfolio or resume.
-                Focus on: purpose, key technologies, and complexity/scope.
 
-                Project: {project_dict.get('project_name', 'Unnamed Project')}
-                Technologies: {', '.join(project_dict.get('skills', [])[:5])}
-                Scope: {project_dict.get('file_count', 'Unknown')} files, {project_dict.get('lines_of_code', 'unknown')} lines
-                Success Score: {project_dict.get('success_score', 0):.2f}
-                Contribution: {project_dict.get('contribution_score', 0):.2f}
-
-                Description:"""
-    
+    name = project_dict.get("project_name", "Unnamed Project")
+    skills_str = ", ".join(project_dict.get("skills", [])[:5])
+    prompt = (
+        f"Write a 2-3 sentence professional description for this project "
+        f"suitable for a portfolio or resume.\n"
+        f"Focus on purpose, key technologies, and complexity/scope.\n\n"
+        f"Project: {name}\n"
+        f"Technologies: {skills_str}\n"
+        f"Scope: {project_dict.get('file_count', '?')} files, "
+        f"{project_dict.get('lines_of_code', '?')} lines\n\n"
+        f"Description:"
+    )
     try:
-        description = ai_service.generate_text(
-            prompt,
-            temperature=0.7,
-            max_tokens=150
+        description = ai_service.generate_text(prompt, temperature=0.7, max_tokens=150)
+        if description:
+            project_dict["ai_description"] = description.strip()
+    except Exception as exc:
+        print(f"⚠️  AI enhancement failed for '{name}': {exc}")
+        project_dict["ai_description"] = (
+            f"A {', '.join(project_dict.get('skills', ['software'])[:2])} project."
         )
-        project_dict['ai_description'] = description.strip()
-        
-        # Optionally add technical depth analysis
-        if include_technical_depth:
-            tech_prompt = f"""Briefly identify key technical concepts in this project (1-2 sentences).
-            Look for: OOP principles, data structures, algorithms, design patterns.
 
-            Project: {project_dict.get('project_name')}
-            Technologies: {', '.join(project_dict.get('skills', [])[:8])}
+    if include_technical_depth:
+        tech_prompt = (
+            f"Briefly identify key technical concepts in this project (1-2 sentences).\n"
+            f"Look for OOP, data structures, algorithms, design patterns.\n\n"
+            f"Project: {name}\nTechnologies: {skills_str}\n\nTechnical Concepts:"
+        )
+        try:
+            tech = ai_service.generate_text(tech_prompt, temperature=0.3, max_tokens=100)
+            if tech:
+                project_dict["technical_insights"] = tech.strip()
+        except Exception:
+            pass
 
-            Technical Concepts:"""
-            
-            tech_analysis = ai_service.generate_text(
-                tech_prompt,
-                temperature=0.3,
-                max_tokens=100
-            )
-            project_dict['technical_insights'] = tech_analysis.strip()
-    
-    except Exception as e:
-        print(f"⚠️ AI enhancement failed for {project_dict.get('project_name')}: {e}")
-        project_dict['ai_description'] = f"A {', '.join(project_dict.get('skills', ['software'])[:2])} project."
-    
     return project_dict
+
+
+# ---------------------------------------------------------------------------
+# Portfolio-level summariser
+# ---------------------------------------------------------------------------
 
 def summarize_projects_with_ai(
     projects: List[Dict[str, Any]],
@@ -105,296 +364,61 @@ def summarize_projects_with_ai(
     diversity_alpha: float = 0.1,
 ) -> Dict[str, Any]:
     """
-    Enhanced version of summarize_projects with optional AI descriptions.
-    
+    Rank projects with the original scorer, then optionally enrich with AI.
+
     Args:
-        projects: List of project dictionaries
-        top_k: Number of top projects to select
-        use_ai: If True, enhance selected projects with AI descriptions
-        enhance_all: If True, enhance ALL projects (not just top k). 
-        include_technical_depth: If True, adds technical analysis 
-        weights: Scoring weights (passed to original summarizer)
-        diversity_alpha: Diversity factor (passed to original summarizer)
-    
+        projects:                List of project dicts (legacy format).
+        top_k:                   Number of top projects to surface.
+        use_ai:                  Enrich with AI descriptions if True.
+        enhance_all:             Enhance every project, not just top-k.
+        include_technical_depth: Add 'technical_insights' to each project.
+        weights:                 Scorer weight overrides.
+        diversity_alpha:         Diversity factor for the scorer.
+
     Returns:
-        Enhanced summary dictionary with AI-generated content
+        Scored summary dict, optionally with 'ai_summary' and per-project
+        'ai_description' / 'technical_insights' fields.
     """
-    # Step 1: Use original summarizer for ranking
-    result = original_summarize(
+    result = _original_summarize(
         projects=projects,
         top_k=top_k,
         weights=weights,
-        diversity_alpha=diversity_alpha
+        diversity_alpha=diversity_alpha,
     )
-    
-    # Step 2: Optionally enhance with AI
+
     if not use_ai:
         return result
-    
-    print(f"\n🤖 Enhancing projects with AI descriptions...")
+
     ai_service = get_ai_service()
-    
-    # Determine which projects to enhance
-    projects_to_enhance = result['all_projects_scored'] if enhance_all else result['selected_projects']
-    
-    enhanced_count = 0
-    cache_hits = 0
-    
-    for project in projects_to_enhance:
-        # Check if we already have AI description in DB
-        project_name = project.get('project_name', '')
-        cached = _get_cached_ai_description(project_name)
-        
+    pool = result["all_projects_scored"] if enhance_all else result["selected_projects"]
+
+    for project in pool:
+        name = project.get("project_name", "")
+        cached = _get_cached_ai_description(name)
         if cached:
-            project['ai_description'] = cached
-            cache_hits += 1
+            project["ai_description"] = cached
         else:
-            ai_enhance_project_summary(
-                project,
-                ai_service=ai_service,
-                include_technical_depth=include_technical_depth
-            )
-            # Cache the result
-            if 'ai_description' in project:
-                _cache_ai_description(project_name, project['ai_description'])
-        
-        enhanced_count += 1
-    
-    print(f"✅ Enhanced {enhanced_count} projects (💾 {cache_hits} from cache)")
-    
-    # Step 3: Generate AI-powered summary
-    if use_ai:
-        result['ai_summary'] = _generate_portfolio_summary(result, ai_service)
-    
-    return result
+            ai_enhance_project_summary(project, ai_service, include_technical_depth)
+            if "ai_description" in project:
+                _cache_ai_description(name, project["ai_description"])
 
-def _get_cached_ai_description(project_name: str) -> Optional[str]:
-    """Check if we have a cached AI description for this project in the database."""
-    try:
-        # Try to find project by name
-        projects = db_manager.get_all_projects()
-        for p in projects:
-            if p.name == project_name:
-                # Check if it has ai_description field
-                if hasattr(p, 'ai_description') and p.ai_description:
-                    return p.ai_description
-        return None
-    except Exception:
-        return None
-
-def _cache_ai_description(project_name: str, description: str):
-    """Cache AI description in the database if project exists."""
-    try:
-        projects = db_manager.get_all_projects()
-        for p in projects:
-            if p.name == project_name:
-                db_manager.update_project(p.id, {
-                    'ai_description': description
-                })
-                break
-    except Exception as e:
-        print(f"⚠️ Cache write warning: {e}")
-
-def _generate_portfolio_summary(result: Dict[str, Any], ai_service) -> str:
-    """
-    Generate an AI-powered portfolio summary based on all projects.
-    This creates a cohesive narrative suitable for a professional portfolio.
-    """
-    # Extract key information
-    top_projects = result['selected_projects']
-    all_skills = result['unique_skills']
-    avg_score = result['average_score']
-    
-    # Build context for AI
-    project_summaries = []
-    for p in top_projects:
-        name = p['project_name']
-        skills = ', '.join(p['skills'][:3])
-        desc = p.get('ai_description', f"A project using {skills}")
-        project_summaries.append(f"- {name}: {desc}")
-    
-    prompt = f"""Create a professional 3-4 sentence portfolio summary based on these projects.
-            Focus on: breadth of skills, notable projects, and overall technical capability.
-            Write in third person (e.g., "demonstrates", "has experience in").
-
-            Projects:
-            {chr(10).join(project_summaries)}
-
-            All Skills: {', '.join(all_skills[:15])}
-            Average Project Score: {avg_score:.2f}/1.00
-
-            Portfolio Summary:"""
-                
-    try:
-        summary = ai_service.generate_text(
-            prompt,
-            temperature=0.7,
-            max_tokens=200
-        )
-        return summary.strip()
-    except Exception as e:
-        print(f"⚠️ AI summary generation failed: {e}")
-        return result['summary']  # Fall back to original summary
-
-def generate_resume_bullets(project: Dict[str, Any], num_bullets: int = 3) -> List[str]:
-    """
-    Generate professional resume bullet points for a project.
-    Uses AI to create achievement-focused descriptions.
-    """
-    ai_service = get_ai_service()
-    
-    prompt = f"""Generate exactly {num_bullets} resume bullet points for this project.
-            Start each bullet with a number and period (1. 2. 3.).
-
-            Project: {project.get('project_name', 'Project')}
-            Technologies: {', '.join(project.get('skills', [])[:6])}
-            Context: {project.get('ai_description', '')}
-            Score: {project.get('overall_score', 0):.2f}
-
-            Format:
-            1. [First bullet starting with action verb]
-            2. [Second bullet starting with action verb]
-            3. [Third bullet starting with action verb]
-
-            Resume Bullets:"""
-    
-    try:
-        response = ai_service.generate_text(
-            prompt,
-            temperature=0.6,
-            max_tokens=250
-        )
-        
-        # DEBUG: Print what we got
-        print(f"\n[DEBUG] AI Response:\n{repr(response)}\n")
-        
-        # ULTRA-ROBUST PARSING - Handles ANY format
-        import re
-        bullets = []
-        
-        # First, try to find lines that look like bullets
-        lines = response.strip().split('\n')
-        
-        for line in lines:
-            line = line.strip()
-            
-            # Skip empty lines and markdown
-            if not line or line.startswith('```'):
-                continue
-            
-            # Remove ALL leading non-letter characters
-            # This catches: "1. ", "• ", "- ", "* ", "1) ", etc.
-            cleaned = re.sub(r'^[^a-zA-Z]+', '', line).strip()
-            
-            # If we got something substantial, keep it
-            if cleaned and len(cleaned) >= 15:
-                bullets.append(cleaned)
-                print(f"[DEBUG] Added bullet: {cleaned[:50]}...")
-                
-                if len(bullets) >= num_bullets:
-                    break
-        
-        print(f"[DEBUG] Total bullets found: {len(bullets)}\n")
-        
-        # Return what we found
-        if len(bullets) >= num_bullets:
-            return bullets[:num_bullets]
-        elif len(bullets) > 0:
-            # Got some bullets but not enough
-            return bullets
-        else:
-            # Parsing completely failed - return fallback
-            print("[DEBUG] Parsing failed, using fallback")
-            return [
-                f"Developed {project.get('project_name')} using {', '.join(project.get('skills', ['various technologies'])[:3])}",
-                f"Implemented features using {', '.join(project.get('skills', ['technologies'])[1:3])}",
-                f"Contributed to {project.get('project_name')} project development"
-            ][:num_bullets]
-    
-    except Exception as e:
-        print(f"⚠️ Resume bullet generation failed: {e}")
-        return [f"Developed {project.get('project_name')} using {', '.join(project.get('skills', ['various technologies'])[:3])}"]
-    
-# CLI Functions
-
-def demo_ai_summarizer():
-    """Interactive demo of AI-enhanced summarizer."""
-    print("\n" + "="*70)
-    print("AI-Enhanced Project Summarizer Demo")
-    print("="*70 + "\n")
-    
-    # Get projects from database
-    from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
-    projects = fetch_projects_for_summary()
-    
-    if not projects:
-        print("📭 No projects found in database")
-        return
-    
-    print(f"Found {len(projects)} projects\n")
-    
-    # Ask for preferences
-    print("Options:")
-    print("1. Quick summary (original, no AI)")
-    print("2. AI-enhanced summary (top projects only)")
-    print("3. Full AI analysis (all projects + technical depth)")
-    
-    choice = input("\nChoice (1-3): ").strip()
-    
-    # Configure based on choice
-    use_ai = choice in ['2', '3']
-    enhance_all = choice == '3'
-    include_tech = choice == '3'
-    
-    # Run summarizer
-    print("\n🔄 Processing...\n")
-    
-    result = summarize_projects_with_ai(
-        projects=projects,
-        top_k=min(5, len(projects)),
-        use_ai=use_ai,
-        enhance_all=enhance_all,
-        include_technical_depth=include_tech
+    # Portfolio-level narrative
+    top = result["selected_projects"]
+    summaries = "\n".join(
+        f"- {p['project_name']}: {p.get('ai_description', ', '.join(p.get('skills', [])[:3]))}"
+        for p in top
     )
-    
-    # Display results
-    print("\n" + "="*70)
-    print("📊 Results")
-    print("="*70 + "\n")
-    
-    # Show AI summary if available
-    if 'ai_summary' in result:
-        print("🤖 AI-Generated Portfolio Summary:")
-        print(result['ai_summary'])
-        print()
-    else:
-        print("📝 Summary:")
-        print(result['summary'])
-        print()
-    
-    # Show top projects
-    print(f"🏆 Top {len(result['selected_projects'])} Projects:\n")
-    
-    for i, proj in enumerate(result['selected_projects'], 1):
-        print(f"{i}. {proj['project_name']} (Score: {proj['overall_score']:.3f})")
-        print(f"   Skills: {', '.join(proj['skills'][:5])}")
-        
-        if 'ai_description' in proj:
-            print(f"   📝 {proj['ai_description']}")
-        
-        if 'technical_insights' in proj:
-            print(f"   🔬 {proj['technical_insights']}")
-        
-        print()
-    
-    # Offer to generate resume bullets
-    if use_ai:
-        gen_bullets = input("Generate resume bullets for top project? (yes/no): ").strip().lower()
-        if gen_bullets == 'yes' and result['selected_projects']:
-            print("\n📋 Resume Bullets:\n")
-            bullets = generate_resume_bullets(result['selected_projects'][0])
-            for bullet in bullets:
-                print(f"• {bullet}")
+    all_skills = ", ".join(result.get("unique_skills", [])[:15])
+    portfolio_prompt = (
+        f"Create a professional 3-4 sentence portfolio summary based on these projects.\n"
+        f"Write in third person. Focus on breadth of skills and technical capability.\n\n"
+        f"Projects:\n{summaries}\n\nAll Skills: {all_skills}\n\nPortfolio Summary:"
+    )
+    try:
+        narrative = ai_service.generate_text(portfolio_prompt, temperature=0.7, max_tokens=200)
+        if narrative:
+            result["ai_summary"] = narrative.strip()
+    except Exception:
+        result["ai_summary"] = result.get("summary", "")
 
-if __name__ == "__main__":
-    demo_ai_summarizer()
+    return result

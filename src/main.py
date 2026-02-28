@@ -54,19 +54,35 @@ from src.Extraction.keywordExtractorText import extract_keywords_with_scores
 from src.Analysis.summarizeProjects import summarize_projects
 from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
 from src.Analysis.projectcollabtype import identify_project_type
-from src.AI.ai_project_analyzer import AIProjectAnalyzer
-from src.AI.ai_project_ranker import AIProjectRanker
-from src.AI.ai_enhanced_summarizer import (
-    summarize_projects_with_ai,
-    generate_resume_bullets
-)
+
+# Load .env before AI imports — ai_project_ranker calls get_ai_service()
+# at import time, which needs GEMINI_API_KEY already in os.environ.
+try:
+    from dotenv import load_dotenv
+    _env = Path(__file__).parent / '.env'
+    load_dotenv(dotenv_path=_env if _env.exists() else None, override=False)
+except ImportError:
+    pass
+
+try:
+    from src.AI.ai_project_analyzer import AIProjectAnalyzer
+    from src.AI.ai_project_ranker import AIProjectRanker
+    from src.AI.ai_enhanced_summarizer import (
+        summarize_projects_with_ai,
+        generate_resume_bullets
+    )
+    from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
+    from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
+    AI_FEATURES_AVAILABLE = True
+except Exception as _ai_err:
+    AI_FEATURES_AVAILABLE = False
+    print(f"⚠️  AI features not available: {_ai_err}")
+
 from src.Analysis.importanceScores import assign_importance_scores
 from src.Analysis.importanceRanking import get_ranked_projects
 from src.Analysis.rank_projects_by_date import get_ranked_timeline_from_db
 from src.Analysis.codeEfficiency import grade_efficiency
 from src.Analysis.folderEfficiency import grade_folder
-from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
-from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
 from src.Analysis.incrementalZipHandler import handle_incremental_zip_upload
 from src.Analysis.incrementalFileHandler import handle_add_files_to_project
 from src.Analysis.multiProjectZip import processZipFile, identifyProjectType, splitZipFile
@@ -1235,6 +1251,10 @@ def customize_portfolio_project():
 
 def ai_project_analysis_menu():
     """AI Project Analysis submenu"""
+    if not AI_FEATURES_AVAILABLE:
+        print("\n❌ AI features are not available (check GEMINI_API_KEY in your .env).")
+        input("\nPress Enter to continue...")
+        return
     # Optional AI service consent (not required for basic functionality)
     print("\n" + "="*70)
     ai_consent = request_ai_consent()
@@ -1638,6 +1658,10 @@ def analyzeTextProject():
 def generate_ai_summaries_all():
     """Generate AI-enhanced summaries for all projects"""
     print_header("Generate AI Project Summaries")
+    if not AI_FEATURES_AVAILABLE:
+        print("❌ AI features are not available (check GEMINI_API_KEY in your .env).")
+        input("\nPress Enter to continue...")
+        return
     
     # Import needed function
     from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
@@ -1751,75 +1775,78 @@ def generate_ai_summaries_all():
     input("\nPress Enter to continue...")
 
 def generate_resume_bullets_menu():
-    """Generate professional resume bullets for a project"""
+    """Generate professional resume bullets for a project using the ORM-based path."""
     print_header("Generate Resume Bullets")
-    
-    # Import needed function
-    from src.Analysis.runSummaryFromDb import fetch_projects_for_summary
-    from src.Analysis.summarizeProjects import summarize_projects
-    
-    # Fetch and rank projects
-    try:
-        projects = fetch_projects_for_summary()
-    except Exception as e:
-        print(f"❌ Error fetching projects: {e}")
+    if not AI_FEATURES_AVAILABLE:
+        print("\u274c AI features are not available (check GEMINI_API_KEY in your .env).")
         input("\nPress Enter to continue...")
         return
-    
-    if not projects:
-        print("📭 No projects found in database.")
-        input("\nPress Enter to continue...")
-        return
-    
-    # Get top projects
-    result = summarize_projects(projects, top_k=min(10, len(projects)))
-    
-    print(f"Top {len(result['selected_projects'])} Projects:\n")
-    for i, proj in enumerate(result['selected_projects'], 1):
-        print(f"{i}. {proj['project_name']} (Score: {proj['overall_score']:.3f})")
-        print(f"   Skills: {', '.join(proj['skills'][:4])}")
-    
-    # Get choice
-    print()
-    choice = input(f"Select project (1-{len(result['selected_projects'])}) or Enter to cancel: ").strip()
-    
-    if not choice:
-        return
-    
-    if not choice.isdigit() or int(choice) < 1 or int(choice) > len(result['selected_projects']):
-        print("❌ Invalid choice")
-        input("\nPress Enter to continue...")
-        return
-    
-    selected_project = result['selected_projects'][int(choice) - 1]
-    
-    # Confirm
-    print(f"\n📁 Selected: {selected_project['project_name']}")
-    confirm = input("Generate resume bullets? (yes/no): ").strip().lower()
-    
-    if confirm != 'yes':
-        return
-    
-    # Generate bullets
-    print(f"\n{'='*70}")
-    print("🤖 Generating Resume Bullets...")
-    print(f"{'='*70}\n")
-    
-    try:
-        bullets = generate_resume_bullets(selected_project, num_bullets=3)
-        
-        print(f"📋 Resume Bullets for: {selected_project['project_name']}\n")
-        print("Copy these to your resume:\n")
-        for bullet in bullets:
-            print(f"• {bullet}\n")
-        
-        print(f"{'='*70}")
-        
-    except Exception as e:
-        print(f"❌ Error generating bullets: {e}")
-    
-    input("\nPress Enter to continue...")
 
+    # Show all projects directly from the DB so we always have the ORM object
+    projects = db_manager.get_all_projects()
+    if not projects:
+        print("\U0001f4ed No projects found in database.")
+        input("\nPress Enter to continue...")
+        return
+
+    print(f"Found {len(projects)} project(s):\n")
+    for i, p in enumerate(projects, 1):
+        bullet_flag = "\u2713" if p.bullets else " "
+        skills_preview = ", ".join((p.skills or [])[:4]) or "\u2014"
+        print(f"  {i}. [{bullet_flag}] {p.name}  ({p.project_type})  Skills: {skills_preview}")
+
+    print()
+    raw = input(f"Select project (1-{len(projects)}) or Enter to cancel: ").strip()
+    if not raw:
+        return
+    if not raw.isdigit() or not (1 <= int(raw) <= len(projects)):
+        print("\u274c Invalid choice")
+        input("\nPress Enter to continue...")
+        return
+
+    project = projects[int(raw) - 1]
+
+    while True:
+        try:
+            n_raw = input("How many bullets? (2-5, default 3): ").strip()
+            num_bullets = int(n_raw) if n_raw else 3
+            if 2 <= num_bullets <= 5:
+                break
+            print("Please enter a number between 2 and 5.")
+        except ValueError:
+            print("Invalid input.")
+
+    use_ai_raw = input("Use AI to enhance bullets? (y/n, default y): ").strip().lower()
+    use_ai = use_ai_raw != "n"
+
+    print(f"\n{'='*70}")
+    print(f"\U0001f916 Generating {num_bullets} bullets for '{project.name}'...")
+    print(f"{'='*70}\n")
+
+    try:
+        from src.AI.ai_enhanced_summarizer import generate_bullets_for_project
+        result = generate_bullets_for_project(project, num_bullets=num_bullets, use_ai=use_ai)
+    except Exception as e:
+        print(f"\u274c Error generating bullets: {e}")
+        input("\nPress Enter to continue...")
+        return
+
+    if not result["success"]:
+        print(f"\u274c {result.get('error', 'Unknown error')}")
+        input("\nPress Enter to continue...")
+        return
+
+    print(f"\U0001f4cb Resume Bullets for: {project.name}\n")
+    print(result["header"])
+    print()
+    for i, bullet in enumerate(result["bullets"], 1):
+        print(f"  {i}. {bullet}")
+    print()
+    print(f"ATS Score: {result['ats_score']:.1f}/100{'  \U0001f916 AI-enhanced' if result['ai_enhanced'] else ''}")
+    print(f"{'='*70}")
+    print("\u2705 Bullets saved to database.")
+
+    input("\nPress Enter to continue...")
 def batch_analyze_all_projects():
     """Batch analyze all projects in database"""
     print_header("Batch Analyze All Projects")
