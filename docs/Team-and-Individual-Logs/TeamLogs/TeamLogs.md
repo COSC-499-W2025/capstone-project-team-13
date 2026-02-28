@@ -4,6 +4,9 @@
 - [T2 Week 3](#term-2-week-3-team-log)
 - [T2 Week 4](#term-2-week-4-team-log)
 - [T2 Week 5](#term-2-week-5-team-log)
+- [T2 Week 6](#term-2-week-6-team-log)
+- [T2 Week 7](#term-2-week-7-team-log)
+- [T2 Week 8](#term-2-week-8-team-log)
 
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
@@ -517,3 +520,130 @@ Manual testing through `main.py` also confirmed that all modules work as expecte
 
 **What didn’t go as planned:**  
 - Better communication on who is doing what needs to be implemented in future sprint because the team encountered 2 people working on the same file and over-writing each other's work.
+
+## Term 2 Week 6 Team Log  
+**Date Range:** Feb 9 - Feb 15, 2026
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T’Olu Akinwande** | NA | |
+| **Prina Mehta** | Worked on Showcase Selector that allows users to interactively select which projects to showcase in Portfolio. | #342|
+| **Maya Knutsvig** | Generate_summary on main updated to include Success Score. Created a README for API endpoint documentation. | #234 |
+| **Jackson Wilson** | Several tests were failing prior to this week, so fixed 26 tests. | No issue number for this |
+| **Illina Islam** | Created session manager class to maintain log in and log out status for user accounts. Test class for session management was created as well. | #345 |
+| **Sana Shah** | NA | |
+
+---
+Backlog
+![alt text](teamLogImages/backlogT2W6.png)
+
+Burnup Chart:
+![alt text](teamLogImages/burnupT2W6.png)
+
+In-Progress Tasks: 
+![alt text](teamLogImages/inProgressT2W6.png)
+
+Completed Tasks:
+![alt text](teamLogImages/completedT2W6.png)
+![alt text](teamLogImages/completed2T2W6.png)
+![alt text](teamLogImages/completed3T2W6.png)
+
+
+# Test Report
+All tests were written in Python and executed successfully.  
+Unit tests were created for each major function (e.g., `test_portofolioFormatter(), test_database(), etc`).  
+Manual testing through `main.py` also confirmed that all modules work as expected with sample project data.
+![alt text](teamLogImages/testsT2W6.png)
+
+
+### Reflection Points
+**What went well:**  
+- Many of us had 4-5 midterms this week, so progress was slower than usual, but we are still on track for completing Milestone 2 Requirements before the deadline.
+
+**What didn’t go as planned:**  
+- Some PRs were not approved on time due to unavailability from exam week.
+
+## Term 2 Week 7 Team Log  
+**Date Range:** Feb 16 - Feb 22, 2026
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T’Olu Akinwande** | Implemented the Portfolio API endpoints, which return and manage portfolio data for projects using FastAPI.| #351 |
+| **Prina Mehta** | Implemented the GET /resume/{project_id}, POST /resume/generate, and POST /resume/{project_id}/edit endpoints, which return and manage resume bullet points for each project using FastAPI. The three endpoints are: GET /resume/{project_id}: Returns stored resume bullets for a specific project, including the header, bullet points, ATS score, and generation timestamp. POST /resume/generate: Generates resume bullets for a given project by automatically selecting the correct bullet generator (code/text/media) based on project type, scoring the bullets, and persisting them to the database. POST /resume/{project_id}/edit: Allows users to update the wording of stored resume bullets for a project, with ATS score recalculated on save. | #350 |
+| **Maya Knutsvig** | Added missing portfolio api endpoints, this includes two POST methods, POST /portfolio/generate, POST /portfolio/{id}/edit | #351 |
+| **Jackson Wilson** | Added API endpoints for both AI and default consent. Can now grant, revoke, and check consent for each. | #353  |
+| **Illina Islam** |NA | | |
+| **Sana Shah** | Implemented the GET/skills endpoint, which returns a list of skills for each project using fastapi. Also created 3 other endpoints: GET/skills/{skill_name}: allows users to search a specific skill by name, and get displayed a list of projects that include that skill. GET/analytics/co-occurence: which displays a list of skill pairs are frequently used together in the users projects, including skill-pair count, as well as which projects the skill-pairs are occuring in. GET/analytics/skills: which displays list of skill pairs that are frequently used together, as well as insights such as most common skill-pair, top skills, and a skill diversity score. | #352 |
+
+---
+Backlog
+![alt text](teamLogImages/backlogT2W6.png)
+
+Burnup Chart:
+![alt text](teamLogImages/burnupT2W6.png)
+
+In-Progress Tasks: 
+![alt text](teamLogImages/inProgressT2W6.png)
+
+Completed Tasks:
+![alt text](teamLogImages/completedT2W6.png)
+![alt text](teamLogImages/completed2T2W6.png)
+![alt text](teamLogImages/completed3T2W6.png)
+
+
+# Test Report
+All tests were written in Python and executed successfully.  
+Unit tests were created for each major function (e.g., `test_portofolioFormatter(), test_database(), etc`).  
+Manual testing through `main.py` also confirmed that all modules work as expected with sample project data.
+![alt text](teamLogImages/testsT2W6.png)
+
+
+### Reflection Points
+**What went well:**  
+- Successfully prepared for the presentation.
+
+**What didn’t go as planned:**  
+- As this was reading break, and we were not required to do anything, we believe we did more than required as many of us still kept up with coding PRs and ensured we were on track. 
+
+
+## Term 2 Week 8 Team Log  
+**Date Range:** Feb 23 - March 1, 2026
+
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **T’Olu Akinwande** | | # |
+| **Prina Mehta** |  | # |
+| **Maya Knutsvig** |  | # |
+| **Jackson Wilson** |  | #  |
+| **Illina Islam** |Signup endpoint --> For account creation; User provides email/password → Password gets hashed (bcrypt) → User saved to database → JWT token generated with user_id → Token returned to user. Login endpoint --> For logging; User provides email/password → System checks if user exists → Verifies password hash matches → Generates new JWT token → Returns token. Using Token: User includes token in Authorization: Bearer header → Backend decodes token → Extracts user_id → Filters all data by that user_id. Me endpoint --> for checking current user (check if a user is logged in or not). Guest projects count endpoint --> for counting number of projects uploaded by a guest user. Guest Mode: No token provided → user_id is None → System shows only guest projects (where user_id IS NULL). Made changes to project endpoints to account for user id| | #359 |
+| **Sana Shah** | Designed and created UI mock. Set up  upload and analyze projects page. | No issue number |
+
+---
+Backlog
+![alt text](teamLogImages/backlogT2W6.png)
+
+Burnup Chart:
+![alt text](teamLogImages/burnupT2W6.png)
+
+In-Progress Tasks: 
+![alt text](teamLogImages/inProgressT2W6.png)
+
+Completed Tasks:
+![alt text](teamLogImages/completedT2W6.png)
+![alt text](teamLogImages/completed2T2W6.png)
+![alt text](teamLogImages/completed3T2W6.png)
+
+
+# Test Report
+All tests were written in Python and executed successfully.  
+Unit tests were created for each major function (e.g., `test_portofolioFormatter(), test_database(), etc`).  
+Manual testing through `main.py` also confirmed that all modules work as expected with sample project data.
+![alt text](teamLogImages/testsT2W6.png)
+
+
+### Reflection Points
+**What went well:**  
+- We successfully completed Milestone 2 requirements, and were well prepared for our presentation. 
+
+**What didn’t go as planned:**  
+- We believe this week was also well planned and successful. 
