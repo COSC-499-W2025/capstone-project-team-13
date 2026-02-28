@@ -1111,16 +1111,18 @@ def generate_summary():
 
     # --- Menu options ---
     print("\nWhat would you like to do next?")
-    print("  S) Save top projects as Showcase (feature + rank them)")
-    print("  C) Customize a project")
-    print("  Enter) Back")
+    print("  1. Save top projects as Showcase (feature + rank them)")
+    print("  2. Customize a project")
+    print("  3. Back")
     choice = input("Choice: ").strip().lower()
 
-    if choice == "s":
+    if choice == "1":
         _apply_showcase_preset(result.get("selected_projects", []))
         print("✅ Saved! Top projects are now Featured and Ranked.")
-    elif choice == "c":
+    elif choice == "2":
         customize_portfolio_project()
+    
+
 
 
 
