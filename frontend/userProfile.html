@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome - Digital Artifact Mining</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+    .hidden { display: none; }
+    .btn { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+    .dashboard a { display: block; margin: 10px 0; font-size: 18px; text-decoration: none; color: #333; }
+  </style>
+</head>
+<body>
+  <div id="welcome-section" class="hidden">
+    <h1>Welcome to Digital Artifact Mining</h1>
+    <p>Get started by creating an account or logging in.</p>
+    <button class="btn" onclick="window.location.href='register.html'">Create Account</button>
+    <button class="btn" onclick="window.location.href='login-form.html'">Login with Password</button>
+  </div>
+
+  <div id="dashboard-section" class="hidden">
+    <h1>Welcome back, <span id="username"></span>!</h1>
+    <div class="dashboard">
+      <a href="index.html"><i class="fa-solid fa-folder-open"></i> All Projects</a>
+      <a href="upload.html"><i class="fa-solid fa-upload"></i> Upload & Analyze</a>
+      <a href="portfolio.html"><i class="fa-solid fa-briefcase"></i> Portfolio</a>
+      <a href="resumes.html"><i class="fa-solid fa-file-lines"></i> Resumes</a>
+      <a href="#" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+  </div>
+
+  <script>
+    async function checkLogin() {
+      try {
+        const response = await fetch('/auth/user', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        const user = await response.json();
+
+        if (user && user.username) {
+          // Logged in → show dashboard
+          document.getElementById('dashboard-section').classList.remove('hidden');
+          document.getElementById('username').textContent = user.username;
+
+          document.getElementById('logout-btn').addEventListener('click', async () => {
+            await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+            window.location.reload();
+          });
+        } else {
+          // Not logged in → show welcome section
+          document.getElementById('welcome-section').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Error checking login:', error);
+        document.getElementById('welcome-section').classList.remove('hidden');
+      }
+    }
+
+    checkLogin();
+  </script>
+</body>
+</html>
