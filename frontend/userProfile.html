@@ -1,65 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Welcome - Digital Artifact Mining</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-    .hidden { display: none; }
-    .btn { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
-    .dashboard a { display: block; margin: 10px 0; font-size: 18px; text-decoration: none; color: #333; }
-  </style>
+<meta charset="UTF-8">
+<title>Login - Digital Artifact Mining</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="welcome-section" class="hidden">
+  <div id="login-container">
     <h1>Welcome to Digital Artifact Mining</h1>
-    <p>Get started by creating an account or logging in.</p>
-    <button class="btn" onclick="window.location.href='register.html'">Create Account</button>
-    <button class="btn" onclick="window.location.href='login-form.html'">Login with Password</button>
-  </div>
 
-  <div id="dashboard-section" class="hidden">
-    <h1>Welcome back, <span id="username"></span>!</h1>
-    <div class="dashboard">
-      <a href="index.html"><i class="fa-solid fa-folder-open"></i> All Projects</a>
-      <a href="upload.html"><i class="fa-solid fa-upload"></i> Upload & Analyze</a>
-      <a href="portfolio.html"><i class="fa-solid fa-briefcase"></i> Portfolio</a>
-      <a href="resumes.html"><i class="fa-solid fa-file-lines"></i> Resumes</a>
-      <a href="#" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    <div id="auth-options">
+      <button onclick="showLoginForm()">Login with Password</button>
+      <button onclick="window.location.href='register.html'">Create Account</button>
+    </div>
+
+    <div id="login-form" style="display:none;">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <input type="email" name="email" placeholder="Email" required><br><br>
+        <input type="password" name="password" placeholder="Password" required><br><br>
+        <button type="submit">Login</button>
+      </form>
+      <button onclick="showAuthOptions()">Back</button>
     </div>
   </div>
 
   <script>
-    async function checkLogin() {
-      try {
-        const response = await fetch('/auth/user', {
-          method: 'GET',
-          credentials: 'include'
-        });
-        const user = await response.json();
-
-        if (user && user.username) {
-          // Logged in → show dashboard
-          document.getElementById('dashboard-section').classList.remove('hidden');
-          document.getElementById('username').textContent = user.username;
-
-          document.getElementById('logout-btn').addEventListener('click', async () => {
-            await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-            window.location.reload();
-          });
-        } else {
-          // Not logged in → show welcome section
-          document.getElementById('welcome-section').classList.remove('hidden');
-        }
-      } catch (error) {
-        console.error('Error checking login:', error);
-        document.getElementById('welcome-section').classList.remove('hidden');
-      }
+    function showLoginForm() {
+      document.getElementById('auth-options').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
     }
 
-    checkLogin();
+    function showAuthOptions() {
+      document.getElementById('auth-options').style.display = 'block';
+      document.getElementById('login-form').style.display = 'none';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const email = form.email.value;
+      const password = form.password.value;
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          credentials: 'include' // important if using cookies
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Logged in user:', data.user);
+          // Redirect to main dashboard after login
+          window.location.href = 'index.html';
+        } else {
+          const error = await res.json();
+          alert('Login failed: ' + error.detail);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Login error. Check console for details.');
+      }
+    });
   </script>
 </body>
 </html>
