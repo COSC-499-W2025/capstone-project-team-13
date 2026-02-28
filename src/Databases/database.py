@@ -69,6 +69,7 @@ class Project(Base):
     custom_description = Column(Text, nullable=True)
     user_role = Column(String(100), nullable=True)
     user_contribution_percent = Column(Float, nullable=True)
+    ai_description = Column(Text, nullable=True)
     
     # Relationships
     files = relationship('File', back_populates='project', cascade='all, delete-orphan', lazy='select')
@@ -504,13 +505,13 @@ class DatabaseManager:
                     print(f"⚠️  Could not add word_count: {e}")
             
             # Add ai_description if missing
-            if 'ai_description' not in existing_columns:
-                try:
-                    conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
-                    conn.commit()
-                    print("✅ Added ai_description column")
-                except Exception as e:
-                    print(f"⚠️  Could not add ai_description: {e}")
+            # if 'ai_description' not in existing_columns:
+            #     try:
+            #         conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
+            #         conn.commit()
+            #         print("✅ Added ai_description column")
+            #     except Exception as e:
+            #         print(f"⚠️  Could not add ai_description: {e}")
         
         # Get current columns for files table
         if 'files' in inspector.get_table_names():
