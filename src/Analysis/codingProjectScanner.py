@@ -60,7 +60,7 @@ class CodingProjectScanner:
             '.pytest_cache', 'coverage', '.mypy_cache', '__MACOSX'
         }
     
-    def scan_and_store(self) -> int:
+    def scan_and_store(self, user_id: Optional[int] = None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
         Supports incremental updates.
@@ -179,7 +179,8 @@ class CodingProjectScanner:
                 'languages': list(self.languages),
                 'frameworks': list(self.frameworks),
                 'skills': sorted(self.unified_skills),
-                'date_scanned': datetime.now(timezone.utc)
+                'date_scanned': datetime.now(timezone.utc),
+                'user_id': user_id
             }
             
             project = db_manager.create_project(project_data)
@@ -474,8 +475,7 @@ class CodingProjectScanner:
         
         return project.id
 
-
-def scan_coding_project(project_path: str) -> Optional[int]:
+def scan_coding_project(project_path: str, user_id: Optional[int] = None) -> Optional[int]:
     """
     Convenience function to scan a coding project
     
@@ -487,7 +487,7 @@ def scan_coding_project(project_path: str) -> Optional[int]:
     """
     try:
         scanner = CodingProjectScanner(project_path)
-        return scanner.scan_and_store()
+        return scanner.scan_and_store(user_id=user_id)
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
         return None
