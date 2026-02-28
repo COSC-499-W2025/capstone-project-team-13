@@ -22,18 +22,14 @@ def _get_generator(project):
     return MediaBulletGenerator()
 
 
-def get_resume(project_id: int, user_id: Optional[int] = None) -> Optional[dict]:
+def get_resume(project_id: int) -> Optional[dict]:
     """
     Return stored resume bullets for a project.
-    Returns None if project not found or user doesn't own it.
+    Returns None if project or bullets not found.
     """
     project = db_manager.get_project(project_id)
     if not project:
         return None
-    
-    # Verify ownership
-    if project.user_id != user_id:
-        return None  # User doesn't own this project
 
     bullets_data = db_manager.get_resume_bullets(project_id)
     if not bullets_data:
@@ -55,19 +51,14 @@ def get_resume(project_id: int, user_id: Optional[int] = None) -> Optional[dict]
     }
 
 
-def generate_resume(project_id: int, num_bullets: int = 3, user_id: Optional[int] = None) -> dict:
+def generate_resume(project_id: int, num_bullets: int = 3) -> dict:
     """
     Generate and store resume bullets for a project.
     Returns the generated bullets data or an error dict.
-    Only allows generation if user owns the project.
     """
     project = db_manager.get_project(project_id)
     if not project:
         return {"success": False, "error": f"Project {project_id} not found"}
-    
-    # Verify ownership
-    if project.user_id != user_id:
-        return {"success": False, "error": "You don't have permission to access this project"}
 
     try:
         generator = _get_generator(project)
@@ -96,19 +87,14 @@ def generate_resume(project_id: int, num_bullets: int = 3, user_id: Optional[int
         return {"success": False, "error": str(e)}
 
 
-def edit_resume(project_id: int, bullets: list, header: Optional[str] = None, user_id: Optional[int] = None) -> dict:
+def edit_resume(project_id: int, bullets: list, header: Optional[str] = None) -> dict:
     """
     Update stored resume bullets for a project.
     Recalculates ATS score after edit.
-    Only allows editing if user owns the project.
     """
     project = db_manager.get_project(project_id)
     if not project:
         return {"success": False, "error": f"Project {project_id} not found"}
-    
-    # Verify ownership
-    if project.user_id != user_id:
-        return {"success": False, "error": "You don't have permission to access this project"}
 
     # Keep existing header if none provided
     if header is None:
@@ -135,6 +121,3 @@ def edit_resume(project_id: int, bullets: list, header: Optional[str] = None, us
         "ats_score": scoring["overall_score"],
         "num_bullets": len(bullets),
     }
-
-
-
