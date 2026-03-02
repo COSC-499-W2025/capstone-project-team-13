@@ -264,9 +264,15 @@ The easiest is setting up the privacy consent endpoints. The PR was created and 
 
 The more difficult one is my test fixes. I had originally authored it in week 6 just before reading week. Maya's computer ran it just fine, but Sana ran into issues and it couldn't be touched. Over RB I had very little access to wifi, so communicating with Sana to fix this was proving to be difficult. This was resolved and fixed on saturday of week 7, with the actual push date falling under week 7 despite being created two weeks earlier. This was resolving 26 failing tests so that our entire suite worked properly. Due to this being debugging, there wasn't a direct issue attributed to this.
 
-Lastly, week 7 was spent helping wrap up Milestone 2. Primarily I took on the video again, creating a script and short slideshow to run through the project. This was also a nice excuse to be able to gain a more thorough understanding of the current state of our system. Aside from this, I reviewed some other PRs as well, but no direct code contributions as most of my time was spent trying to debug the test PR (Which ended up being an extremely dumb fix that was just an issue with Sana's laptop rather than my code, which was frustrating but it's all set now).
+Week 7 was spent helping wrap up Milestone 2. Primarily I took on the video again, creating a script and short slideshow to run through the project. This was also a nice excuse to be able to gain a more thorough understanding of the current state of our system. Aside from this, I reviewed some other PRs as well, but no direct code contributions as most of my time was spent trying to debug the test PR (Which ended up being an extremely dumb fix that was just an issue with Sana's laptop rather than my code, which was frustrating but it's all set now).
 
-I know this will leave me with no code contributions in one of either week 6 or 7, but the bonus from reading week should offset that? At the very least I had two active weeks in this stretch that should count towards the mark out of 36 for this total. I suppose it doesn't help that I spent too much time working on the video week 7, but I stutter a little bit so had to reset A LOT.
+At the tail end of week 7, I also added a small fix to the user profile. I created a test file for the menu just to ensure weird datatypes were handled correctly, and then added a way for the user to add both their phone number and address should they wish to include it on their resume.
+
+TLDR:
+
+Week 6: Test fixing PR published
+Week RB: Consent endpoints published and merged
+Week 7: Video creation, test fixing PR merged, and user profile expanded with tests
 
 ### Plans for next week
 
