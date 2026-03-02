@@ -47,6 +47,8 @@ Date Range: Sept 29 – Oct 5, 2025
 
 This week, I focused primarily on the development and review of our Data Flow Diagrams (DFDs), system architecture refinements, and completing the final touches on our team’s project proposal.
 
+
+
 Tasks Worked On:
 - Collaborated with the team to build the Level 0 and Level 1 Data Flow Diagrams using Draw.io and Figma.
 -Double-checked formal notation and labelling to ensure that all inputs and outputs matched across levels, and referenced with DFD requirements.
@@ -350,4 +352,26 @@ Planned Work for Next Week:
 Continue working Milestone 2 and putting our portfolio functionality together.
 
 No screenshot/peer eval available this week
+
+Log 5
+
+Date Range: Feb 22 – Mar 1, 2026
+
+Issue worked on: Portfolio API refinement & Milestone 2 presentation
+
+Tasks Completed:
+This week, I focused on simplifying our portfolio API and preparing for the Milestone 2 presentation. I removed the PATCH endpoint after realising  it was unnecessary and ensured the remaining endpoints aligned with our intended workflow. I also worked on the presentation, reviewed milestone requirements, gave peer feedback on in class presentstions and also  participated in the in our class presentation.
+
+Connection to Previous Week:
+Last week’s incremental extraction work strengthened our backend stability. This week built on that by refining the API design and ensuring everything was presentation-ready.
+
+Issues / Blockers:
+No major blockers. Main focus was making clean architectural decisions and meeting presentation requirements hence no links to issues. 
+
+Planned Work for Next Week:
+Begin Milestone 3, integrate all components end-to-end, and start building a higher-level frontend to showcase the portfolio functionality.
+
+![image](https://github.com/user-attachments/assets/f21c8c1c-9b6f-46eb-a924-b523631910fd)
+
+
 
