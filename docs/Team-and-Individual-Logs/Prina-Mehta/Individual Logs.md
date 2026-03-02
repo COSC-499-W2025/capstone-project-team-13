@@ -5,6 +5,9 @@
 - [Term 2 – Week 3 (Jan 19–Jan 25, 2026)](#log-14)
 - [Term 2 – Week 4 (Jan 26–Feb 1, 2026)](#log-15)
 - [Term 2 – Week 5 (Feb 2–Feb 8, 2026)](#log-16)
+- [Term 2 – Week 6 (Feb 9–Feb 15, 2026)](#log-17)
+- [Term 2 – Week 7 (Feb 16–Feb 22, 2026)](#log-18)
+- [Term 2 – Week 8 (Feb 23–Mar 1, 2026)](#log-19)
 
 - [Week 11 (Dec 1–Dec 7, 2025)](#log-11)
 - [Week 10 (Nov 24–Nov 30, 2025)](#log-10)
@@ -295,3 +298,76 @@ I’ll also begin working on the requirement to recognize duplicate files and en
 
 ### Plan for Next Week
 - Fixing other bugs still present such as https://github.com/COSC-499-W2025/capstone-project-team-13/pull/286, https://github.com/COSC-499-W2025/capstone-project-team-13/pull/287, https://github.com/COSC-499-W2025/capstone-project-team-13/pull/290 and whatever else the team decides to prioritize during the team meeting.
+
+## Log 17:
+
+## Date Range: Term 2 Week 6 – Feb 9 – Feb 15, 2026
+
+## ![week 2 features](T2week6tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/342
+- Implemented the Showcase Selector feature that allows users to interactively select which projects are displayed in the Portfolio
+- Connected project selection state to the Portfolio view to ensure showcased projects are reflected consistently
+
+### Testing
+
+Wrote comprehensive unit tests (test_showcaseSelect.py)
+
+### Plan for Next Week
+
+- Begin implementing resume related API endpoints and prepare for Milestone 2 presentation
+
+## Log 18:
+
+## Date Range: Term 2 Week 7 – Feb 16 – Feb 22, 2026
+
+## ![week 3 features](T2week6tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+- https://github.com/COSC-499-W2025/capstone-project-team-13/issues/350
+- Implemented the following FastAPI endpoints for resume generation and management:
+
+  - GET /resume/{project_id} to return stored resume bullets including header, bullet points, ATS score, and generation timestamp
+  - POST /resume/generate to generate resume bullets by selecting the appropriate generator based on project type and persisting them
+  - POST /resume/{project_id}/edit to allow editing of stored resume bullets with ATS score recalculated on save
+- Integrated ATS scoring logic for generated resume bullets
+- Ensured database persistence and retrieval of resume data
+
+### Testing
+
+- Used FastAPI TestClient to validate request and response behavior for all resume endpoints
+- Wrote unit tests (test_API_resume.py)
+
+### Plan for Next Week
+
+- Add support for multiple AI generated resume bullet options
+- Prepare for Milestone 2 presentation and submission
+
+## Log 19:
+
+## Date Range: Term 2 Week 8 – Feb 23 – Mar 1, 2026
+
+## ![week 4 features](T2week6tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+- Added support for AI generated resume bullet options to allow users to choose between multiple variations
+- Prepared for Milestone 2 presentation and submission
+
+### Testing
+
+- Wrote unit tests (test_ai_enhanced_summarizer.py)
+
+### Plan for Next Week
+
+- Work on UI features for resume generation and download
+- Other tasks will be determined during team meeting
