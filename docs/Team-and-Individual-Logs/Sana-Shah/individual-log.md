@@ -4,6 +4,7 @@
 - [T2 Week 3](#log-14)
 - [T2 Week 4](#log-15)
 - [T2 Week 5](#log-16)
+- [T2 Week 7](#log-17)
 
 
 ## Log 1:
@@ -235,3 +236,21 @@ I am in-progress of implementing the remaining endpoints using fastapi for our s
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to continue implementing endpoints, with fastapi, as well as start implementing different functions that would make our system more unique. 
+
+## Log 17:
+## Date Range: T2 Week 7 - Feb 23 - Mar 1, 2026
+
+## ![week 7 features](499-week7-t2.png)
+
+### Prior to this sprint (reading break)
+During week 5, I was unable to merge my PR of coding contributions to main due to completing it too late and unable to get PR reviews/approval before the 11:59 deadling because I had 4 mid-term exams that week. However, to compensate, I completed additional coding contributions and PR's during reading break (week 6), which included all the API endpoints, related to skills functions. Additionally, I prepped for our milestone 2 presentation, including building an outline of slides and designating topics to discuss for each, and provided updates to the team about remaining work to complete for milestone 2.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/352)
+
+### Which features were yours in the project plan for this milestone?
+This week, my team and I presented our milestone 2 presentation, and peer evaluated the other groups presentations. Individually, my contributions this week were mainly completing tests for the API skills endpoints, as well as implementing the frontend UI mock for our milestone 2 presentation, and to form some sort of direction to transition to milestone 3. Additionally, I reviewed my team members' PRs and resolved issues that I was seeing on my end.
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/357)
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to shift focus to milestone 3, and work with my team to develop the official frontend for our system using react. 
