@@ -1,7 +1,9 @@
 # Log navigation
+- [Term 2, week 6/7/8](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-6/7/8---feb-9-mar-1-2026)
 - [Term 2, week 4/5](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-4/5---jan-26-feb-8-2026)
 - [Term 2, week 3](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-3---jan-19-jan-25-2026)
 - [Term 2, week 2](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-2---jan-12-jan-18-2026)
+
 
 
 
@@ -209,6 +211,22 @@
 * for next week: have a team meeting, attend lectures, further improve user profile system
 
 
+## Week 6/7/8 - Feb 9-Mar 1, 2026
+<img width="2140" height="1096" alt="image" src="https://github.com/user-attachments/assets/9b8e0f18-47ab-4dd5-a1ad-a158a16bc3d4" />
+
+* on week 6 i was trying to implement session management within our system for user logins/signups
+  * I created the session manager class to start this off
+* in week seven i realized that to implement the session manager class into our system at this poin would require major changes and decided to approach the issue differently
+  * instead i went with JWT for authrization for logins/logouts
+  * I created the API endpoints for the login/signup fuctions as well as endpoints for checking the current user and counting the amount of guest user projects
+  * i also edited the project endpoints to account for authorization
+* in week 8 I created the test files for milestone 3, added tests for the login endpoints, and created a thumbnail upload endpoint
+* My contributions close:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/346
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/359
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/370
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/372
+* for next week: complete quiz 3, hold team meeting, decide on the final UI, include auth into other endpoints
 
 
 
