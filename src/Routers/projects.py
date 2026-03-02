@@ -5,8 +5,8 @@ import uuid
 import zipfile
 import shutil
 from src.Databases.database import db_manager
-from src.Services.projects_service import process_uploaded_path
-from src.Services.auth_service import get_current_user_id
+from src.Services.projects_service import process_uploaded_path, upload_project_thumbnail
+from src.Services.auth_service import get_current_user_id, require_auth
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -95,3 +95,33 @@ def get_project(
         )
     
     return project.to_dict(include_counts=True)
+
+@router.post("/{project_id}/thumbnail")
+async def upload_thumbnail(
+    project_id: int,
+    file: UploadFile = File(...),
+    user_id: int = Depends(require_auth)
+):
+    """
+    Upload a thumbnail image for an existing project.
+    
+    - **project_id**: Project database ID
+    - **file**: Image file (.jpg, .jpeg, .png, .gif, .webp, .bmp, .svg)
+    - **Authorization header**: Optional Bearer token
+    """
+    thumbnail_path = UPLOAD_DIR / f"thumb_{project_id}_{file.filename}"
+
+    with open(thumbnail_path, "wb") as f:
+        f.write(await file.read())
+
+    try:
+        result = upload_project_thumbnail(project_id, str(thumbnail_path), user_id=user_id)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+
+    return result
