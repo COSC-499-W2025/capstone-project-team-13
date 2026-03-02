@@ -348,6 +348,7 @@ class User(Base):
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')
+    contact_info = relationship('ContactInfo', back_populates='user', cascade='all, delete-orphan', lazy='select')
     projects = relationship('Project', back_populates='user', lazy='select')
 
     # Timestamps
@@ -434,6 +435,34 @@ class WorkHistory(Base):
             'role': self.role,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else 'Present',
+        }
+
+class ContactInfo(Base):
+    """Store user contact information"""
+    __tablename__ = 'contact_info'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+
+    # Contact info
+    address = Column(String(500), nullable=False)
+    phone = Column(String(20), nullable=False)
+
+    # Timestamps
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user = relationship('User', back_populates='contact_info')
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'address': self.address,
+            'phone': self.phone,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
 # ============================================
@@ -1122,6 +1151,57 @@ class DatabaseManager:
         finally:
             session.close()
 
+    # ============ CONTACT INFO OPERATIONS ============
+
+    def add_contact_info(self, contact_data: Dict[str, Any]) -> ContactInfo:
+        """Add contact info entry for a user"""
+        session = self.get_session()
+        try:
+            contact = ContactInfo(**contact_data)
+            session.add(contact)
+            session.commit()
+            session.refresh(contact)
+            return contact
+        finally:
+            session.close()
+
+    def get_contact_info_for_user(self, user_id: int) -> List[ContactInfo]:
+        """Get all contact info entries for a user"""
+        session = self.get_session()
+        try:
+            return session.query(ContactInfo).filter(
+                ContactInfo.user_id == user_id
+            ).all()
+        finally:
+            session.close()
+
+    def update_contact_info(self, contact_id: int, updates: Dict[str, Any]) -> Optional[ContactInfo]:
+        """Update a contact info entry"""
+        session = self.get_session()
+        try:
+            contact = session.query(ContactInfo).filter(ContactInfo.id == contact_id).first()
+            if contact:
+                for key, value in updates.items():
+                    setattr(contact, key, value)
+                session.commit()
+                session.refresh(contact)
+            return contact
+        finally:
+            session.close()
+
+    def delete_contact_info(self, contact_id: int) -> bool:
+        """Delete a contact info entry"""
+        session = self.get_session()
+        try:
+            contact = session.query(ContactInfo).filter(ContactInfo.id == contact_id).first()
+            if contact:
+                session.delete(contact)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
     # ============ UTILITY OPERATIONS ============
     
     def clear_all_data(self):
@@ -1135,6 +1215,7 @@ class DatabaseManager:
             session.query(Project).delete()
             session.query(Education).delete()
             session.query(WorkHistory).delete()
+            session.query(ContactInfo).delete()
             session.query(User).delete()
             session.commit()
         finally:

@@ -25,6 +25,14 @@ def validate_email(email: str) -> bool:
     return re.match(pattern, email) is not None
 
 
+def validate_phone(phone: str) -> bool:
+    """Basic phone number format validation (accepts various formats)"""
+    # Remove common formatting characters
+    cleaned = re.sub(r'[\s\-\(\)\+\.]', '', phone)
+    # Check if it's 10+ digits
+    return cleaned.isdigit() and len(cleaned) >= 10
+
+
 def parse_date(date_string: str) -> datetime:
     """
     Parse a date string in MM/YYYY format and return a datetime object.
@@ -337,6 +345,61 @@ def add_work_history():
 
 
 # ============================================
+# ADD CONTACT INFO
+# ============================================
+
+def add_contact_info():
+    """Collect address and phone number details for the logged-in user"""
+    user = get_logged_in_user()
+    if not user:
+        input("Press Enter to continue...")
+        return
+
+    print("\n" + "=" * 50)
+    print("  ADD CONTACT INFO")
+    print("=" * 50)
+
+    address = input("\nAddress: ").strip()
+    if not address:
+        print("❌ Address cannot be empty.")
+        input("Press Enter to continue...")
+        return
+
+    phone = input("Phone number: ").strip()
+    if not phone:
+        print("❌ Phone number cannot be empty.")
+        input("Press Enter to continue...")
+        return
+    if not validate_phone(phone):
+        print("❌ Invalid phone number. Please enter at least 10 digits.")
+        input("Press Enter to continue...")
+        return
+
+    # Confirm before saving
+    print("\n--- Please confirm ---")
+    print(f"  Address: {address}")
+    print(f"  Phone:   {phone}")
+    confirm = input("\nSave? (y/n): ").strip().lower()
+    if confirm != 'y':
+        print("Cancelled.")
+        input("Press Enter to continue...")
+        return
+
+    try:
+        contact_data = {
+            'user_id': user.id,
+            'address': address,
+            'phone': phone,
+        }
+        db_manager.add_contact_info(contact_data)
+        print(f"\n✓ Contact info added successfully.")
+    except Exception as e:
+        print(f"❌ Failed to save contact info: {e}")
+
+    input("Press Enter to continue...")
+
+
+# ============================================
 # MAIN MENU
 # ============================================
 
@@ -350,10 +413,11 @@ def run_profile_menu():
         print("  2. Log In")
         print("  3. Add Education")
         print("  4. Add Work History")
-        print("  5. Back to Main Menu")
+        print("  5. Add Contact Info")
+        print("  6. Back to Main Menu")
         print("=" * 50)
 
-        choice = input("\nEnter your choice (1-5): ").strip()
+        choice = input("\nEnter your choice (1-6): ").strip()
 
         if choice == '1':
             sign_up()
@@ -364,10 +428,12 @@ def run_profile_menu():
         elif choice == '4':
             add_work_history()
         elif choice == '5':
+            add_contact_info()
+        elif choice == '6':
             print("\nReturning to main menu...")
             break
         else:
-            print("❌ Invalid choice. Please enter a number 1-5.")
+            print("❌ Invalid choice. Please enter a number 1-6.")
             input("Press Enter to continue...")
 
 if __name__ == '__main__':
