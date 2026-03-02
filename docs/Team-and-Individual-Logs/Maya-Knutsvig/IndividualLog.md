@@ -347,3 +347,64 @@ My code had to overwrite the code of another member, as they could not attend th
 ### Plan for Next Week
 
 I will finish the portfolio view (adding the success score) + work on APIs with Sana
+
+
+## Log 15 
+
+## Date Range: Semester 2 Week 6-8 – Feb 09- March 1, 2026
+
+## ![week 15 features](weeklyfeaturesimages/week16features.png)
+
+### Tasks Worked On
+
+### Coding
+
+    Week 6:
+    - Fixed formatting on generate_summary in main to include success score
+    - Created documentation (README) for API endpoints  
+
+    Week 7:
+    - Added missing portfolio api endpoints, this includes two POST methods. POST /portfolio/generate. POST /portfolio/{id}/edit
+
+    Week 8: 
+    - Fixed database to include ai_description column in schema so that portfolio would properly work
+    - Worked on presentation 
+
+
+### Testing / Debugging
+
+Week 7:
+- Tests_test_API_portfolio.py for the new portfolio tests
+
+Week 8: 
+- Manual testing going through the code
+
+
+### Review / Collaboration
+
+- We met many times this week to prep for the presentation and then to ensure that project was fully finished for video demo 
+
+### Recap of Weekly Goals
+Weekly goals: to ensure main properly displayed portfolio
+To add missing portfolio API endpoints
+To ensure that the database had proper columns 
+
+### Project Plan Ownership
+Week 6
+- **Assigned Features:** API documentation, fix generate_summary on main
+- **Project Board Tasks:** 349, 318
+- **Status:** Done
+
+Week 7
+- **Assigned Features:** Add missing API endpoints
+- **Project Board Tasks:** 351
+- **Status:** Done
+
+Week 8
+- **Assigned Features:** Team logs, ensuring portfolio had LLM portion properly 
+- **Project Board Tasks:** NA
+- **Status:** Done
+
+### Blockers or Issues
+
+No blockers or issues these weeks
