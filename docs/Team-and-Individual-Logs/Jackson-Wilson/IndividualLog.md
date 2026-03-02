@@ -19,6 +19,10 @@ Hyperlinks for Term 2:
 [Term 2 Week 3](#date-range-term-2-week-3---jan-19-jan-25-2026)
 
 [Term 2 Weeks 4 and 5](#date-range-term-2-week-4-5---jan-26-feb-8-2026)
+
+[Term 2 Week 5, 6, and 7](#date-range-term-2-week-6-7---feb-9-march-1-2026)
+
+
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
 
@@ -244,3 +248,26 @@ I ran into a pretty consistent issue that I feel a little dumb looking back on. 
 ### Plans for next week
 
 Considering we are most of the way through our M2 issues, I may look into adding an extra feature to try and hit bonus marks. I was going to look into a notification system, as some parts of the process require further user input like determining which github user is you or to do some more fine extraction. 
+
+## Log 17 & 18:
+## Date Range: Term 2 Week 6-7 - Feb 9-March 1, 2026
+
+## ![week 6-RB-7 features](weeklyfeaturesimages/T2WeekRBFeatures.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+There were a handful of things I worked on across the weeks, and due to this period being over reading week some got approved far later than they were created and such the actual week definition where things can be attributed for are confusing.
+
+The easiest is setting up the privacy consent endpoints. The PR was created and approved all within reading week. It was using existing framework to add six endpoints for the consent options. I probably could've made less, but I made the three as specific as they needed to be. For each kind of consent (AI and basic) they have a grant, revoke, and status request. This was issue 353.
+
+The more difficult one is my test fixes. I had originally authored it in week 6 just before reading week. Maya's computer ran it just fine, but Sana ran into issues and it couldn't be touched. Over RB I had very little access to wifi, so communicating with Sana to fix this was proving to be difficult. This was resolved and fixed on saturday of week 7, with the actual push date falling under week 7 despite being created two weeks earlier. This was resolving 26 failing tests so that our entire suite worked properly. Due to this being debugging, there wasn't a direct issue attributed to this.
+
+Lastly, week 7 was spent helping wrap up Milestone 2. Primarily I took on the video again, creating a script and short slideshow to run through the project. This was also a nice excuse to be able to gain a more thorough understanding of the current state of our system. Aside from this, I reviewed some other PRs as well, but no direct code contributions as most of my time was spent trying to debug the test PR (Which ended up being an extremely dumb fix that was just an issue with Sana's laptop rather than my code, which was frustrating but it's all set now).
+
+I know this will leave me with no code contributions in one of either week 6 or 7, but the bonus from reading week should offset that? At the very least I had two active weeks in this stretch that should count towards the mark out of 36 for this total. I suppose it doesn't help that I spent too much time working on the video week 7, but I stutter a little bit so had to reset A LOT.
+
+### Plans for next week
+
+Frontend time! I'm actually really looking forward to this section because its where I have the most familiarity. My main experience is php backend into html and css frontend through prestashop, but with the backend complete my knowledge is much more applicable. For specifics, I had ideas for a modular webpage I wanted to run by my teammates to get their idea. If I could make a framework to sort of drop in smaller modules, I think visual cohesion can come easier. 
