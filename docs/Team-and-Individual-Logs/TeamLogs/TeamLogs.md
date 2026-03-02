@@ -615,7 +615,7 @@ Manual testing through `main.py` also confirmed that all modules work as expecte
 | **Prina Mehta** | Added AI generated resume bullets options
  | #NA |
 | **Maya Knutsvig** | Worked on the portfolio to ensure AI was working and it was seen that AI description wasn't saved in database. | #NA |
-| **Jackson Wilson** | The video demo + going through project looking for errors. | #NA  |
+| **Jackson Wilson** | The video demo + expanding profileMenu with tests | #NA  |
 | **Illina Islam** |Signup endpoint --> For account creation; User provides email/password → Password gets hashed (bcrypt) → User saved to database → JWT token generated with user_id → Token returned to user. Login endpoint --> For logging; User provides email/password → System checks if user exists → Verifies password hash matches → Generates new JWT token → Returns token. Using Token: User includes token in Authorization: Bearer header → Backend decodes token → Extracts user_id → Filters all data by that user_id. Me endpoint --> for checking current user (check if a user is logged in or not). Guest projects count endpoint --> for counting number of projects uploaded by a guest user. Guest Mode: No token provided → user_id is None → System shows only guest projects (where user_id IS NULL). Made changes to project endpoints to account for user id. Added thumbnail upload endpoint, only users who have accounts and are logged in can upload a thumbnail.
 tests for auth also added| | #359, #372, #370 |
 | **Sana Shah** | Designed and created UI mock. Set up  upload, analyze projects, resmes, portfolio pages. | #357 |
