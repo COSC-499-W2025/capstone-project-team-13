@@ -55,7 +55,8 @@ nav a:hover {
 main {
   padding: 40px 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;  /* stack title, buttons, and tab content vertically */
+  align-items: center;     /* center horizontally */
 }
 
 .container {
@@ -77,4 +78,96 @@ main {
   padding: 15px;
   border-radius: 8px;
   white-space: pre-wrap;
+}
+
+textarea {
+  width: 100%;
+  height: 100px;
+  background: #111;
+  color: white;
+  border: 1px solid #333;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+/* Page title centered */
+.page-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+/* Tab buttons stacked horizontally */
+/* Tab buttons row centered */
+.tab-links {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  gap: 10px; /* space between buttons */
+}
+
+/* Buttons inside tab content take full width for neatness */
+.tab-content button {
+  width: 100%;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.tab-links button {
+  background: #222;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  margin: 0 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.tab-links button:hover {
+  background: #444;
+}
+
+.tab-links button.active {
+  background: #555;
+}
+
+/* Tab content stacked vertically below the buttons */
+.tab-content {
+  display: none; /* hidden by default */
+  display: flex;          /* change from block to flex */
+  flex-direction: column; /* stack inputs, buttons, results vertically */
+  gap: 10px;
+  background: #111;
+  padding: 15px;
+  border: 1px solid #333;
+  border-radius: 5px;
+  width: 100%;            /* take full width of container */
+  max-width: 500px;       /* optional max width for neatness */
+}
+
+/* Make first tab visible by default */
+#generate {
+  display: block;
+}
+
+/* Inputs / textarea styling */
+input, textarea {
+  background: #111;
+  color: white;
+  border: 1px solid #333;
+  padding: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+/* Result display */
+pre {
+  background: #000;
+  color: #0f0;
+  padding: 10px;
+  overflow-x: auto;
+  border-radius: 4px;
 }
