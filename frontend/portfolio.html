@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script defer src="portfolio.js"></script>
+</head>
+<body>
+
+<header>
+    <h1>Digital Artifact Mining</h1>
+    <nav>
+      <a href="index.html">All Projects</a>
+      <a href="upload.html">Upload & Analyze</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="resumes.html">Resumes</a>
+    </nav>
+    <div class="account-icon">
+      <a href="userProfile.html">
+        <i class="fa-solid fa-user"></i>
+      </a>
+    </div>
+  </header>
+
+
+<main>
+  <h1 class="page-title">Portfolio Manager</h1>
+
+  <!-- Tab buttons -->
+  <div class="tab-links">
+    <button onclick="showTab('full')">Full Portfolio</button>
+    <button onclick="showTab('stats')">Stats</button>
+    <button onclick="showTab('summary')">Summary</button>
+    <button onclick="showTab('project')">View Project</button>
+    <button onclick="showTab('generate')">Generate Portfolio</button>
+    <button onclick="showTab('edit')">Edit Project</button>
+  </div>
+
+  <!-- Tab content -->
+  <div class="tab-container">
+    <!-- Full Portfolio -->
+    <section id="full" class="tab-content">
+      <button onclick="getFullPortfolio()">Refresh Portfolio</button>
+      <pre id="fullOutput"></pre>
+    </section>
+
+    <!-- Portfolio Stats -->
+    <section id="stats" class="tab-content">
+      <button onclick="getPortfolioStats()">View Stats</button>
+      <pre id="statsOutput"></pre>
+    </section>
+
+    <!-- Portfolio Summary -->
+    <section id="summary" class="tab-content">
+      <button onclick="getPortfolioSummary()">View Summary</button>
+      <pre id="summaryOutput"></pre>
+    </section>
+
+    <!-- Individual Project -->
+    <section id="project" class="tab-content">
+      <input type="number" id="projectId" placeholder="Project ID" />
+      <button onclick="getProject()">View Project</button>
+      <pre id="projectOutput"></pre>
+    </section>
+
+    <!-- Generate Portfolio -->
+    <section id="generate" class="tab-content">
+      <button onclick="generatePortfolio()">Generate Portfolio</button>
+      <pre id="generateOutput"></pre>
+    </section>
+
+    <!-- Edit Project -->
+    <section id="edit" class="tab-content">
+      <input type="number" id="editProjectId" placeholder="Project ID" />
+      <textarea id="editData" placeholder='Enter JSON for updates, e.g. {"title":"New"}'></textarea>
+      <button onclick="editProject()">Save Changes</button>
+      <pre id="editOutput"></pre>
+    </section>
+  </div>
+
+</main>
+</body>
+</html>

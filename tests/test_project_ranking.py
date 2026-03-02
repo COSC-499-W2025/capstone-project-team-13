@@ -24,8 +24,8 @@ class TestProjectRanking(unittest.TestCase):
         ranked = rank_projects_chronologically(self.mock_projects)
         timeline = format_project_timeline(ranked)
         self.assertIn("1. Project A", timeline)
-        self.assertIn("Created: 2023-12-20", timeline)
-        self.assertIn("Last Updated: 2024-01-05", timeline)
+        self.assertIn("Created: December 20, 2023", timeline)
+        self.assertIn("Last Updated: January 05, 2024", timeline)
 
     def test_handles_missing_dates(self):
         """Should handle missing or malformed dates gracefully."""

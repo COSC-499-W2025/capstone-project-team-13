@@ -5,9 +5,10 @@ from pathlib import Path
 import tempfile
 from pprint import pprint
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "analysis")))
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from skillsExtractCodingImproved import analyze_coding_skills_refined
+from src.Analysis.skillsExtractCodingImproved import analyze_coding_skills_refined
 
 class TestCodingSkillAnalyzer(unittest.TestCase):
 

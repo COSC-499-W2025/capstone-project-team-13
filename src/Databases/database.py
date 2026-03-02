@@ -70,8 +70,11 @@ class Project(Base):
     user_role = Column(String(100), nullable=True)
     user_contribution_percent = Column(Float, nullable=True)
     ai_description = Column(Text, nullable=True)
+
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     
     # Relationships
+    user = relationship('User', back_populates='projects')
     files = relationship('File', back_populates='project', cascade='all, delete-orphan', lazy='select')
     contributors = relationship('Contributor', back_populates='project', cascade='all, delete-orphan', lazy='select')
     keywords = relationship('Keyword', back_populates='project', cascade='all, delete-orphan', lazy='select')
@@ -84,6 +87,7 @@ class Project(Base):
     __table_args__ = (
         Index('idx_project_type_date', 'project_type', 'date_modified'),
         Index('idx_importance_featured', 'importance_score', 'is_featured'),
+        Index('idx_user_projects', 'user_id', 'date_modified'),
     )
     
     # Properties for JSON fields
@@ -345,6 +349,7 @@ class User(Base):
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')
+    projects = relationship('Project', back_populates='user', lazy='select')
 
     # Timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -512,6 +517,23 @@ class DatabaseManager:
             #         print("✅ Added ai_description column")
             #     except Exception as e:
             #         print(f"⚠️  Could not add ai_description: {e}")
+            #if 'ai_description' not in existing_columns:
+            #    try:
+            #        conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
+            #        conn.commit()
+            #        print("✅ Added ai_description column")
+            #    except Exception as e:
+            #        print(f"⚠️  Could not add ai_description: {e}")
+
+            # Add user_id if missing (for user ownership)
+            if 'user_id' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN user_id INTEGER;"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_projects ON projects(user_id, date_modified);"))
+                    conn.commit()
+                    print("✅ Added user_id column to projects")
+                except Exception as e:
+                    print(f"⚠️  Could not add user_id: {e}")
         
         # Get current columns for files table
         if 'files' in inspector.get_table_names():
@@ -566,13 +588,22 @@ class DatabaseManager:
         finally:
             session.close()
     
-    def get_all_projects(self, include_hidden: bool = False) -> List[Project]:
-        """Get all projects"""
+    def get_all_projects(self, include_hidden: bool = False, user_id: Optional[int] = None) -> List[Project]:
+        """
+        Get all projects, optionally filtered by user_id
+        
+        Args:
+            include_hidden: If True, include hidden projects
+            user_id: If provided, only return projects for this user.
+                     If None, return all projects regardless of owner.
+        """
         session = self.get_session()
         try:
             query = session.query(Project)
             if not include_hidden:
                 query = query.filter(Project.is_hidden == False)
+            if user_id is not None:
+                query = query.filter(Project.user_id == user_id)
             return query.all()
         finally:
             session.close()
@@ -613,6 +644,106 @@ class DatabaseManager:
                 session.commit()
                 return True
             return False
+        finally:
+            session.close()
+
+    def get_projects_for_user(self, user_id: int, include_hidden: bool = False) -> List[Project]:
+        """
+        Get all projects for a specific user
+        
+        Args:
+            user_id: The user's ID
+            include_hidden: If True, include hidden projects
+        """
+        session = self.get_session()
+        try:
+            query = session.query(Project).filter(Project.user_id == user_id)
+            if not include_hidden:
+                query = query.filter(Project.is_hidden == False)
+            return query.order_by(Project.date_modified.desc()).all()
+        finally:
+            session.close()
+    
+    def get_guest_projects(self, include_hidden: bool = False) -> List[Project]:
+        """
+        Get all guest projects (projects with no user_id)
+        
+        Args:
+            include_hidden: If True, include hidden projects
+        """
+        session = self.get_session()
+        try:
+            query = session.query(Project).filter(Project.user_id == None)
+            if not include_hidden:
+                query = query.filter(Project.is_hidden == False)
+            return query.order_by(Project.date_modified.desc()).all()
+        finally:
+            session.close()
+    
+    def delete_guest_projects(self) -> int:
+        """
+        Delete all guest projects (projects with no user_id).
+        Cascade will handle deleting associated files, contributors, keywords.
+        
+        Returns:
+            Number of projects deleted
+        """
+        session = self.get_session()
+        try:
+            # Get count before deleting
+            count = session.query(Project).filter(Project.user_id == None).count()
+            
+            # Delete all guest projects
+            session.query(Project).filter(Project.user_id == None).delete()
+            session.commit()
+            
+            return count
+        finally:
+            session.close()
+    
+    def transfer_guest_projects_to_user(self, user_id: int) -> int:
+        """
+        Transfer all guest projects to a specific user.
+        Useful when a guest signs up and wants to keep their work.
+        
+        Args:
+            user_id: The user ID to assign projects to
+            
+        Returns:
+            Number of projects transferred
+        """
+        session = self.get_session()
+        try:
+            # Get count of guest projects
+            count = session.query(Project).filter(Project.user_id == None).count()
+            
+            # Update all guest projects to belong to this user
+            session.query(Project).filter(Project.user_id == None).update(
+                {'user_id': user_id},
+                synchronize_session=False
+            )
+            session.commit()
+            
+            return count
+        finally:
+            session.close()
+    
+    def count_projects_for_user(self, user_id: Optional[int] = None) -> int:
+        """
+        Count projects for a user. If user_id is None, counts guest projects.
+        
+        Args:
+            user_id: The user ID, or None for guest projects
+            
+        Returns:
+            Number of projects
+        """
+        session = self.get_session()
+        try:
+            if user_id is None:
+                return session.query(Project).filter(Project.user_id == None).count()
+            else:
+                return session.query(Project).filter(Project.user_id == user_id).count()
         finally:
             session.close()
     

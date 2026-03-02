@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload & Analyze</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <h1>Digital Artifact Mining</h1>
+    <nav>
+      <a href="index.html">All Projects</a>
+      <a href="upload.html">Upload & Analyze</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="resumes.html">Resumes</a>
+    </nav>
+    <div class="account-icon">
+      <a href="userProfile.html">
+        <i class="fa-solid fa-user"></i>
+      </a>
+    </div>
+  </header>
+
+
+  <main>
+    <div class="container">
+      <h2>Upload & Analyze Project</h2>
+      <input type="file" id="fileUpload">
+      <button onclick="uploadProject()">Upload & Analyze</button>
+      <div id="uploadResponse" class="response">API response will appear here...</div>
+    </div>
+  </main>
+
+  <script>
+    async function uploadProject() {
+      const fileInput = document.getElementById('fileUpload');
+      const file = fileInput.files[0];
+      const responseDiv = document.getElementById('uploadResponse');
+
+      if (!file) { alert("Select a file first"); return; }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("http://localhost:8000/projects/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        responseDiv.textContent = "Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

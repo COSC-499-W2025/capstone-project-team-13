@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resumes</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+
+<header>
+    <h1>Digital Artifact Mining</h1>
+    <nav>
+      <a href="index.html">All Projects</a>
+      <a href="upload.html">Upload & Analyze</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="resumes.html">Resumes</a>
+    </nav>
+    <div class="account-icon">
+      <a href="userProfile.html">
+        <i class="fa-solid fa-user"></i>
+      </a>
+    </div>
+  </header>
+
+
+<main>
+  <h1 class="page-title">Resume Manager</h1>
+
+  <!-- Tab buttons -->
+  <div class="tab-links">
+    <button onclick="showTab('generate')">Generate Resume</button>
+    <button onclick="showTab('view')">View Resume</button>
+    <button onclick="showTab('edit')">Edit Resume</button>
+  </div>
+
+  <!-- Tab content -->
+  <section id="generate" class="tab-content">
+    <input type="number" id="genProjectId" placeholder="Project ID" />
+    <input type="number" id="numBullets" placeholder="Number of bullets" value="3" />
+    <button onclick="generateResume()">Generate</button>
+    <pre id="generateResult"></pre>
+  </section>
+
+  <section id="view" class="tab-content" style="display:none;">
+    <input type="number" id="viewProjectId" placeholder="Project ID" />
+    <button onclick="getResume()">View</button>
+    <pre id="resumeDisplay"></pre>
+  </section>
+
+  <section id="edit" class="tab-content" style="display:none;">
+    <input type="number" id="editProjectId" placeholder="Project ID" />
+    <input type="text" id="resumeHeader" placeholder="Optional header" />
+    <textarea id="resumeBullets" placeholder="One bullet per line"></textarea>
+    <button onclick="editResume()">Save Changes</button>
+    <pre id="editResult"></pre>
+  </section>
+
+</main>
+
+</body>
+</html>
