@@ -379,3 +379,22 @@ Address backlog items and bug fixes - e.g. Work on portfolio showcase display fu
 
 <img width="861" height="426" alt="image" src="https://github.com/user-attachments/assets/81aee4e5-75f8-4234-b0ab-2db00ab1c299" />
 
+Log 5
+
+Date Range: Feb 22 – March 1, 2026
+
+Issue worked on: Portfolio API refinement & Milestone 2 presentation
+
+Tasks Completed:
+This week, I focused on simplifying our portfolio API and preparing for the Milestone 2 presentation. I removed the PATCH endpoint after realising it was unnecessary and ensured the remaining endpoints aligned with our intended workflow. I also worked on the presentation, gave peer feedback for other presentations, reviewed milestone requirements, and also presented during our in-class presentation.
+
+Connection to Previous Week:
+Last week’s incremental extraction work strengthened our backend stability. This week built on that by refining the API design and ensuring everything was presentation-ready, hence no issues associated with it
+
+Issues / Blockers:
+No major blockers. Main focus was making clean architectural decisions and meeting presentation requirements.
+
+Planned Work for Next Week:
+Begin Milestone 3, integrate all components end-to-end, and start building working on the front end/ UI. 
+
+
