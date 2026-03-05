@@ -1,5 +1,4 @@
 """
-src/Services/resume_export_service.py
 Thin export layer — PDF and DOCX rendering only.
 Data is gathered via existing modules:
   - src.Resume.resumeGenerator       : get_projects_with_bullets()
@@ -133,7 +132,7 @@ def _build_pdf(data: dict[str, Any]) -> bytes:
         story.append(Paragraph(role, s_role))
     story += [Paragraph(data["email"], s_cont), HR(0.75, colors.HexColor("#cccccc"))]
 
-    story += section("Education")
+    story += section("Education and Awards")
     for edu in data["education"]:
         start = (edu.get("start_date") or "")[:7].replace("-", "/")
         end   = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
@@ -227,7 +226,7 @@ def _build_docx(data: dict[str, Any]) -> bytes:
          color=RGBColor(0x44,0x44,0x44), space_after=8)
     hr("cccccc")
 
-    section_heading("Education")
+    section_heading("Education and Awards")
     for edu in data["education"]:
         start  = (edu.get("start_date") or "")[:7].replace("-", "/")
         end    = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
