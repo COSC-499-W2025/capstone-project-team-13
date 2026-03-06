@@ -1,0 +1,35 @@
+.app-layout{
+  display:flex;
+  height:100vh;
+}
+
+.sidebar{
+  width:220px;
+  background:#1e293b;
+  color:white;
+  padding:20px;
+}
+
+.sidebar a{
+  display:block;
+  color:white;
+  margin:10px 0;
+}
+
+.content{
+  flex:1;
+  padding:30px;
+  background:#f5f7fb;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  margin:10px;
+}
+
+.stats{
+  display:flex;
+  gap:20px;
+}
