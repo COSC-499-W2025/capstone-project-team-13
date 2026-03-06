@@ -1,25 +1,22 @@
 function Dashboard() {
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div className="dashboard-grid">
 
-      <div className="stats">
+      <div className="card projects">
+        <h2>Projects</h2>
+        <p>Uploaded projects will appear here.</p>
+      </div>
 
-        <div className="card">
-          <h3>Total Resumes</h3>
-          <p>124</p>
-        </div>
+      <div className="card resumes">
+        <h2>AI Generated Resumes</h2>
+      </div>
 
-        <div className="card">
-          <h3>Top Matches</h3>
-          <p>35</p>
-        </div>
+      <div className="card portfolios">
+        <h2>AI Generated Portfolios</h2>
+      </div>
 
-        <div className="card">
-          <h3>Avg Score</h3>
-          <p>72%</p>
-        </div>
-
+      <div className="card insights">
+        <h2>Charts & Insights</h2>
       </div>
 
     </div>
