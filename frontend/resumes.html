@@ -2,62 +2,249 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Resumes</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <script defer src="app.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume | Digital Artifact Mining</title>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green:#2d6a4f; --green-dark:#1b4332; --text:#1a1a1a; --muted:#555; --rule:#b7c9bf; --bg:#f4f6f4; --radius:4px; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Source Sans 3',sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
+    .shell { display:grid; grid-template-columns:220px 1fr; min-height:100vh; }
+
+    .sidebar { background:var(--green-dark); color:#d8ead2; padding:28px 18px; display:flex; flex-direction:column; gap:12px; }
+    .sidebar h2 { font-family:'EB Garamond',serif; font-size:1.1rem; color:#fff; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.2); }
+    .sidebar a { color:#a8cbb8; font-size:.82rem; text-decoration:none; display:block; margin-bottom:14px; }
+    .sidebar a:hover { color:#fff; }
+    .sidebar label { font-size:.78rem; color:#a8cbb8; display:block; margin-top:14px; margin-bottom:4px; }
+
+    .btn { display:block; width:100%; padding:9px 14px; border:none; border-radius:var(--radius); font-family:'Source Sans 3',sans-serif; font-size:.83rem; font-weight:600; cursor:pointer; text-align:center; text-decoration:none; transition:opacity .15s; }
+    .btn:hover { opacity:.85; }
+    .btn-primary { background:var(--green); color:#fff; }
+    .btn-outline { background:transparent; border:1.5px solid rgba(255,255,255,.35); color:#d8ead2; }
+
+    #status { display:none; padding:8px 12px; border-radius:var(--radius); font-size:.8rem; margin-top:4px; }
+    #status.ok  { background:#c3e6cb; color:#155724; }
+    #status.err { background:#f5c6cb; color:#721c24; }
+
+    .award-input { width:100%; padding:7px 8px; border:1px solid rgba(255,255,255,.2); border-radius:var(--radius); background:rgba(255,255,255,.08); color:#fff; font-size:.8rem; }
+    .award-input::placeholder { color:rgba(255,255,255,.4); }
+    .awards-list { list-style:none; margin-top:6px; }
+    .awards-list li { display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:.78rem; color:#d8ead2; border-bottom:1px solid rgba(255,255,255,.08); }
+    .awards-list li button { background:none; border:none; color:#f28b82; cursor:pointer; font-size:.75rem; padding:0 4px; }
+
+    .main { padding:40px 50px; max-width:780px; }
+    #loader { display:none; text-align:center; padding:60px; color:var(--muted); font-style:italic; }
+    .resume { display:none; font-family:'EB Garamond',serif; font-size:10.5pt; line-height:1.5; color:var(--text); }
+
+    .r-name    { font-size:26pt; font-weight:600; color:var(--green); text-align:center; letter-spacing:.02em; margin-bottom:2px; }
+    .r-role    { font-size:12pt; font-style:italic; text-align:center; color:var(--muted); margin-bottom:8px; }
+    .r-contact { text-align:center; font-size:9pt; color:var(--muted); margin-bottom:12px; }
+    .r-rule    { border:none; border-top:1px solid var(--rule); margin:0; }
+
+    .r-section    { display:flex; flex-direction:column; gap:0; margin:14px 0 8px; }
+    .r-section hr { border:none; border-top:.6px solid var(--rule); }
+    .r-section h2 { text-align:center; font-size:11.5pt; font-weight:600; color:var(--green); padding:4px 0; letter-spacing:.06em; }
+
+    .edu-row    { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+    .edu-degree { font-size:10pt; font-weight:600; }
+    .edu-dates  { font-size:9.5pt; color:var(--muted); white-space:nowrap; }
+    .edu-inst   { font-style:italic; font-size:9.5pt; color:var(--muted); margin-bottom:8px; }
+
+    .award-item { font-size:9.5pt; padding:2px 0 2px 4px; color:var(--text); }
+    .award-item::before { content:"—"; margin-right:8px; color:var(--muted); }
+
+    .skill-row        { font-size:10pt; margin-bottom:4px; }
+    .skill-row strong { font-weight:600; }
+    .skill-sep        { color:var(--rule); margin:0 5px; }
+
+    .proj-item   { margin-bottom:14px; }
+    .proj-name   { font-size:10.5pt; font-weight:600; margin-bottom:1px; }
+    .proj-sub    { font-style:italic; font-size:9.5pt; color:var(--muted); margin-bottom:4px; }
+    .proj-body   { font-size:10pt; line-height:1.55; color:#333; }
+    .proj-ats    { font-size:8pt; color:var(--muted); margin-top:2px; }
+    .proj-no-bul { font-style:italic; font-size:9pt; color:#aaa; }
+  </style>
 </head>
 <body>
+<div class="shell">
+  <aside class="sidebar">
+    <a href="index.html">&lt; Dashboard</a>
+    <h2>Resume Controls</h2>
+    <button class="btn btn-primary" id="btn-generate">Generate / Refresh</button>
+    <a class="btn btn-outline" id="btn-pdf"  href="#" target="_blank">Download PDF</a>
+    <a class="btn btn-outline" id="btn-docx" href="#" target="_blank">Download DOCX</a>
+    <div id="status"></div>
+    <label>Awards &amp; Honours</label>
+    <input class="award-input" type="text" id="award-input" placeholder="Add an award..." />
+    <ul class="awards-list" id="awards-list"></ul>
+    <button class="btn btn-outline" id="btn-add-award" style="margin-top:6px;font-size:.78rem;padding:6px 10px">+ Add Award</button>
+    <button class="btn btn-primary" id="btn-save-awards" style="margin-top:4px;font-size:.78rem;padding:6px 10px">Save Awards</button>
+  </aside>
 
-<header>
-    <h1>Digital Artifact Mining</h1>
-    <nav>
-      <a href="index.html">All Projects</a>
-      <a href="upload.html">Upload & Analyze</a>
-      <a href="portfolio.html">Portfolio</a>
-      <a href="resumes.html">Resumes</a>
-    </nav>
-    <div class="account-icon">
-      <a href="userProfile.html">
-        <i class="fa-solid fa-user"></i>
-      </a>
+  <main class="main">
+    <div id="loader">Building resume...</div>
+    <div class="resume" id="resume">
+      <div class="r-name" id="r-name"></div>
+      <div class="r-role" id="r-role"></div>
+      <div class="r-contact" id="r-contact"></div>
+      <hr class="r-rule" />
+      <div class="r-section"><hr /><h2>Education and Awards</h2><hr /></div>
+      <div id="edu-list"></div>
+      <div id="awards-preview"></div>
+      <div class="r-section"><hr /><h2>Skills</h2><hr /></div>
+      <div id="skills-container"></div>
+      <div class="r-section"><hr /><h2>Projects</h2><hr /></div>
+      <div id="projects-container"></div>
     </div>
-  </header>
+  </main>
+</div>
 
+<script>
+  const API = "http://localhost:8000";
+  const UID = 1;
+  let awards = [];
 
-<main>
-  <h1 class="page-title">Resume Manager</h1>
+  function showStatus(msg, type = "ok") {
+    const el = document.getElementById("status");
+    el.textContent = msg; el.className = type; el.style.display = "block";
+    setTimeout(() => el.style.display = "none", 4000);
+  }
 
-  <!-- Tab buttons -->
-  <div class="tab-links">
-    <button onclick="showTab('generate')">Generate Resume</button>
-    <button onclick="showTab('view')">View Resume</button>
-    <button onclick="showTab('edit')">Edit Resume</button>
-  </div>
+  function setLoader(on) {
+    document.getElementById("loader").style.display = on ? "block" : "none";
+    document.getElementById("resume").style.display = on ? "none"  : "block";
+  }
 
-  <!-- Tab content -->
-  <section id="generate" class="tab-content">
-    <input type="number" id="genProjectId" placeholder="Project ID" />
-    <input type="number" id="numBullets" placeholder="Number of bullets" value="3" />
-    <button onclick="generateResume()">Generate</button>
-    <pre id="generateResult"></pre>
-  </section>
+  function renderAwards() {
+    const ul = document.getElementById("awards-list");
+    ul.innerHTML = "";
+    awards.forEach((a, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${a}</span><button onclick="removeAward(${i})">x</button>`;
+      ul.appendChild(li);
+    });
+    const preview = document.getElementById("awards-preview");
+    preview.innerHTML = "";
+    awards.forEach(a => {
+      const div = document.createElement("div");
+      div.className = "award-item"; div.textContent = a;
+      preview.appendChild(div);
+    });
+  }
 
-  <section id="view" class="tab-content" style="display:none;">
-    <input type="number" id="viewProjectId" placeholder="Project ID" />
-    <button onclick="getResume()">View</button>
-    <pre id="resumeDisplay"></pre>
-  </section>
+  window.removeAward = i => { awards.splice(i, 1); renderAwards(); };
 
-  <section id="edit" class="tab-content" style="display:none;">
-    <input type="number" id="editProjectId" placeholder="Project ID" />
-    <input type="text" id="resumeHeader" placeholder="Optional header" />
-    <textarea id="resumeBullets" placeholder="One bullet per line"></textarea>
-    <button onclick="editResume()">Save Changes</button>
-    <pre id="editResult"></pre>
-  </section>
+  function render(data) {
+    const r = data.resume || data;
+    document.getElementById("r-name").textContent = r.name || "";
 
-</main>
+    let role = "";
+    if ((r.education || []).length) {
+      const e0 = r.education[0];
+      role = [e0.degree_type, e0.topic].filter(Boolean).join(" in ");
+    }
+    const roleEl = document.getElementById("r-role");
+    roleEl.textContent = role; roleEl.style.display = role ? "block" : "none";
 
+    document.getElementById("r-contact").innerHTML = `<span>${r.email || ""}</span>`;
+
+    const eduEl = document.getElementById("edu-list");
+    eduEl.innerHTML = "";
+    (r.education || []).forEach(e => {
+      const start = (e.start_date || "").slice(0, 7).replace("-", "/");
+      const end   = e.end_date ? e.end_date.slice(0, 7).replace("-", "/") : "Present";
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <div class="edu-row">
+          <span class="edu-degree">${e.degree_type || ""} in ${e.topic || ""}</span>
+          <span class="edu-dates">${start} - ${end}</span>
+        </div>
+        <div class="edu-inst">${e.institution || ""}</div>`;
+      eduEl.appendChild(div);
+    });
+    if (!(r.education || []).length)
+      eduEl.innerHTML = '<p style="color:#aaa;font-style:italic;font-size:9pt">No education on record.</p>';
+
+    awards = r.awards || [];
+    renderAwards();
+
+    const skillsEl = document.getElementById("skills-container");
+    skillsEl.innerHTML = "";
+    const levels = r.skills_by_level || {};
+    let hasSkills = false;
+    ["Expert", "Proficient", "Familiar"].forEach(lvl => {
+      const items = levels[lvl] || [];
+      if (!items.length) return;
+      hasSkills = true;
+      const row = document.createElement("div");
+      row.className = "skill-row";
+      row.innerHTML = `<strong>${lvl} — </strong>${items.map((s, i) => i === 0 ? s : `<span class="skill-sep">|</span>${s}`).join(" ")}`;
+      skillsEl.appendChild(row);
+    });
+    if (!hasSkills)
+      skillsEl.innerHTML = '<p style="color:#aaa;font-style:italic;font-size:9pt">No skills extracted yet.</p>';
+
+    const projEl = document.getElementById("projects-container");
+    projEl.innerHTML = "";
+    (r.projects || []).forEach(p => {
+      const sub  = (p.header && p.header !== p.name) ? `<div class="proj-sub">${p.header}</div>` : "";
+      const body = (p.bullets || []).length ? `<div class="proj-body">${p.bullets.join("  ")}</div>` : `<div class="proj-no-bul">No bullets generated yet.</div>`;
+      const ats  = p.ats_score ? `<div class="proj-ats">ATS score: ${p.ats_score.toFixed(0)}/100</div>` : "";
+      const div  = document.createElement("div");
+      div.className = "proj-item";
+      div.innerHTML = `<div class="proj-name">${p.name}</div>${sub}${body}${ats}`;
+      projEl.appendChild(div);
+    });
+    if (!(r.projects || []).length)
+      projEl.innerHTML = '<p style="color:#aaa;font-style:italic;font-size:9pt">No projects found.</p>';
+
+    setLoader(false);
+  }
+
+  async function loadResume() {
+    setLoader(true);
+    try {
+      const res = await fetch(`${API}/resume/${UID}`);
+      if (res.status === 404) { await generateResume(); return; }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      render(await res.json());
+    } catch(e) { showStatus("Failed to load resume: " + e.message, "err"); setLoader(false); }
+  }
+
+  async function generateResume() {
+    setLoader(true);
+    try {
+      const res = await fetch(`${API}/resume/generate?user_id=${UID}`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      render(await res.json()); showStatus("Resume generated.");
+    } catch(e) { showStatus("Generation failed: " + e.message, "err"); setLoader(false); }
+  }
+
+  async function saveAwards() {
+    try {
+      const res = await fetch(`${API}/resume/${UID}/edit`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ awards }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      render(await res.json()); showStatus("Awards saved.");
+    } catch(e) { showStatus("Save failed: " + e.message, "err"); }
+  }
+
+  document.getElementById("btn-generate").addEventListener("click", generateResume);
+  document.getElementById("btn-save-awards").addEventListener("click", saveAwards);
+  document.getElementById("btn-add-award").addEventListener("click", () => {
+    const inp = document.getElementById("award-input");
+    if (inp.value.trim()) { awards.push(inp.value.trim()); inp.value = ""; renderAwards(); }
+  });
+  document.getElementById("award-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("btn-add-award").click();
+  });
+
+  document.getElementById("btn-pdf").href  = `${API}/resume/${UID}/download/pdf`;
+  document.getElementById("btn-docx").href = `${API}/resume/${UID}/download/docx`;
+
+  loadResume();
+</script>
 </body>
 </html>
