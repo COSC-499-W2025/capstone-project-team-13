@@ -8,6 +8,7 @@
 - [Term 2 – Week 6 (Feb 9–Feb 15, 2026)](#log-17)
 - [Term 2 – Week 7 (Feb 16–Feb 22, 2026)](#log-18)
 - [Term 2 – Week 8 (Feb 23–Mar 1, 2026)](#log-19)
+- [Term 2 – Week 9 (Mar 2 - Mar 8, 2026)](#log-20)
 
 - [Week 11 (Dec 1–Dec 7, 2025)](#log-11)
 - [Week 10 (Nov 24–Nov 30, 2025)](#log-10)
@@ -371,3 +372,32 @@ Wrote comprehensive unit tests (test_showcaseSelect.py)
 
 - Work on UI features for resume generation and download
 - Other tasks will be determined during team meeting
+
+## Log 20:
+
+## Date Range: Term 2 Week 9 – Mar 2 – Mar 8, 2026
+
+## ![week 4 features](T2week9tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+* Implemented backend support for one-page resume generation, including export functionality for PDF and DOCX formats
+* Added API endpoints for downloading resumes: /resume/{user_id}/download/pdf and /resume/{user_id}/download/docx
+* Developed the browser-facing resume generation page to allow users to generate and download resumes
+* Integrated frontend functionality with backend resume export services
+
+### Testing
+
+* Added test coverage for the resume export service and API endpoints
+* Implemented unit tests for resume export functionality in tests/test_resume_export.py
+* Conducted manual testing through the FastAPI documentation interface to verify PDF and DOCX download endpoints
+
+### Plan for Next Week
+
+* Auto-generate resume bullets for all projects by default so that every project contains content
+* Display user-provided project names instead of internal hashed project identifiers in resume headers
+* Improve UI customization controls (project reordering, toggling projects on/off, and editing bullet wording directly from the browser)
+* Explore storing generated resume files instead of generating them on demand
+* Other tasks will be determined during team meeting
