@@ -1,16 +1,17 @@
 from collections import defaultdict
 from itertools import combinations
+from typing import Optional
 from src.Databases.database import db_manager
 
 from math import log
 
-def get_skill_cooccurrence():
+def get_skill_cooccurrence(user_id: Optional[int] = None):
     """
     Returns a list of skill pairs with:
     - count of projects they appear together in
     - project list
     """
-    projects = db_manager.get_all_projects()
+    projects = db_manager.get_all_projects(user_id=user_id)
     pair_map = defaultdict(set)  # (skill_a, skill_b) -> set(project names)
 
     for project in projects:
@@ -39,9 +40,9 @@ def get_skill_cooccurrence():
 
 
 # for skill analytics /produces deeper insight. This function gathers raw skills first
-def get_raw_skills_with_projects():
+def get_raw_skills_with_projects(user_id: Optional[int] = None):
     skills_map = defaultdict(list)
-    projects = db_manager.get_all_projects()
+    projects = db_manager.get_all_projects(user_id=user_id)
 
     for project in projects:
         for skill in project.skills or []:
@@ -63,16 +64,16 @@ def get_raw_skills_with_projects():
 
 # this function generates the insights
 
-def get_skill_insights():
-    raw_skills = get_raw_skills_with_projects()
-    co_occurrence = get_skill_cooccurrence()
+def get_skill_insights(user_id: Optional[int] = None):
+    raw_skills = get_raw_skills_with_projects(user_id=user_id)
+    co_occurrence = get_skill_cooccurrence(user_id=user_id)
 
     top_skills = raw_skills[:5]  # top 5 most common skills
     most_common_pair = co_occurrence[0] if co_occurrence else None
 
     # skill diversity: # of distinct skills / # of projects
     total_skills = len(raw_skills)
-    total_projects = len(db_manager.get_all_projects())
+    total_projects = len(db_manager.get_all_projects(user_id=user_id))
     skill_diversity = round(total_skills / total_projects, 3) if total_projects else 0
 
     return {
@@ -83,14 +84,13 @@ def get_skill_insights():
 
 
 # function gathers both to display to user.
-def get_full_skill_analytics():
-    raw = get_raw_skills_with_projects()
-    insights = get_skill_insights()
+def get_full_skill_analytics(user_id: Optional[int] = None):
+    raw = get_raw_skills_with_projects(user_id=user_id)
+    insights = get_skill_insights(user_id=user_id)
     return {
         "raw": {
             "skills": raw,
-            "co_occurrence": get_skill_cooccurrence()
+            "co_occurrence": get_skill_cooccurrence(user_id=user_id)
         },
         "insights": insights
     }
-
