@@ -153,6 +153,20 @@
   line-height: 1.5;
 }
 
+.settings-card-body {
+  color: #374151;
+}
+
+.settings-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.settings-list li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
 .settings-badge {
   white-space: nowrap;
   padding: 8px 12px;
@@ -174,20 +188,6 @@
 .settings-badge-loading {
   background: #e5e7eb;
   color: #4b5563;
-}
-
-.settings-card-body {
-  color: #374151;
-}
-
-.settings-list {
-  margin: 0;
-  padding-left: 18px;
-}
-
-.settings-list li {
-  margin-bottom: 8px;
-  line-height: 1.5;
 }
 
 .settings-card-actions {
@@ -263,6 +263,52 @@
   margin: 0;
   color: #6b7280;
   line-height: 1.5;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.settings-input {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.settings-input:focus {
+  border-color: #2563eb;
+}
+
+.settings-info-block p {
+  margin: 0 0 8px 0;
+  color: #374151;
+}
+
+.settings-count-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #1d4ed8;
+  font-size: 1.4rem;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
