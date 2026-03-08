@@ -1,3 +1,4 @@
+import React from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -5,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Resumes from "./pages/Resumes";
+import Portfolio from "./pages/Portfolio";
 
 function App() {
   return (
@@ -17,6 +19,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/resumes" element={<Resumes />} />
+          <Route path="/portfolio" element={<Portfolio />} />
         </Routes>
       </div>
 

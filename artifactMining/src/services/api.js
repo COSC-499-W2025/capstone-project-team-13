@@ -12,3 +12,9 @@ export const getResumes = () =>
 
 export const getScore = (id) =>
   API.get(`/score/${id}`);
+
+export const getPortfolio = () =>
+  API.get("/portfolio");
+
+export const generatePortfolio = () =>
+  API.post("/portfolio/generate");
