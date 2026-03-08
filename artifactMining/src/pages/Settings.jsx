@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-// import "./Settings.css";
+import "./Settings.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
