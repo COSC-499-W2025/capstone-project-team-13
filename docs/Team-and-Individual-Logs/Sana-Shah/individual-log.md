@@ -5,6 +5,7 @@
 - [T2 Week 4](#log-15)
 - [T2 Week 5](#log-16)
 - [T2 Week 7](#log-17)
+- [T2 Week 8](#log-18)
 
 
 ## Log 1:
@@ -254,3 +255,19 @@ Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to shift focus to milestone 3, and work with my team to develop the official frontend for our system using react. 
+
+## Log 18:
+## Date Range: T2 Week 8 - Mar 2 - Mar 8, 2026
+
+## ![week 8 features](499-week8-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+This week, my team and I shifted our focuse to milestone 3, implementing the frontend of our system. The features that were mine for this sprint is implementing the blueprint/basis of our frontend via react. I installed all necessary packages, implemented a basic mock for potential pages that my team and I will use for our frontend, as well as building a very minimal dashboard for our frontend as well. I noted this in my PR as well but I will reiterate that my PR for this feature was technically over 3700 lines of code however, about 3250 lines of code were proviede by an absolutely necessary package that needed to be included in the PR for the frontend to be used and testable by my other team members, but excluding the package installation, the lines of code that I wrote were under 500 for this PR! 
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/388)
+
+### In-progress Tasks
+I am currently in the process of updating the dashboard page, as the remainder of my team works on other pages, as well as updating and implementing additional endpoints. My team and I are also in the process of deciding on a UI theme for our frontend, however this will be discussed during our upcoming weekly meeting. 
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to continue implementating and updating the dashbaord page, as well as coming up with more ideas to make our system stand out in terms of unqiue features.  
