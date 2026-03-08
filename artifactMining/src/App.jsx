@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Resumes from "./pages/Resumes";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/resumes" element={<Resumes />} />
+          <Route path="/settings" element={<Settings />} />
+
         </Routes>
       </div>
 
