@@ -1,8 +1,9 @@
 from collections import defaultdict
+from typing import Optional
 from src.Databases.database import db_manager
 
-def get_skills():
-    projects = db_manager.get_all_projects()
+def get_skills(user_id: Optional[int] = None):
+    projects = db_manager.get_all_projects(user_id=user_id)
 
     skill_map = defaultdict(lambda: {
         "count": 0,
@@ -37,8 +38,8 @@ def get_skills():
         ]
     }
 
-def get_skill_detail(skill_name: str):
-    projects = db_manager.get_all_projects()
+def get_skill_detail(skill_name: str, user_id: Optional[int] = None):
+    projects = db_manager.get_all_projects(user_id=user_id)
 
     matching_projects = []
 
@@ -66,4 +67,3 @@ def get_skill_detail(skill_name: str):
         "project_count": len(matching_projects),
         "projects": matching_projects
     }
-
