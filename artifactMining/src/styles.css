@@ -1,0 +1,87 @@
+.app-layout{
+  display:flex;
+  height:100vh;
+}
+
+.sidebar{
+  width:220px;
+  background:#1e293b;
+  color:white;
+  padding:20px;
+}
+
+.sidebar a{
+  display:block;
+  color:white;
+  margin:10px 0;
+}
+
+.content{
+  flex:1;
+  padding:30px;
+  background:#f5f7fb;
+}
+
+.card{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  margin:10px;
+}
+
+.stats{
+  display:flex;
+  gap:20px;
+}
+/* NAVBAR */
+.navbar{
+  display:flex;
+  justify-content:center;
+  gap:60px;
+  padding:20px;
+  background:#1e293b;
+}
+
+.navbar a{
+  color:white;
+  text-decoration:none;
+  font-weight:500;
+  font-size:18px;
+}
+
+/* PAGE CONTAINER */
+.page-container{
+  padding:30px;
+}
+
+/* DASHBOARD GRID */
+.dashboard-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  grid-template-rows: 1fr 1fr;
+  gap:25px;
+  height:70vh;
+}
+
+/* CARDS */
+.card{
+  background:white;
+  border-radius:10px;
+  padding:20px;
+  box-shadow:0px 3px 10px rgba(0,0,0,0.08);
+}
+
+/* SPECIFIC BOX POSITIONS */
+.projects{
+  grid-row: span 2;
+}
+
+.resumes{
+}
+
+.portfolios{
+}
+
+.insights{
+  grid-row: span 2;
+}

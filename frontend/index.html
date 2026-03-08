@@ -15,40 +15,7 @@
       <a href="portfolio.html">Portfolio</a>
       <a href="resumes.html">Resumes</a>
     </nav>
-    <div class="account-icon" id="account-icon">
-      <i class="fa-solid fa-user"></i>
-    </div>
-
-    <script>
-    const accountIcon = document.getElementById('account-icon');
-
-    async function setProfileLink() {
-        try {
-            const res = await fetch('/auth/me', {
-                method: 'GET',
-                credentials: 'include'
-            });
-            if (res.ok) {
-                // User is logged in → go to profile
-                accountIcon.addEventListener('click', () => {
-                    window.location.href = 'userProfile.html';
-                });
-                accountIcon.title = "Go to your profile";
-            } else {
-                // Not logged in → go to login
-                accountIcon.addEventListener('click', () => {
-                    window.location.href = 'login.html';
-                });
-                accountIcon.title = "Click to log in";
-            }
-        } catch (err) {
-            console.error(err);
-            accountIcon.addEventListener('click', () => window.location.href = 'login.html');
-        }
-    }
-
-    setProfileLink();
-    </script>
+    <div class="account-icon"><i class="fa-solid fa-user"></i></div>
   </header>
 
   <main>
