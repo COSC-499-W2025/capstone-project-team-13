@@ -189,3 +189,92 @@ def disable_all_analysis_preferences():
             "enable_duplicate_detection": config.enable_duplicate_detection,
         },
     }
+
+
+@router.get("/current-configuration")
+def get_current_configuration():
+    config = config_manager.get_or_create_config()
+    return {
+        "consent": {
+            "basic_consent_granted": config.basic_consent_granted,
+            "basic_consent_timestamp": config.basic_consent_timestamp.isoformat()
+            if config.basic_consent_timestamp
+            else None,
+            "ai_consent_granted": config.ai_consent_granted,
+            "ai_consent_timestamp": config.ai_consent_timestamp.isoformat()
+            if config.ai_consent_timestamp
+            else None,
+        },
+        "privacy_settings": {
+            "anonymous_mode": config.anonymous_mode,
+            "store_file_contents": config.store_file_contents,
+            "store_contributor_names": config.store_contributor_names,
+            "store_file_paths": config.store_file_paths,
+            "max_file_size_scan": config.max_file_size_scan,
+            "excluded_folders": config.excluded_folders,
+            "excluded_file_types": config.excluded_file_types,
+        },
+        "analysis_preferences": {
+            "enable_keyword_extraction": config.enable_keyword_extraction,
+            "enable_language_detection": config.enable_language_detection,
+            "enable_framework_detection": config.enable_framework_detection,
+            "enable_collaboration_analysis": config.enable_collaboration_analysis,
+            "enable_duplicate_detection": config.enable_duplicate_detection,
+        },
+        "scanning_preferences": {
+            "auto_detect_project_type": config.auto_detect_project_type,
+            "scan_nested_folders": config.scan_nested_folders,
+            "max_scan_depth": config.max_scan_depth,
+            "skip_hidden_files": config.skip_hidden_files,
+            "skip_system_folders": config.skip_system_folders,
+            "min_file_size_scan": config.min_file_size_scan,
+            "max_file_size_scan": config.max_file_size_scan,
+        },
+        "ai_settings": {
+            "ai_enabled": config.ai_enabled,
+            "ai_provider": config.ai_provider,
+            "ai_model": config.ai_model,
+            "ai_cache_enabled": config.ai_cache_enabled,
+            "ai_max_tokens": config.ai_max_tokens,
+            "ai_temperature": config.ai_temperature,
+        },
+        "output_preferences": {
+            "default_export_format": config.default_export_format,
+            "include_thumbnails": config.include_thumbnails,
+            "summary_detail_level": config.summary_detail_level,
+            "resume_style": config.resume_style,
+            "resume_max_projects": config.resume_max_projects,
+            "resume_include_metrics": config.resume_include_metrics,
+        },
+        "ui_preferences": {
+            "theme": config.theme,
+            "language": config.language,
+            "show_progress_indicators": config.show_progress_indicators,
+            "auto_clear_screen": config.auto_clear_screen,
+            "dashboard_widgets": config.dashboard_widgets,
+            "favorite_projects": config.favorite_projects,
+        },
+        "performance_settings": {
+            "enable_caching": config.enable_caching,
+            "cache_expiry_hours": config.cache_expiry_hours,
+            "parallel_processing": config.parallel_processing,
+            "max_concurrent_tasks": config.max_concurrent_tasks,
+        },
+        "notification_settings": {
+            "enable_notifications": config.enable_notifications,
+            "notify_on_scan_complete": config.notify_on_scan_complete,
+            "notify_on_errors": config.notify_on_errors,
+        },
+        "backup_settings": {
+            "auto_backup_enabled": config.auto_backup_enabled,
+            "backup_frequency_days": config.backup_frequency_days,
+            "data_retention_days": config.data_retention_days,
+        },
+        "meta": {
+            "id": config.id,
+            "config_version": config.config_version,
+            "created_at": config.created_at.isoformat() if config.created_at else None,
+            "updated_at": config.updated_at.isoformat() if config.updated_at else None,
+            "last_accessed": config.last_accessed.isoformat() if config.last_accessed else None,
+        },
+    }
