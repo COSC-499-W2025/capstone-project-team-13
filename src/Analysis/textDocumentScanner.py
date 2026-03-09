@@ -180,8 +180,8 @@ class TextDocumentScanner:
                 'skills': list(self.all_skills.keys())[:10] if self.all_skills else [],
                 'date_scanned': datetime.now(timezone.utc),
                 'user_id': user_id
-            }
-            
+            } # Display fixes: word count, dates and file size added
+
             project = db_manager.create_project(project_data)
             project_id = project.id
             
