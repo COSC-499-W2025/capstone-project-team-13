@@ -379,7 +379,7 @@ Address backlog items and bug fixes - e.g. Work on portfolio showcase display fu
 
 <img width="861" height="426" alt="image" src="https://github.com/user-attachments/assets/81aee4e5-75f8-4234-b0ab-2db00ab1c299" />
 
-Log 5
+# Log6
 
 Date Range: Feb 22 – March 1, 2026
 
@@ -396,5 +396,27 @@ No major blockers. Main focus was making clean architectural decisions and meeti
 
 Planned Work for Next Week:
 Begin Milestone 3, integrate all components end-to-end, and start building working on the front end/ UI. 
+
+# Log7
+
+Date Range: March 2 – March 8, 2026
+
+Issues Worked On: Sub-issue of #385 – Web Portfolio Frontend (Top 3 Projects Display), PR reviews, and ongoing maintenance of fix-scanner-display-bugs 
+#408 - https://github.com/orgs/COSC-499-W2025/projects/25/views/1?pane=issue&itemId=163325204&issue=COSC-499-W2025%7Ccapstone-project-team-13%7C410
+
+Tasks Completed:
+This week I focused on transitioning into Milestone 3 by building out the first frontend component for the web portfolio feature. I created a new React page (Portfolio.jsx) that fetches and displays the user's top 3 projects from the existing portfolio backend endpoints, complete with project name, description, type, languages, and word count. I also added portfolio API calls to the services layer, added a Portfolio route to the app, and added a Portfolio link to the navbar. Backend tests were written and passed for the portfolio endpoints.
+Beyond my own feature work, I spent significant time this week doing peer code review — reviewing and approving multiple teammate PRs including the settings page frontend, account settings functionality, profile page frontend, and the portfolio authentication PR. For each PR I manually tested the frontend and backend, ran test suites, and provided constructive written feedback. I also worked on reopening and resolving my old scanner display bugs PR (#408) by merging main, resolving merge conflicts in textDocumentScanner.py, and pushing the updated branch.
+
+Connection to Previous Week:
+Last week I focused on API refinement and the Milestone 2 presentation. This week shifted focus to Milestone 3 by beginning frontend development. The portfolio endpoints I helped refine last milestone are now being consumed by the frontend component I built this week, making it a natural continuation of that work.
+
+Issues / Blockers:
+Resolving merge conflicts on the scanner PR was time consuming and some original changes were difficult to recover after conflict resolution. The portfolio page also requires authentication to be fully functional, which depends on a teammate's login integration PR being merged first.
+Planned Work for Next Week:
+Continue working on #385 by building the skills timeline component (sub-issue 2), which will visualize the user's skills progression over time using data from the existing portfolio endpoints.
+
+<img width="934" height="530" alt="Screenshot 2026-03-08 173046" src="https://github.com/user-attachments/assets/60f55d29-edf6-44de-9c66-1b891fb85437" />
+
 
 
