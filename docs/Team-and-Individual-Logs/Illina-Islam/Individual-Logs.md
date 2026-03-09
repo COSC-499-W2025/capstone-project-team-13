@@ -1,4 +1,5 @@
 # Log navigation
+- [Term 2, week 9](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-9---mar-2-mar-8-2026)
 - [Term 2, week 6/7/8](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-6/7/8---feb-9-mar-1-2026)
 - [Term 2, week 4/5](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-4/5---jan-26-feb-8-2026)
 - [Term 2, week 3](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-3---jan-19-jan-25-2026)
@@ -228,6 +229,19 @@
   * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/372
 * for next week: complete quiz 3, hold team meeting, decide on the final UI, include auth into other endpoints
 
+## Week 9 - Mar 2-Mar 8, 2026
+<img width="2138" height="1096" alt="image" src="https://github.com/user-attachments/assets/9fb4d34a-349a-42f7-a5cb-022605285620" />
+* This week integrated authentication into the portfolio, analytics and skills endpoint
+  * portfolio endpoints filter for user specific projects; portfolios now get stored to the user table in the databse; this feature is also now only avaliable to users who have signed up (portfolio.py & portfolio_service.py)
+  * analytics endpoints filter for user specific projects; this feature is avaliable to users and guest users (analytics.py & analytics_service.py)
+  * skills endpoints filter for user specific projects; this feature is avaliable to users and guest users (skills.py & skills_service.py)
+  * portfolio endpoints' tests have been updated (test_API_portfolio.py)
+  * analytics endpoints' tests have been created (test_API_analytics.py)
+  * skills endpoints' tests have been updated (test_API_skills.py)
+* My contributions close:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/398
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/400
+* for next week: hold a team meeting, decide on styling for frontend, start working on components for the dashboard
 
 
 
