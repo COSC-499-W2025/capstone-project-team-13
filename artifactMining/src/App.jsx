@@ -7,7 +7,6 @@ import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Resumes from "./pages/Resumes";
 import Portfolio from "./pages/Portfolio";
-import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
 function App() {
@@ -22,7 +21,6 @@ function App() {
           <Route path="/upload" element={<Upload />} />
           <Route path="/resumes" element={<Resumes />} />
           <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
 
         </Routes>
