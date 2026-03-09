@@ -13,8 +13,15 @@ export const getResumes = () =>
 export const getScore = (id) =>
   API.get(`/score/${id}`);
 
-export const getPortfolio = () =>
-  API.get("/portfolio");
-
-export const generatePortfolio = () =>
-  API.post("/portfolio/generate");
+export const getPortfolio = () => {
+  const token = localStorage.getItem("token");
+  return API.get("/portfolio", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+export const generatePortfolio = () => {
+  const token = localStorage.getItem("token");
+  return API.post("/portfolio/generate", {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
