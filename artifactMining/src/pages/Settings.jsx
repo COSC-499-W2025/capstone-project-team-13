@@ -4,6 +4,28 @@ import "./Settings.css";
 const API_BASE = "http://127.0.0.1:8000";
 
 export default function Settings() {
+  const [signupForm, setSignupForm] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+  });
+
+  const [loginForm, setLoginForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [authLoading, setAuthLoading] = useState(false);
+  const [currentUserLoading, setCurrentUserLoading] = useState(false);
+  const [guestCountLoading, setGuestCountLoading] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState(null);
+  const [guestProjectCount, setGuestProjectCount] = useState(null);
+
+  const [accountMessage, setAccountMessage] = useState("");
+  const [accountError, setAccountError] = useState("");
+  
   const [activeSection, setActiveSection] = useState("consent");
 
   const [basicConsent, setBasicConsent] = useState(false);
@@ -19,6 +41,11 @@ export default function Settings() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (activeSection === "account") {
+      fetchCurrentUser();
+      fetchGuestProjectCount();
+    }
+
     if (activeSection === "consent") {
       fetchConsentStatuses();
     }
@@ -204,29 +231,384 @@ export default function Settings() {
       <span className="settings-badge settings-badge-revoked">Not Granted</span>
     );
   }
+  function handleSignupChange(e) {
+    const { name, value } = e.target;
+    setSignupForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
 
-  function renderSectionContent() {
-    if (activeSection === "account") {
-      return (
-        <div className="settings-section-panel">
-          <h2>Account Settings</h2>
-          <p className="settings-section-description">
-            Manage your account preferences here.
-          </p>
+  function handleLoginChange(e) {
+    const { name, value } = e.target;
+    setLoginForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
 
-          <div className="settings-placeholder-card">
-            <h3>Profile Information</h3>
-            <p>Name, email, username, and profile preferences can go here.</p>
+  async function handleSignup(e) {
+    e.preventDefault();
+    setAccountMessage("");
+    setAccountError("");
+
+    try {
+      setAuthLoading(true);
+
+      const response = await fetch(`${API_BASE}/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(signupForm),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to sign up");
+      }
+
+      const data = await response.json().catch(() => ({}));
+      setAccountMessage(data.message || "Signup successful.");
+
+      setSignupForm({
+        first_name: "",
+        last_name: "",
+        email: "",
+        password: "",
+      });
+    } catch (err) {
+      console.error(err);
+      setAccountError(err.message || "Could not sign up.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    setAccountMessage("");
+    setAccountError("");
+
+    try {
+      setAuthLoading(true);
+
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(loginForm),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to log in");
+      }
+
+      const data = await response.json().catch(() => ({}));
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      setAccountMessage(data.message || "Login successful.");
+
+      setLoginForm({
+        email: "",
+        password: "",
+      });
+
+      await fetchCurrentUser();
+    } catch (err) {
+      console.error(err);
+      setAccountError(err.message || "Could not log in.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function fetchCurrentUser() {
+    setCurrentUserLoading(true);
+    setAccountError("");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_BASE}/auth/me`, {
+        method: "GET",
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {},
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setCurrentUser(null);
+          return;
+        }
+
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to load current user");
+      }
+
+      const data = await response.json();
+      setCurrentUser(data);
+    } catch (err) {
+      console.error(err);
+      setAccountError(err.message || "Could not load current user.");
+    } finally {
+      setCurrentUserLoading(false);
+    }
+  }
+
+  async function fetchGuestProjectCount() {
+    setGuestCountLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/auth/guest/projects/count`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to load guest project count");
+      }
+
+      const data = await response.json();
+      setGuestProjectCount(
+        data.count ?? data.project_count ?? data.guest_project_count ?? 0
+      );
+    } catch (err) {
+      console.error(err);
+      setGuestProjectCount(null);
+    } finally {
+      setGuestCountLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    setCurrentUser(null);
+    setAccountMessage("Logged out successfully.");
+    setAccountError("");
+  }
+
+
+
+  function renderAccountSection() {
+    return (
+      <div className="settings-section-panel">
+        <h2>Account Settings</h2>
+        <p className="settings-section-description">
+          Manage your account, authentication, and guest usage information.
+        </p>
+
+        {(accountMessage || accountError) && (
+          <div className="settings-alerts">
+            {accountMessage && (
+              <div className="settings-alert settings-alert-success">
+                {accountMessage}
+              </div>
+            )}
+            {accountError && (
+              <div className="settings-alert settings-alert-error">
+                {accountError}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="settings-content-grid">
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div>
+                <h3>Create Account</h3>
+                <p>Register a new account using the signup endpoint.</p>
+              </div>
+            </div>
+
+            <form className="settings-form" onSubmit={handleSignup}>
+              <label className="settings-label">
+                First Name
+                <input
+                  className="settings-input"
+                  type="text"
+                  name="first_name"
+                  value={signupForm.first_name}
+                  onChange={handleSignupChange}
+                  required
+                />
+              </label>
+
+              <label className="settings-label">
+              Last Name
+                <input
+                  className="settings-input"
+                  type="text"
+                  name="last_name"
+                  value={signupForm.last_name}
+                  onChange={handleSignupChange}
+                  required
+                />
+              </label>
+
+              <label className="settings-label">
+                Email
+                <input
+                  className="settings-input"
+                  type="email"
+                  name="email"
+                  value={signupForm.email}
+                  onChange={handleSignupChange}
+                  required
+                />
+              </label>
+
+              <label className="settings-label">
+                Password
+                <input
+                  className="settings-input"
+                  type="password"
+                  name="password"
+                  value={signupForm.password}
+                  onChange={handleSignupChange}
+                  required
+                />
+              </label>
+
+              <button
+                className="settings-button settings-button-primary"
+                type="submit"
+                disabled={authLoading}
+              >
+                {authLoading ? "Submitting..." : "Sign Up"}
+              </button>
+            </form>
           </div>
 
-          <div className="settings-placeholder-card">
-            <h3>Login & Security</h3>
-            <p>Password reset, authentication settings, and security options can go here.</p>
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div>
+                <h3>Login</h3>
+                <p>Sign in to access your account details and protected routes.</p>
+              </div>
+            </div>
+
+            <form className="settings-form" onSubmit={handleLogin}>
+              <label className="settings-label">
+                Email
+                <input
+                  className="settings-input"
+                  type="email"
+                  name="email"
+                  value={loginForm.email}
+                  onChange={handleLoginChange}
+                  required
+                />
+              </label>
+
+              <label className="settings-label">
+                Password
+                <input
+                  className="settings-input"
+                  type="password"
+                  name="password"
+                  value={loginForm.password}
+                  onChange={handleLoginChange}
+                  required
+                />
+              </label>
+
+              <div className="settings-card-actions">
+                <button
+                  className="settings-button settings-button-primary"
+                  type="submit"
+                  disabled={authLoading}
+                >
+                  {authLoading ? "Submitting..." : "Log In"}
+                </button>
+
+                <button
+                  className="settings-button settings-button-secondary"
+                  type="button"
+                  onClick={handleLogout}
+                >
+                  Log Out
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div>
+                <h3>Current User</h3>
+                <p>Loads data from the protected /auth/me endpoint.</p>
+              </div>
+            </div>
+
+            <div className="settings-card-body">
+              {currentUserLoading ? (
+                <p>Loading current user...</p>
+              ) : currentUser ? (
+                <div className="settings-info-block">
+                  <p><strong>Email:</strong> {currentUser.email || "N/A"}</p>
+                  <p><strong>ID:</strong> {currentUser.id || "N/A"}</p>
+                </div>
+              ) : (
+                <p>No logged-in user found.</p>
+              )}
+            </div>
+
+            <div className="settings-card-actions">
+              <button
+                className="settings-button settings-button-refresh"
+                onClick={fetchCurrentUser}
+                disabled={currentUserLoading}
+                type="button"
+              >
+                Refresh User
+              </button>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div>
+                <h3>Guest Project Count</h3>
+                <p>Loads data from the /auth/guest/projects/count endpoint.</p>
+              </div>
+            </div>
+
+            <div className="settings-card-body">
+              {guestCountLoading ? (
+                <p>Loading guest project count...</p>
+              ) : (
+                <div className="settings-count-box">
+                  {guestProjectCount !== null ? guestProjectCount : "Unavailable"}
+                </div>
+              )}
+            </div>
+
+            <div className="settings-card-actions">
+              <button
+                className="settings-button settings-button-refresh"
+                onClick={fetchGuestProjectCount}
+                disabled={guestCountLoading}
+                type="button"
+              >
+                Refresh Count
+              </button>
+            </div>
           </div>
         </div>
-      );
-    }
-
+      </div>
+    );
+  }
+  function renderSectionContent() {
+    if (activeSection === "account") {
+      return renderAccountSection();
+  }
     if (activeSection === "privacy") {
       return (
         <div className="settings-section-panel">
