@@ -22,6 +22,8 @@ Hyperlinks for Term 2:
 
 [Term 2 Week 5, 6, and 7](#date-range-term-2-week-6-7---feb-9-march-1-2026)
 
+[Term 2 Week 9](#date-range-term-2-week-9---mar-2-mar-8-2026)
+
 
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
@@ -271,3 +273,78 @@ I know this will leave me with no code contributions in one of either week 6 or 
 ### Plans for next week
 
 Frontend time! I'm actually really looking forward to this section because its where I have the most familiarity. My main experience is php backend into html and css frontend through prestashop, but with the backend complete my knowledge is much more applicable. For specifics, I had ideas for a modular webpage I wanted to run by my teammates to get their idea. If I could make a framework to sort of drop in smaller modules, I think visual cohesion can come easier. 
+
+
+## Log 19:
+## Date Range: Term 2 Week 9 - Mar 2-Mar 8, 2026
+
+## ![week 9 features](weeklyfeaturesimages/T2Week9Features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+Initially I was going to tackle the settings frontend and had finished and had approved a PR for a login page to preempt a profile, containing the settings within. Unfortunately Maya had already started work on the module and I wasn't aware (It was an issue created on the Kanban board I must have missed) so unfortunately that PR was reverted as her work was more extensive than mine.
+
+To recover, I pivoted to filling in some gaps in our API that we were missing. Specifically, I was working on some configuration endpoints we hadn't yet implemented:
+
+GET
+/configuration/privacy-settings
+Get Privacy Settings
+
+
+PATCH
+/configuration/privacy-settings
+Update Privacy Settings
+
+
+POST
+/configuration/privacy-settings/excluded-folders
+Add Excluded Folder
+
+
+DELETE
+/configuration/privacy-settings/excluded-folders
+Remove Excluded Folder
+
+
+POST
+/configuration/privacy-settings/excluded-file-types
+Add Excluded File Type
+
+
+DELETE
+/configuration/privacy-settings/excluded-file-types
+Remove Excluded File Type
+
+
+GET
+/configuration/analysis-preferences
+Get Analysis Preferences
+
+
+PATCH
+/configuration/analysis-preferences
+Update Analysis Preferences
+
+
+POST
+/configuration/analysis-preferences/enable-all
+Enable All Analysis Preferences
+
+
+POST
+/configuration/analysis-preferences/disable-all
+Disable All Analysis Preferences
+
+
+GET
+/configuration/current-configuration
+Get Current Configuration
+
+
+I created these endpoints as well as test files for each. Due to size and approvals, I divided them into PRs based on the subsets they fell under.
+
+### Plans for next week
+
+I'm hesitant to work on frontend as we didn't quite get the chance to meet and properly delegate work (hence the mixup with Maya) but we have a meeting planned this week to go over it. Ideally, if we get to a point where we know the style we're going for, I wouldn't mind handling the css for the project to try and get a more cohesive look.
