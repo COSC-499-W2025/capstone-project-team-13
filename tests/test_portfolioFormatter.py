@@ -33,7 +33,21 @@ class TestPortfolioFormatter:
         
         # Clear existing test data
         cls.cleanup_test_data()
-        
+
+        # Create a test user for ownership (reuse if already exists)
+        from src.Services.auth_service import hash_password
+        existing_user = db_manager.get_user_by_email('formatter_test@example.com')
+        if existing_user:
+            cls.test_user = existing_user
+        else:
+            cls.test_user = db_manager.create_user({
+                'first_name': 'Test',
+                'last_name': 'User',
+                'email': 'formatter_test@example.com',
+                'password_hash': hash_password('password123'),
+            })
+        cls.user_id = cls.test_user.id
+
         # Create sample projects
         cls.test_projects = []
         
@@ -55,7 +69,8 @@ class TestPortfolioFormatter:
             'is_featured': True,
             'date_created': datetime(2024, 1, 15, tzinfo=timezone.utc),
             'date_modified': datetime(2024, 3, 20, tzinfo=timezone.utc),
-            'collaboration_type': 'Collaborative Project'
+            'collaboration_type': 'Collaborative Project',
+            'user_id': cls.user_id,
         }
         project1 = db_manager.create_project(project1_data)
         cls.test_projects.append(project1)
@@ -91,7 +106,8 @@ class TestPortfolioFormatter:
             'importance_score': 72.0,
             'is_featured': False,
             'date_created': datetime(2024, 2, 1, tzinfo=timezone.utc),
-            'date_modified': datetime(2024, 2, 28, tzinfo=timezone.utc)
+            'date_modified': datetime(2024, 2, 28, tzinfo=timezone.utc),
+            'user_id': cls.user_id,
         }
         project2 = db_manager.create_project(project2_data)
         cls.test_projects.append(project2)
@@ -110,7 +126,8 @@ class TestPortfolioFormatter:
             'importance_score': 90.0,
             'is_featured': True,
             'date_created': datetime(2024, 1, 5, tzinfo=timezone.utc),
-            'date_modified': datetime(2024, 1, 25, tzinfo=timezone.utc)
+            'date_modified': datetime(2024, 1, 25, tzinfo=timezone.utc),
+            'user_id': cls.user_id,
         }
         project3 = db_manager.create_project(project3_data)
         cls.test_projects.append(project3)
@@ -123,7 +140,8 @@ class TestPortfolioFormatter:
             'lines_of_code': 500,
             'file_count': 5,
             'languages': ['Python'],
-            'importance_score': 35.0
+            'importance_score': 35.0,
+            'user_id': cls.user_id,
         }
         project4 = db_manager.create_project(project4_data)
         cls.test_projects.append(project4)
@@ -309,7 +327,7 @@ class TestPortfolioFormatter:
         """Test complete portfolio data generation"""
         formatter = PortfolioFormatter()
         
-        portfolio = formatter.get_portfolio_data()
+        portfolio = formatter.get_portfolio_data(user_id=self.user_id)
         
         # Check structure
         assert 'summary' in portfolio
@@ -363,17 +381,17 @@ class TestPortfolioFormatter:
         formatter = PortfolioFormatter()
         fixture_ids = {p.id for p in self.test_projects}
 
-        code_projects = formatter.get_filtered_projects(project_type='code')
+        code_projects = formatter.get_filtered_projects(user_id=self.user_id, project_type='code')
         fixture_code = [p for p in code_projects['projects'] if p['id'] in fixture_ids]
         assert len(fixture_code) == 2
         assert all(p['type'] == 'code' for p in fixture_code)
 
-        media_projects = formatter.get_filtered_projects(project_type='visual_media')
+        media_projects = formatter.get_filtered_projects(user_id=self.user_id, project_type='visual_media')
         fixture_media = [p for p in media_projects['projects'] if p['id'] in fixture_ids]
         assert len(fixture_media) == 1
         assert fixture_media[0]['type'] == 'visual_media'
 
-        text_projects = formatter.get_filtered_projects(project_type='text')
+        text_projects = formatter.get_filtered_projects(user_id=self.user_id, project_type='text')
         fixture_text = [p for p in text_projects['projects'] if p['id'] in fixture_ids]
         assert len(fixture_text) == 1
         assert fixture_text[0]['type'] == 'text'
@@ -384,15 +402,15 @@ class TestPortfolioFormatter:
         formatter = PortfolioFormatter()
         
         # Search for "research"
-        results = formatter.get_filtered_projects(search='research')
+        results = formatter.get_filtered_projects(user_id=self.user_id, search='research')
         assert results['total'] >= 1
         
         # Search for "platform"
-        results = formatter.get_filtered_projects(search='platform')
+        results = formatter.get_filtered_projects(user_id=self.user_id, search='platform')
         assert results['total'] >= 1
         
         # Search for non-existent term
-        results = formatter.get_filtered_projects(search='nonexistentxyz')
+        results = formatter.get_filtered_projects(user_id=self.user_id, search='nonexistentxyz')
         assert results['total'] == 0
         
         print("✓ Search filtering test passed")
@@ -402,11 +420,11 @@ class TestPortfolioFormatter:
         formatter = PortfolioFormatter()
         
         # Filter for high importance (>= 80)
-        high_importance = formatter.get_filtered_projects(min_importance=80)
+        high_importance = formatter.get_filtered_projects(user_id=self.user_id, min_importance=80)
         assert all(p['importance_score'] >= 80 for p in high_importance['projects'])
         
         # Filter for medium importance (>= 50)
-        medium_importance = formatter.get_filtered_projects(min_importance=50)
+        medium_importance = formatter.get_filtered_projects(user_id=self.user_id, min_importance=50)
         assert len(medium_importance['projects']) >= len(high_importance['projects'])
         
         print("✓ Importance filtering test passed")
@@ -415,7 +433,7 @@ class TestPortfolioFormatter:
         formatter = PortfolioFormatter()
         fixture_ids = {p.id for p in self.test_projects}
 
-        featured = formatter.get_filtered_projects(featured_only=True)
+        featured = formatter.get_filtered_projects(user_id=self.user_id, featured_only=True)
         fixture_featured = [p for p in featured['projects'] if p['id'] in fixture_ids]
 
         assert all(p['is_featured'] for p in fixture_featured)
@@ -428,6 +446,7 @@ class TestPortfolioFormatter:
         
         # Code projects with importance >= 70
         results = formatter.get_filtered_projects(
+            user_id=self.user_id,
             project_type='code',
             min_importance=70
         )
@@ -436,6 +455,7 @@ class TestPortfolioFormatter:
         
         # Featured code projects
         results = formatter.get_filtered_projects(
+            user_id=self.user_id,
             project_type='code',
             featured_only=True
         )
@@ -466,7 +486,7 @@ class TestPortfolioFormatter:
     def test_generate_portfolio_summary(self):
         """Test portfolio summary generation"""
         formatter = PortfolioFormatter()
-        projects = db_manager.get_all_projects()
+        projects = db_manager.get_all_projects(user_id=self.user_id)
         
         summary = formatter._generate_portfolio_summary(projects)
         
@@ -498,7 +518,7 @@ class TestPortfolioFormatter:
         
         try:
             # Export to JSON
-            result_path = formatter.export_to_json(temp_path)
+            result_path = formatter.export_to_json(temp_path, user_id=self.user_id)
             
             assert os.path.exists(result_path)
             
@@ -539,7 +559,7 @@ class TestPortfolioFormatter:
                 pass
         
         formatter = PortfolioFormatter()
-        portfolio = formatter.get_portfolio_data()
+        portfolio = formatter.get_portfolio_data(user_id=self.user_id)
         
         # Recreate test projects
         self.__class__.setup_class()
@@ -575,7 +595,8 @@ class TestPortfolioFormatter:
             'name': 'Test No Dates',
             'file_path': '/test/path/nodates',
             'project_type': 'code',
-            'file_count': 10
+            'file_count': 10,
+            'user_id': self.user_id,
         }
         project = db_manager.create_project(project_data)
         

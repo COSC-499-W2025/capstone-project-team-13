@@ -482,7 +482,7 @@ class PortfolioFormatter:
     # -------------------------
     # Public API
     # -------------------------
-    def get_portfolio_data(self, include_hidden: bool = False) -> Dict[str, Any]:
+    def get_portfolio_data(self, user_id: int, include_hidden: bool = False) -> Dict[str, Any]:
         """
         Get complete portfolio data (includes an embedded summary).
 
@@ -495,7 +495,7 @@ class PortfolioFormatter:
                 'generated_at': iso str
             }
         """
-        projects = self.db.get_all_projects(include_hidden=include_hidden)
+        projects = self.db.get_all_projects(include_hidden=include_hidden, user_id=user_id)
 
         # print("DEBUG projects:", len(projects))
         # if projects:
@@ -529,6 +529,7 @@ class PortfolioFormatter:
 
     def get_filtered_projects(
         self,
+        user_id: int,
         project_type: Optional[str] = None,
         search: Optional[str] = None,
         min_importance: Optional[float] = None,
@@ -538,12 +539,13 @@ class PortfolioFormatter:
         Get filtered projects (cards).
 
         Args:
+            user_id: The authenticated user's ID
             project_type: Filter by type ('code', 'visual_media', 'text')
             search: Search in project name, description, skills
             min_importance: Minimum importance score
             featured_only: Only return featured projects
         """
-        projects = self.db.get_all_projects(include_hidden=False)
+        projects = self.db.get_all_projects(include_hidden=False, user_id=user_id)
         filtered = projects
 
         if project_type:
@@ -583,11 +585,11 @@ class PortfolioFormatter:
             },
         }
 
-    def export_to_json(self, output_path: str, include_hidden: bool = False) -> str:
+    def export_to_json(self, output_path: str, user_id: int, include_hidden: bool = False) -> str:
         """Export portfolio data to JSON file (includes embedded summary)."""
         import json
 
-        data = self.get_portfolio_data(include_hidden=include_hidden)
+        data = self.get_portfolio_data(user_id=user_id, include_hidden=include_hidden)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
@@ -788,12 +790,12 @@ class PortfolioFormatter:
             cleaned.append(s)
 
         return cleaned[:20]
-    def get_projects_for_summary_input(self, include_hidden: bool = False) -> List[Dict[str, Any]]:
+    def get_projects_for_summary_input(self, user_id: int, include_hidden: bool = False) -> List[Dict[str, Any]]:
         """
         Returns project dicts in the shape summarize_projects() expects.
         Uses ONLY DB fields (no keywords).
         """
-        projects = self.db.get_all_projects(include_hidden=include_hidden)
+        projects = self.db.get_all_projects(include_hidden=include_hidden, user_id=user_id)
 
         out = []
         for p in projects:
