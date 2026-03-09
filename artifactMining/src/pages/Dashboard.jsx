@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./Dashboard.css";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
 
@@ -66,7 +67,12 @@ function Dashboard() {
 
               </div>
             ))}
-
+          <button
+              className="upload-button"
+              onClick={() => window.location.href = "/upload"}
+            >
+              Upload Project
+            </button>
           </div>
         )}
 
