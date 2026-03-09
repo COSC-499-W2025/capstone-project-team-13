@@ -22,6 +22,8 @@ Hyperlinks for Term 2:
 
 [Term 2 Week 5, 6, and 7](#date-range-term-2-week-6-7---feb-9-march-1-2026)
 
+[Term 2 Week 9](#date-range-term-2-week-9---mar-2-mar-8-2026)
+
 
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
@@ -334,6 +336,11 @@ Enable All Analysis Preferences
 POST
 /configuration/analysis-preferences/disable-all
 Disable All Analysis Preferences
+
+
+GET
+/configuration/current-configuration
+Get Current Configuration
 
 
 I created these endpoints as well as test files for each. Due to size and approvals, I divided them into PRs based on the subsets they fell under.
