@@ -661,7 +661,7 @@ Manual testing through `main.py` also confirmed that all modules work as expecte
 | **Sana Shah** | set up blueprint for frontend (react set up) | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/388 |
 | **Maya Knutsvig** | general settings + account settings pages for frontend | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/390 |
 | **Prina Mehta** | resume export endpoints + tests | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/384 |
-| **Jackson Wilson** |||
+| **Jackson Wilson** | added missing endpoints for configs | bug fix, no direct issue related |
 | **T’Olu Akinwande** |||
 
 Backlog:
