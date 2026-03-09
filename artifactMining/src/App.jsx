@@ -8,6 +8,7 @@ import Upload from "./pages/Upload";
 import Resumes from "./pages/Resumes";
 import Portfolio from "./pages/Portfolio";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -22,6 +23,8 @@ function App() {
           <Route path="/resumes" element={<Resumes />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+
         </Routes>
       </div>
 
