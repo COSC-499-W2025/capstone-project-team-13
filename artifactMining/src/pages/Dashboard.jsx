@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
 
   const [projects, setProjects] = useState([]);
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     loadProjects();
@@ -79,15 +80,18 @@ function Dashboard() {
       </div>
 
       <div className="card resumes">
-        <h2>AI Generated Resumes</h2>
-      </div>
-
-      <div className="card portfolios">
-        <h2>AI Generated Portfolios</h2>
+        <h2>Resume Builder</h2>
+        <p>Generated Resumes will appear here</p>
       </div>
 
       <div className="card insights">
         <h2>Charts & Insights</h2>
+      </div>
+
+      <div className="card portfolios click-card" 
+            onClick={() => navigate("/portfolio")} >
+          <h2>Portfolio Builder</h2>
+          <p>Click to view and manage your portfolio</p>
       </div>
 
     </div>

@@ -69,3 +69,15 @@
   color:white;
   cursor:pointer;
 }
+
+/* Portfolio card */
+
+.clickable-card {
+
+  transition: all 0.2s ease;
+}
+
+.click-card:hover {
+  transform: translateY(-3px);
+  background-color: #93a3c5; 
+}
