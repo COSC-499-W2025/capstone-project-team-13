@@ -662,7 +662,7 @@ Manual testing through `main.py` also confirmed that all modules work as expecte
 | **Maya Knutsvig** | general settings + account settings pages for frontend | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/390 |
 | **Prina Mehta** | resume export endpoints + tests | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/384 |
 | **Jackson Wilson** | added missing endpoints for configs | bug fix, no direct issue related |
-| **T’Olu Akinwande** |||
+| **T’Olu Akinwande** | portfolio component for frontend + scanner bug fix | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/385 https://github.com/COSC-499-W2025/capstone-project-team-13/issues/408 |
 
 Backlog:
 <img width="2162" height="1382" alt="image" src="https://github.com/user-attachments/assets/ba8acb01-fb5c-4e50-8041-d21974f346ec" />
