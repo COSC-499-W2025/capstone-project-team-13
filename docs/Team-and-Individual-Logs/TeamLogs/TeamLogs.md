@@ -7,6 +7,7 @@
 - [T2 Week 6](#term-2-week-6-team-log)
 - [T2 Week 7](#term-2-week-7-team-log)
 - [T2 Week 8](#term-2-week-8-team-log)
+- [T2 Week 9](#term-2-week-9-team-log)
 
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
@@ -648,4 +649,44 @@ Manual testing through `main.py` also confirmed that all modules work as expecte
 - We successfully completed Milestone 2 requirements, and were well prepared for our presentation. 
 
 **What didn’t go as planned:**  
-- We believe this week was also well planned and successful. 
+- We believe this week was also well planned and successful.
+
+
+
+## Term 2 Week 9 Team Log
+**Date Range:** Mar 1 - March 9, 2026
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **Illina Islam** | added auth checks into portfolio, analytics, and skills endpoints + tests| https://github.com/COSC-499-W2025/capstone-project-team-13/issues/398 https://github.com/COSC-499-W2025/capstone-project-team-13/issues/400 |
+| **Sana Shah** | set up blueprint for frontend (react set up) | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/388 |
+| **Maya Knutsvig** | general settings + account settings pages for frontend | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/390 |
+| **Prina Mehta** | resume export endpoints + tests | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/384 |
+| **Jackson Wilson** | added missing endpoints for configs | bug fix, no direct issue related |
+| **T’Olu Akinwande** | portfolio component for frontend + scanner bug fix | https://github.com/COSC-499-W2025/capstone-project-team-13/issues/385 https://github.com/COSC-499-W2025/capstone-project-team-13/issues/408 |
+
+Backlog:
+<img width="2162" height="1382" alt="image" src="https://github.com/user-attachments/assets/ba8acb01-fb5c-4e50-8041-d21974f346ec" />
+
+Burnup Chart:
+<img width="1722" height="892" alt="image" src="https://github.com/user-attachments/assets/6923bd3c-7bd3-44cf-9f16-b2d9a35f53dd" />
+
+In-Progress Tasks:
+<img width="2504" height="458" alt="image" src="https://github.com/user-attachments/assets/b4b36d30-5f22-4c86-b721-aebdc8328c23" />
+
+Completed Tasks:
+<img width="2120" height="1156" alt="image" src="https://github.com/user-attachments/assets/3857a6c9-3870-4b39-baa8-4a80629c2852" />
+<img width="2112" height="1168" alt="image" src="https://github.com/user-attachments/assets/a477e572-707b-4f10-af3c-9be6cbc7d024" />
+<img width="2118" height="1162" alt="image" src="https://github.com/user-attachments/assets/da6d2528-b7fb-4d13-8668-41acbbc4a7a4" />
+<img width="2124" height="374" alt="image" src="https://github.com/user-attachments/assets/dc38ef8f-8bb4-4ce3-b91e-0577e10c3b5c" />
+
+### Test Report
+<img width="1192" height="180" alt="image" src="https://github.com/user-attachments/assets/a1eb0358-a04c-4105-b68b-06b8540d0b32" />
+All tests are passing except 4. This is due to a PR that made changes to an existing file (src/Routers/resume.py) without updating the associated test file (test_API_resume.py), instead a new test file was created for that PR. This small issue will be fixed as we have made note of it and created an issue (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/416). 
+
+### Reflection Points
+
+**What went well:** 
+- Our backend system has been set up well for easy integration and we've starting creating components for our frontend.
+  
+**What didn’t go as planned:**
+- We need to finalize our decisions regarding aeathetics (frontend styling) as we are currently being held back because of this.
