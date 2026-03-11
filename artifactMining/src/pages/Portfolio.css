@@ -1,0 +1,250 @@
+.portfolio-page {
+  padding: 32px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.portfolio-loading,
+.portfolio-error,
+.portfolio-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.portfolio-header {
+  margin-bottom: 32px;
+}
+
+.portfolio-header h1 {
+  font-size: 1.8rem;
+  color: #2d6a4f;
+  margin-bottom: 4px;
+}
+
+.portfolio-subtitle {
+  color: #666;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.portfolio-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-portfolio-primary {
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-portfolio-primary:hover {
+  opacity: 0.85;
+}
+
+.btn-portfolio-ai {
+  background: transparent;
+  color: #2d6a4f;
+  border: 1.5px solid #2d6a4f;
+  border-radius: 4px;
+  padding: 7px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-portfolio-ai:hover:not(:disabled) {
+  background: #2d6a4f;
+  color: #fff;
+}
+
+.btn-portfolio-ai:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-hint {
+  font-size: 0.82rem;
+  color: #888;
+  margin: 0;
+}
+
+.ai-hint a {
+  color: #2d6a4f;
+  text-decoration: underline;
+}
+
+.portfolio-ai-message {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #2d6a4f;
+}
+
+/* Grid */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+/* Card */
+.portfolio-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+
+.portfolio-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.portfolio-card-thumbnail {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.portfolio-card-placeholder {
+  width: 100%;
+  height: 160px;
+  background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.portfolio-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.portfolio-card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.portfolio-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.portfolio-tag {
+  background: #e8f4ee;
+  color: #2d6a4f;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.portfolio-tag-lang {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+/* AI description */
+.portfolio-ai-desc {
+  background: #f0f7f4;
+  border-left: 3px solid #2d6a4f;
+  border-radius: 3px;
+  padding: 8px 10px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.ai-badge {
+  background: #2d6a4f;
+  color: #fff;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.portfolio-ai-desc p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #333;
+}
+
+.portfolio-card-desc {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #444;
+  margin: 0;
+}
+
+.portfolio-card-empty {
+  color: #aaa;
+  font-style: italic;
+}
+
+.portfolio-card-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: auto;
+}
+
+.portfolio-card-link {
+  display: inline-block;
+  color: #2d6a4f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 4px;
+}
+
+.portfolio-card-link:hover {
+  text-decoration: underline;
+}
+
+.portfolio-auth-required {
+  text-align: center;
+  padding: 80px 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.portfolio-auth-required h2 {
+  color: #2d6a4f;
+  margin-bottom: 12px;
+}
+
+.portfolio-auth-required p {
+  color: #666;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
