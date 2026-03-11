@@ -1,0 +1,26 @@
+.project-page {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+.project-page img {
+  display: block;
+  margin: 10px 0 20px 0;
+  border-radius: 8px;
+}
+
+.project-page ul {
+  list-style: disc;
+  padding-left: 20px;
+}
+
+.project-page button {
+  margin-bottom: 15px;
+  padding: 6px 12px;
+  border: none;
+  background-color: #706cc0;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
