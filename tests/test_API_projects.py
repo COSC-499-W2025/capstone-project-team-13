@@ -8,12 +8,21 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.mainAPI import app
+from src.Databases.database import db_manager
 
 current_dir = os.path.dirname(__file__)
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.insert(0, project_root)
 
 client = TestClient(app)
+
+
+def setup_function():
+    db_manager.clear_all_data()
+
+
+def teardown_function():
+    db_manager.clear_all_data()
 
 
 # Helper: create a zip project
@@ -125,5 +134,131 @@ def test_upload_empty_zip(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["status"] in ("skipped", "exists")
+
+
+def test_upload_multi_zip_endpoint(monkeypatch, tmp_path):
+    zip_path = tmp_path / "multi.zip"
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        zipf.writestr("a/main.py", "print('x')")
+
+    monkeypatch.setattr(
+        "src.Routers.projects.processZipFile",
+        lambda path: [{"name": "a", "type": "code"}]
+    )
+
+    with open(zip_path, "rb") as f:
+        response = client.post(
+            "/projects/upload/multi-zip",
+            files={"file": ("multi.zip", f, "application/zip")}
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "processed"
+    assert data["count"] == 1
+
+
+def test_add_files_to_existing_project(tmp_path):
+    project = db_manager.create_project({
+        "name": "Upload Target",
+        "file_path": "/tmp/upload-target",
+        "project_type": "code",
+        "file_count": 0,
+        "user_id": None,
+    })
+
+    file_to_add = tmp_path / "new_file.py"
+    file_to_add.write_text("print('new')")
+
+    with open(file_to_add, "rb") as f:
+        response = client.post(
+            f"/projects/{project.id}/upload/files",
+            files=[("files", ("new_file.py", f, "text/x-python"))]
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "updated"
+    assert payload["files_added"] == 1
+
+
+def test_detect_type_path_not_found():
+    response = client.post("/projects/analyze/detect-type", json={"path": "/does/not/exist"})
+    assert response.status_code == 404
+
+
+def test_analyze_coding_endpoint(monkeypatch, tmp_path):
+    code_dir = tmp_path / "code_project"
+    code_dir.mkdir()
+    (code_dir / "main.py").write_text("print('hello')")
+
+    project = db_manager.create_project({
+        "name": "Analyzed Project",
+        "file_path": str(code_dir),
+        "project_type": "code",
+        "user_id": None,
+    })
+
+    monkeypatch.setattr("src.Routers.projects.scan_coding_project", lambda path, user_id=None: project.id)
+
+    response = client.post("/projects/analyze/coding", json={"path": str(code_dir)})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "created"
+    assert data["project_id"] == project.id
+
+
+def test_get_project_roles_returns_contributors():
+    project = db_manager.create_project({
+        "name": "Role Project",
+        "file_path": "/tmp/role-project",
+        "project_type": "code",
+        "user_id": None,
+    })
+    db_manager.add_contributor_to_project({
+        "project_id": project.id,
+        "name": "alice",
+        "contributor_identifier": "alice@example.com",
+        "contribution_percent": 55.0,
+        "commit_count": 10,
+    })
+
+    response = client.get(f"/projects/{project.id}/roles")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["project_id"] == project.id
+    assert len(data["contributors"]) == 1
+    assert data["contributors"][0]["name"] == "alice"
+
+
+def test_assign_project_role_from_contributor(monkeypatch):
+    project = db_manager.create_project({
+        "name": "Role Assign Project",
+        "file_path": "/tmp/role-assign-project",
+        "project_type": "code",
+        "user_id": None,
+    })
+    db_manager.add_contributor_to_project({
+        "project_id": project.id,
+        "name": "bob",
+        "contributor_identifier": "bob@example.com",
+        "contribution_percent": 60.0,
+        "commit_count": 8,
+    })
+
+    monkeypatch.setattr("src.Routers.projects.identify_project_type", lambda path, project_data: "Collaborative Project")
+
+    response = client.post(
+        f"/projects/{project.id}/roles",
+        json={
+            "contributor": "bob",
+            "role_type": "Backend Developer"
+        }
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["collaboration_type"] == "Collaborative Project"
+    assert body["user_contribution_percent"] == 60.0
+    assert "Backend Developer" in body["user_role"]
 
 
