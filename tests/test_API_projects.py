@@ -182,8 +182,8 @@ def test_add_files_to_existing_project(tmp_path):
     assert payload["files_added"] == 1
 
 
-def test_detect_type_path_not_found():
-    response = client.post("/projects/analyze/detect-type", json={"path": "/does/not/exist"})
+def test_detect_type_project_not_found():
+    response = client.post("/projects/999999/analyze/detect-type")
     assert response.status_code == 404
 
 
@@ -201,11 +201,23 @@ def test_analyze_coding_endpoint(monkeypatch, tmp_path):
 
     monkeypatch.setattr("src.Routers.projects.scan_coding_project", lambda path, user_id=None: project.id)
 
-    response = client.post("/projects/analyze/coding", json={"path": str(code_dir)})
+    response = client.post(f"/projects/{project.id}/analyze/coding")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "created"
     assert data["project_id"] == project.id
+
+
+def test_analyze_coding_project_path_missing(monkeypatch):
+    project = db_manager.create_project({
+        "name": "Missing Path Project",
+        "file_path": "/definitely/missing/path",
+        "project_type": "code",
+        "user_id": None,
+    })
+
+    response = client.post(f"/projects/{project.id}/analyze/coding")
+    assert response.status_code == 404
 
 
 def test_get_project_roles_returns_contributors():

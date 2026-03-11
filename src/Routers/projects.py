@@ -24,10 +24,6 @@ UPLOAD_DIR = Path("evidence/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-class PathAnalysisRequest(BaseModel):
-    path: str
-
-
 class RoleAssignmentRequest(BaseModel):
     contributor: Optional[str] = None
     contribution_percent: Optional[float] = Field(default=None, ge=0.0, le=100.0)
@@ -48,6 +44,14 @@ def _store_uploaded_file(file: UploadFile, destination: Path) -> Path:
     with open(destination, "wb") as f:
         f.write(file.file.read())
     return destination
+
+
+def _get_project_analysis_path(project_id: int, user_id: Optional[int]) -> tuple[object, str]:
+    project = _assert_project_access(project_id, user_id)
+    path = os.path.abspath(os.path.expanduser(project.file_path))
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail=f"Path not found for project {project_id}: {path}")
+    return project, path
 
 
 @router.post("/upload")
@@ -256,20 +260,21 @@ async def add_zip_to_project(
     }
 
 
-@router.post("/analyze/detect-type")
-def analyze_detect_type(payload: PathAnalysisRequest):
-    path = os.path.abspath(os.path.expanduser(payload.path))
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"Path not found: {path}")
+@router.post("/{project_id}/analyze/detect-type")
+def analyze_detect_type(
+    project_id: int,
+    user_id: Optional[int] = Depends(get_current_user_id)
+):
+    _, path = _get_project_analysis_path(project_id, user_id)
     return detect_project_type(path)
 
 
-@router.post("/analyze/coding")
+@router.post("/{project_id}/analyze/coding")
 def analyze_coding_project(
-    payload: PathAnalysisRequest,
+    project_id: int,
     user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    path = os.path.abspath(os.path.expanduser(payload.path))
+    _, path = _get_project_analysis_path(project_id, user_id)
     if not os.path.isdir(path):
         raise HTTPException(status_code=400, detail="Path must be a directory")
     project_id = scan_coding_project(path, user_id=user_id)
@@ -284,12 +289,12 @@ def analyze_coding_project(
     }
 
 
-@router.post("/analyze/media")
+@router.post("/{project_id}/analyze/media")
 def analyze_media_project(
-    payload: PathAnalysisRequest,
+    project_id: int,
     user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    path = os.path.abspath(os.path.expanduser(payload.path))
+    _, path = _get_project_analysis_path(project_id, user_id)
     if not os.path.isdir(path):
         raise HTTPException(status_code=400, detail="Path must be a directory")
     project_id = scan_media_project(path, user_id=user_id)
@@ -304,14 +309,12 @@ def analyze_media_project(
     }
 
 
-@router.post("/analyze/text")
+@router.post("/{project_id}/analyze/text")
 def analyze_text_project(
-    payload: PathAnalysisRequest,
+    project_id: int,
     user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    path = os.path.abspath(os.path.expanduser(payload.path))
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"Path not found: {path}")
+    _, path = _get_project_analysis_path(project_id, user_id)
     project_id = scan_text_document(path, single_file=True, user_id=user_id)
     if not project_id:
         return {"status": "skipped", "reason": "No text content found"}
