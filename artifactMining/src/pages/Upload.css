@@ -1,32 +1,99 @@
+/* Page Layout */
+
 .upload-page{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:80vh;
+  min-height:100vh;
+  background:#0f172a;
+  padding:40px;
+  font-family:Arial, Helvetica, sans-serif;
+  color:white;
 }
+
+/* Page Title */
+
+.upload-page h1{
+  text-align:center;
+  margin-bottom:40px;
+  font-size:32px;
+  font-weight:600;
+}
+
+
+/* GRID LAYOUT */
+
+.upload-page{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
+  gap:30px;
+}
+
+
+/* CARDS */
 
 .upload-card{
-  background:#111827;
-  padding:40px;
+  background:#1e293b;
+  padding:25px;
   border-radius:12px;
-  text-align:center;
-  color:white;
-  width:400px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.4);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
+
+/* Card titles */
+
+.upload-card h2{
+  margin-bottom:10px;
+  font-size:20px;
+  border-bottom:1px solid #334155;
+  padding-bottom:8px;
+}
+
+
+/* INPUTS */
 
 .upload-card input{
-  margin:20px 0;
+  padding:8px;
+  border-radius:6px;
+  border:none;
+  background:#334155;
+  color:white;
 }
 
-.upload-card button{
-  padding:10px 20px;
-  border:none;
-  border-radius:6px;
+.upload-card input::file-selector-button{
   background:#3b82f6;
+  border:none;
+  padding:6px 10px;
+  border-radius:4px;
   color:white;
   cursor:pointer;
 }
 
-.upload-card button:hover{
+
+/* BUTTONS */
+
+.upload-card button{
+  padding:10px;
+  border:none;
+  border-radius:8px;
   background:#2563eb;
+  color:white;
+  font-weight:500;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+
+/* Hover effect */
+
+.upload-card button:hover{
+  background:#1d4ed8;
+  transform:translateY(-1px);
+}
+
+
+/* STATUS MESSAGE */
+
+.upload-card p{
+  margin-top:8px;
+  font-size:14px;
+  color:#94a3b8;
 }
