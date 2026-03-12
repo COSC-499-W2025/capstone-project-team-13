@@ -30,7 +30,7 @@ class RoleAssignmentRequest(BaseModel):
     role_type: str = "Developer"
 
 
-def _assert_project_access(project_id: int, user_id: Optional[int]):
+def _assert_project_access(project_id: int, user_id: int):
     project = db_manager.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
@@ -46,7 +46,7 @@ def _store_uploaded_file(file: UploadFile, destination: Path) -> Path:
     return destination
 
 
-def _get_project_analysis_path(project_id: int, user_id: Optional[int]) -> tuple[object, str]:
+def _get_project_analysis_path(project_id: int, user_id: int) -> tuple[object, str]:
     project = _assert_project_access(project_id, user_id)
     path = os.path.abspath(os.path.expanduser(project.file_path))
     if not os.path.exists(path):
@@ -140,7 +140,7 @@ def get_project(
 @router.post("/upload/multi-zip")
 async def upload_multi_zip(
     file: UploadFile = File(...),
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     if not file.filename or not file.filename.lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="File must be a .zip archive")
@@ -167,7 +167,7 @@ async def upload_multi_zip(
 async def add_files_to_project(
     project_id: int,
     files: list[UploadFile] = File(...),
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     project = _assert_project_access(project_id, user_id)
 
@@ -208,7 +208,7 @@ async def add_files_to_project(
 async def add_zip_to_project(
     project_id: int,
     file: UploadFile = File(...),
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     _assert_project_access(project_id, user_id)
 
@@ -263,7 +263,7 @@ async def add_zip_to_project(
 @router.post("/{project_id}/analyze/detect-type")
 def analyze_detect_type(
     project_id: int,
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     _, path = _get_project_analysis_path(project_id, user_id)
     return detect_project_type(path)
@@ -272,15 +272,15 @@ def analyze_detect_type(
 @router.post("/{project_id}/analyze/coding")
 def analyze_coding_project(
     project_id: int,
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     _, path = _get_project_analysis_path(project_id, user_id)
     if not os.path.isdir(path):
         raise HTTPException(status_code=400, detail="Path must be a directory")
-    project_id = scan_coding_project(path, user_id=user_id)
-    if not project_id:
+    analyzed_project_id = scan_coding_project(path, user_id=user_id)
+    if not analyzed_project_id:
         return {"status": "skipped", "reason": "No code files found"}
-    project = db_manager.get_project(project_id)
+    project = db_manager.get_project(analyzed_project_id)
     return {
         "status": "created",
         "project_id": project.id,
@@ -292,15 +292,15 @@ def analyze_coding_project(
 @router.post("/{project_id}/analyze/media")
 def analyze_media_project(
     project_id: int,
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     _, path = _get_project_analysis_path(project_id, user_id)
     if not os.path.isdir(path):
         raise HTTPException(status_code=400, detail="Path must be a directory")
-    project_id = scan_media_project(path, user_id=user_id)
-    if not project_id:
+    analyzed_project_id = scan_media_project(path, user_id=user_id)
+    if not analyzed_project_id:
         return {"status": "skipped", "reason": "No media files found"}
-    project = db_manager.get_project(project_id)
+    project = db_manager.get_project(analyzed_project_id)
     return {
         "status": "created",
         "project_id": project.id,
@@ -312,13 +312,13 @@ def analyze_media_project(
 @router.post("/{project_id}/analyze/text")
 def analyze_text_project(
     project_id: int,
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     _, path = _get_project_analysis_path(project_id, user_id)
-    project_id = scan_text_document(path, single_file=True, user_id=user_id)
-    if not project_id:
+    analyzed_project_id = scan_text_document(path, single_file=True, user_id=user_id)
+    if not analyzed_project_id:
         return {"status": "skipped", "reason": "No text content found"}
-    project = db_manager.get_project(project_id)
+    project = db_manager.get_project(analyzed_project_id)
     return {
         "status": "created",
         "project_id": project.id,
@@ -330,7 +330,7 @@ def analyze_text_project(
 @router.get("/{project_id}/roles")
 def get_project_roles(
     project_id: int,
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     project = _assert_project_access(project_id, user_id)
     contributors = db_manager.get_contributors_for_project(project_id)
@@ -355,7 +355,7 @@ def get_project_roles(
 def assign_project_role(
     project_id: int,
     payload: RoleAssignmentRequest = Body(...),
-    user_id: Optional[int] = Depends(get_current_user_id)
+    user_id: int = Depends(require_auth)
 ):
     project = _assert_project_access(project_id, user_id)
 

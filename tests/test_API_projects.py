@@ -9,12 +9,24 @@ from fastapi.testclient import TestClient
 
 from src.mainAPI import app
 from src.Databases.database import db_manager
+from src.Services.auth_service import create_access_token, hash_password
 
 current_dir = os.path.dirname(__file__)
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.insert(0, project_root)
 
 client = TestClient(app)
+
+
+def _create_user_and_headers(email: str = "projects_test@example.com"):
+    user = db_manager.create_user({
+        "first_name": "Test",
+        "last_name": "User",
+        "email": email,
+        "password_hash": hash_password("password123"),
+    })
+    token = create_access_token(user.id)
+    return user, {"Authorization": f"Bearer {token}"}
 
 
 def setup_function():
@@ -137,6 +149,8 @@ def test_upload_empty_zip(tmp_path):
 
 
 def test_upload_multi_zip_endpoint(monkeypatch, tmp_path):
+    user, headers = _create_user_and_headers("multi_zip@example.com")
+
     zip_path = tmp_path / "multi.zip"
     with zipfile.ZipFile(zip_path, "w") as zipf:
         zipf.writestr("a/main.py", "print('x')")
@@ -149,7 +163,8 @@ def test_upload_multi_zip_endpoint(monkeypatch, tmp_path):
     with open(zip_path, "rb") as f:
         response = client.post(
             "/projects/upload/multi-zip",
-            files={"file": ("multi.zip", f, "application/zip")}
+            files={"file": ("multi.zip", f, "application/zip")},
+            headers=headers,
         )
 
     assert response.status_code == 200
@@ -159,12 +174,14 @@ def test_upload_multi_zip_endpoint(monkeypatch, tmp_path):
 
 
 def test_add_files_to_existing_project(tmp_path):
+    user, headers = _create_user_and_headers("add_files@example.com")
+
     project = db_manager.create_project({
         "name": "Upload Target",
         "file_path": "/tmp/upload-target",
         "project_type": "code",
         "file_count": 0,
-        "user_id": None,
+        "user_id": user.id,
     })
 
     file_to_add = tmp_path / "new_file.py"
@@ -173,7 +190,8 @@ def test_add_files_to_existing_project(tmp_path):
     with open(file_to_add, "rb") as f:
         response = client.post(
             f"/projects/{project.id}/upload/files",
-            files=[("files", ("new_file.py", f, "text/x-python"))]
+            files=[("files", ("new_file.py", f, "text/x-python"))],
+            headers=headers,
         )
 
     assert response.status_code == 200
@@ -183,11 +201,14 @@ def test_add_files_to_existing_project(tmp_path):
 
 
 def test_detect_type_project_not_found():
-    response = client.post("/projects/999999/analyze/detect-type")
+    _, headers = _create_user_and_headers("detect_type_not_found@example.com")
+    response = client.post("/projects/999999/analyze/detect-type", headers=headers)
     assert response.status_code == 404
 
 
 def test_analyze_coding_endpoint(monkeypatch, tmp_path):
+    user, headers = _create_user_and_headers("analyze_coding@example.com")
+
     code_dir = tmp_path / "code_project"
     code_dir.mkdir()
     (code_dir / "main.py").write_text("print('hello')")
@@ -196,12 +217,12 @@ def test_analyze_coding_endpoint(monkeypatch, tmp_path):
         "name": "Analyzed Project",
         "file_path": str(code_dir),
         "project_type": "code",
-        "user_id": None,
+        "user_id": user.id,
     })
 
     monkeypatch.setattr("src.Routers.projects.scan_coding_project", lambda path, user_id=None: project.id)
 
-    response = client.post(f"/projects/{project.id}/analyze/coding")
+    response = client.post(f"/projects/{project.id}/analyze/coding", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "created"
@@ -209,23 +230,27 @@ def test_analyze_coding_endpoint(monkeypatch, tmp_path):
 
 
 def test_analyze_coding_project_path_missing(monkeypatch):
+    user, headers = _create_user_and_headers("analyze_missing@example.com")
+
     project = db_manager.create_project({
         "name": "Missing Path Project",
         "file_path": "/definitely/missing/path",
         "project_type": "code",
-        "user_id": None,
+        "user_id": user.id,
     })
 
-    response = client.post(f"/projects/{project.id}/analyze/coding")
+    response = client.post(f"/projects/{project.id}/analyze/coding", headers=headers)
     assert response.status_code == 404
 
 
 def test_get_project_roles_returns_contributors():
+    user, headers = _create_user_and_headers("roles_get@example.com")
+
     project = db_manager.create_project({
         "name": "Role Project",
         "file_path": "/tmp/role-project",
         "project_type": "code",
-        "user_id": None,
+        "user_id": user.id,
     })
     db_manager.add_contributor_to_project({
         "project_id": project.id,
@@ -235,7 +260,7 @@ def test_get_project_roles_returns_contributors():
         "commit_count": 10,
     })
 
-    response = client.get(f"/projects/{project.id}/roles")
+    response = client.get(f"/projects/{project.id}/roles", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["project_id"] == project.id
@@ -244,11 +269,13 @@ def test_get_project_roles_returns_contributors():
 
 
 def test_assign_project_role_from_contributor(monkeypatch):
+    user, headers = _create_user_and_headers("roles_assign@example.com")
+
     project = db_manager.create_project({
         "name": "Role Assign Project",
         "file_path": "/tmp/role-assign-project",
         "project_type": "code",
-        "user_id": None,
+        "user_id": user.id,
     })
     db_manager.add_contributor_to_project({
         "project_id": project.id,
@@ -265,7 +292,8 @@ def test_assign_project_role_from_contributor(monkeypatch):
         json={
             "contributor": "bob",
             "role_type": "Backend Developer"
-        }
+        },
+        headers=headers,
     )
     assert response.status_code == 200
     body = response.json()
