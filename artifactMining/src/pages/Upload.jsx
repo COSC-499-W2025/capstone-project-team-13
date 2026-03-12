@@ -1,21 +1,25 @@
 import React, { useState } from "react";
 import "./Upload.css";
+import { useNavigate } from "react-router-dom";
 
-function UploadProject() {
+function Updates() {
+
+  const [mainTab, setMainTab] = useState("upload");
+  const [subTab, setSubTab] = useState("uploadProject");
 
   const [file, setFile] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
   const [status, setStatus] = useState("");
 
+  const [projects, setProjects] = useState([]);
+
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const handleFileChange = (e) => setFile(e.target.files[0]);
+  const handleThumbnailChange = (e) => setThumbnail(e.target.files[0]);
 
-  const handleThumbnailChange = (e) => {
-    setThumbnail(e.target.files[0]);
-  };
+  /* ---------- Upload Project ---------- */
 
   const uploadProject = async () => {
 
@@ -33,91 +37,249 @@ function UploadProject() {
 
     try {
 
-      const response = await fetch("http://127.0.0.1:8000/projects/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/projects/upload",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
+      if (!response.ok) throw new Error("Upload failed");
 
-      const data = await response.json();
-
-      setStatus("Project uploaded and analyzed successfully!");
-      console.log("Analysis result:", data);
+      await response.json();
+      setStatus("Project uploaded successfully!");
 
     } catch (err) {
+
       console.error(err);
       setStatus("Upload failed.");
+
     }
 
   };
 
+  /* ---------- Load Projects ---------- */
+
+  const loadProjects = async () => {
+
+    try {
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/projects",
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      const data = await response.json();
+
+      setProjects(data.projects || data);
+
+    } catch (error) {
+
+      console.error("Error loading projects:", error);
+
+    }
+
+  };
+
+  const openProject = (projectId) => {
+    navigate(`/projects/${projectId}`);
+  };
+
   return (
-    <div className="upload-wrapper">
+
+    <div className="manager-wrapper">
 
       <h1>Project Manager</h1>
 
-    <div className="upload-page">
-    
+      {/* TOP TABS */}
 
-      {/* Upload Section */}
-      <div className="upload-card">
+      <div className="top-tabs">
 
-        <h2>Upload Project</h2>
-
-        <label>Upload Project File / ZIP</label>
-        <input type="file" onChange={handleFileChange} />
-
-        <label>Upload Thumbnail (optional)</label>
-        <input type="file" onChange={handleThumbnailChange} />
-
-        <button onClick={uploadProject}>
-          Upload & Analyze
+        <button
+          className={mainTab === "upload" ? "active" : ""}
+          onClick={() => {
+            setMainTab("upload");
+            setSubTab("uploadProject");
+          }}
+        >
+          Upload
         </button>
 
-        <p>{status}</p>
+        <button
+          className={mainTab === "management" ? "active" : ""}
+          onClick={() => {
+            setMainTab("management");
+            setSubTab("viewProjects");
+          }}
+        >
+          Management
+        </button>
+
+        <button
+          className={mainTab === "ai" ? "active" : ""}
+          onClick={() => {
+            setMainTab("ai");
+            setSubTab("deleteInsights");
+          }}
+        >
+          AI Tools
+        </button>
 
       </div>
 
-      {/* Project Management */}
-      <div className="upload-card">
 
-        <h2>Project Management</h2>
+      <div className="manager-layout">
 
-        <button>View All Projects</button>
+        {/* LEFT MENU */}
 
-        <button>Sort / Score Projects</button>
+        <div className="side-menu">
 
-        <button>Add Files to Existing Project</button>
+          {mainTab === "upload" && (
+            <>
+              <button onClick={() => setSubTab("uploadProject")}>
+                Upload Project
+              </button>
+            </>
+          )}
 
-        <button>Manage Project Evidence</button>
+          {mainTab === "management" && (
+            <>
+              <button onClick={() => setSubTab("viewProjects")}>
+                View Projects
+              </button>
 
-        <button>Delete Project (Safe)</button>
+              <button>Add Files</button>
+              <button>Delete Project</button>
+              <button>Bulk Delete</button>
+            </>
+          )}
 
-        <button>Bulk Delete Projects</button>
+          {mainTab === "ai" && (
+            <>
+              <button>Delete AI Insights</button>
+              <button>Delete ALL Insights</button>
+            </>
+          )}
 
-      </div>
+        </div>
 
 
-      {/* AI Insights */}
-      <div className="upload-card">
+        {/* CONTENT PANEL */}
 
-        <h2>AI Insights</h2>
+        <div className="content-panel">
 
-        <button>Delete AI Insights (Single Project)</button>
+          {/* Upload Panel */}
 
-        <button>Delete ALL AI Insights</button>
+          {subTab === "uploadProject" && (
+
+          <div className="panel upload-panel">
+
+            <div className="upload-card">
+
+              <label className="upload-label">
+                Upload Project File / ZIP
+              </label>
+
+              <input
+                type="file"
+                className="upload-input"
+                onChange={handleFileChange}
+              />
+
+              <label className="upload-label">
+                Upload Thumbnail (optional)
+              </label>
+
+              <input
+                type="file"
+                className="upload-input"
+                onChange={handleThumbnailChange}
+              />
+
+              <button
+                className="upload-button"
+                onClick={uploadProject}
+              >
+                Upload & Analyze
+              </button>
+
+              <p className="status-text">{status}</p>
+
+            </div>
+
+          </div>
+
+        )}
+
+          {/* View Projects Panel */}
+
+          {subTab === "viewProjects" && (
+
+            <div className="panel">
+
+              <h2>Stored Projects</h2>
+
+              <button className="load-button" onClick={loadProjects}>
+                Load Projects
+              </button>
+
+              {projects.length === 0 ? (
+
+                <p>No projects uploaded yet.</p>
+
+              ) : (
+
+                <div className="project-list">
+
+                  {projects.map(project => (
+
+                    <div
+                      key={project.id}
+                      className="project-card"
+                      onClick={() => openProject(project.id)}
+                    >
+
+                      <img
+                        src={
+                          project.thumbnail_path
+                            ? `http://127.0.0.1:8000/${project.thumbnail_path}`
+                            : "/default-thumbnail.png"
+                        }
+                        className="project-thumbnail"
+                        alt="project"
+                      />
+
+                      <div className="project-info">
+
+                        <h3>{project.name || "Untitled Project"}</h3>
+
+                        <p>{project.language || "Code Project"}</p>
+
+                      </div>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              )}
+
+            </div>
+
+          )}
+
+        </div>
 
       </div>
 
     </div>
-    </div>
+
   );
 }
 
-export default UploadProject;
+export default Updates;
