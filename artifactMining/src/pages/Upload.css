@@ -31,14 +31,11 @@
 }
 
 /* MAIN LAYOUT */
-
 .manager-layout{
   display:flex;
   height:75vh;
 }
-
 /* LEFT MENU */
-
 .side-menu{
   width:220px;
   background:#1e293b;
@@ -67,7 +64,6 @@
   background:#3b82f6;
   color:white;
 }
-
 
 /* CONTENT PANEL */
 
