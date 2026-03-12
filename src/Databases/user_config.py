@@ -496,6 +496,13 @@ class ConfigManager:
             extension = self._normalize_extension(extension)
             excluded = self._normalized_extension_list(config.excluded_file_types)
 
+            if not extension:
+                config.excluded_file_types = excluded
+                session.commit()
+                session.refresh(config)
+                session.expunge(config)
+                return config
+
             if extension not in excluded:
                 excluded.append(extension)
             config.excluded_file_types = excluded
@@ -527,6 +534,13 @@ class ConfigManager:
             
             extension = self._normalize_extension(extension)
             excluded = self._normalized_extension_list(config.excluded_file_types)
+
+            if not extension:
+                config.excluded_file_types = excluded
+                session.commit()
+                session.refresh(config)
+                session.expunge(config)
+                return config
 
             if extension in excluded:
                 excluded.remove(extension)
