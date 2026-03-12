@@ -26,6 +26,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from src.Databases.database import db_manager
 from src.Resume.resumeGenerator import get_projects_with_bullets
 from src.Portfolio.portfolioFormatter import PortfolioFormatter
+from src.UserPrompts.config_integration import has_ai_consent
 
 _UUID_RE = re.compile(r"^[0-9a-f\-]{36}$", re.IGNORECASE)
 _GREEN   = "#2d6a4f"
@@ -52,6 +53,46 @@ def _role_line(education: list) -> str:
     return f"{e.get('degree_type','')} in {e.get('topic','')}".strip(" in")
 
 
+def _try_generate_ai_bullets(project) -> list[str]:
+    """
+    Attempt to generate AI resume bullets for a project and save them.
+    Returns the generated bullets, or [] if AI is unavailable or fails.
+    Called only when has_ai_consent() is True and the project has no stored bullets.
+    """
+    try:
+        from src.AI.ai_enhanced_summarizer import generate_resume_bullets
+        from src.Resume.resumeAnalytics import score_all_bullets
+
+        # Build a project dict matching what generate_resume_bullets expects
+        project_dict = {
+            "project_name": project.name,
+            "skills": [s.strip() for s in (project.skills or "").split(",") if s.strip()]
+                      if isinstance(project.skills, str)
+                      else (project.skills or []),
+            "file_count": project.file_count,
+            "lines_of_code": project.lines_of_code,
+            "success_score": getattr(project, "importance_score", 0) or 0,
+            "contribution_score": getattr(project, "contribution_score", 0) or 0,
+        }
+
+        bullets = generate_resume_bullets(project_dict, num_bullets=3)
+        if not bullets:
+            return []
+
+        # Persist so subsequent loads don't regenerate
+        scoring = score_all_bullets(bullets, project.project_type)
+        db_manager.save_resume_bullets(
+            project_id=project.id,
+            bullets=bullets,
+            header=project.name,
+            ats_score=scoring["overall_score"],
+        )
+        return bullets
+
+    except Exception:
+        return []
+
+
 # ── data gathering ────────────────────────────────────────────────────────────
 
 def get_resume_preview_data(user_id: int) -> dict[str, Any]:
@@ -75,106 +116,133 @@ def get_resume_preview_data(user_id: int) -> dict[str, Any]:
     for skill, count in sorted(skill_counts.items()):
         skills_by_level[_skill_level(count)].append(skill)
 
+    ai_enabled = has_ai_consent()
     has_bullets = {p.id for p in get_projects_with_bullets()}
     resume_projects = []
+
     for project in all_projects:
         if project.id in has_bullets:
             bd     = db_manager.get_resume_bullets(project.id) or {}
             header = _clean_header(bd.get("header", ""), project.name)
-            bullets, ats = bd.get("bullets", []), bd.get("ats_score")
+            bullets = bd.get("bullets", [])
+            ats     = bd.get("ats_score")
         else:
-            header, bullets, ats = project.name, [], None
-        resume_projects.append({"name": project.name, "header": header,
-                                 "bullets": bullets, "ats_score": ats})
+            header = project.name
+            ats    = None
+            # Auto-generate AI bullets if consent is granted
+            if ai_enabled:
+                bullets = _try_generate_ai_bullets(project)
+            else:
+                bullets = []
 
-    return {"name": f"{user.first_name} {user.last_name}", "email": user.email,
-            "education": [e.to_dict() for e in education], "awards": awards,
-            "skills_by_level": skills_by_level, "projects": resume_projects}
+        resume_projects.append({
+            "name":      project.name,
+            "header":    header,
+            "bullets":   bullets,
+            "ats_score": ats,
+        })
+
+    return {
+        "name":           f"{user.first_name} {user.last_name}",
+        "email":          user.email,
+        "education":      [e.to_dict() for e in education],
+        "awards":         awards,
+        "skills_by_level": skills_by_level,
+        "projects":       resume_projects,
+    }
 
 
 # ── PDF builder ───────────────────────────────────────────────────────────────
 
 def _build_pdf(data: dict[str, Any]) -> bytes:
     buf = io.BytesIO()
+    styles = getSampleStyleSheet()
+
+    GREEN = colors.HexColor(_GREEN)
+
+    name_style = ParagraphStyle("name", fontSize=22, textColor=GREEN,
+                                alignment=TA_CENTER, fontName="Times-Bold",
+                                spaceAfter=2)
+    role_style = ParagraphStyle("role", fontSize=11, textColor=colors.HexColor("#555555"),
+                                alignment=TA_CENTER, fontName="Times-Italic",
+                                spaceAfter=4)
+    contact_style = ParagraphStyle("contact", fontSize=8, textColor=colors.HexColor("#555555"),
+                                   alignment=TA_CENTER, spaceAfter=8)
+    section_style = ParagraphStyle("section", fontSize=10, textColor=GREEN,
+                                   fontName="Times-Bold", alignment=TA_CENTER,
+                                   spaceBefore=4, spaceAfter=2)
+    body_style = ParagraphStyle("body", fontSize=9, leading=13, spaceAfter=2)
+    label_style = ParagraphStyle("label", fontSize=9, fontName="Times-Bold",
+                                 spaceAfter=1)
+    italic_style = ParagraphStyle("italic", fontSize=8.5, fontName="Times-Italic",
+                                  textColor=colors.HexColor("#555555"), spaceAfter=2)
+    muted_style = ParagraphStyle("muted", fontSize=7.5,
+                                 textColor=colors.HexColor("#888888"), spaceAfter=4)
+
+    def rule():
+        return HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#b7c9bf"),
+                          spaceAfter=0, spaceBefore=0)
+
+    def section_block(title):
+        return [rule(), Paragraph(title, section_style), rule()]
+
     doc = SimpleDocTemplate(buf, pagesize=letter,
-                            leftMargin=0.7*inch, rightMargin=0.7*inch,
-                            topMargin=0.6*inch,  bottomMargin=0.6*inch)
-    base = getSampleStyleSheet()
-    G    = colors.HexColor(_GREEN)
+                            leftMargin=0.75*inch, rightMargin=0.75*inch,
+                            topMargin=0.6*inch, bottomMargin=0.6*inch)
+    story = []
 
-    def S(name, **kw):
-        return ParagraphStyle(name, parent=base["Normal"], **kw)
-
-    s_name  = S("PName", fontSize=22, fontName="Times-Bold",
-                alignment=TA_CENTER, leading=28, spaceAfter=6, textColor=G)
-    s_role  = S("PRole", fontSize=11, fontName="Times-Italic",
-                alignment=TA_CENTER, leading=16, spaceAfter=6)
-    s_cont  = S("PCont", fontSize=9, alignment=TA_CENTER, leading=14,
-                textColor=colors.HexColor("#444444"), spaceAfter=10)
-    s_sect  = S("PSect", fontSize=11, fontName="Times-Bold",
-                alignment=TA_CENTER, spaceBefore=10, spaceAfter=2, textColor=G)
-    s_body  = S("PBody", fontSize=9.5, spaceAfter=2, leading=14)
-    s_bold  = S("PBold", fontSize=9.5, fontName="Helvetica-Bold", spaceAfter=0, leading=13)
-    s_ital  = S("PItal", fontSize=9.5, fontName="Times-Italic", spaceAfter=2, leading=13)
-    s_right = S("PRight", fontSize=9.5, alignment=TA_RIGHT, leading=13)
-    s_nobul = S("PNoBul", fontSize=9, fontName="Times-Italic",
-                textColor=colors.HexColor("#888888"), spaceAfter=2, leading=13)
-
-    def HR(t=0.5, c=None):
-        return HRFlowable(width="100%", thickness=t, color=c or colors.HexColor("#aaaaaa"))
-
-    def section(title):
-        return [Spacer(1, 6), HR(), Paragraph(title, s_sect), HR(), Spacer(1, 4)]
-
-    story = [Paragraph(data["name"], s_name)]
-    role = _role_line(data["education"])
+    # Header
+    story.append(Paragraph(data.get("name", ""), name_style))
+    role = _role_line(data.get("education", []))
     if role:
-        story.append(Paragraph(role, s_role))
-    story += [Paragraph(data["email"], s_cont), HR(0.75, colors.HexColor("#cccccc"))]
+        story.append(Paragraph(role, role_style))
+    if data.get("email"):
+        story.append(Paragraph(data["email"], contact_style))
+    story.append(rule())
 
-    story += section("Education and Awards")
-    for edu in data["education"]:
+    # Education & Awards
+    story += section_block("Education and Awards")
+    for edu in data.get("education", []):
         start = (edu.get("start_date") or "")[:7].replace("-", "/")
         end   = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
-        tbl = Table([[Paragraph(f"{edu.get('degree_type','')} in {edu.get('topic','')}", s_bold),
-                      Paragraph(f"{start} - {end}", s_right)]],
-                    colWidths=["70%", "30%"])
-        tbl.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),
-                                 ("LEFTPADDING",(0,0),(-1,-1),0),
-                                 ("RIGHTPADDING",(0,0),(-1,-1),0),
-                                 ("TOPPADDING",(0,0),(-1,-1),0),
-                                 ("BOTTOMPADDING",(0,0),(-1,-1),2)]))
-        story += [tbl, Paragraph(edu.get("institution",""), s_ital), Spacer(1, 6)]
-    for award in data["awards"]:
-        story.append(Paragraph(f"  {award}", s_body))
-    if not data["education"] and not data["awards"]:
-        story.append(Paragraph("No education or awards on record.", s_body))
+        degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip()
+        row = [[Paragraph(degree, label_style),
+                Paragraph(f"{start} – {end}", ParagraphStyle("r", fontSize=9,
+                          alignment=TA_RIGHT, textColor=colors.HexColor("#555555")))]]
+        t = Table(row, colWidths=[4.5*inch, 2.5*inch])
+        t.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "BOTTOM"),
+                               ("BOTTOMPADDING", (0,0), (-1,-1), 0)]))
+        story.append(t)
+        story.append(Paragraph(edu.get("institution",""), italic_style))
+    for award in data.get("awards", []):
+        story.append(Paragraph(f"\u2014 {award}", body_style))
+    if not data.get("education") and not data.get("awards"):
+        story.append(Paragraph("No education or awards on record.", italic_style))
 
-    story += section("Skills")
+    # Skills
+    story += section_block("Skills")
     has_skills = False
-    for level, items in data["skills_by_level"].items():
+    for level, items in data.get("skills_by_level", {}).items():
         if items:
-            story.append(Paragraph(
-                f'<font name="Helvetica-Bold">{level} — </font>{" | ".join(items)}', s_body))
+            story.append(Paragraph(f"<b>{level}:</b> {', '.join(items)}", body_style))
             has_skills = True
     if not has_skills:
-        story.append(Paragraph("No skills extracted yet.", s_body))
+        story.append(Paragraph("No skills extracted yet.", italic_style))
 
-    story += section("Projects")
-    for proj in data["projects"]:
-        story.append(Paragraph(proj["name"], s_bold))
-        if proj["header"] and proj["header"] != proj["name"]:
-            story.append(Paragraph(proj["header"], s_ital))
-        if proj["bullets"]:
-            story.append(Paragraph("  ".join(proj["bullets"]), s_body))
+    # Projects
+    story += section_block("Projects")
+    for proj in data.get("projects", []):
+        story.append(Paragraph(proj["name"], label_style))
+        if proj.get("header") and proj["header"] != proj["name"]:
+            story.append(Paragraph(proj["header"], italic_style))
+        if proj.get("bullets"):
+            for b in proj["bullets"]:
+                story.append(Paragraph(f"\u2022 {b}", body_style))
         else:
-            story.append(Paragraph(
-                "No bullets generated yet. Use the CLI Resume menu to generate them.", s_nobul))
+            story.append(Paragraph("No bullets generated yet.", italic_style))
         if proj.get("ats_score"):
-            story.append(Paragraph(
-                f'<font color="#888888" size="7.5">ATS score: {proj["ats_score"]:.0f}/100</font>',
-                s_body))
-        story.append(Spacer(1, 8))
+            story.append(Paragraph(f"ATS score: {proj['ats_score']:.0f}/100", muted_style))
+        story.append(Spacer(1, 6))
 
     doc.build(story)
     return buf.getvalue()
@@ -184,55 +252,58 @@ def _build_pdf(data: dict[str, Any]) -> bytes:
 
 def _build_docx(data: dict[str, Any]) -> bytes:
     doc = Document()
-    for sec in doc.sections:
-        sec.top_margin = sec.bottom_margin = Pt(36)
-        sec.left_margin = sec.right_margin = Pt(50)
 
-    G = RGBColor(0x2D, 0x6A, 0x4F)
+    # Narrow margins
+    for section in doc.sections:
+        section.top_margin    = Pt(43)
+        section.bottom_margin = Pt(43)
+        section.left_margin   = Pt(54)
+        section.right_margin  = Pt(54)
 
-    def para(text="", bold=False, italic=False, size=10,
-             align=WD_ALIGN_PARAGRAPH.LEFT, color=None, space_after=4):
+    def para(text, bold=False, italic=False, size=10, align=None,
+             color=None, space_after=4):
         p = doc.add_paragraph()
-        p.alignment = align
         p.paragraph_format.space_after  = Pt(space_after)
         p.paragraph_format.space_before = Pt(0)
-        if text:
-            r = p.add_run(text)
-            r.bold, r.italic, r.font.size = bold, italic, Pt(size)
-            r.font.color.rgb = color or RGBColor(0x22, 0x22, 0x22)
+        if align:
+            p.alignment = align
+        r = p.add_run(text)
+        r.bold   = bold
+        r.italic = italic
+        r.font.size = Pt(size)
+        if color:
+            r.font.color.rgb = RGBColor(*bytes.fromhex(color.lstrip("#")))
         return p
 
-    def hr(color_hex="aaaaaa"):
-        p = doc.add_paragraph()
-        p.paragraph_format.space_after = p.paragraph_format.space_before = Pt(0)
-        pPr = p._p.get_or_add_pPr()
-        pBdr = OxmlElement("w:pBdr")
-        bot  = OxmlElement("w:bottom")
-        for k, v in [("w:val","single"),("w:sz","4"),("w:space","1"),("w:color",color_hex)]:
-            bot.set(qn(k), v)
-        pBdr.append(bot)
-        pPr.append(pBdr)
-
     def section_heading(title):
-        hr(); para(title, bold=True, size=11,
-                   align=WD_ALIGN_PARAGRAPH.CENTER, color=G, space_after=2); hr()
+        doc.add_paragraph().paragraph_format.space_after = Pt(0)
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after  = Pt(0)
+        p.paragraph_format.space_before = Pt(0)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run(title)
+        r.bold = True; r.font.size = Pt(11)
+        r.font.color.rgb = RGBColor(0x2d, 0x6a, 0x4f)
+        doc.add_paragraph().paragraph_format.space_after = Pt(0)
 
-    para(data["name"], bold=True, size=20,
-         align=WD_ALIGN_PARAGRAPH.CENTER, color=G, space_after=6)
-    role = _role_line(data["education"])
+    # Name / contact
+    para(data.get("name",""), bold=True, size=20,
+         align=WD_ALIGN_PARAGRAPH.CENTER, color=_GREEN, space_after=2)
+    role = _role_line(data.get("education", []))
     if role:
-        para(role, italic=True, size=11, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=4)
-    para(data["email"], size=9, align=WD_ALIGN_PARAGRAPH.CENTER,
-         color=RGBColor(0x44,0x44,0x44), space_after=8)
-    hr("cccccc")
+        para(role, italic=True, size=11,
+             align=WD_ALIGN_PARAGRAPH.CENTER, color="#555555", space_after=4)
+    if data.get("email"):
+        para(data["email"], size=9,
+             align=WD_ALIGN_PARAGRAPH.CENTER, color="#555555", space_after=8)
 
     section_heading("Education and Awards")
-    for edu in data["education"]:
+    for edu in data.get("education", []):
         start  = (edu.get("start_date") or "")[:7].replace("-", "/")
         end    = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
         degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}"
         p = doc.add_paragraph()
-        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.space_after  = Pt(0)
         p.paragraph_format.space_before = Pt(4)
         r1 = p.add_run(degree); r1.bold = True; r1.font.size = Pt(9.5)
         p.add_run("\t")
@@ -243,35 +314,36 @@ def _build_docx(data: dict[str, Any]) -> bytes:
         tab.set(qn("w:val"), "right"); tab.set(qn("w:pos"), "8640")
         tabs.append(tab); pPr.append(tabs)
         para(edu.get("institution",""), italic=True, size=9.5, space_after=6)
-    for award in data["awards"]:
+    for award in data.get("awards", []):
         para(f"  {award}", size=9.5, space_after=3)
-    if not data["education"] and not data["awards"]:
-        para("No education or awards on record.", size=9.5)
+    if not data.get("education") and not data.get("awards"):
+        para("No education or awards on record.", italic=True, size=9.5)
 
     section_heading("Skills")
     has_skills = False
-    for level, items in data["skills_by_level"].items():
+    for level, items in data.get("skills_by_level", {}).items():
         if items:
             p = doc.add_paragraph()
-            p.paragraph_format.space_after = Pt(3)
+            p.paragraph_format.space_after  = Pt(3)
             p.paragraph_format.space_before = Pt(0)
             r1 = p.add_run(f"{level} — "); r1.bold = True; r1.font.size = Pt(9.5)
             p.add_run(" | ".join(items)).font.size = Pt(9.5)
             has_skills = True
     if not has_skills:
-        para("No skills extracted yet.", size=9.5)
+        para("No skills extracted yet.", italic=True, size=9.5)
 
     section_heading("Projects")
-    for proj in data["projects"]:
+    for proj in data.get("projects", []):
         para(proj["name"], bold=True, size=9.5, space_after=1)
-        if proj["header"] and proj["header"] != proj["name"]:
+        if proj.get("header") and proj["header"] != proj["name"]:
             para(proj["header"], italic=True, size=9.5, space_after=2)
-        if proj["bullets"]:
+        if proj.get("bullets"):
             para("  ".join(proj["bullets"]), size=9.5, space_after=2)
         else:
             p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(2)
-            r = p.add_run("No bullets generated yet. Use the CLI Resume menu to generate them.")
-            r.italic = True; r.font.size = Pt(9); r.font.color.rgb = RGBColor(0x88,0x88,0x88)
+            r = p.add_run("No bullets generated yet.")
+            r.italic = True; r.font.size = Pt(9)
+            r.font.color.rgb = RGBColor(0x88,0x88,0x88)
         if proj.get("ats_score"):
             p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(6)
             r = p.add_run(f"ATS score: {proj['ats_score']:.0f}/100")
