@@ -7,6 +7,7 @@ import shutil
 from src.Databases.database import db_manager
 from src.Services.projects_service import process_uploaded_path, upload_project_thumbnail
 from src.Services.auth_service import get_current_user_id, require_auth
+from src.UserPrompts.config_integration import has_ai_consent
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -95,6 +96,56 @@ def get_project(
         )
     
     return project.to_dict(include_counts=True)
+
+@router.post("/{project_id}/analyze")
+def analyze_project_with_ai(
+    project_id: int,
+    user_id: Optional[int] = Depends(get_current_user_id),
+):
+    """
+    Generate an AI description for a project and persist it.
+
+    Requires AI consent to be granted (via Settings -> Consent).
+    Returns the updated project with the new ai_description field.
+    """
+    if not has_ai_consent():
+        raise HTTPException(
+            status_code=403,
+            detail="AI consent not granted. Enable AI consent in Settings first.",
+        )
+
+    project = db_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Optional ownership check (non-fatal for guest projects)
+    if user_id and project.user_id and project.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    try:
+        from src.AI.ai_project_analyzer import AIProjectAnalyzer
+
+        analyzer = AIProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_id)
+
+        if "error" in results:
+            raise HTTPException(status_code=500, detail=results["error"])
+
+        # Persist ai_description to the database
+        analyzer.update_database_with_analysis(project_id, results)
+
+        # Return refreshed project
+        updated = db_manager.get_project(project_id)
+        return {
+            "message": "AI analysis complete",
+            "ai_description": results.get("overview", ""),
+            "project": updated.to_dict() if updated else {},
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 @router.post("/{project_id}/thumbnail")
 async def upload_thumbnail(
