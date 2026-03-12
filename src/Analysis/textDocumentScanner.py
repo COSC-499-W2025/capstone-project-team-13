@@ -78,6 +78,26 @@ class TextDocumentScanner:
             '.trash', 'trash',  # Trash folders
             'temp', 'tmp', '.tmp',  # Temporary folders
         }
+        self.excluded_file_types = self._load_excluded_file_types()
+
+    def _load_excluded_file_types(self) -> set[str]:
+        """Load normalized excluded file extensions from user config."""
+        try:
+            config = config_manager.get_or_create_config()
+            raw_extensions = getattr(config, 'excluded_file_types', []) or []
+        except Exception:
+            return set()
+
+        normalized_extensions = set()
+        for extension in raw_extensions:
+            normalized_extension = str(extension).strip().lower()
+            if not normalized_extension:
+                continue
+            if not normalized_extension.startswith('.'):
+                normalized_extension = f'.{normalized_extension}'
+            normalized_extensions.add(normalized_extension)
+
+        return normalized_extensions
     
     def scan_and_store(self, user_id: Optional[int] = None) -> int:
         """
@@ -233,6 +253,11 @@ class TextDocumentScanner:
             """Validate a path as a 'text' file and add to self.text_files if valid."""
             path_str = str(path)
             file_ext = path.suffix.lower()
+
+            # 0) Respect user-configured excluded file extensions
+            if file_ext in self.excluded_file_types:
+                print(f"Skipping user-excluded file type: {path_str}")
+                return
 
             # 1) First: global format check (ALLOWED_FORMATS)
             try:
@@ -425,7 +450,7 @@ class TextDocumentScanner:
         }
 
 
-    def _store_in_database(self, metrics: Dict[str, Any]) -> int:
+    def _store_in_database(self, metrics: Dict[str, Any], user_id: Optional[int] = None) -> int:
         """Store project data in database"""
         
         # Prepare project data

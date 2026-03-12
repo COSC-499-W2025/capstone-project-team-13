@@ -8,6 +8,7 @@ import sys
 import tempfile
 import shutil
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -291,6 +292,21 @@ This report summarizes the key findings and recommendations.
         
         # Should count exactly 10 words
         self.assertEqual(metrics['word_count'], 10)
+
+    @patch('src.Analysis.textDocumentScanner.config_manager')
+    def test_respects_config_excluded_file_types(self, mock_config_manager):
+        """Test scanner excludes configured file extensions from discovery"""
+        mock_config = Mock()
+        mock_config.excluded_file_types = ['.md', 'txt']
+        mock_config_manager.get_or_create_config.return_value = mock_config
+
+        scanner = TextDocumentScanner(str(self.document_dir))
+        scanner._find_text_files()
+
+        file_extensions = {path.suffix.lower() for path in scanner.text_files}
+        self.assertNotIn('.txt', file_extensions)
+        self.assertNotIn('.md', file_extensions)
+        self.assertEqual(len(scanner.text_files), 1)
 
 
 class TestTextDocumentScannerEdgeCases(unittest.TestCase):
