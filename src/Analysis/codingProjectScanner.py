@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
 
-
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from src.UserPrompts.config_integration import config_manager
 from src.Analysis.file_hasher import compute_file_hash
 from src.Databases.database import db_manager
 from src.Analysis.codeIdentifier import identify_language_and_framework, LANGUAGE_BY_EXTENSION
@@ -28,38 +28,64 @@ class CodingProjectScanner:
     
     def __init__(self, project_path: str):
         """
-        Initialize scanner for a coding project directory
-        
+        Initialize scanner for a coding project directory or single code file
+
         Args:
-            project_path: Path to coding project root directory
-        
+            project_path: Path to coding project root directory OR a single file
+
         Raises:
-            ValueError: If path doesn't exist or isn't a directory
+            ValueError: If path doesn't exist
         """
         self.project_path = Path(project_path).resolve()
+
         if not self.project_path.exists():
             raise ValueError(f"Project path does not exist: {project_path}")
-        
-        if not self.project_path.is_dir():
-            raise ValueError(f"Project path must be a directory, not a file: {project_path}")
-        
-        self.project_name = self.project_path.name
-        self.single_file = False
-        
+
+        # Allow either a directory or a file
+        if self.project_path.is_file():
+            self.single_file = True
+            self.project_name = self.project_path.stem
+        elif self.project_path.is_dir():
+            self.single_file = False
+            self.project_name = self.project_path.name
+        else:
+            raise ValueError(f"Project path must be a file or directory: {project_path}")
+
+        # Load excluded file types from config
+        self.excluded_file_types = self._load_excluded_file_types()
+
         # Data storage
         self.code_files = []  # List of code file paths
         self.languages = set()
         self.frameworks = set()
         self.all_skills = {}
         self.all_keywords = []
-        
+
         # Directories to skip during scanning
         self.skip_dirs = {
             'node_modules', '__pycache__', '.git', '.venv', 'venv',
             'env', 'dist', 'build', '.next', '.cache', 'vendor',
             '.pytest_cache', 'coverage', '.mypy_cache', '__MACOSX'
         }
-    
+    def _load_excluded_file_types(self) -> set[str]:
+        """Load normalized excluded file extensions from user config."""
+        try:
+            config = config_manager.get_or_create_config()
+            raw_extensions = getattr(config, 'excluded_file_types', []) or []
+        except Exception:
+            return set()
+
+        normalized_extensions = set()
+        for extension in raw_extensions:
+            normalized_extension = str(extension).strip().lower()
+            if not normalized_extension:
+                continue
+            if not normalized_extension.startswith('.'):
+                normalized_extension = f'.{normalized_extension}'
+            normalized_extensions.add(normalized_extension)
+
+        return normalized_extensions
+
     def scan_and_store(self, user_id: Optional[int] = None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
@@ -246,48 +272,55 @@ class CodingProjectScanner:
         return project_id
         
     def _find_code_files(self):
-        """Find all code files in the project directory using existing config"""
-        
+        """Find all code files in the project directory or validate a single file."""
+
+        def process_file(file_path: Path):
+            # Skip hidden files
+            if file_path.name.startswith('.'):
+                return
+
+            file_ext = file_path.suffix.lower()
+
+            # 0) Respect excluded file types from user config
+            if file_ext in self.excluded_file_types:
+                print(f"Skipping excluded file type: {file_path} (ext={file_ext})")
+                return
+
+            # 1) Global format check
+            try:
+                check_file_format(str(file_path))
+            except InvalidFileFormatError as e:
+                print(f"Skipping unsupported file: {file_path} — {e}")
+                return
+
+            # 2) Only allow files with known code extensions
+            if file_ext not in LANGUAGE_BY_EXTENSION:
+                print(f"Skipping file with unsupported code extension: {file_path} (ext={file_ext})")
+                return
+
+            # 3) Verify content is actually code
+            try:
+                sniff_type = sniff_supertype(str(file_path))
+                if sniff_type != "code":
+                    print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
+                    return
+            except Exception as e:
+                print(f"Skipping file due to sniffing error: {file_path} — {e}")
+                return
+
+            self.code_files.append(file_path)
+
+        # Single-file mode
+        if self.single_file:
+            process_file(self.project_path)
+            return
+
         # Directory mode
         for root, dirs, files in os.walk(self.project_path):
-            # Remove skip directories from dirs list
             dirs[:] = [d for d in dirs if d not in self.skip_dirs and not d.startswith('.')]
 
             for filename in files:
-                # Skip hidden files
-                if filename.startswith('.'):
-                    continue
-
-                file_path = Path(root) / filename
-
-                # 1) First: global format check (ALLOWED_FORMATS)
-                try:
-                    check_file_format(str(file_path))
-                except InvalidFileFormatError as e:
-                    # ✅ Now you'll see this for disallowed formats like .zip
-                    print(f"Skipping unsupported file: {file_path} — {e}")
-                    continue
-
-                file_ext = file_path.suffix.lower()
-
-                # 2) Only treat files with known code extensions as "code project" files
-                if file_ext not in LANGUAGE_BY_EXTENSION:
-                    # Optional log; comment out if it's too noisy
-                    print(f"Skipping file with unsupported code extension: {file_path} (ext={file_ext})")
-                    continue
-
-                # 3) Sniff actual file content to verify it's code
-                try:
-                    sniff_type = sniff_supertype(str(file_path))
-                    if sniff_type != "code":
-                        print(f"Skipping file due to content mismatch: {file_path} (sniffed as {sniff_type})")
-                        continue
-                except Exception as e:
-                    print(f"Skipping file due to sniffing error: {file_path} — {e}")
-                    continue
-
-                # If all checks pass, store the file
-                self.code_files.append(file_path)
+                process_file(Path(root) / filename)
 
 
     
@@ -338,8 +371,10 @@ class CodingProjectScanner:
         """Analyze technical skills using refined coding skill extractor"""
 
         try:
+            analysis_root = self.project_path.parent if self.single_file else self.project_path
+
             result = analyze_coding_skills_refined(
-                folder_path=str(self.project_path),
+                folder_path=str(analysis_root),
                 file_extensions={".py", ".js", ".ts", ".java", ".cpp", ".c", ".html", ".css"}
             )
         except Exception as e:
@@ -349,41 +384,33 @@ class CodingProjectScanner:
             self.unified_skills = set()
             return
 
-        # --- Raw outputs from analyzer ---
         skill_details = result.get("skills", {})
         self.skill_combinations = result.get("skill_combinations", {})
 
-        # --- Filtered skill containers ---
         self.all_skills = {}
         self.unified_skills = set()
-        MIN_SKILL_SCORE = 0.01   # minimum normalized score to include
-
-        # Only keep subskill groups we care about
+        MIN_SKILL_SCORE = 0.01
         ALLOWED_SUBSKILL_GROUPS = {"libraries", "tools"}
 
         for skill, data in skill_details.items():
             score = data.get("score", 0)
 
-            # Only include top-level skills with a significant score
             if score < MIN_SKILL_SCORE:
                 continue
 
-            # --- Collect only subskills that actually appear ---
             subskills_cleaned = {}
             for group, items in data.get("subskills", {}).items():
                 if group not in ALLOWED_SUBSKILL_GROUPS:
                     continue
                 for subskill, count in items.items():
-                    if count > 0:  # Only include if detected in this project
+                    if count > 0:
                         subskills_cleaned[subskill] = count
 
-            # Store final top-level skill + subskills
             self.all_skills[skill] = {
                 "score": score,
                 "subskills": subskills_cleaned
             }
 
-            # Unified set for printing
             self.unified_skills.add(skill)
 
         self._print_skills()
@@ -507,3 +534,4 @@ if __name__ == "__main__":
     else:
         print("\n✗ Failed to scan project.")
         sys.exit(1)
+
