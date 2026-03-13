@@ -40,6 +40,22 @@ export default function Settings() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  const [privacySettings, setPrivacySettings] = useState({
+    anonymous_mode: false,
+    store_file_contents: true,
+    store_contributor_names: true,
+    store_file_paths: true,
+    max_file_size_scan: 0,
+    excluded_folders: [],
+    excluded_file_types: [],
+  });
+
+  const [privacyLoading, setPrivacyLoading] = useState(false);
+  const [privacySaving, setPrivacySaving] = useState(false);
+
+  const [newExcludedFolder, setNewExcludedFolder] = useState("");
+  const [newExcludedFileType, setNewExcludedFileType] = useState("");
+  
   useEffect(() => {
     if (activeSection === "account") {
       fetchCurrentUser();
@@ -49,7 +65,211 @@ export default function Settings() {
     if (activeSection === "consent") {
       fetchConsentStatuses();
     }
+
+    if (activeSection === "privacy") {
+      fetchPrivacySettings();
+    }
   }, [activeSection]);
+
+  async function fetchPrivacySettings() {
+    try {
+      setPrivacyLoading(true);
+      setError("");
+      setMessage("");
+
+      const response = await fetch(`${API_BASE}/configuration/privacy-settings`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch privacy settings");
+      }
+
+      const data = await response.json();
+
+      setPrivacySettings({
+        anonymous_mode: data.anonymous_mode ?? false,
+        store_file_contents: data.store_file_contents ?? true,
+        store_contributor_names: data.store_contributor_names ?? true,
+        store_file_paths: data.store_file_paths ?? true,
+        max_file_size_scan: data.max_file_size_scan ?? 0,
+        excluded_folders: data.excluded_folders ?? [],
+        excluded_file_types: data.excluded_file_types ?? [],
+      });
+    } catch (err) {
+      console.error(err);
+      setError("Could not load privacy settings.");
+    } finally {
+      setPrivacyLoading(false);
+    }
+  }
+
+  async function updatePrivacySettings() {
+    try {
+      setPrivacySaving(true);
+      setError("");
+      setMessage("");
+
+      const response = await fetch(`${API_BASE}/configuration/privacy-settings`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          anonymous_mode: privacySettings.anonymous_mode,
+          store_file_contents: privacySettings.store_file_contents,
+          store_contributor_names: privacySettings.store_contributor_names,
+          store_file_paths: privacySettings.store_file_paths,
+          max_file_size_scan: Number(privacySettings.max_file_size_scan),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to update privacy settings");
+      }
+
+      setMessage("Privacy settings updated successfully.");
+      await fetchPrivacySettings();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Could not update privacy settings.");
+    } finally {
+      setPrivacySaving(false);
+    }
+  }
+  async function addExcludedFolder() {
+    const folderPath = newExcludedFolder.trim();
+    if (!folderPath) return;
+
+    try {
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_BASE}/configuration/privacy-settings/excluded-folders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            folder_path: folderPath,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to add excluded folder");
+      }
+
+      setNewExcludedFolder("");
+      setMessage("Excluded folder added successfully.");
+      await fetchPrivacySettings();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Could not add excluded folder.");
+    }
+  }
+
+  async function removeExcludedFolder(folder) {
+    const folderPath = folder.trim();
+
+    try {
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_BASE}/configuration/privacy-settings/excluded-folders`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            folder_path: folderPath,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to remove excluded folder");
+      }
+
+      setMessage("Excluded folder removed successfully.");
+      await fetchPrivacySettings();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Could not remove excluded folder.");
+    }
+  }
+
+  async function addExcludedFileType() {
+    const fileType = newExcludedFileType.trim();
+    if (!fileType) return;
+
+    try {
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_BASE}/configuration/privacy-settings/excluded-file-types`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            file_type: fileType,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to add excluded file type");
+      }
+
+      setNewExcludedFileType("");
+      setMessage("Excluded file type added successfully.");
+      await fetchPrivacySettings();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Could not add excluded file type.");
+    }
+  }
+  async function removeExcludedFileType(fileType) {
+    const cleanedFileType = fileType.trim();
+
+    try {
+      setError("");
+      setMessage("");
+
+      const response = await fetch(
+        `${API_BASE}/configuration/privacy-settings/excluded-file-types`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            file_type: cleanedFileType,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to remove excluded file type");
+      }
+
+      setMessage("Excluded file type removed successfully.");
+      await fetchPrivacySettings();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Could not remove excluded file type.");
+    }
+  }
 
   async function fetchConsentStatuses() {
     setError("");
@@ -230,6 +450,24 @@ export default function Settings() {
     ) : (
       <span className="settings-badge settings-badge-revoked">Not Granted</span>
     );
+  }
+
+  function handlePrivacyInputChange(e) {
+    const { name, value } = e.target;
+
+    setPrivacySettings((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  function handlePrivacyCheckboxChange(e) {
+    const { name, checked } = e.target;
+
+    setPrivacySettings((prev) => ({
+      ...prev,
+      [name]: checked,
+    }));
   }
   function handleSignupChange(e) {
     const { name, value } = e.target;
@@ -614,18 +852,212 @@ export default function Settings() {
         <div className="settings-section-panel">
           <h2>Privacy Settings</h2>
           <p className="settings-section-description">
-            Control how data is stored and managed.
+            Control how data is stored and manage excluded folders and file types.
           </p>
 
-          <div className="settings-placeholder-card">
-            <h3>Data Storage</h3>
-            <p>Settings such as file storage, paths, contributor names, and anonymous mode can go here.</p>
-          </div>
+          {(message || error) && (
+            <div className="settings-alerts">
+              {message && (
+                <div className="settings-alert settings-alert-success">
+                  {message}
+                </div>
+              )}
+              {error && (
+                <div className="settings-alert settings-alert-error">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
 
-          <div className="settings-placeholder-card">
-            <h3>Visibility</h3>
-            <p>Future privacy controls and data preferences can be added here.</p>
-          </div>
+          {privacyLoading ? (
+            <p>Loading privacy settings...</p>
+          ) : (
+            <div className="settings-content-grid">
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div>
+                    <h3>Privacy Controls</h3>
+                    <p>Update how project and file data is handled.</p>
+                  </div>
+                </div>
+
+                <div className="settings-card-body">
+                  <label className="settings-checkbox-row">
+                    <input
+                      type="checkbox"
+                      name="anonymous_mode"
+                      checked={privacySettings.anonymous_mode}
+                      onChange={handlePrivacyCheckboxChange}
+                    />
+                    <span>Anonymous Mode</span>
+                  </label>
+
+                  <label className="settings-checkbox-row">
+                    <input
+                      type="checkbox"
+                      name="store_file_contents"
+                      checked={privacySettings.store_file_contents}
+                      onChange={handlePrivacyCheckboxChange}
+                    />
+                    <span>Store File Contents</span>
+                  </label>
+
+                  <label className="settings-checkbox-row">
+                    <input
+                      type="checkbox"
+                      name="store_contributor_names"
+                      checked={privacySettings.store_contributor_names}
+                      onChange={handlePrivacyCheckboxChange}
+                    />
+                    <span>Store Contributor Names</span>
+                  </label>
+
+                  <label className="settings-checkbox-row">
+                    <input
+                      type="checkbox"
+                      name="store_file_paths"
+                      checked={privacySettings.store_file_paths}
+                      onChange={handlePrivacyCheckboxChange}
+                    />
+                    <span>Store File Paths</span>
+                  </label>
+
+                  <label className="settings-label">
+                    Max File Size Scan (bytes)
+                    <input
+                      className="settings-input"
+                      type="number"
+                      name="max_file_size_scan"
+                      value={privacySettings.max_file_size_scan}
+                      onChange={handlePrivacyInputChange}
+                      min="0"
+                    />
+                  </label>
+                </div>
+
+                <div className="settings-card-actions">
+                  <button
+                    className="settings-button settings-button-primary"
+                    type="button"
+                    onClick={updatePrivacySettings}
+                    disabled={privacySaving}
+                  >
+                    {privacySaving ? "Saving..." : "Save Privacy Settings"}
+                  </button>
+
+                  <button
+                    className="settings-button settings-button-refresh"
+                    type="button"
+                    onClick={fetchPrivacySettings}
+                    disabled={privacyLoading}
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div>
+                    <h3>Excluded Folders</h3>
+                    <p>Folders listed here will be ignored by the system.</p>
+                  </div>
+                </div>
+
+                <div className="settings-card-body">
+                  <div className="settings-inline-form">
+                    <input
+                      className="settings-input"
+                      type="text"
+                      placeholder="Enter folder path"
+                      value={newExcludedFolder}
+                      onChange={(e) => setNewExcludedFolder(e.target.value)}
+                    />
+                    <button
+                      className="settings-button settings-button-primary"
+                      type="button"
+                      onClick={addExcludedFolder}
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {privacySettings.excluded_folders.length > 0 ? (
+                    <ul className="settings-list">
+                      {privacySettings.excluded_folders.map((folder, index) => (
+                        <li
+                          key={`${folder}-${index}`}
+                          className="settings-list-item-row"
+                        >
+                          <span>{folder}</span>
+                          <button
+                            className="settings-button settings-button-secondary"
+                            type="button"
+                            onClick={() => removeExcludedFolder(folder)}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No excluded folders set.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div>
+                    <h3>Excluded File Types</h3>
+                    <p>File types listed here will be skipped during scanning.</p>
+                  </div>
+                </div>
+
+                <div className="settings-card-body">
+                  <div className="settings-inline-form">
+                    <input
+                      className="settings-input"
+                      type="text"
+                      placeholder="Enter file type, e.g. .log"
+                      value={newExcludedFileType}
+                      onChange={(e) => setNewExcludedFileType(e.target.value)}
+                    />
+                    <button
+                      className="settings-button settings-button-primary"
+                      type="button"
+                      onClick={addExcludedFileType}
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {privacySettings.excluded_file_types.length > 0 ? (
+                    <ul className="settings-list">
+                      {privacySettings.excluded_file_types.map((fileType, index) => (
+                        <li
+                          key={`${fileType}-${index}`}
+                          className="settings-list-item-row"
+                        >
+                          <span>{fileType}</span>
+                          <button
+                            className="settings-button settings-button-secondary"
+                            type="button"
+                            onClick={() => removeExcludedFileType(fileType)}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No excluded file types set.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }

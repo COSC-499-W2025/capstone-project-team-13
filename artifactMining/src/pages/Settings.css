@@ -394,3 +394,60 @@
     width: 100%;
   }
 }
+
+.settings-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: #d8deff;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.settings-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #a349ff;
+  cursor: pointer;
+}
+
+.settings-inline-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.settings-inline-form .settings-input {
+  flex: 1;
+}
+
+.settings-list-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(120, 132, 255, 0.16);
+}
+
+.settings-list-item-row span {
+  color: #dbe2ff;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .settings-inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-list-item-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
