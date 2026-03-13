@@ -8,12 +8,33 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.mainAPI import app
+from src.Databases.database import db_manager
+from src.Services.auth_service import create_access_token, hash_password
 
 current_dir = os.path.dirname(__file__)
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.insert(0, project_root)
 
 client = TestClient(app)
+
+
+def _create_user_and_headers(email: str = "projects_test@example.com"):
+    user = db_manager.create_user({
+        "first_name": "Test",
+        "last_name": "User",
+        "email": email,
+        "password_hash": hash_password("password123"),
+    })
+    token = create_access_token(user.id)
+    return user, {"Authorization": f"Bearer {token}"}
+
+
+def setup_function():
+    db_manager.clear_all_data()
+
+
+def teardown_function():
+    db_manager.clear_all_data()
 
 
 # Helper: create a zip project
@@ -125,5 +146,229 @@ def test_upload_empty_zip(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["status"] in ("skipped", "exists")
+
+
+def test_upload_multi_zip_endpoint(monkeypatch, tmp_path):
+    user, headers = _create_user_and_headers("multi_zip@example.com")
+
+    zip_path = tmp_path / "multi.zip"
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        zipf.writestr("a/main.py", "print('x')")
+
+    monkeypatch.setattr(
+        "src.Routers.projects.processZipFile",
+        lambda path, user_id=None: [{"name": "a", "type": "code"}]
+    )
+
+    with open(zip_path, "rb") as f:
+        response = client.post(
+            "/projects/upload/multi-zip",
+            files={"file": ("multi.zip", f, "application/zip")},
+            headers=headers,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "processed"
+    assert data["count"] == 1
+
+
+def test_add_files_to_existing_project(tmp_path):
+    user, headers = _create_user_and_headers("add_files@example.com")
+
+    project = db_manager.create_project({
+        "name": "Upload Target",
+        "file_path": "/tmp/upload-target",
+        "project_type": "code",
+        "file_count": 0,
+        "user_id": user.id,
+    })
+
+    file_to_add = tmp_path / "new_file.py"
+    file_to_add.write_text("print('new')")
+
+    with open(file_to_add, "rb") as f:
+        response = client.post(
+            f"/projects/{project.id}/upload/files",
+            files=[("files", ("new_file.py", f, "text/x-python"))],
+            headers=headers,
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "updated"
+    assert payload["files_added"] == 1
+
+
+def test_detect_type_project_not_found():
+    _, headers = _create_user_and_headers("detect_type_not_found@example.com")
+    response = client.post("/projects/999999/analyze/detect-type", headers=headers)
+    assert response.status_code == 404
+
+
+def test_analyze_coding_endpoint(monkeypatch, tmp_path):
+    user, headers = _create_user_and_headers("analyze_coding@example.com")
+
+    code_dir = tmp_path / "code_project"
+    code_dir.mkdir()
+    (code_dir / "main.py").write_text("print('hello')")
+
+    project = db_manager.create_project({
+        "name": "Analyzed Project",
+        "file_path": str(code_dir),
+        "project_type": "code",
+        "user_id": user.id,
+    })
+
+    monkeypatch.setattr("src.Routers.projects.scan_coding_project", lambda path, user_id=None: project.id)
+
+    response = client.post(f"/projects/{project.id}/analyze/coding", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "created"
+    assert data["project_id"] == project.id
+
+
+def test_analyze_coding_project_path_missing(monkeypatch):
+    user, headers = _create_user_and_headers("analyze_missing@example.com")
+
+    project = db_manager.create_project({
+        "name": "Missing Path Project",
+        "file_path": "/definitely/missing/path",
+        "project_type": "code",
+        "user_id": user.id,
+    })
+
+    response = client.post(f"/projects/{project.id}/analyze/coding", headers=headers)
+    assert response.status_code == 404
+
+
+def test_get_project_roles_returns_contributors():
+    user, headers = _create_user_and_headers("roles_get@example.com")
+
+    project = db_manager.create_project({
+        "name": "Role Project",
+        "file_path": "/tmp/role-project",
+        "project_type": "code",
+        "user_id": user.id,
+    })
+    db_manager.add_contributor_to_project({
+        "project_id": project.id,
+        "name": "alice",
+        "contributor_identifier": "alice@example.com",
+        "contribution_percent": 55.0,
+        "commit_count": 10,
+    })
+
+    response = client.get(f"/projects/{project.id}/roles", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["project_id"] == project.id
+    assert len(data["contributors"]) == 1
+    assert data["contributors"][0]["name"] == "alice"
+
+
+def test_multi_zip_upload_projects_visible_to_owner(monkeypatch, tmp_path):
+    """
+    Regression: projects created via POST /projects/upload/multi-zip must appear
+    when the same authenticated user calls GET /projects.
+    Previously processZipFile was invoked without user_id, so every project it
+    created was stored with user_id=None (guest) and was therefore invisible to
+    the uploading user.
+    """
+    user, headers = _create_user_and_headers("multi_zip_visible@example.com")
+
+    zip_path = tmp_path / "multi.zip"
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        zipf.writestr("proj_a/main.py", "print('a')")
+
+    def fake_process_zip(path, user_id=None):
+        project = db_manager.create_project({
+            "name": "proj_a",
+            "file_path": path,
+            "project_type": "code",
+            "user_id": user_id,          # must be the caller's user_id, not None
+        })
+        return [{"name": "proj_a", "type": "code", "database_id": project.id}]
+
+    monkeypatch.setattr("src.Routers.projects.processZipFile", fake_process_zip)
+
+    with open(zip_path, "rb") as f:
+        upload_resp = client.post(
+            "/projects/upload/multi-zip",
+            files={"file": ("multi.zip", f, "application/zip")},
+            headers=headers,
+        )
+
+    assert upload_resp.status_code == 200
+    assert upload_resp.json()["count"] == 1
+
+    # The project must now be visible when the same user lists their projects
+    list_resp = client.get("/projects", headers=headers)
+    assert list_resp.status_code == 200
+    project_names = [p["name"] for p in list_resp.json()]
+    assert "proj_a" in project_names, (
+        "project uploaded via multi-zip was not returned by GET /projects "
+        "for the authenticated owner — user_id was likely not forwarded"
+    )
+
+
+def test_upload_without_auth_then_analyze_returns_403(tmp_path):
+    """
+    Regression: a project uploaded without a token is stored with user_id=None.
+    Any authenticated user who then calls an analyze endpoint on that project
+    should receive 403 because they don't own it.
+    """
+    _, headers = _create_user_and_headers("analyze_403@example.com")
+
+    # Simulate a project created during an unauthenticated upload (user_id=None)
+    orphan = db_manager.create_project({
+        "name": "Orphan Project",
+        "file_path": str(tmp_path),
+        "project_type": "code",
+        "user_id": None,
+    })
+
+    response = client.post(
+        f"/projects/{orphan.id}/analyze/detect-type",
+        headers=headers,
+    )
+    assert response.status_code == 403, (
+        "authenticated user should not be able to analyze a project they don't own"
+    )
+
+
+def test_assign_project_role_from_contributor(monkeypatch):
+    user, headers = _create_user_and_headers("roles_assign@example.com")
+
+    project = db_manager.create_project({
+        "name": "Role Assign Project",
+        "file_path": "/tmp/role-assign-project",
+        "project_type": "code",
+        "user_id": user.id,
+    })
+    db_manager.add_contributor_to_project({
+        "project_id": project.id,
+        "name": "bob",
+        "contributor_identifier": "bob@example.com",
+        "contribution_percent": 60.0,
+        "commit_count": 8,
+    })
+
+    monkeypatch.setattr("src.Routers.projects.identify_project_type", lambda path, project_data: "Collaborative Project")
+
+    response = client.post(
+        f"/projects/{project.id}/roles",
+        json={
+            "contributor": "bob",
+            "role_type": "Backend Developer"
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["collaboration_type"] == "Collaborative Project"
+    assert body["user_contribution_percent"] == 60.0
+    assert "Backend Developer" in body["user_role"]
 
 
