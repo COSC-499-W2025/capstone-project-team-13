@@ -151,7 +151,7 @@ async def upload_multi_zip(
         f.write(await file.read())
 
     try:
-        results = processZipFile(str(upload_path))
+        results = processZipFile(str(upload_path), user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to process ZIP: {e}")
 

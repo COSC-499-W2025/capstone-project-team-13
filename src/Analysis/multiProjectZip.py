@@ -39,7 +39,7 @@ def splitZipFile(zip_path):
 
     return list(projects)
 
-def processZipFile(zipFilePath):
+def processZipFile(zipFilePath, user_id=None):
     """
     Process a zip file to identify and categorize top-level projects.
     Use appropriate scanners to analyze and store projects in the database.
@@ -68,13 +68,13 @@ def processZipFile(zipFilePath):
 
             # Use the appropriate scanner based on project type
             if project_type == 'code':
-                project_id = scan_coding_project(itemPath)
+                project_id = scan_coding_project(itemPath, user_id=user_id)
             elif project_type == 'media':
-                project_id = scan_media_project(itemPath)
+                project_id = scan_media_project(itemPath, user_id=user_id)
             elif project_type == 'text':
-                project_id = scan_text_document(itemPath)
+                project_id = scan_text_document(itemPath, user_id=user_id)
             else:
-                project_id = scan_text_document(itemPath)  # Default to text scanner
+                project_id = scan_text_document(itemPath, user_id=user_id)  # Default to text scanner
 
             results.append({
                 "name": item,  # Changed key to match handle_multi_zip

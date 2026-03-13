@@ -157,7 +157,7 @@ def test_upload_multi_zip_endpoint(monkeypatch, tmp_path):
 
     monkeypatch.setattr(
         "src.Routers.projects.processZipFile",
-        lambda path: [{"name": "a", "type": "code"}]
+        lambda path, user_id=None: [{"name": "a", "type": "code"}]
     )
 
     with open(zip_path, "rb") as f:
@@ -266,6 +266,76 @@ def test_get_project_roles_returns_contributors():
     assert data["project_id"] == project.id
     assert len(data["contributors"]) == 1
     assert data["contributors"][0]["name"] == "alice"
+
+
+def test_multi_zip_upload_projects_visible_to_owner(monkeypatch, tmp_path):
+    """
+    Regression: projects created via POST /projects/upload/multi-zip must appear
+    when the same authenticated user calls GET /projects.
+    Previously processZipFile was invoked without user_id, so every project it
+    created was stored with user_id=None (guest) and was therefore invisible to
+    the uploading user.
+    """
+    user, headers = _create_user_and_headers("multi_zip_visible@example.com")
+
+    zip_path = tmp_path / "multi.zip"
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        zipf.writestr("proj_a/main.py", "print('a')")
+
+    def fake_process_zip(path, user_id=None):
+        project = db_manager.create_project({
+            "name": "proj_a",
+            "file_path": path,
+            "project_type": "code",
+            "user_id": user_id,          # must be the caller's user_id, not None
+        })
+        return [{"name": "proj_a", "type": "code", "database_id": project.id}]
+
+    monkeypatch.setattr("src.Routers.projects.processZipFile", fake_process_zip)
+
+    with open(zip_path, "rb") as f:
+        upload_resp = client.post(
+            "/projects/upload/multi-zip",
+            files={"file": ("multi.zip", f, "application/zip")},
+            headers=headers,
+        )
+
+    assert upload_resp.status_code == 200
+    assert upload_resp.json()["count"] == 1
+
+    # The project must now be visible when the same user lists their projects
+    list_resp = client.get("/projects", headers=headers)
+    assert list_resp.status_code == 200
+    project_names = [p["name"] for p in list_resp.json()]
+    assert "proj_a" in project_names, (
+        "project uploaded via multi-zip was not returned by GET /projects "
+        "for the authenticated owner — user_id was likely not forwarded"
+    )
+
+
+def test_upload_without_auth_then_analyze_returns_403(tmp_path):
+    """
+    Regression: a project uploaded without a token is stored with user_id=None.
+    Any authenticated user who then calls an analyze endpoint on that project
+    should receive 403 because they don't own it.
+    """
+    _, headers = _create_user_and_headers("analyze_403@example.com")
+
+    # Simulate a project created during an unauthenticated upload (user_id=None)
+    orphan = db_manager.create_project({
+        "name": "Orphan Project",
+        "file_path": str(tmp_path),
+        "project_type": "code",
+        "user_id": None,
+    })
+
+    response = client.post(
+        f"/projects/{orphan.id}/analyze/detect-type",
+        headers=headers,
+    )
+    assert response.status_code == 403, (
+        "authenticated user should not be able to analyze a project they don't own"
+    )
 
 
 def test_assign_project_role_from_contributor(monkeypatch):
