@@ -81,3 +81,123 @@
   transform: translateY(-3px);
   background-color: #93a3c5; 
 }
+
+/* Insights chart menu + stand-in visuals */
+.card.insights {
+  background: linear-gradient(180deg, rgba(22, 28, 63, 0.98), rgba(17, 22, 52, 0.98));
+  border: 1px solid rgba(120, 130, 255, 0.25);
+  color: #f0f2ff;
+  box-shadow: 0 22px 42px rgba(3, 7, 26, 0.5);
+}
+
+.card.insights h2 {
+  color: #f3f5ff;
+}
+
+.insights-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insights-toggle-bar {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.insights-toggle-btn {
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  color: #aeb7ea;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.insights-toggle-btn:hover:not(.active) {
+  border-color: rgba(84, 136, 255, 0.4);
+  background: rgba(60, 93, 255, 0.18);
+  color: #eef1ff;
+}
+
+.insights-toggle-btn.active {
+  border-color: rgba(232, 70, 255, 0.38);
+  background: linear-gradient(135deg, rgba(88, 86, 255, 0.5), rgba(228, 63, 255, 0.34));
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(233, 136, 255, 0.18), 0 10px 24px rgba(137, 70, 255, 0.33);
+}
+
+.insights-chart-area {
+  background: linear-gradient(180deg, rgba(31, 37, 83, 0.95), rgba(23, 28, 66, 0.96));
+  border: 1px solid rgba(120, 132, 255, 0.24);
+  box-shadow: 0 14px 30px rgba(5, 10, 32, 0.45);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.standin-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.standin-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+}
+
+.standin-label,
+.standin-value {
+  font-size: 12px;
+  color: #d8deff;
+}
+
+.standin-track {
+  height: 10px;
+  background: rgba(9, 13, 33, 0.78);
+  border: 1px solid rgba(121, 132, 255, 0.2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.standin-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #2977ff 0%, #a349ff 100%);
+}
+
+.standin-pie-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.standin-pie {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+}
+
+.standin-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.standin-legend-item {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #d8deff;
+}
+
+.standin-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}

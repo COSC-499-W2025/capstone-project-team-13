@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Dashboard.css";
 import { useNavigate } from "react-router-dom";
+import InsightsChart from "../components/InsightsChart";
 
 function Dashboard() {
 
@@ -86,6 +87,7 @@ function Dashboard() {
 
       <div className="card insights">
         <h2>Charts & Insights</h2>
+        <InsightsChart />
       </div>
 
       <div className="card portfolios click-card" 
