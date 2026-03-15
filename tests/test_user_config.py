@@ -195,6 +195,21 @@ class TestUserConfig(unittest.TestCase):
         config = self.config_manager.remove_excluded_file_type('.log')
         
         self.assertNotIn('.log', config.excluded_file_types)
+
+    def test_remove_excluded_file_type_normalizes_format(self):
+        """Test removing file type works across input format differences"""
+        self.config_manager.add_excluded_file_type('.LOG')
+        config = self.config_manager.remove_excluded_file_type(' log ')
+
+        self.assertNotIn('.log', config.excluded_file_types)
+        self.assertNotIn('.LOG', config.excluded_file_types)
+
+    def test_add_then_remove_txt_file_type(self):
+        """Test adding and removing .txt file type with mixed formats"""
+        self.config_manager.add_excluded_file_type('.TXT')
+        config = self.config_manager.remove_excluded_file_type('txt')
+
+        self.assertNotIn('.txt', config.excluded_file_types)
     
     def test_is_folder_excluded(self):
         """Test checking if folder is excluded"""

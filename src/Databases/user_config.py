@@ -267,6 +267,21 @@ class ConfigManager:
     def __init__(self, database_manager):
         """Initialize configuration manager with database manager"""
         self.db_manager = database_manager
+
+    @staticmethod
+    def _normalize_extension(extension: str) -> str:
+        normalized = extension.strip().lower().lstrip('.')
+        if not normalized:
+            return ''
+        return f'.{normalized}'
+
+    def _normalized_extension_list(self, extensions: List[str]) -> List[str]:
+        normalized_extensions = []
+        for extension in extensions:
+            normalized = self._normalize_extension(extension)
+            if normalized and normalized not in normalized_extensions:
+                normalized_extensions.append(normalized)
+        return normalized_extensions
     
     def get_or_create_config(self) -> UserConfig:
         """
@@ -478,17 +493,21 @@ class ConfigManager:
                 session.add(config)
                 session.flush()
             
-            # Ensure extension starts with dot
-            if not extension.startswith('.'):
-                extension = '.' + extension
-            
-            excluded = config.excluded_file_types
-            
-            if extension not in excluded:
-                excluded.append(extension)
+            extension = self._normalize_extension(extension)
+            excluded = self._normalized_extension_list(config.excluded_file_types)
+
+            if not extension:
                 config.excluded_file_types = excluded
                 session.commit()
                 session.refresh(config)
+                session.expunge(config)
+                return config
+
+            if extension not in excluded:
+                excluded.append(extension)
+            config.excluded_file_types = excluded
+            session.commit()
+            session.refresh(config)
             
             session.expunge(config)
             return config
@@ -513,17 +532,21 @@ class ConfigManager:
                 session.add(config)
                 session.flush()
             
-            # Ensure extension starts with dot
-            if not extension.startswith('.'):
-                extension = '.' + extension
-            
-            excluded = config.excluded_file_types
-            
-            if extension in excluded:
-                excluded.remove(extension)
+            extension = self._normalize_extension(extension)
+            excluded = self._normalized_extension_list(config.excluded_file_types)
+
+            if not extension:
                 config.excluded_file_types = excluded
                 session.commit()
                 session.refresh(config)
+                session.expunge(config)
+                return config
+
+            if extension in excluded:
+                excluded.remove(extension)
+            config.excluded_file_types = excluded
+            session.commit()
+            session.refresh(config)
             
             session.expunge(config)
             return config
@@ -718,11 +741,8 @@ class ConfigManager:
             if not config:
                 return False
             
-            # Ensure extension starts with dot
-            if not extension.startswith('.'):
-                extension = '.' + extension
-            
-            return extension in config.excluded_file_types
+            extension = self._normalize_extension(extension)
+            return extension in self._normalized_extension_list(config.excluded_file_types)
         finally:
             session.close()
     
@@ -748,8 +768,8 @@ class ConfigManager:
                 return False
             
             # Check if extension is excluded
-            extension = '.' + file_path.split('.')[-1] if '.' in file_path else ''
-            if extension and extension in config.excluded_file_types:
+            extension = self._normalize_extension(file_path.split('.')[-1]) if '.' in file_path else ''
+            if extension and extension in self._normalized_extension_list(config.excluded_file_types):
                 return False
             
             # Check if parent folder is excluded

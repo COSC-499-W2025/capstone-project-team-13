@@ -130,6 +130,50 @@ def test_add_and_remove_excluded_file_type():
     assert file_type not in remove_data["excluded_file_types"]
 
 
+def test_remove_excluded_file_type_normalizes_format():
+    add_response = client.post(
+        "/configuration/privacy-settings/excluded-file-types",
+        json={"file_type": ".LOG"},
+    )
+
+    assert add_response.status_code == 200
+    add_data = add_response.json()
+    assert ".log" in add_data["excluded_file_types"]
+
+    remove_response = client.request(
+        "DELETE",
+        "/configuration/privacy-settings/excluded-file-types",
+        json={"file_type": " log "},
+    )
+
+    assert remove_response.status_code == 200
+    remove_data = remove_response.json()
+    assert remove_data["success"] is True
+    assert ".log" not in remove_data["excluded_file_types"]
+
+
+def test_add_then_remove_txt_file_type():
+    add_response = client.post(
+        "/configuration/privacy-settings/excluded-file-types",
+        json={"file_type": ".TXT"},
+    )
+
+    assert add_response.status_code == 200
+    add_data = add_response.json()
+    assert ".txt" in add_data["excluded_file_types"]
+
+    remove_response = client.request(
+        "DELETE",
+        "/configuration/privacy-settings/excluded-file-types",
+        json={"file_type": "txt"},
+    )
+
+    assert remove_response.status_code == 200
+    remove_data = remove_response.json()
+    assert remove_data["success"] is True
+    assert ".txt" not in remove_data["excluded_file_types"]
+
+
 def test_add_excluded_folder_empty_path_returns_400():
 	response = client.post(
 		"/configuration/privacy-settings/excluded-folders",
