@@ -6,6 +6,7 @@
 - [T2 Week 5](#log-16)
 - [T2 Week 7](#log-17)
 - [T2 Week 8](#log-18)
+- [T2 Week 9](#log-19)
 
 
 ## Log 1:
@@ -271,3 +272,19 @@ I am currently in the process of updating the dashboard page, as the remainder o
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to continue implementating and updating the dashbaord page, as well as coming up with more ideas to make our system stand out in terms of unqiue features.  
+
+## Log 19:
+## Date Range: T2 Week 9 - Mar 9 - Mar 15, 2026
+
+## ![week 9 features](499-week9-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+This week, I chose potential options for the theme of our frontend and the group and I decided on which one to go with to ensure that while we are making individual progress on our assigned portions of the frontend, the theme throughout the frontend stays uniform. Additionally, aside from coding contributions I also make a new kanan board for our team with all the features as issues per page of our frontend, to ensure our group stays organized and are all aware of what each of us are working on/what tasks are available to pickup and implement. 
+
+For coding contributions, I updated the dashboard page of our frontend, as well as updated the project/upload page of our forntend to act as a project manager, as I realized that the pages we currently had planned to include did not provide sufficient functionality for users to view analyses and other information, associated with each project. I uodated that page to include 3 sub tabs for uploading, manging project information, as well as AI analysis (which still has yet to be updated)
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/444)
+
+
+### Upcoming Cycle
+For the upcoming cycle, I plan to continue updating the dashboard page, to include shortcuts and subsets of our other pages such as portfolio (top projects), reusmes (recently generated resumes), as well as charts and insights for some metrics, which has yet to be determined this week before peer testing. I am also going to continue updating the project page of our frontend to ensure all of the systems requirements/functions are accessible.
