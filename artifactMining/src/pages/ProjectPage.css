@@ -24,3 +24,173 @@
   border-radius: 6px;
   cursor: pointer;
 }
+
+.project-loading {
+  padding: 40px;
+  color: var(--muted, #666);
+  font-style: italic;
+}
+
+.project-meta-row {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 16px;
+}
+
+.project-badge {
+  display: inline-block;
+  background: #e8f4ee;
+  color: #2d6a4f;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.project-badge-collab {
+  background: #e8f0fb;
+  color: #1a56a4;
+}
+
+.project-section {
+  margin: 20px 0;
+}
+
+.project-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d6a4f;
+  border-bottom: 1px solid #dde8e2;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+
+.project-empty {
+  color: #999;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.project-stats {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.project-stats li {
+  font-size: 0.9rem;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: #eef4f1;
+  color: #2d6a4f;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 0.82rem;
+}
+
+.tag-secondary {
+  background: #f3f3f3;
+  color: #555;
+}
+
+/* AI description block */
+.ai-description {
+  background: #f0f7f4;
+  border-left: 3px solid #2d6a4f;
+  border-radius: 4px;
+  padding: 10px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ai-badge {
+  background: #2d6a4f;
+  color: #fff;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ai-description p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.ai-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.btn-ai {
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-ai:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.btn-ai:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ai-success {
+  color: #155724;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.ai-error {
+  color: #721c24;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.ai-hint {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 6px;
+}
+
+.ai-hint a {
+  color: #2d6a4f;
+  text-decoration: underline;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: #2d6a4f;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+  text-decoration: underline;
+}
