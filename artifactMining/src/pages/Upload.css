@@ -1,32 +1,168 @@
-.upload-page{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:80vh;
-}
-
-.upload-card{
-  background:#111827;
-  padding:40px;
-  border-radius:12px;
-  text-align:center;
+.manager-wrapper{
+  min-height:100vh;
+  background:#0f172a;
   color:white;
-  width:400px;
+  padding:40px;
 }
 
-.upload-card input{
-  margin:20px 0;
+.manager-wrapper h1{
+  margin-bottom:20px;
 }
 
-.upload-card button{
+/* TOP TABS */
+
+.top-tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+.top-tabs button{
   padding:10px 20px;
   border:none;
-  border-radius:6px;
-  background:#3b82f6;
+  background:#1e293b;
   color:white;
+  border-radius:6px;
   cursor:pointer;
 }
 
-.upload-card button:hover{
+.top-tabs button.active{
+  background:#3b82f6;
+}
+
+/* MAIN LAYOUT */
+.manager-layout{
+  display:flex;
+  height:75vh;
+}
+/* LEFT MENU */
+.side-menu{
+  width:220px;
+  background:#1e293b;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.side-menu button{
+  background:none;
+  border:none;
+  color:#cbd5f5;
+  text-align:left;
+  padding:10px;
+  cursor:pointer;
+  border-radius:6px;
+  transition:background 0.2s;
+}
+
+.side-menu button:hover{
+  background:#334155;
+}
+
+.side-menu button.active-sub{
+  background:#3b82f6;
+  color:white;
+}
+
+/* CONTENT PANEL */
+
+.content-panel{
+  flex:1;
+  background:#020617;
+  padding:30px;
+  overflow:auto;
+}
+
+.panel input{
+  display:block;
+  margin-bottom:10px;
+}
+
+.panel button{
+  padding:8px 14px;
+  background:#3b82f6;
+  border:none;
+  border-radius:6px;
+  color:white;
+  cursor:pointer;
+}
+/* PROJECT LIST */
+
+.project-list{
+  margin-top:20px;
+}
+
+.project-card{
+  display:flex;
+  gap:15px;
+  padding:12px;
+  background:#1e293b;
+  margin-bottom:10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.project-thumbnail{
+  width:70px;
+  height:70px;
+  object-fit:cover;
+  border-radius:6px;
+}
+
+.project-info h3{
+  margin:0;
+}
+
+/* UPLOAD PANEL */
+
+.upload-panel{
+  display:flex;
+  justify-content:center;
+}
+
+.upload-card{
+  width:420px;
+  background:#1e293b;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.5);
+}
+
+.upload-label{
+  display:block;
+  margin-top:10px;
+  margin-bottom:6px;
+  font-size:14px;
+  color:#cbd5f5;
+}
+
+.upload-input{
+  width:100%;
+  padding:8px;
+  margin-bottom:12px;
+  background:#0f172a;
+  border:1px solid #334155;
+  border-radius:6px;
+  color:white;
+}
+
+.upload-button{
+  width:100%;
+  padding:10px;
+  background:#3b82f6;
+  border:none;
+  border-radius:8px;
+  font-weight:500;
+  cursor:pointer;
+}
+
+.upload-button:hover{
   background:#2563eb;
+}
+
+.status-text{
+  margin-top:10px;
+  font-size:14px;
+  color:#94a3b8;
 }
