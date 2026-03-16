@@ -8,6 +8,7 @@
 - [T2 Week 7](#term-2-week-7-team-log)
 - [T2 Week 8](#term-2-week-8-team-log)
 - [T2 Week 9](#term-2-week-9-team-log)
+- [T2 Week 10](#term-2-week-10-team-log)
 
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
@@ -690,3 +691,42 @@ All tests are passing except 4. This is due to a PR that made changes to an exis
   
 **What didn’t go as planned:**
 - We need to finalize our decisions regarding aeathetics (frontend styling) as we are currently being held back because of this.
+
+
+
+
+## Term 2 Week 10 Team Log
+**Date Range:** Mar 9 - March 15, 2026
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **Illina Islam** | Updating and expanding auth endpoints. | 475, 452, 453, 454, 455, 456 |
+| **Sana Shah** | Updated project page to include project management options | 444 |
+| **Maya Knutsvig** | Fleshed out the settings page | 439 |
+| **Prina Mehta** | Integrated AI analysis into system (endpoints and UI inclusive) to generate, display, and download content | 434 |
+| **Jackson Wilson** | Created projects endpoints, created styling for full app, created styling for specific sections (Charts, projects, settings)| 426, 423, 424|
+| **T’Olu Akinwande** | Building skills timeline feature for the web portfolio | 385 |
+
+Backlog:
+![alt text](teamLogImages/BacklogT2W10.png)
+
+Burnup Chart:
+![alt text](teamLogImages/BurnupT2W10.png)
+
+In-Progress Tasks:
+![alt text](teamLogImages/InProgressT2W10.png)
+
+Completed Tasks:
+![alt text](teamLogImages/CompletedT2W10.png)
+
+### Test Report
+![alt text](teamLogImages/TestsT2W10.png)
+All tests are passing except 9. These are non-breaking changes to the system so we haven't prioritized repair yet. Some seem to by pypdf is out of date so we need to update to the newest version.
+
+### Reflection Points
+
+**What went well:** 
+- We've gotten lots of progress on the frontend that should help us be on track for a solid finish.
+  
+**What didn’t go as planned:**
+- Our tests still need to be fixed, but everyone is working on different elements and haven't found the time.
+
