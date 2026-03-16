@@ -1,14 +1,15 @@
 ## Weekly Navigation
 
-- [Term 2 – Week 1 (Jan 5–Jan 11, 2026)](#log-12)
-- [Term 2 – Week 2 (Jan 12–Jan 18, 2026)](#log-13)
-- [Term 2 – Week 3 (Jan 19–Jan 25, 2026)](#log-14)
-- [Term 2 – Week 4 (Jan 26–Feb 1, 2026)](#log-15)
-- [Term 2 – Week 5 (Feb 2–Feb 8, 2026)](#log-16)
-- [Term 2 – Week 6 (Feb 9–Feb 15, 2026)](#log-17)
-- [Term 2 – Week 7 (Feb 16–Feb 22, 2026)](#log-18)
-- [Term 2 – Week 8 (Feb 23–Mar 1, 2026)](#log-19)
+- [Term 2 – Week 10 (Mar 9 - Mar 15, 2026)](#log-21)
 - [Term 2 – Week 9 (Mar 2 - Mar 8, 2026)](#log-20)
+- [Term 2 – Week 8 (Feb 23–Mar 1, 2026)](#log-19)
+- [Term 2 – Week 7 (Feb 16–Feb 22, 2026)](#log-18)
+- [Term 2 – Week 6 (Feb 9–Feb 15, 2026)](#log-17)
+- [Term 2 – Week 5 (Feb 2–Feb 8, 2026)](#log-16)
+- [Term 2 – Week 4 (Jan 26–Feb 1, 2026)](#log-15)
+- [Term 2 – Week 3 (Jan 19–Jan 25, 2026)](#log-14)
+- [Term 2 – Week 2 (Jan 12–Jan 18, 2026)](#log-13)
+- [Term 2 – Week 1 (Jan 5–Jan 11, 2026)](#log-12)
 
 - [Week 11 (Dec 1–Dec 7, 2025)](#log-11)
 - [Week 10 (Nov 24–Nov 30, 2025)](#log-10)
@@ -402,3 +403,45 @@ Wrote comprehensive unit tests (test_showcaseSelect.py)
 * Improve UI customization controls (project reordering, toggling projects on/off, and editing bullet wording directly from the browser)
 * Explore storing generated resume files instead of generating them on demand
 * Other tasks will be determined during team meeting
+
+## Log 21:
+
+## Date Range: Term 2 Week 10 – Mar 9 – Mar 15, 2026
+
+## ![week 4 features](T2week10tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+* Implemented AI description support across the Portfolio and Project pages, including UI logic to prioritize ai_description over existing system descriptions
+* Added the POST /projects/{id}/analyze endpoint to generate and store AI project descriptions when AI consent is enabled
+* Implemented automatic AI resume bullet generation during POST /resume/generate for projects without existing bullets
+* Built the Resumes page UI with a two column layout including live resume preview, generation controls, download links for PDF and DOCX, and an awards editor
+* Added frontend functionality for generating AI descriptions for portfolio projects and displaying AI badges for generated content
+
+### Testing
+
+* Set up Vitest and React Testing Library to support frontend testing for Milestone 3 features
+
+* Implemented the following unit tests
+    * tests/test_api_ai_analyze.py
+    * tests/test_resume_ai_bullets.py
+    * Portfolio.test.jsx
+    * ProjectPage.test.jsx
+    * Resumes.test.jsx
+
+* Conducted manual testing through the Swagger UI for backend endpoints and through the browser frontend interface to verify end to end functionality of AI description generation and resume features.
+
+### Reviewing
+
+* Reviewed PR #421: [https://github.com/COSC-499-W2025/capstone-project-team-13/pull/421](https://github.com/COSC-499-W2025/capstone-project-team-13/pull/421)
+* Reviewed PR #431: [https://github.com/COSC-499-W2025/capstone-project-team-13/pull/431](https://github.com/COSC-499-W2025/capstone-project-team-13/pull/431)
+* Reviewed PR #436: [https://github.com/COSC-499-W2025/capstone-project-team-13/pull/436](https://github.com/COSC-499-W2025/capstone-project-team-13/pull/436)
+* Reviewed PR #442: [https://github.com/COSC-499-W2025/capstone-project-team-13/pull/442](https://github.com/COSC-499-W2025/capstone-project-team-13/pull/442)
+
+### Plan for Next Week
+
+* Improve resume editing capabilities directly from the browser interface
+* Continue refining AI descriptions for text and media projects
+* Address additional tasks identified during the weekly team meeting
