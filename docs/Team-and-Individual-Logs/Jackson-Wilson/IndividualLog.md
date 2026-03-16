@@ -348,3 +348,38 @@ I created these endpoints as well as test files for each. Due to size and approv
 ### Plans for next week
 
 I'm hesitant to work on frontend as we didn't quite get the chance to meet and properly delegate work (hence the mixup with Maya) but we have a meeting planned this week to go over it. Ideally, if we get to a point where we know the style we're going for, I wouldn't mind handling the css for the project to try and get a more cohesive look.
+
+
+## Log 20:
+## Date Range: Term 2 Week 10 - March 9 - 15, 2026
+
+## ![T2 week 10 features](weeklyfeaturesimages/T2Week10Features.png)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+To start off the week, I polished off some more endpoints we were missing. Specifically:
+
+Project Uploads
+POST /projects/upload/multi-zip
+[These two likely aren't needed, but allow us to add files to an existing project should we need]
+POST /projects/{project_id}/upload/files
+POST /projects/{project_id}/upload/zip
+
+Project Analysis
+POST /projects/{project_id}/analyze/detect-type
+POST /projects/{project_id}/analyze/coding
+POST /projects/{project_id}/analyze/media
+POST /projects/{project_id}/analyze/text
+
+Role Attribution
+GET /projects/{project_id}/roles
+POST /projects/{project_id}/roles
+
+After this, I took on styling for the project. We went over certain visions for how we want our project to look and I took over handling css to give a more unified look rather than the slapped together feel we have before. We now have a pretty consistent style across the page as well as I approached specific elements like settings, projects, and charts to get those polished as well. Looking at settings as it's the most complete I feel the look of our project will turn out well. I also helped Maya on PR 441 and 442, as she was having some issues with some of the endpoints so I helped her debug. I directly contributed some lines into 441 as well as explained the fix that was needed so she could execute the same fix on 442.
+
+### Plans for next week
+
+There's a couple spots that don't seem to be fully working I want to double check on. Specifically, the skills extractor seemed to be having issues? On the frontend at least it seemed like it was only recognizing skills as belonging to visual projects. Aside from that, I'm keeping an eye on when frontent elements are finished so I can continue getting the styling cohesive across the board.
+
