@@ -247,8 +247,9 @@
    
 * for next week: hold a team meeting, decide on styling for frontend, start working on components for the dashboard
 
-
+## Week 10 - Mar 9-Mar 15, 2026
 <img width="2138" height="1096" alt="image" src="image.png" />
+
 * This week I was going to work on the dashboard but after meeting with the team we decided that it would be better if I was put in charge of completing the resume system
   * I added new endpoints according to src/resume/resumeMenu.py within resume.py and resume_service.py
   * I made some fixes in resume_export_service.py
