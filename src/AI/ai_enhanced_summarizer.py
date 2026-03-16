@@ -142,22 +142,17 @@ def summarize_projects_with_ai(
     
     for project in projects_to_enhance:
         # Check if we already have AI description in DB
-        project_name = project.get('project_name', '')
-        cached = _get_cached_ai_description(project_name)
-        
+        project_id = project.get("project_id")
+        cached = _get_cached_ai_description(project_id)
+
         if cached:
-            project['ai_description'] = cached
+            project["ai_description"] = cached
             cache_hits += 1
         else:
-            ai_enhance_project_summary(
-                project,
-                ai_service=ai_service,
-                include_technical_depth=include_technical_depth
-            )
-            # Cache the result
-            if 'ai_description' in project:
-                _cache_ai_description(project_name, project['ai_description'])
-        
+            ai_enhance_project_summary(project, ai_service=ai_service, include_technical_depth=include_technical_depth)
+            if project.get("ai_description"):
+                _cache_ai_description(project_id, project["ai_description"])
+            
         enhanced_count += 1
     
     print(f"✅ Enhanced {enhanced_count} projects (💾 {cache_hits} from cache)")
@@ -168,30 +163,26 @@ def summarize_projects_with_ai(
     
     return result
 
-def _get_cached_ai_description(project_name: str) -> Optional[str]:
-    """Check if we have a cached AI description for this project in the database."""
-    try:
-        # Try to find project by name
-        projects = db_manager.get_all_projects()
-        for p in projects:
-            if p.name == project_name:
-                # Check if it has ai_description field
-                if hasattr(p, 'ai_description') and p.ai_description:
-                    return p.ai_description
+def _get_cached_ai_description(project_id: Optional[int]) -> Optional[str]:
+    if not project_id:
         return None
+    try:
+        p = db_manager.get_project(project_id)
+        desc = (getattr(p, "ai_description", None) or "").strip() if p else ""
+        return desc or None
     except Exception:
         return None
 
-def _cache_ai_description(project_name: str, description: str):
-    """Cache AI description in the database if project exists."""
+
+def _cache_ai_description(project_id: Optional[int], description: str):
+    desc = (description or "").strip()
+    if not project_id or not desc:
+        return
     try:
-        projects = db_manager.get_all_projects()
-        for p in projects:
-            if p.name == project_name:
-                db_manager.update_project(p.id, {
-                    'ai_description': description
-                })
-                break
+        db_manager.update_project(project_id, {"ai_description": desc})
+        # Optional: readback verify (remove later)
+        p = db_manager.get_project(project_id)
+        print("✅ Saved ai_description readback:", bool(getattr(p, "ai_description", None)), flush=True)
     except Exception as e:
         print(f"⚠️ Cache write warning: {e}")
 

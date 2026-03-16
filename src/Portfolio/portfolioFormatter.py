@@ -2,10 +2,6 @@
 Portfolio Data Formatter
 Prepares project data from database for portfolio display frontend.
 
-Design choice (per your request):
-- There is ONLY "portfolio" output.
-- A "summary" is INCLUDED inside the portfolio JSON (no separate generate_summary command).
-
 Usage:
     from src.Portfolio.portfolioFormatter import PortfolioFormatter
 
@@ -20,18 +16,10 @@ import sys
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from copy import deepcopy
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from src.Databases.database import db_manager, Project
-
-# OPTIONAL: If you have your summarize_projects module, we'll use it to pick "top projects"
-# and generate a stronger portfolio summary. If not available, we gracefully fall back.
-try:
-    from src.Summary.summarizer import summarize_projects  # adjust path if needed
-except Exception:
-    summarize_projects = None
 
 
 class PortfolioFormatter:
@@ -138,14 +126,16 @@ class PortfolioFormatter:
 
         # Description: prefer AI, then custom, then default, then fallback
         description = None
-        ai_desc = getattr(project, "ai_description", None)
-
+        ai_desc = (getattr(project, "ai_description", None) or "").strip()
+        custom_desc = (getattr(project, "custom_description", None) or "").strip()
+        default_desc = (getattr(project, "description", None) or "").strip()
+        
         if ai_desc:
             description = ai_desc
-        elif getattr(project, "custom_description", None):
-            description = project.custom_description
-        elif getattr(project, "description", None):
-            description = project.description
+        elif custom_desc:
+            description = custom_desc
+        elif default_desc:
+            description = default_desc
         else:
             skills = self._as_list(project.skills)
             description = (
