@@ -414,6 +414,7 @@ Wrote comprehensive unit tests (test_showcaseSelect.py)
 
 ### Coding Tasks
 
+* https://github.com/COSC-499-W2025/capstone-project-team-13/issues/434
 * Implemented AI description support across the Portfolio and Project pages, including UI logic to prioritize ai_description over existing system descriptions
 * Added the POST /projects/{id}/analyze endpoint to generate and store AI project descriptions when AI consent is enabled
 * Implemented automatic AI resume bullet generation during POST /resume/generate for projects without existing bullets
