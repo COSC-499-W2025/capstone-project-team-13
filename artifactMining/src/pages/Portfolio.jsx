@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./Portfolio.css";
-
+import SkillsTimeline from "./SkillsTimeline";
 const API_BASE = "http://127.0.0.1:8000";
 
 function Portfolio() {
@@ -11,7 +11,7 @@ function Portfolio() {
   const [aiConsent, setAiConsent] = useState(false);
   const [generatingAi, setGeneratingAi] = useState(false);
   const [aiMessage, setAiMessage] = useState("");
-
+  const [showTimeline, setShowTimeline] = useState(false);
   useEffect(() => {
     checkAiConsent();
     loadPortfolio();
@@ -121,6 +121,12 @@ function Portfolio() {
           <button className="btn-portfolio-primary" onClick={loadPortfolio}>
             Refresh Portfolio
           </button>
+          <button
+        className="btn-portfolio-primary"
+        onClick={() => setShowTimeline((prev) => !prev)}
+      >
+        {showTimeline ? "Hide Skills Timeline" : "View Skills Timeline"}
+      </button>
 
           {aiConsent && (
             <button
@@ -230,6 +236,7 @@ function PortfolioCard({ project, aiConsent }) {
           View Details &rarr;
         </a>
       </div>
+      {showTimeline && <SkillsTimeline />}
     </div>
   );
 }
