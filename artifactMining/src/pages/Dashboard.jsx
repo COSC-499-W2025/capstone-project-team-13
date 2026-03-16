@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
 
   const [projects, setProjects] = useState([]);
+  const [hiddenThumbnails, setHiddenThumbnails] = useState({});
   const navigate = useNavigate(); 
 
   useEffect(() => {
@@ -33,6 +34,51 @@ function Dashboard() {
     window.location.href = `/projects/${projectId}`;
   };
 
+  const getInitial = (name) => {
+    if (!name || typeof name !== "string") return "P";
+    return name.trim().charAt(0).toUpperCase() || "P";
+  };
+
+  const looksLikeUuid = (value) => {
+    if (!value || typeof value !== "string") return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
+  };
+
+  const getReadableNameFromPath = (filePath) => {
+    if (!filePath || typeof filePath !== "string") return null;
+    const cleanPath = filePath.replace(/\\/g, "/").replace(/\/+$/, "");
+    const lastSegment = cleanPath.split("/").filter(Boolean).pop();
+    if (!lastSegment) return null;
+    return lastSegment.replace(/\.[^.]+$/, "");
+  };
+
+  const getProjectDisplayName = (project) => {
+    const fromPath = getReadableNameFromPath(project?.file_path);
+    if (fromPath && !looksLikeUuid(fromPath)) return fromPath;
+
+    const projectName = project?.name;
+    if (projectName && !looksLikeUuid(projectName)) return projectName;
+
+    return "Untitled Project";
+  };
+
+  const getProjectUuid = (project) => {
+    const projectName = project?.name;
+    if (looksLikeUuid(projectName)) return projectName;
+
+    const projectId = String(project?.id ?? "");
+    if (looksLikeUuid(projectId)) return projectId;
+
+    return null;
+  };
+
+  const formatProjectType = (project) => {
+    const rawType = project?.project_type || project?.language || "Unknown";
+    return String(rawType)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   return (
     <div className="dashboard-grid">
 
@@ -51,19 +97,32 @@ function Dashboard() {
                 onClick={() => openProject(project.id)}
               >
 
-                <img
-                  src={
-                    project.thumbnail_path
-                      ? `http://127.0.0.1:8000/${project.thumbnail_path}`
-                      : "/default-thumbnail.png"
-                  }
-                  className="project-thumbnail"
-                  alt="project"
-                />
+                {project.thumbnail_path && !hiddenThumbnails[project.id] ? (
+                  <img
+                    src={`http://127.0.0.1:8000/${project.thumbnail_path}`}
+                    className="project-thumbnail"
+                    alt="project"
+                    onError={() =>
+                      setHiddenThumbnails((prev) => ({
+                        ...prev,
+                        [project.id]: true,
+                      }))
+                    }
+                  />
+                ) : (
+                  <div className="project-thumbnail-placeholder" aria-hidden="true">
+                    {getInitial(project.name)}
+                  </div>
+                )}
 
                 <div className="project-info">
-                  <h3>{project.name || "Untitled Project"}</h3>
-                  <p>{project.language || "Code Project"}</p>
+                  <div className="project-title-row">
+                    <h3>{getProjectDisplayName(project)}</h3>
+                    <span className="project-type-badge">{formatProjectType(project)}</span>
+                  </div>
+                  {getProjectUuid(project) ? (
+                    <p className="project-id-text">UUID {getProjectUuid(project)}</p>
+                  ) : null}
                 </div>
 
               </div>
