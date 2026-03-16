@@ -231,6 +231,7 @@
 
 ## Week 9 - Mar 2-Mar 8, 2026
 <img width="2138" height="1096" alt="image" src="https://github.com/user-attachments/assets/9fb4d34a-349a-42f7-a5cb-022605285620" />
+
 * This week integrated authentication into the portfolio, analytics and skills endpoint
   * portfolio endpoints filter for user specific projects; portfolios now get stored to the user table in the databse; this feature is also now only avaliable to users who have signed up (portfolio.py & portfolio_service.py)
   * analytics endpoints filter for user specific projects; this feature is avaliable to users and guest users (analytics.py & analytics_service.py)
@@ -238,10 +239,15 @@
   * portfolio endpoints' tests have been updated (test_API_portfolio.py)
   * analytics endpoints' tests have been created (test_API_analytics.py)
   * skills endpoints' tests have been updated (test_API_skills.py)
+    
 * My contributions close:
   * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/398
   * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/400
+   
 * for next week: hold a team meeting, decide on styling for frontend, start working on components for the dashboard
+
+
+## Week 10 - Mar 9-Mar 15, 2026
 
 
 
