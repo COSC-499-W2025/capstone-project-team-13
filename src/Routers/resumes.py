@@ -1,29 +1,51 @@
 """
 src/Routers/resumes.py
 ======================
-Replaces the stub file.  All business logic lives in resume_export_service;
-this file only handles HTTP concerns.
+Resume API endpoints. All business logic lives in resume_service and
+resume_export_service. This file handles HTTP concerns only.
+
+All endpoints require authentication — resume features are not available
+to guests. Users can only access/modify bullets for their own projects.
 
 Endpoints
 ---------
-POST /resume/generate               build & cache résumé data for a user
-GET  /resume/{user_id}              return cached résumé JSON
-POST /resume/{user_id}/edit         patch awards list, rebuild cached data
-GET  /resume/{user_id}/download/pdf  stream one-page résumé as PDF
-GET  /resume/{user_id}/download/docx stream one-page résumé as DOCX
+Per-project bullet endpoints:
+  POST   /resume/projects/{project_id}/generate    generate & store bullets
+  GET    /resume/projects/{project_id}             get stored bullets
+  POST   /resume/projects/{project_id}/edit        edit bullets / header
+  POST   /resume/projects/{project_id}/regenerate  regenerate all bullets
+  GET    /resume/projects/{project_id}/ats         view ATS scores
+  DELETE /resume/projects/{project_id}             delete stored bullets
+
+Full resume endpoints:
+  POST   /resume/generate      smart generate full resume (fills missing bullets)
+  GET    /resume               get stored resume JSON
+  POST   /resume/save          save enriched resume (after frontend adds extras)
+  GET    /resume/download/pdf  export resume as PDF
+  GET    /resume/download/docx export resume as DOCX
 """
 
 import io
-import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Body
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 
 from src.Databases.database import db_manager
+from src.Services.auth_service import require_auth
+from src.Services.resume_service import (
+    get_project_bullets,
+    generate_project_bullets,
+    regenerate_project_bullets,
+    edit_project_bullets,
+    get_project_ats,
+    delete_project_bullets,
+    generate_full_resume,
+    get_full_resume,
+    save_full_resume,
+)
 from src.Services.resume_export_service import (
-    get_resume_preview_data,
     generate_resume_pdf,
     generate_resume_docx,
 )
@@ -33,67 +55,130 @@ router = APIRouter(prefix="/resume", tags=["Resume"])
 
 # ── request models ────────────────────────────────────────────────────────────
 
-class ResumeEditRequest(BaseModel):
-    awards: Optional[list[str]] = None
+class GenerateBulletsRequest(BaseModel):
+    num_bullets: int = 3
 
 
-# ── endpoints ─────────────────────────────────────────────────────────────────
+class EditBulletsRequest(BaseModel):
+    bullets: list[str]
+    header: Optional[str] = None
+
+
+# ── per-project bullet endpoints ──────────────────────────────────────────────
+
+@router.post("/projects/{project_id}/generate")
+def generate_bullets_endpoint(
+    project_id: int,
+    body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    user_id: int = Depends(require_auth)
+):
+    """Generate and store resume bullets for a project."""
+    return generate_project_bullets(
+        project_id=project_id,
+        user_id=user_id,
+        num_bullets=body.num_bullets
+    )
+
+
+@router.get("/projects/{project_id}")
+def get_bullets_endpoint(
+    project_id: int,
+    user_id: int = Depends(require_auth)
+):
+    """Get stored resume bullets for a project."""
+    return get_project_bullets(project_id=project_id, user_id=user_id)
+
+
+@router.post("/projects/{project_id}/edit")
+def edit_bullets_endpoint(
+    project_id: int,
+    body: EditBulletsRequest,
+    user_id: int = Depends(require_auth)
+):
+    """Edit stored resume bullets and/or header for a project."""
+    return edit_project_bullets(
+        project_id=project_id,
+        user_id=user_id,
+        bullets=body.bullets,
+        header=body.header
+    )
+
+
+@router.post("/projects/{project_id}/regenerate")
+def regenerate_bullets_endpoint(
+    project_id: int,
+    body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    user_id: int = Depends(require_auth)
+):
+    """Regenerate all bullets for a project, replacing existing ones."""
+    return regenerate_project_bullets(
+        project_id=project_id,
+        user_id=user_id,
+        num_bullets=body.num_bullets
+    )
+
+
+@router.get("/projects/{project_id}/ats")
+def get_ats_endpoint(
+    project_id: int,
+    user_id: int = Depends(require_auth)
+):
+    """Get detailed ATS scores for a project's stored bullets."""
+    return get_project_ats(project_id=project_id, user_id=user_id)
+
+
+@router.delete("/projects/{project_id}")
+def delete_bullets_endpoint(
+    project_id: int,
+    user_id: int = Depends(require_auth)
+):
+    """Delete stored resume bullets for a project."""
+    return delete_project_bullets(project_id=project_id, user_id=user_id)
+
+
+# ── full resume endpoints ─────────────────────────────────────────────────────
 
 @router.post("/generate")
-def generate_resume(user_id: int = 1):
-    """Compile résumé from the database and persist it in the user record."""
+def generate_resume_endpoint(
+    body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    user_id: int = Depends(require_auth)
+):
+    """
+    Smart full-resume generate. Checks all user projects for stored bullets —
+    generates missing ones, then assembles and stores the full resume.
+    """
+    return generate_full_resume(user_id=user_id, num_bullets=body.num_bullets)
+
+
+@router.get("")
+def get_resume_endpoint(
+    user_id: int = Depends(require_auth)
+):
+    """Return the stored resume JSON."""
+    return get_full_resume(user_id=user_id)
+
+
+@router.post("/save")
+def save_resume_endpoint(
+    body: dict = Body(...),
+    user_id: int = Depends(require_auth)
+):
+    """
+    Save the enriched resume back to the database.
+    Called after the frontend adds education, work history, skills, etc.
+    """
+    return save_full_resume(user_id=user_id, resume_data=body)
+
+
+@router.get("/download/pdf")
+def download_pdf_endpoint(
+    user_id: int = Depends(require_auth)
+):
+    """Export the stored resume as a downloadable PDF."""
     user = db_manager.get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    try:
-        data = get_resume_preview_data(user_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    db_manager.update_user(user_id, {"_resume": json.dumps(data)})
-    return {"message": "Resume generated", "resume": data}
 
-
-@router.get("/{user_id}")
-def get_resume(user_id: int):
-    """Return the most-recently generated résumé JSON."""
-    user = db_manager.get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not user.resume:
-        raise HTTPException(
-            status_code=404,
-            detail="No resume found. Call POST /resume/generate first.",
-        )
-    return {"user_id": user_id, "resume": user.resume}
-
-
-@router.post("/{user_id}/edit")
-def edit_resume(user_id: int, body: ResumeEditRequest):
-    """Patch the résumé (e.g. add/replace awards) and rebuild cached data."""
-    user = db_manager.get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if body.awards is not None:
-        current = user.resume or {}
-        current["awards"] = body.awards
-        db_manager.update_user(user_id, {"_resume": json.dumps(current)})
-
-    try:
-        data = get_resume_preview_data(user_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    db_manager.update_user(user_id, {"_resume": json.dumps(data)})
-    return {"message": f"Resume {user_id} updated", "resume": data}
-
-
-@router.get("/{user_id}/download/pdf")
-def download_resume_pdf(user_id: int):
-    """Stream résumé as a downloadable PDF."""
-    user = db_manager.get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
     try:
         pdf_bytes = generate_resume_pdf(user_id)
     except ValueError as e:
@@ -109,12 +194,15 @@ def download_resume_pdf(user_id: int):
     )
 
 
-@router.get("/{user_id}/download/docx")
-def download_resume_docx(user_id: int):
-    """Stream résumé as a downloadable DOCX."""
+@router.get("/download/docx")
+def download_docx_endpoint(
+    user_id: int = Depends(require_auth)
+):
+    """Export the stored resume as a downloadable DOCX."""
     user = db_manager.get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     try:
         docx_bytes = generate_resume_docx(user_id)
     except ValueError as e:
