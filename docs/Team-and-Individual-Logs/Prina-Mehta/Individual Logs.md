@@ -383,6 +383,7 @@ Wrote comprehensive unit tests (test_showcaseSelect.py)
 
 ### Coding Tasks
 
+* https://github.com/COSC-499-W2025/capstone-project-team-13/issues/434
 * Implemented backend support for one-page resume generation, including export functionality for PDF and DOCX formats
 * Added API endpoints for downloading resumes: /resume/{user_id}/download/pdf and /resume/{user_id}/download/docx
 * Developed the browser-facing resume generation page to allow users to generate and download resumes
