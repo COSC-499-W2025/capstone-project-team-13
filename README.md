@@ -16,6 +16,19 @@ A versatile platform that intelligently processes digital artifacts including co
 - **T'Olu Akinwande** - 69892271
 
 ---
+## Testing Guidelines for Milestone 2
+
+- find test_data.zip and test_data2.zip within the root directory
+- download both into your local machine and unzip  both files
+- test_data.zip:
+  - this folder contains a collaborative coding project and an individual coding project
+  - the collaborative coding project is an earlier snapshot of repository
+- test_data2.zip:
+  - this folder contains a collaborative coding project, an individual coding project, a text project, and a visual project (and their respective zip folders)
+  - the collaborative project in this folder is the same as test_data.zip, but a later snapshot of the same repository
+
+
+---
 
 ## Team Contract
 https://docs.google.com/document/d/16xSLlqSOmJyfw9b78a8Gc61JJh8cMKzb9KAB2M3JHEg/edit?usp=sharing
@@ -28,64 +41,78 @@ Our digital artifact mining software serves as a tool for new graduates and stud
 2. **Digital Art/Graphics** - Processes media files, identifies design software and skills
 3. **Writing/Research** - Extracts keywords and insights from documents
 
-
 ---
 
 ## ✨ Key Features
 
-### Currently Implementing (Milestone 1)
-
-- **User Consent Management** 
-- **File Format Validation** 
-- **ZIP File Handling** 
-- **Multi-Format Parsing** 
-- **Language Detection** 
-- **Framework Detection** 
-- **Keyword Extraction** 
+- **User Consent Management**
+- **File Format Validation**
+- **ZIP File Handling**
+- **Multi-Format Parsing**
+- **Language & Framework Detection**
+- **Keyword Extraction**
 - **Visual Media Analysis**
-- **Database System**
 - **Contribution Metrics**
-
-### Coming Soon (Milestones 2 & 3)...
+- **JWT Authentication & User Isolation**
+- **Resume Bullet Generation** with ATS scoring
+- **Portfolio Generation**
+- **React Frontend**
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Current (Milestone 1)
+### Backend
 - **Language:** Python
+- **Web Framework:** FastAPI
 - **Database:** SQLite with SQLAlchemy ORM
-- **Testing:** pytest, unittest
-- **Libraries:**
-  - `rake-nltk` - Keyword extraction
-  - `nltk` - Natural language processing
-  - `Pillow` - Image/media analysis
-  - `sqlalchemy` - Database ORM
+- **Authentication:** JWT via `python-jose`, password hashing via `bcrypt`
+- **Testing:** pytest
 
-### Planned (Milestones 2 & 3)
-- **Web Framework:** Django
-- **Frontend:** Django templates or React
-- **Database:** PostgreSQL (production) / SQLite (development)
+### Frontend
+- **Framework:** React
+- **Build Tool:** Vite
+- **Testing:** Vitest
+
+
+### Key Libraries
+- `rake-nltk` - Keyword extraction
+- `nltk` - Natural language processing
+- `Pillow` - Image/media analysis
+- `sqlalchemy` - Database ORM
+- `GitPython` - Git repository analysis
+- `python-docx` / `PyPDF2` - Document parsing
+- `google-generativeai` - AI-powered analysis
+- `fastapi` / `uvicorn` - API server
+- `python-jose[cryptography]` - JWT tokens
+- `passlib[bcrypt]` / `bcrypt==4.0.1` - Password hashing
+- `pandas` - Data processing
+- `tqdm` - Progress display
 
 ---
 
 ## 🗄️ Database Architecture
-
-The system will use **two separate SQLite databases**:
-
-#### Database 1: `projects_data.db` - Project Data
-Stores extracted information from scanned projects:
-- **Projects** - Basic info, dates, metrics, type, languages, frameworks
-- **Files** - File paths, types, sizes, created/modified dates
-- **Contributors** - Git contributor names, identifiers, commit counts
-- **Keywords** - Store keywords
+ 
+The system uses a single **SQLite database** (`projects.db`) with eight interconnected tables:
+ 
+**Project Data**
+- **Projects** - Name, path, description, dates, metrics (lines of code, word count, file count, size), project type, collaboration type, importance score, languages/frameworks/skills/tags (JSON), resume bullets, thumbnail path, success evidence, user customizations
+- **Files** - File path, name, type, size, dates, lines of code, hash (for incremental uploads), duplicate detection, owner/editors
+- **Contributors** - Name, identifier, commit count, lines added/deleted, contribution percentage
+- **Keywords** - Keyword text, relevance score, category
+ 
+**User Data**
+- **Users** - First/last name, email, hashed password, portfolio (JSON), resume (JSON)
+- **Education** - Institution, degree type, field of study, start/end dates (linked to user)
+- **Work History** - Company, role, start/end dates (linked to user)
+- **Contact Info** - Address, phone (linked to user)
 
 
 ---
 
 ## 🤝 Contributing
 
-This is a university capstone project for COSC 499. 
+This is a university capstone project for COSC 499.
 
 ### Development Workflow
 
@@ -116,7 +143,7 @@ For questions or issues, please contact team members via the course management s
 - **Course:** COSC 499 - Capstone Project
 - **Institution:** UBC Okanagan
 - **Supervisor:** Bowen Hui
-- **Libraries Used:** NLTK, Pillow, SQLAlchemy, pytest
+- **Libraries Used:** NLTK, Pillow, SQLAlchemy, FastAPI, pytest
 
 ---
 
