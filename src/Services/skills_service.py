@@ -67,3 +67,56 @@ def get_skill_detail(skill_name: str, user_id: Optional[int] = None):
         "project_count": len(matching_projects),
         "projects": matching_projects
     }
+
+def get_skills_timeline(user_id: Optional[int] = None):
+    """
+    Returns skills with date ranges derived from project activity,
+    showing when each skill was first and last used across all projects.
+    """
+    projects = db_manager.get_all_projects(user_id=user_id)
+
+    skill_map = defaultdict(lambda: {
+        "first_seen": None,
+        "last_seen": None,
+        "project_count": 0,
+        "projects": []
+    })
+
+    for project in projects:
+        if not project.skills:
+            continue
+
+        first_date, last_date, duration_days = db_manager.get_project_duration(project.id)
+
+        for skill in project.skills:
+            entry = skill_map[skill]
+            entry["project_count"] += 1
+            entry["projects"].append({
+                "project_id": project.id,
+                "project_name": project.name,
+                "project_type": project.project_type,
+                "first_activity_date": first_date.isoformat() if first_date else None,
+                "last_activity_date": last_date.isoformat() if last_date else None,
+                "duration_days": duration_days,
+            })
+
+            if first_date:
+                if entry["first_seen"] is None or first_date < entry["first_seen"]:
+                    entry["first_seen"] = first_date
+            if last_date:
+                if entry["last_seen"] is None or last_date > entry["last_seen"]:
+                    entry["last_seen"] = last_date
+
+    timeline = []
+    for skill, data in skill_map.items():
+        timeline.append({
+            "name": skill,
+            "first_seen": data["first_seen"].isoformat() if data["first_seen"] else None,
+            "last_seen": data["last_seen"].isoformat() if data["last_seen"] else None,
+            "project_count": data["project_count"],
+            "projects": data["projects"],
+        })
+
+    timeline.sort(key=lambda x: (x["first_seen"] or ""))
+
+    return {"skills": timeline}
