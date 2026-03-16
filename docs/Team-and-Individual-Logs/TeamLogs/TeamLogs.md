@@ -681,6 +681,42 @@ Completed Tasks:
 
 ### Test Report
 <img width="1192" height="180" alt="image" src="https://github.com/user-attachments/assets/a1eb0358-a04c-4105-b68b-06b8540d0b32" />
+All tests are passing except 9. These are non-breaking changes to the system so we haven't prioritized repair yet. Some seem to by pypdf is out of date so we need to update to the newest version.
+
+### Reflection Points
+
+**What went well:** 
+- Our backend system has been set up well for easy integration and we've starting creating components for our frontend.
+  
+**What didn’t go as planned:**
+- We need to finalize our decisions regarding aeathetics (frontend styling) as we are currently being held back because of this.
+
+
+## Term 2 Week 10 Team Log
+**Date Range:** Mar 9 - March 15, 2026
+| Team Member | Work Completed / Focus This Week | Related Issue # |
+|--------------|----------------------------------|-----------------|
+| **Illina Islam** | | |
+| **Sana Shah** | | |
+| **Maya Knutsvig** | | |
+| **Prina Mehta** | Integrated AI analysis into system (endpoints and UI inclusive) to generate, display, and download content | 434 |
+| **Jackson Wilson** | Created projects endpoints, created styling for full app, created styling for specific sections (Charts, projects, settings)| 426, 423, 424|
+| **T’Olu Akinwande** | | |
+
+Backlog:
+![alt text](teamLogImages/BacklogT2W10.png)
+
+Burnup Chart:
+![alt text](teamLogImages/BurnupT2W10.png)
+
+In-Progress Tasks:
+![alt text](teamLogImages/InProgressT2W10.png)
+
+Completed Tasks:
+![alt text](teamLogImages/CompletedT2W10.png)
+
+### Test Report
+![alt text](teamLogImages/TestsT2W10.png)
 All tests are passing except 4. This is due to a PR that made changes to an existing file (src/Routers/resume.py) without updating the associated test file (test_API_resume.py), instead a new test file was created for that PR. This small issue will be fixed as we have made note of it and created an issue (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/416). 
 
 ### Reflection Points
@@ -690,3 +726,4 @@ All tests are passing except 4. This is due to a PR that made changes to an exis
   
 **What didn’t go as planned:**
 - We need to finalize our decisions regarding aeathetics (frontend styling) as we are currently being held back because of this.
+
