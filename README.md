@@ -18,6 +18,7 @@ A versatile platform that intelligently processes digital artifacts including co
 ---
 ## Testing Guidelines for Milestone 2
 
+- clone this repository to your local machine
 - find test_data.zip and test_data2.zip within the root directory
 - download both into your local machine and unzip  both files
 - test_data.zip:
@@ -26,7 +27,18 @@ A versatile platform that intelligently processes digital artifacts including co
 - test_data2.zip:
   - this folder contains a collaborative coding project, an individual coding project, a text project, and a visual project (and their respective zip folders)
   - the collaborative project in this folder is the same as test_data.zip, but a later snapshot of the same repository
-
+- to mannually test out all of our system through the terminal:
+  - change directory to the repository's directory
+  - run: python src/main.py
+- to test out our endpoints:
+  - change directory to the repository's directory
+  - run this comand in the terminal: uvicorn src.mainAPI:app --reload
+  - paste and go to this link: http://127.0.0.1:8000/docs
+- to test out our mock frontend
+  - change directory to the repository's directory
+  - run this comand in the terminal: uvicorn src.mainAPI:app --reload
+  - open index.html with a web browser (located in ./frontend/index.html)
+  - the mock UI is not fully functional and was created for testing purposes
 
 ---
 
