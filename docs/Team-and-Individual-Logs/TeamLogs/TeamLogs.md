@@ -8,6 +8,7 @@
 - [T2 Week 7](#term-2-week-7-team-log)
 - [T2 Week 8](#term-2-week-8-team-log)
 - [T2 Week 9](#term-2-week-9-team-log)
+- [T2 Week 10](#term-2-week-10-team-log)
 
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
@@ -698,12 +699,12 @@ All tests are passing except 4. This is due to a PR that made changes to an exis
 **Date Range:** Mar 9 - March 15, 2026
 | Team Member | Work Completed / Focus This Week | Related Issue # |
 |--------------|----------------------------------|-----------------|
-| **Illina Islam** | | |
-| **Sana Shah** | | |
-| **Maya Knutsvig** | | |
+| **Illina Islam** | Updating and expanding auth endpoints. | 475, 452, 453, 454, 455, 456 |
+| **Sana Shah** | Updated project page to include project management options | 444 |
+| **Maya Knutsvig** | Fleshed out the settings page | 439 |
 | **Prina Mehta** | Integrated AI analysis into system (endpoints and UI inclusive) to generate, display, and download content | 434 |
 | **Jackson Wilson** | Created projects endpoints, created styling for full app, created styling for specific sections (Charts, projects, settings)| 426, 423, 424|
-| **T’Olu Akinwande** | | |
+| **T’Olu Akinwande** | Building skills timeline feature for the web portfolio | 385 |
 
 Backlog:
 ![alt text](teamLogImages/BacklogT2W10.png)
