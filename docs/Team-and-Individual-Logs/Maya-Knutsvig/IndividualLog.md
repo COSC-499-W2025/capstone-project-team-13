@@ -1,6 +1,7 @@
 ## Weekly Navigation
 
 ### Term 2 (Semester 2)
+- [Log 17 – Semester 2 Week 10 (March 09–15, 2026)](#log-12)
 - [Log 16 – Semester 2 Week 9 (March 02-08, 2026)](#log-16)
 - [Log 15 – Semester 2 Week 5 (Feb 02-08, 2026)](#log-15)
 - [Log 14 – Semester 2 Week 3 (Jan 19–25, 2026)](#log-14)
@@ -443,6 +444,45 @@ No blockers or issues these weeks
 ### Blockers or Issues
 
 The code is functioning, but as I was doing settings I realized our backend had more settings that we had not created APIs for, so I created the settings page with placeholders and next week will finish it
+
+### Plan for Next Week
+
+390 in progress + work on APIs if needed and if APIs are done then add the frontend portion of it
+
+## Log 17
+
+## Date Range: Semester 2 Week 10 – March 00-15, 2026
+
+## ![week 18 features](weeklyfeaturesimages/week18features.png)
+
+
+### Tasks Worked On
+
+### Coding
+
+- Worked on Issue #390
+- Created Privacy settings page
+
+### Testing / Debugging
+
+- Manual debugging this week through backend ensuring API requests were going as 200 OK
+
+### Review / Collaboration
+
+- Very active online all of us with our planning and getting ready for the week
+
+### Recap of Weekly Goals
+
+- Work on settings page with full functionality, adding privacy part of the settings and ensuring functionality
+### Project Plan Ownership
+
+- **Assigned Features:** Privacy part of Settings page
+- **Project Board Tasks:** Issue 390
+- **Status:** In progress
+
+### Blockers or Issues
+
+None 
 
 ### Plan for Next Week
 
