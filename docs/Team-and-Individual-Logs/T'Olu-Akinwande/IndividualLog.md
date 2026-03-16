@@ -416,7 +416,28 @@ Resolving merge conflicts on the scanner PR was time consuming and some original
 Planned Work for Next Week:
 Continue working on #385 by building the skills timeline component (sub-issue 2), which will visualize the user's skills progression over time using data from the existing portfolio endpoints.
 
-<img width="934" height="530" alt="Screenshot 2026-03-08 173046" src="https://github.com/user-attachments/assets/60f55d29-edf6-44de-9c66-1b891fb85437" />
+<img width="934" height="530" alt="Screenshot 20
+ 26-03-08 173046" src="https://github.com/user-attachments/assets/60f55d29-edf6-44de-9c66-1b891fb85437" />
+
+
+
+# Log 8
+Date Range: March 9 – March 15, 2026
+
+Issues Worked On: Sub-issue of #385 – Skills Timeline Component, PR reviews
+https://github.com/orgs/COSC-499-W2025/projects/25/views/1?pane=issue&itemId=163325204&issue=COSC-499-W2025%7Ccapstone-project-team-13%7C385
+
+Tasks Completed: This week I built the skills timeline feature for the web portfolio. On the backend I created a new GET /skills/timeline endpoint that returns each skill with first_seen and last_seen dates derived from project activity timestamps, along with per-project date ranges and project counts. On the frontend I built a SkillsTimeline React component that visualizes skills progression — each skill is shown as a ranked row with an animated usage bar, project count, and an expandable toggle to see which projects the skill appears in. The component is embedded in the Portfolio page behind a toggle button. Work was split across two branches and PRs: feat/skills-timeline-endpoint (backend) and feat/skills-timeline-ui (frontend). Unit tests were written and passing for both the backend service function and the frontend component. I also reviewed and provided feedback on teammate PRs throughout the week.
+
+Connection to Previous Week: Last week I built the top 3 projects display for the Portfolio page. This week I extended the portfolio further by adding the skills timeline component, which is the second sub-issue of the same feature. The portfolio endpoints and page structure built last week provided the foundation for this week's work.
+
+Issues/Blockers: There were a few minor issues while integrating the /skills/timeline endpoint, mainly related to small configuration and routing adjustments needed to get the backend running locally. There were also some temporary inconsistencies when uploading test projects to verify the timeline visually through the projects dashboard. These issues were resolved during development and did not significantly impact progress.
+
+Planned Work for Next Week: Continue working on #385 by building additional portfolio components such as the heatmap of project activity or the private/public mode toggle.
+
+
+![Sprint Tasks](https://github.com/user-attachments/assets/60f55d29-edf6-44de-9c66-1b891fb85437)
+
 
 
 
