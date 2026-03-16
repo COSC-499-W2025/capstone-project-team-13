@@ -24,6 +24,8 @@ Hyperlinks for Term 2:
 
 [Term 2 Week 9](#date-range-term-2-week-9---mar-2-mar-8-2026)
 
+[Term 2 Week 10](#log-20)
+
 
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
@@ -378,6 +380,12 @@ GET /projects/{project_id}/roles
 POST /projects/{project_id}/roles
 
 After this, I took on styling for the project. We went over certain visions for how we want our project to look and I took over handling css to give a more unified look rather than the slapped together feel we have before. We now have a pretty consistent style across the page as well as I approached specific elements like settings, projects, and charts to get those polished as well. Looking at settings as it's the most complete I feel the look of our project will turn out well. I also helped Maya on PR 441 and 442, as she was having some issues with some of the endpoints so I helped her debug. I directly contributed some lines into 441 as well as explained the fix that was needed so she could execute the same fix on 442.
+
+https://github.com/COSC-499-W2025/capstone-project-team-13/pull/472
+https://github.com/COSC-499-W2025/capstone-project-team-13/pull/473
+https://github.com/COSC-499-W2025/capstone-project-team-13/pull/436
+https://github.com/COSC-499-W2025/capstone-project-team-13/pull/441
+https://github.com/COSC-499-W2025/capstone-project-team-13/pull/431
 
 ### Plans for next week
 
