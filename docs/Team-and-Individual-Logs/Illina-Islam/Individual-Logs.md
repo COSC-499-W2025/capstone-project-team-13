@@ -1,4 +1,5 @@
 # Log navigation
+- [Term 2, week 10](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-10---mar-9-mar-15-2026)
 - [Term 2, week 9](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-9---mar-2-mar-8-2026)
 - [Term 2, week 6/7/8](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-6/7/8---feb-9-mar-1-2026)
 - [Term 2, week 4/5](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-4/5---jan-26-feb-8-2026)
@@ -249,8 +250,23 @@
 
 ## Week 10 - Mar 9-Mar 15, 2026
 
+* This week I was going to work on the dashboard but after meeting with the team we decided that it would be better if I was put in charge of completing the resume system
+  * I added new endpoints according to src/resume/resumeMenu.py within resume.py and resume_service.py
+  * I made some fixes in resume_export_service.py
+  * I updated all the existing endpoints to include auth in resume_service.py and resume.py
+  * I updated the existing test files for these features test_API_resume.py and test_resume_export.py
+  * I also started working on editing the frontend page + features for the resume system
+* My contributions close:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/475
+* My contributions also start on these issues for the frontend:
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/452
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/453
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/454
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/455
+  * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/456
 
-
+* for next week: hold a team meeting, complete peer testing, complete resume feature
+  
 
 
 
