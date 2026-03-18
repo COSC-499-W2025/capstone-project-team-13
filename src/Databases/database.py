@@ -397,9 +397,25 @@ class Education(Base):
     topic = Column(String(255), nullable=False)  # e.g. "Computer Science", "Economics"
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)  # NULL means "present"
+    location = Column(String(255), nullable=True) # e.g. "Kelowna, BC"
+    gpa = Column(String(20), nullable=True)       # e.g. "3.8/4.0"
+    _details = Column('details', Text, nullable=True)  # JSON list of extra bullet points
 
     # Relationships
     user = relationship('User', back_populates='education')
+
+    @property
+    def details(self) -> list:
+        if self._details:
+            try:
+                return json.loads(self._details)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+
+    @details.setter
+    def details(self, value):
+        self._details = json.dumps(value) if value is not None else None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -410,6 +426,9 @@ class Education(Base):
             'topic': self.topic,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else 'Present',
+            'location': self.location,
+            'gpa': self.gpa,
+            'details': self.details,
         }
 
 class WorkHistory(Base):
@@ -424,9 +443,24 @@ class WorkHistory(Base):
     role = Column(String(255), nullable=False)
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)  # NULL means "present"
+    location = Column(String(255), nullable=True) # e.g. "Vancouver, BC"
+    _bullets = Column('bullets', Text, nullable=True)  # JSON list of achievement bullets
 
     # Relationships
     user = relationship('User', back_populates='work_history')
+
+    @property
+    def bullets(self) -> list:
+        if self._bullets:
+            try:
+                return json.loads(self._bullets)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return []
+
+    @bullets.setter
+    def bullets(self, value):
+        self._bullets = json.dumps(value) if value is not None else None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -436,6 +470,8 @@ class WorkHistory(Base):
             'role': self.role,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else 'Present',
+            'location': self.location,
+            'bullets': self.bullets,
         }
 
 class ContactInfo(Base):
