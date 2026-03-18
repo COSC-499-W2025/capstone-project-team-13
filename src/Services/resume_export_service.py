@@ -1,7 +1,6 @@
 """
 Thin export layer — PDF and DOCX rendering only.
 Data is gathered via existing modules:
-  - src.Resume.resumeGenerator       : get_projects_with_bullets()
   - src.Portfolio.portfolioFormatter : PortfolioFormatter._infer_skills()
   - src.Databases.database           : db_manager
 Deps: pip install reportlab python-docx
@@ -24,7 +23,6 @@ from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from src.Databases.database import db_manager
-from src.Resume.resumeGenerator import get_projects_with_bullets
 from src.Portfolio.portfolioFormatter import PortfolioFormatter
 from src.UserPrompts.config_integration import has_ai_consent
 
@@ -105,7 +103,7 @@ def get_resume_preview_data(user_id: int) -> dict[str, Any]:
     awards: list[str] = (user.resume or {}).get("awards", [])
 
     formatter    = PortfolioFormatter()
-    all_projects = db_manager.get_all_projects()
+    all_projects = db_manager.get_all_projects(user_id=user_id)
 
     skill_counts: dict[str, int] = {}
     for p in all_projects:
@@ -117,7 +115,7 @@ def get_resume_preview_data(user_id: int) -> dict[str, Any]:
         skills_by_level[_skill_level(count)].append(skill)
 
     ai_enabled = has_ai_consent()
-    has_bullets = {p.id for p in get_projects_with_bullets()}
+    has_bullets = {p.id for p in all_projects if p.bullets is not None}
     resume_projects = []
 
     for project in all_projects:
@@ -156,200 +154,246 @@ def get_resume_preview_data(user_id: int) -> dict[str, Any]:
 
 def _build_pdf(data: dict[str, Any]) -> bytes:
     buf = io.BytesIO()
-    styles = getSampleStyleSheet()
 
-    GREEN = colors.HexColor(_GREEN)
+    BLACK = colors.black
 
-    name_style = ParagraphStyle("name", fontSize=22, textColor=GREEN,
-                                alignment=TA_CENTER, fontName="Times-Bold",
-                                spaceAfter=2)
-    role_style = ParagraphStyle("role", fontSize=11, textColor=colors.HexColor("#555555"),
-                                alignment=TA_CENTER, fontName="Times-Italic",
-                                spaceAfter=4)
-    contact_style = ParagraphStyle("contact", fontSize=8, textColor=colors.HexColor("#555555"),
-                                   alignment=TA_CENTER, spaceAfter=8)
-    section_style = ParagraphStyle("section", fontSize=10, textColor=GREEN,
-                                   fontName="Times-Bold", alignment=TA_CENTER,
-                                   spaceBefore=4, spaceAfter=2)
-    body_style = ParagraphStyle("body", fontSize=9, leading=13, spaceAfter=2)
-    label_style = ParagraphStyle("label", fontSize=9, fontName="Times-Bold",
-                                 spaceAfter=1)
-    italic_style = ParagraphStyle("italic", fontSize=8.5, fontName="Times-Italic",
-                                  textColor=colors.HexColor("#555555"), spaceAfter=2)
-    muted_style = ParagraphStyle("muted", fontSize=7.5,
-                                 textColor=colors.HexColor("#888888"), spaceAfter=4)
+    name_style    = ParagraphStyle("name",    fontSize=18, textColor=BLACK,
+                                   alignment=TA_CENTER, fontName="Times-Bold",
+                                   spaceAfter=2, spaceBefore=0)
+    contact_style = ParagraphStyle("contact", fontSize=10, textColor=BLACK,
+                                   alignment=TA_CENTER, spaceAfter=6)
+    section_style = ParagraphStyle("section", fontSize=10, textColor=BLACK,
+                                   fontName="Times-Bold", spaceBefore=8, spaceAfter=1)
+    body_style    = ParagraphStyle("body",    fontSize=10, leading=14, spaceAfter=2)
+    label_style   = ParagraphStyle("label",   fontSize=10, fontName="Times-Bold",
+                                   spaceAfter=1)
+    italic_style  = ParagraphStyle("italic",  fontSize=10, fontName="Times-Italic",
+                                   spaceAfter=2)
 
     def rule():
-        return HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#b7c9bf"),
-                          spaceAfter=0, spaceBefore=0)
+        return HRFlowable(width="100%", thickness=0.5, color=BLACK,
+                          spaceAfter=2, spaceBefore=0)
 
     def section_block(title):
-        return [rule(), Paragraph(title, section_style), rule()]
+        """Bold uppercase title followed by a horizontal rule."""
+        return [Paragraph(f"<b>{title.upper()}</b>", section_style), rule()]
+
+    def two_col(left, right):
+        row = [[Paragraph(f"<b>{left}</b>", label_style),
+                Paragraph(right, ParagraphStyle("r", fontSize=10, alignment=TA_RIGHT))]]
+        t = Table(row, colWidths=[4.5*inch, 2.5*inch])
+        t.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "BOTTOM"),
+                               ("BOTTOMPADDING", (0,0), (-1,-1), 0)]))
+        return t
 
     doc = SimpleDocTemplate(buf, pagesize=letter,
                             leftMargin=0.75*inch, rightMargin=0.75*inch,
                             topMargin=0.6*inch, bottomMargin=0.6*inch)
     story = []
 
-    # Header
+    # Name + contact
     story.append(Paragraph(data.get("name", ""), name_style))
-    role = _role_line(data.get("education", []))
-    if role:
-        story.append(Paragraph(role, role_style))
-    if data.get("email"):
-        story.append(Paragraph(data["email"], contact_style))
+    contact_parts = [p for p in [
+        data.get("phone"), data.get("email"),
+        data.get("linkedin"), data.get("github")
+    ] if p]
+    if contact_parts:
+        story.append(Paragraph(" | ".join(contact_parts), contact_style))
     story.append(rule())
 
-    # Education & Awards
-    story += section_block("Education and Awards")
-    for edu in data.get("education", []):
-        start = (edu.get("start_date") or "")[:7].replace("-", "/")
-        end   = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
-        degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip()
-        row = [[Paragraph(degree, label_style),
-                Paragraph(f"{start} – {end}", ParagraphStyle("r", fontSize=9,
-                          alignment=TA_RIGHT, textColor=colors.HexColor("#555555")))]]
-        t = Table(row, colWidths=[4.5*inch, 2.5*inch])
-        t.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "BOTTOM"),
-                               ("BOTTOMPADDING", (0,0), (-1,-1), 0)]))
-        story.append(t)
-        story.append(Paragraph(edu.get("institution",""), italic_style))
-    for award in data.get("awards", []):
-        story.append(Paragraph(f"\u2014 {award}", body_style))
-    if not data.get("education") and not data.get("awards"):
-        story.append(Paragraph("No education or awards on record.", italic_style))
+    # Education
+    if data.get("education"):
+        story += section_block("Education")
+        for edu in data.get("education", []):
+            end   = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
+            inst  = edu.get("institution", "")
+            loc   = edu.get("location", "")
+            story.append(two_col(f"{inst}  |  {loc}" if loc else inst, end))
+            degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
+            gpa    = edu.get("gpa", "")
+            story.append(Paragraph(f"<i>{degree}{('  |  GPA: ' + gpa) if gpa else ''}</i>", italic_style))
+            for detail in edu.get("details", []):
+                story.append(Paragraph(f"• {detail}", body_style))
+        story.append(Spacer(1, 4))
+
+    # Awards
+    if data.get("awards"):
+        story += section_block("Awards")
+        for award in data.get("awards", []):
+            story.append(Paragraph(f"• {award}", body_style))
+        story.append(Spacer(1, 4))
 
     # Skills
-    story += section_block("Skills")
-    has_skills = False
-    for level, items in data.get("skills_by_level", {}).items():
-        if items:
-            story.append(Paragraph(f"<b>{level}:</b> {', '.join(items)}", body_style))
-            has_skills = True
-    if not has_skills:
-        story.append(Paragraph("No skills extracted yet.", italic_style))
+    skills_by_level = data.get("skills_by_level", {})
+    if any(v for v in skills_by_level.values()) or data.get("skills"):
+        story += section_block("Technical Skills")
+        for level, items in skills_by_level.items():
+            if items:
+                story.append(Paragraph(f"<b>{level}:</b> {', '.join(items)}", body_style))
+        for line in data.get("skills", []):
+            story.append(Paragraph(line, body_style))
+        story.append(Spacer(1, 4))
+
+    # Work history
+    if data.get("work_history"):
+        story += section_block("Relevant Experience")
+        for job in data.get("work_history", []):
+            comp = job.get("company", "")
+            loc  = job.get("location", "")
+            start = job.get("start_date", "")
+            end   = job.get("end_date", "Present")
+            story.append(two_col(f"{comp}  |  {loc}" if loc else comp,
+                                 f"{start} - {end}" if start else end))
+            if job.get("role"):
+                story.append(Paragraph(f"<i>{job['role']}</i>", italic_style))
+            for b in job.get("bullets", []):
+                story.append(Paragraph(f"• {b}", body_style))
+            story.append(Spacer(1, 4))
 
     # Projects
-    story += section_block("Projects")
-    for proj in data.get("projects", []):
-        story.append(Paragraph(proj["name"], label_style))
-        if proj.get("header") and proj["header"] != proj["name"]:
-            story.append(Paragraph(proj["header"], italic_style))
-        if proj.get("bullets"):
-            for b in proj["bullets"]:
-                story.append(Paragraph(f"\u2022 {b}", body_style))
-        else:
-            story.append(Paragraph("No bullets generated yet.", italic_style))
-        if proj.get("ats_score"):
-            story.append(Paragraph(f"ATS score: {proj['ats_score']:.0f}/100", muted_style))
-        story.append(Spacer(1, 6))
+    if data.get("projects"):
+        story += section_block("Projects")
+        for proj in data.get("projects", []):
+            header = proj.get("header") or proj.get("name", "")
+            story.append(two_col(header, proj.get("date", "")))
+            for b in proj.get("bullets", []):
+                story.append(Paragraph(f"• {b}", body_style))
+            story.append(Spacer(1, 4))
 
     doc.build(story)
     return buf.getvalue()
 
 
-# ── DOCX builder ──────────────────────────────────────────────────────────────
+# ── DOCX builder ─────────────────────────────────────────────────────────────────────────────────
 
 def _build_docx(data: dict[str, Any]) -> bytes:
     doc = Document()
 
-    # Narrow margins
     for section in doc.sections:
         section.top_margin    = Pt(43)
         section.bottom_margin = Pt(43)
         section.left_margin   = Pt(54)
         section.right_margin  = Pt(54)
 
-    def para(text, bold=False, italic=False, size=10, align=None,
-             color=None, space_after=4):
+    def add_rule(p):
+        pPr = p._p.get_or_add_pPr()
+        pBdr = OxmlElement("w:pBdr")
+        bottom = OxmlElement("w:bottom")
+        bottom.set(qn("w:val"), "single")
+        bottom.set(qn("w:sz"), "6")
+        bottom.set(qn("w:space"), "1")
+        bottom.set(qn("w:color"), "000000")
+        pBdr.append(bottom)
+        pPr.append(pBdr)
+
+    def add_para(text="", bold=False, italic=False, size=10,
+                 align=WD_ALIGN_PARAGRAPH.LEFT, space_after=2, space_before=0):
         p = doc.add_paragraph()
         p.paragraph_format.space_after  = Pt(space_after)
-        p.paragraph_format.space_before = Pt(0)
-        if align:
-            p.alignment = align
-        r = p.add_run(text)
-        r.bold   = bold
-        r.italic = italic
-        r.font.size = Pt(size)
-        if color:
-            r.font.color.rgb = RGBColor(*bytes.fromhex(color.lstrip("#")))
+        p.paragraph_format.space_before = Pt(space_before)
+        p.alignment = align
+        if text:
+            r = p.add_run(text)
+            r.bold = bold; r.italic = italic; r.font.size = Pt(size)
         return p
 
     def section_heading(title):
-        doc.add_paragraph().paragraph_format.space_after = Pt(0)
         p = doc.add_paragraph()
-        p.paragraph_format.space_after  = Pt(0)
-        p.paragraph_format.space_before = Pt(0)
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = p.add_run(title)
-        r.bold = True; r.font.size = Pt(11)
-        r.font.color.rgb = RGBColor(0x2d, 0x6a, 0x4f)
-        doc.add_paragraph().paragraph_format.space_after = Pt(0)
+        p.paragraph_format.space_before = Pt(8)
+        p.paragraph_format.space_after  = Pt(1)
+        r = p.add_run(title.upper())
+        r.bold = True; r.font.size = Pt(10)
+        add_rule(p)
 
-    # Name / contact
-    para(data.get("name",""), bold=True, size=20,
-         align=WD_ALIGN_PARAGRAPH.CENTER, color=_GREEN, space_after=2)
-    role = _role_line(data.get("education", []))
-    if role:
-        para(role, italic=True, size=11,
-             align=WD_ALIGN_PARAGRAPH.CENTER, color="#555555", space_after=4)
-    if data.get("email"):
-        para(data["email"], size=9,
-             align=WD_ALIGN_PARAGRAPH.CENTER, color="#555555", space_after=8)
-
-    section_heading("Education and Awards")
-    for edu in data.get("education", []):
-        start  = (edu.get("start_date") or "")[:7].replace("-", "/")
-        end    = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
-        degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}"
+    def two_col_row(left, right, size=10):
         p = doc.add_paragraph()
-        p.paragraph_format.space_after  = Pt(0)
-        p.paragraph_format.space_before = Pt(4)
-        r1 = p.add_run(degree); r1.bold = True; r1.font.size = Pt(9.5)
-        p.add_run("\t")
-        r2 = p.add_run(f"{start} - {end}")
-        r2.font.size = Pt(9.5); r2.font.color.rgb = RGBColor(0x44,0x44,0x44)
+        p.paragraph_format.space_after  = Pt(1)
+        p.paragraph_format.space_before = Pt(2)
         pPr = p._p.get_or_add_pPr()
-        tabs = OxmlElement("w:tabs"); tab = OxmlElement("w:tab")
+        tabs = OxmlElement("w:tabs")
+        tab  = OxmlElement("w:tab")
         tab.set(qn("w:val"), "right"); tab.set(qn("w:pos"), "8640")
         tabs.append(tab); pPr.append(tabs)
-        para(edu.get("institution",""), italic=True, size=9.5, space_after=6)
-    for award in data.get("awards", []):
-        para(f"  {award}", size=9.5, space_after=3)
-    if not data.get("education") and not data.get("awards"):
-        para("No education or awards on record.", italic=True, size=9.5)
+        r1 = p.add_run(left);  r1.bold = True;  r1.font.size = Pt(size)
+        p.add_run("\t")
+        r2 = p.add_run(right); r2.font.size = Pt(size)
+        return p
 
-    section_heading("Skills")
-    has_skills = False
-    for level, items in data.get("skills_by_level", {}).items():
-        if items:
-            p = doc.add_paragraph()
-            p.paragraph_format.space_after  = Pt(3)
-            p.paragraph_format.space_before = Pt(0)
-            r1 = p.add_run(f"{level} — "); r1.bold = True; r1.font.size = Pt(9.5)
-            p.add_run(" | ".join(items)).font.size = Pt(9.5)
-            has_skills = True
-    if not has_skills:
-        para("No skills extracted yet.", italic=True, size=9.5)
+    def bullet(text, size=10):
+        p = doc.add_paragraph(style="List Bullet")
+        p.paragraph_format.space_after = Pt(1)
+        r = p.add_run(text); r.font.size = Pt(size)
 
-    section_heading("Projects")
-    for proj in data.get("projects", []):
-        para(proj["name"], bold=True, size=9.5, space_after=1)
-        if proj.get("header") and proj["header"] != proj["name"]:
-            para(proj["header"], italic=True, size=9.5, space_after=2)
-        if proj.get("bullets"):
-            para("  ".join(proj["bullets"]), size=9.5, space_after=2)
-        else:
-            p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(2)
-            r = p.add_run("No bullets generated yet.")
-            r.italic = True; r.font.size = Pt(9)
-            r.font.color.rgb = RGBColor(0x88,0x88,0x88)
-        if proj.get("ats_score"):
-            p = doc.add_paragraph(); p.paragraph_format.space_after = Pt(6)
-            r = p.add_run(f"ATS score: {proj['ats_score']:.0f}/100")
-            r.font.size = Pt(7.5); r.font.color.rgb = RGBColor(0x88,0x88,0x88)
-        else:
-            doc.add_paragraph().paragraph_format.space_after = Pt(6)
+    # Name + contact
+    add_para(data.get("name", ""), bold=True, size=18,
+             align=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
+    contact_parts = [p for p in [
+        data.get("phone"), data.get("email"),
+        data.get("linkedin"), data.get("github")
+    ] if p]
+    if contact_parts:
+        add_para(" | ".join(contact_parts), size=10,
+                 align=WD_ALIGN_PARAGRAPH.CENTER, space_after=4)
+    p_rule = add_para(space_after=4)
+    add_rule(p_rule)
+
+    # Education
+    if data.get("education"):
+        section_heading("Education")
+        for edu in data.get("education", []):
+            end    = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
+            inst   = edu.get("institution", "")
+            loc    = edu.get("location", "")
+            two_col_row(f"{inst}  |  {loc}" if loc else inst, end)
+            degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
+            gpa    = edu.get("gpa", "")
+            add_para(degree + (f"  |  GPA: {gpa}" if gpa else ""),
+                     italic=True, size=10, space_after=1)
+            for detail in edu.get("details", []):
+                bullet(detail)
+
+    # Awards
+    if data.get("awards"):
+        section_heading("Awards")
+        for award in data.get("awards", []):
+            bullet(award)
+
+    # Skills
+    skills_by_level = data.get("skills_by_level", {})
+    if any(v for v in skills_by_level.values()) or data.get("skills"):
+        section_heading("Technical Skills")
+        for level, items in skills_by_level.items():
+            if items:
+                p = doc.add_paragraph()
+                p.paragraph_format.space_after = Pt(1)
+                r1 = p.add_run(f"{level}: "); r1.bold = True; r1.font.size = Pt(10)
+                p.add_run(", ".join(items)).font.size = Pt(10)
+        for line in data.get("skills", []):
+            add_para(line, size=10, space_after=1)
+
+    # Work history
+    if data.get("work_history"):
+        section_heading("Relevant Experience")
+        for job in data.get("work_history", []):
+            comp  = job.get("company", "")
+            loc   = job.get("location", "")
+            start = job.get("start_date", "")
+            end   = job.get("end_date", "Present")
+            two_col_row(f"{comp}  |  {loc}" if loc else comp,
+                        f"{start} - {end}" if start else end)
+            if job.get("role"):
+                add_para(job["role"], italic=True, size=10, space_after=1)
+            for b in job.get("bullets", []):
+                bullet(b)
+
+    # Projects
+    if data.get("projects"):
+        section_heading("Projects")
+        for proj in data.get("projects", []):
+            header = proj.get("header") or proj.get("name", "")
+            two_col_row(header, proj.get("date", ""))
+            for b in proj.get("bullets", []):
+                bullet(b)
 
     buf = io.BytesIO()
     doc.save(buf)
@@ -359,7 +403,15 @@ def _build_docx(data: dict[str, Any]) -> bytes:
 # ── public API ────────────────────────────────────────────────────────────────
 
 def generate_resume_pdf(user_id: int) -> bytes:
-    return _build_pdf(get_resume_preview_data(user_id))
+    """Export the stored user.resume as PDF. Raises ValueError if no resume generated yet."""
+    user = db_manager.get_user(user_id)
+    if not user or not user.resume:
+        raise ValueError("No resume found. Call POST /resume/generate first.")
+    return _build_pdf(user.resume)
 
 def generate_resume_docx(user_id: int) -> bytes:
-    return _build_docx(get_resume_preview_data(user_id))
+    """Export the stored user.resume as DOCX. Raises ValueError if no resume generated yet."""
+    user = db_manager.get_user(user_id)
+    if not user or not user.resume:
+        raise ValueError("No resume found. Call POST /resume/generate first.")
+    return _build_docx(user.resume)
