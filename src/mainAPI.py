@@ -1,11 +1,13 @@
 from fastapi import FastAPI
-from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration
+from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, education, work_history
 from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(title="Digital Artifact Mining API")
 app.include_router(projects.router)
 app.include_router(resumes.router)
+app.include_router(education.router)
+app.include_router(work_history.router)
 app.include_router(portfolio.router)
 app.include_router(skills.router)
 app.include_router(analytics.router)
