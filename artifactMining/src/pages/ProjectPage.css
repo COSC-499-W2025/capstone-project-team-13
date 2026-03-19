@@ -1,26 +1,109 @@
-.project-page {
-  max-width: 900px;
-  margin: auto;
-  padding: 20px;
+.back-btn { margin-bottom: 20px; }
+
+.pp-hero { display: flex; gap: 28px; margin-bottom: 24px; align-items: flex-start; }
+
+.pp-thumbnail-wrap { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.pp-thumbnail { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(107,114,244,0.3); }
+.pp-thumbnail-placeholder {
+  width: 120px; height: 120px; border-radius: 12px;
+  border: 1px solid rgba(107,114,244,0.3);
+  background: linear-gradient(135deg, rgba(41,119,255,0.2), rgba(163,73,255,0.2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; color: #a5b4fc; font-weight: 700;
+}
+.thumb-upload { display: flex; flex-direction: column; gap: 6px; }
+.thumb-upload input { font-size: 0.75rem; }
+
+.pp-info { flex: 1; }
+.pp-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.pp-info h1 { margin-bottom: 8px; }
+.pp-desc { color: #9aa6de; font-size: 0.9rem; line-height: 1.65; }
+.pp-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+.pp-edit-form { margin-bottom: 20px; }
+.pp-edit-form h2 { margin-bottom: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; color: #9aa6de; }
+.form-checks { display: flex; gap: 20px; margin-top: 12px; }
+.form-checks label { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; color: #d8dfff; }
+.form-checks input[type=checkbox] { width: auto; background: none; border: 1px solid rgba(121,132,255,0.42); }
+
+.pp-section { margin-bottom: 16px; }
+.pp-section h3 { margin-bottom: 8px; }
+.pp-section p { color: #b8c0e8; font-size: 0.9rem; line-height: 1.6; }
+
+/* ── AI Analysis section ── */
+.pp-ai-section { margin-bottom: 20px; }
+
+.pp-ai-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.pp-ai-header h2 { margin-bottom: 0; }
+.pp-ai-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+
+.ai-stored-desc {
+  background: rgba(100,108,255,0.06);
+  border: 1px solid rgba(107,114,244,0.2);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 4px;
 }
 
-.project-page img {
-  display: block;
-  margin: 10px 0 20px 0;
+.ai-results-wrap { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+
+.ai-result-block {
+  background: rgba(100,108,255,0.06);
+  border: 1px solid rgba(107,114,244,0.2);
+  border-radius: 10px;
+  padding: 16px;
+}
+.ai-result-title {
+  font-size: 0.88rem; font-weight: 700; color: #a5b4fc;
+  margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.ai-result-text {
+  color: #c4cbf5; font-size: 0.9rem; line-height: 1.7; margin: 0;
+  white-space: pre-wrap;
+}
+.ai-result-list {
+  color: #c4cbf5; font-size: 0.88rem; line-height: 1.65;
+  padding-left: 18px; margin: 0;
+}
+.ai-result-list li { margin-bottom: 6px; }
+.ai-result-list strong { color: #a5b4fc; }
+
+.ai-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+.ai-skill-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(107,114,244,0.2);
   border-radius: 8px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 5px;
 }
+.ai-skill-name { font-weight: 600; font-size: 0.9rem; color: #eef1ff; }
+.ai-skill-just { font-size: 0.78rem; color: #9aa6de; margin: 0; line-height: 1.5; }
 
-.project-page ul {
-  list-style: disc;
-  padding-left: 20px;
-}
+/* ── Detail grid ── */
+.pp-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pp-detail-grid .card h3 { margin-bottom: 12px; }
 
-.project-page button {
-  margin-bottom: 15px;
-  padding: 6px 12px;
-  border: none;
-  background-color: #706cc0;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
+.pp-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.pp-table td { padding: 7px 0; border-bottom: 1px solid rgba(107,114,244,0.15); color: #c4cbf5; }
+.pp-table td:first-child { color: #9aa6de; width: 45%; }
+
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.text-muted { color: #9aa6de; }
+
+@media (max-width: 768px) {
+  .pp-hero { flex-direction: column; }
+  .form-grid { grid-template-columns: 1fr; }
+  .pp-detail-grid { grid-template-columns: 1fr; }
+  .pp-ai-header { flex-direction: column; }
+  .pp-ai-controls { width: 100%; }
 }
