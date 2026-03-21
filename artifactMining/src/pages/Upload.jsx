@@ -10,6 +10,7 @@ export default function Upload() {
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
   const [basicConsent, setBasicConsent] = useState(false);
   // incremental
   const [projects, setProjects] = useState([]);
