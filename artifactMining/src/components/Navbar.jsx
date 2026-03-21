@@ -1,17 +1,53 @@
-import React from 'react'
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import "./Navbar.css";
 
-function Navbar() {
+const mainLinks = [
+  { to: "/", label: "Dashboard" },
+  { to: "/upload", label: "Upload" },
+  { to: "/projects", label: "Projects" },
+  { to: "/skills", label: "Skills" },
+  { to: "/portfolio", label: "Portfolio" },
+];
+
+const toolLinks = [
+  { to: "/evidence", label: "Evidence" },
+  { to: "/analysis", label: "Analysis" },
+  { to: "/deletion", label: "Deletion" },
+  { to: "/resumes", label: "Resumes" },
+  { to: "/settings", label: "Settings" },
+];
+
+export default function Navbar() {
+  const { pathname } = useLocation();
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolActive = toolLinks.some(l => pathname === l.to);
+
   return (
-    <div className="navbar">
-      <Link to="/">Dashboard</Link>
-      <Link to="/upload">Projects</Link>
-      <Link to="/resumes">Resumes</Link>
-      <Link to="/settings">Settings</Link>
-      <Link to="/portfolio">Portfolio</Link>
-      <Link to="/profile">Profile</Link>
-    </div>
+    <nav className="navbar" onClick={() => setToolsOpen(false)}>
+      <div className="navbar-brand">⛏ Digital Artifact Mining</div>
+      <div className="navbar-links">
+        {mainLinks.map(({ to, label }) => (
+          <Link key={to} to={to} className={`nav-link ${pathname === to ? "active" : ""}`}>{label}</Link>
+        ))}
+
+        {/* Tools dropdown */}
+        <div className="nav-dropdown" onClick={e => e.stopPropagation()}>
+          <button
+            className={`nav-link nav-dropdown-trigger ${toolActive ? "active" : ""}`}
+            onClick={() => setToolsOpen(o => !o)}
+          >
+            Tools ▾
+          </button>
+          {toolsOpen && (
+            <div className="nav-dropdown-menu" onClick={() => setToolsOpen(false)}>
+              {toolLinks.map(({ to, label }) => (
+                <Link key={to} to={to} className={`nav-dropdown-item ${pathname === to ? "active" : ""}`}>{label}</Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </nav>
   );
 }
-
-export default Navbar;

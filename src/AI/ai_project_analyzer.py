@@ -440,55 +440,70 @@ class AIProjectAnalyzer:
         """Parse AI-generated skills text into structured format."""
         if not text:
             return []
-        
+ 
+        # Words that the AI uses as section headers / labels, not skill names
+        META_WORDS = {
+            "evidence level", "justification", "strong", "moderate", "weak",
+            "demonstrated", "basic programming", "evidence", "level",
+            "here are", "the following", "skills demonstrated",
+        }
+ 
         skills = []
-        lines = text.strip().split('\n')
-
+        seen = set()
+        lines = text.strip().split('\\n')
+ 
         for line in lines:
             line = line.strip()
             if not line or line.startswith('#'):
                 continue
-
-            # Remove leading bullets/numbers
-            line = line.lstrip('*-•0123456789. ')
-            
+ 
+            # Strip markdown bullets, numbers, bold markers
+            line = line.lstrip('*-•0123456789. ').strip('* ')
+ 
             if not line:
                 continue
-
-            # Try to parse different formats
-            skill_entry = {
-                'skill': '',
-                'evidence': '',
-                'justification': ''
-            }
-            
-            # Format 1: "Skill Name (Evidence): Justification"
+ 
+            # Skip lines that are clearly preamble sentences (>10 words)
+            if len(line.split()) > 10:
+                continue
+ 
+            skill_entry = {'skill': '', 'evidence': 'Demonstrated', 'justification': ''}
+ 
+            # Format: "Skill Name (Evidence Level): Justification"
             if '(' in line and ')' in line and ':' in line:
                 parts = line.split('(', 1)
-                skill_entry['skill'] = parts[0].strip()
+                candidate = parts[0].strip('* ').strip()
                 rest = parts[1].split(')', 1)
-                skill_entry['evidence'] = rest[0].strip()
-                if len(rest) > 1:
-                    skill_entry['justification'] = rest[1].strip(' :-')
-            
-            # Format 2: "Skill: Justification" or "**Skill:** Justification"
+                evidence = rest[0].strip()
+                justification = rest[1].strip(' :-') if len(rest) > 1 else ''
+                skill_entry = {'skill': candidate, 'evidence': evidence, 'justification': justification}
+ 
+            # Format: "**Skill Name:** Justification" or "Skill: Justification"
             elif ':' in line:
                 parts = line.split(':', 1)
-                skill_entry['skill'] = parts[0].strip('* ')
-                skill_entry['justification'] = parts[1].strip()
-                skill_entry['evidence'] = 'Demonstrated'
-            
-            # Format 3: Just skill name
+                candidate = parts[0].strip('* ').strip()
+                justification = parts[1].strip()
+                # If left side is a meta word, skip
+                if candidate.lower() in META_WORDS:
+                    continue
+                skill_entry = {'skill': candidate, 'evidence': 'Demonstrated', 'justification': justification}
+ 
             else:
-                skill_entry['skill'] = line
-                skill_entry['evidence'] = 'Demonstrated'
-                skill_entry['justification'] = ''
-
-            if skill_entry['skill']:
-                skills.append(skill_entry)
-
-        return skills if skills else [{'skill': 'Basic Programming', 'evidence': 'Code structure', 'justification': text[:200]}]
-
+                skill_entry = {'skill': line, 'evidence': 'Demonstrated', 'justification': ''}
+ 
+            name = skill_entry['skill'].strip('* ').strip()
+            lower = name.lower()
+ 
+            # Skip empty, meta-words, and duplicates
+            if not name or lower in META_WORDS or lower in seen:
+                continue
+ 
+            seen.add(lower)
+            skill_entry['skill'] = name
+            skills.append(skill_entry)
+ 
+        return skills if skills else []
+    
     def analyze_project_complete(self, project_id: int) -> Dict[str, Any]:
         """
         Perform complete AI analysis on a project.

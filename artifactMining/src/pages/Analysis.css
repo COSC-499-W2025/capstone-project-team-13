@@ -1,0 +1,16 @@
+.an-tabs { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+.an-tab { background: rgba(255,255,255,0.04); color: #9aa6de; border: 1px solid rgba(167,178,255,0.25); padding: 8px 18px; border-radius: 20px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.an-tab:hover { border-color: rgba(100,108,255,0.5); color: #c4cbf5; }
+.an-tab.active { background: rgba(100,108,255,0.18); border-color: rgba(100,108,255,0.55); color: #a5b4fc; }
+.an-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.an-result-card { margin-bottom: 12px; }
+.an-result-card h3 { color: #a5b4fc; margin-bottom: 6px; }
+.an-result-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(107,114,244,0.12); flex-wrap: wrap; }
+.an-result-row:hover .an-result-name { color: #a5b4fc; }
+.an-result-rank { font-size: 1.2rem; font-weight: 700; color: #a5b4fc; min-width: 28px; }
+.an-result-name { font-weight: 600; color: #eef1ff; flex: 1; font-size: 0.95rem; }
+.an-timeline-row { display: flex; align-items: center; gap: 14px; padding: 12px 4px 12px 20px; border-left: 2px solid rgba(100,108,255,0.3); margin-left: 8px; position: relative; cursor: pointer; transition: background 0.12s; border-radius: 0 8px 8px 0; }
+.an-timeline-row:hover { background: rgba(100,108,255,0.07); }
+.an-timeline-dot { position: absolute; left: -6px; width: 10px; height: 10px; border-radius: 50%; background: #a5b4fc; border: 2px solid rgba(100,108,255,0.5); flex-shrink: 0; }
+.an-timeline-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+@media (max-width: 768px) { .an-grid { grid-template-columns: 1fr; } }
