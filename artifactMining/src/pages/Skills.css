@@ -1,0 +1,46 @@
+.skills-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.skills-stat { text-align: center; padding: 18px; }
+.stat-val { font-size: 1.8rem; font-weight: 700; color: #a5b4fc; }
+.stat-label { font-size: 0.75rem; color: #9aa6de; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+.skills-top-section { margin-bottom: 20px; }
+.skills-top-section h2 { margin-bottom: 12px; }
+.skills-top-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.top-skill-chip {
+  padding: 5px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+  background: rgba(100,108,255,0.15); border: 1px solid rgba(100,108,255,0.4); color: #a5b4fc;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.top-skill-chip:hover { background: rgba(100,108,255,0.28); border-color: rgba(163,73,255,0.6); }
+
+.skills-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+
+.skills-list { display: flex; flex-direction: column; gap: 2px; }
+
+.skill-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-radius: 8px; cursor: pointer; transition: background 0.12s;
+  border: 1px solid transparent; color: #c4cbf5;
+}
+.skill-row:hover { background: rgba(100,108,255,0.1); border-color: rgba(100,108,255,0.25); }
+.skill-row.active { background: rgba(100,108,255,0.18); border-color: rgba(100,108,255,0.45); }
+.skill-name { flex: 1; font-size: 0.9rem; text-transform: capitalize; }
+.skill-count { font-size: 0.75rem; color: #7b87c4; }
+.skill-chevron { font-size: 0.65rem; color: #7b87c4; }
+
+.skill-project-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(107,114,244,0.2);
+  transition: background 0.12s; font-size: 0.88rem; color: #c4cbf5;
+}
+.skill-project-row:hover { background: rgba(100,108,255,0.12); }
+.skill-project-row span:first-child { color: #eef1ff; }
+
+.cooc-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.cooc-plus { color: #7b87c4; font-size: 0.9rem; }
+
+@media (max-width: 768px) {
+  .skills-layout { grid-template-columns: 1fr; }
+  .skills-stats-row { grid-template-columns: 1fr 1fr; }
+}

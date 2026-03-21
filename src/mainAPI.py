@@ -1,9 +1,24 @@
-from fastapi import FastAPI
-from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, education, work_history
+from fastapi import FastAPI 
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-
+from pathlib import Path
+from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, evidence, education, work_history
 
 app = FastAPI(title="Digital Artifact Mining API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve uploaded thumbnails as static files
+UPLOAD_DIR = Path("evidence/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 app.include_router(projects.router)
 app.include_router(resumes.router)
 app.include_router(education.router)
@@ -14,11 +29,4 @@ app.include_router(analytics.router)
 app.include_router(consent.router)
 app.include_router(configuration.router)
 app.include_router(auth.router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # dev only — okay for now
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.include_router(evidence.router)
