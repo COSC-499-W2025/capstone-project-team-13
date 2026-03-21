@@ -1,8 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI 
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, evidence
+from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, evidence, education, work_history
 
 app = FastAPI(title="Digital Artifact Mining API")
 
@@ -21,6 +21,8 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.include_router(projects.router)
 app.include_router(resumes.router)
+app.include_router(education.router)
+app.include_router(work_history.router)
 app.include_router(portfolio.router)
 app.include_router(skills.router)
 app.include_router(analytics.router)
