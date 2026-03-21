@@ -1,237 +1,287 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { apiFetch, projectName } from "../apiClient";
 import "./Portfolio.css";
 
-const API_BASE = "http://127.0.0.1:8000";
-
-function Portfolio() {
-  const [projects, setProjects] = useState([]);
+export default function Portfolio() {
+  const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [notLoggedIn, setNotLoggedIn] = useState(false);
-  const [aiConsent, setAiConsent] = useState(false);
-  const [generatingAi, setGeneratingAi] = useState(false);
-  const [aiMessage, setAiMessage] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [includeHidden, setIncludeHidden] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [rankInput, setRankInput] = useState({});
+  const [sortBy, setSortBy] = useState("importance"); // importance | date | rank | name
+  const nav = useNavigate();
 
-  useEffect(() => {
-    checkAiConsent();
-    loadPortfolio();
-  }, []);
+  useEffect(() => { load(); }, [includeHidden]);
 
-  async function checkAiConsent() {
-    try {
-      const res = await fetch(`${API_BASE}/consent/ai-consent-status`);
-      const data = await res.json();
-      const granted =
-        data.granted ?? data.ai_consent_granted ?? data.status ?? false;
-      setAiConsent(Boolean(granted));
-    } catch {
-      setAiConsent(false);
-    }
-  }
-
-  async function loadPortfolio() {
+  async function load() {
     setLoading(true);
-    setError(null);
-    setNotLoggedIn(false);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/portfolio/generate`, {
+      const d = await apiFetch(`/portfolio?include_hidden=${includeHidden}`);
+      setPortfolio(d);
+    } catch (e) { setMsg({ type: "error", text: e.message }); }
+    finally { setLoading(false); }
+  }
+
+  async function generate() {
+    setGenerating(true); setMsg(null);
+    try {
+      await apiFetch(`/portfolio/generate?include_hidden=${includeHidden}`, { method: "POST" });
+      setMsg({ type: "success", text: "Portfolio regenerated!" });
+      load();
+    } catch (e) { setMsg({ type: "error", text: e.message }); }
+    finally { setGenerating(false); }
+  }
+
+  async function saveEdit(id) {
+    try {
+      await apiFetch(`/portfolio/${id}/edit`, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
       });
-      if (res.status === 401) {
-        setNotLoggedIn(true);
-        return;
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setProjects((data.projects || []).slice(0, 3));
-    } catch (e) {
-      setError("Failed to load portfolio. " + e.message);
-    } finally {
-      setLoading(false);
-    }
+      setMsg({ type: "success", text: "Saved!" });
+      setEditId(null);
+      load();
+    } catch (e) { setMsg({ type: "error", text: e.message }); }
   }
 
-  async function handleGenerateAiDescriptions() {
-    if (!aiConsent) return;
-    setGeneratingAi(true);
-    setAiMessage("");
+  async function saveRank(id) {
+    const rank = parseFloat(rankInput[id]);
+    if (isNaN(rank)) return;
     try {
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const updated = await Promise.all(
-        projects.map(async (p) => {
-          try {
-            const res = await fetch(`${API_BASE}/projects/${p.id}/analyze`, {
-              method: "POST",
-              headers,
-            });
-            if (!res.ok) return p;
-            const data = await res.json();
-            return { ...p, ai_description: data.ai_description };
-          } catch {
-            return p;
-          }
-        })
-      );
-      setProjects(updated);
-      setAiMessage("AI descriptions generated.");
-    } catch (e) {
-      setAiMessage("Failed to generate AI descriptions: " + e.message);
-    } finally {
-      setGeneratingAi(false);
-    }
+      await apiFetch(`/portfolio/${id}/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ importance_score: rank }),
+      });
+      load();
+    } catch (e) { setMsg({ type: "error", text: e.message }); }
   }
 
-  if (loading) {
-    return <div className="portfolio-loading">Loading portfolio...</div>;
+  function startEdit(p) {
+    setEditId(p.id);
+    setEditForm({
+      custom_description: p.description || "",
+      is_featured: p.is_featured || false,
+      is_hidden: p.is_hidden || false,
+      importance_score: p.importance_score ?? "",
+      user_role: p.user_role || "",
+      success_evidence: p.success_evidence || "",
+      languages: (p.languages || []).join(", "),
+      frameworks: (p.frameworks || []).join(", "),
+      skills: (p.skills || []).join(", "),
+      tags: (p.tags || []).join(", "),
+    });
   }
 
-  if (notLoggedIn) {
-    return (
-      <div className="portfolio-auth-required">
-        <h2>Sign in to view your portfolio</h2>
-        <p>Your portfolio is tied to your account. Please log in to continue.</p>
-        <a className="btn-portfolio-primary" href="/settings">
-          Go to Settings to log in
-        </a>
-      </div>
-    );
-  }
+  const projects = portfolio?.projects || [];
 
-  if (error) {
-    return (
-      <div className="portfolio-error">
-        <p>{error}</p>
-        <button className="btn-portfolio-primary" onClick={loadPortfolio}>
-          Retry
-        </button>
-      </div>
-    );
-  }
+  const sorted = [...projects].sort((a, b) => {
+    if (sortBy === "importance") return (b.importance_score || 0) - (a.importance_score || 0);
+    if (sortBy === "rank") return (a.user_rank ?? 999) - (b.user_rank ?? 999);
+    if (sortBy === "name") return (a.name || "").localeCompare(b.name || "");
+    if (sortBy === "date") return new Date(b.date || 0) - new Date(a.date || 0);
+    return 0;
+  });
+
+  const featured = sorted.filter(p => p.is_featured);
+  const rest = sorted.filter(p => !p.is_featured);
+
+  const stats = portfolio?.stats || {};
+  const summaryText = portfolio?.summary_text || portfolio?.summary?.text || "";
 
   return (
-    <div className="portfolio-page">
-      <div className="portfolio-header">
-        <h1>My Portfolio</h1>
-        <p className="portfolio-subtitle">Top projects showcased for your portfolio</p>
-
-        <div className="portfolio-actions">
-          <button className="btn-portfolio-primary" onClick={loadPortfolio}>
-            Refresh Portfolio
+    <div className="page-wrap">
+      <div className="port-header">
+        <div>
+          <h1>Master Portfolio</h1>
+          <p className="text-muted">All projects · evidences · ranked</p>
+        </div>
+        <div className="port-header-actions">
+          <label className="toggle-label">
+            <input type="checkbox" checked={includeHidden} onChange={e => setIncludeHidden(e.target.checked)} />
+            Show hidden
+          </label>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ width: "auto", padding: "8px 12px" }}>
+            <option value="importance">Sort: Importance</option>
+            <option value="rank">Sort: User Rank</option>
+            <option value="date">Sort: Date</option>
+            <option value="name">Sort: Name</option>
+          </select>
+          <button className="btn-primary" onClick={generate} disabled={generating}>
+            {generating ? "Generating…" : "↻ Regenerate"}
           </button>
-
-          {aiConsent && (
-            <button
-              className="btn-portfolio-ai"
-              onClick={handleGenerateAiDescriptions}
-              disabled={generatingAi || projects.length === 0}
-            >
-              {generatingAi ? "Generating..." : "Generate AI Descriptions"}
-            </button>
-          )}
-
-          {!aiConsent && (
-            <p className="ai-hint">
-              Enable AI consent in <a href="/settings">Settings</a> to add
-              AI-generated descriptions.
-            </p>
-          )}
         </div>
-
-        {aiMessage && <p className="portfolio-ai-message">{aiMessage}</p>}
       </div>
 
-      {projects.length === 0 ? (
-        <p className="portfolio-empty">
-          No projects found. Upload a project to get started.
-        </p>
-      ) : (
-        <div className="portfolio-grid">
-          {projects.map((project) => (
-            <PortfolioCard
-              key={project.id}
-              project={project}
-              aiConsent={aiConsent}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+      {msg && <div className={`alert ${msg.type}`}>{msg.text}</div>}
 
-function PortfolioCard({ project, aiConsent }) {
-  // Determine what description to show:
-  // 1. AI description (if present) — shown with badge
-  // 2. custom_description from portfolio edit
-  // 3. regular description
-  // 4. Nothing — prompt depends on consent
-  const hasAiDesc = Boolean(project.ai_description);
-  const fallbackDesc =
-    project.custom_description || project.description || null;
-
-  return (
-    <div className="portfolio-card">
-      {project.thumbnail_path ? (
-        <img
-          className="portfolio-card-thumbnail"
-          src={`${API_BASE}/${project.thumbnail_path}`}
-          alt={project.display_name || project.name}
-        />
-      ) : (
-        <div className="portfolio-card-placeholder">
-          {(project.display_name || project.name || "P")[0].toUpperCase()}
-        </div>
-      )}
-
-      <div className="portfolio-card-body">
-        <h2 className="portfolio-card-title">
-          {project.display_name || project.name}
-        </h2>
-
-        <div className="portfolio-card-tags">
-          {project.project_type && (
-            <span className="portfolio-tag">{project.project_type}</span>
-          )}
-          {(project.languages || []).slice(0, 2).map((lang, i) => (
-            <span key={i} className="portfolio-tag portfolio-tag-lang">
-              {lang}
-            </span>
-          ))}
-        </div>
-
-        {hasAiDesc ? (
-          <div className="portfolio-ai-desc">
-            <span className="ai-badge">AI</span>
-            <p>{project.ai_description}</p>
+      {loading ? <div className="spinner" style={{ marginTop: 40 }} /> : <>
+        {(summaryText || Object.keys(stats).length > 0) && (
+          <div className="card port-summary">
+            {summaryText && <p style={{ lineHeight: 1.7, color: "#b8c0e8" }}>{summaryText}</p>}
+            {Object.keys(stats).length > 0 && (
+              <div className="port-stat-row" style={{ marginTop: summaryText ? 16 : 0, marginBottom: 0 }}>
+                {[
+                  ["Projects", stats.total_projects ?? projects.length],
+                  ["LOC", stats.total_lines_of_code?.toLocaleString()],
+                  ["Files", stats.total_files?.toLocaleString()],
+                  ["Skills", stats.unique_skills_count ?? portfolio?.unique_skills_count],
+                ].filter(([, v]) => v != null).map(([label, val]) => (
+                  <div key={label} className="port-stat card" style={{ padding: 14 }}>
+                    <div className="stat-val">{val}</div>
+                    <div className="stat-label">{label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ) : fallbackDesc ? (
-          <p className="portfolio-card-desc">{fallbackDesc}</p>
-        ) : (
-          <p className="portfolio-card-desc portfolio-card-empty">
-            {aiConsent
-              ? "Click \"Generate AI Descriptions\" to add a description."
-              : "No description yet."}
-          </p>
         )}
 
-        <div className="portfolio-card-stats">
-          {project.file_count != null && (
-            <span>{project.file_count} files</span>
-          )}
-          {project.lines_of_code != null && (
-            <span>{project.lines_of_code.toLocaleString()} lines</span>
-          )}
-        </div>
+        {projects.length === 0 ? (
+          <div className="empty-state">
+            <p>No portfolio data yet.</p>
+            <p style={{ marginTop: 8, fontSize: "0.9rem" }}>Click <strong>Regenerate</strong> to build from your projects.</p>
+          </div>
+        ) : (
+          <>
+            {featured.length > 0 && (
+              <div className="port-section">
+                <h2 style={{ marginBottom: 16 }}>⭐ Featured Projects</h2>
+                <div className="port-top-grid">
+                  {featured.map((p, i) => <ProjectCard key={p.id} p={p} rank={i + 1} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} />)}
+                </div>
+              </div>
+            )}
+            <div className="port-section">
+              <h2 style={{ marginBottom: 16 }}>{featured.length > 0 ? "All Other Projects" : "All Projects"}</h2>
+              <div className="port-all-list">
+                {rest.map(p => <ProjectRow key={p.id} p={p} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} />)}
+              </div>
+            </div>
+          </>
+        )}
+      </>}
+    </div>
+  );
+}
 
-        <a className="portfolio-card-link" href={`/projects/${project.id}`}>
-          View Details &rarr;
-        </a>
+function EvidenceSection({ p }) {
+  const ev = p.success_evidence;
+  if (!ev) return null;
+  return (
+    <div className="port-evidence">
+      <span className="port-evidence-label">Evidence:</span>
+      <span>{ev}</span>
+    </div>
+  );
+}
+
+function EditForm({ p, editForm, setEditForm, saveEdit, setEditId }) {
+  return (
+    <div className="port-inline-edit">
+      <div className="port-edit-grid">
+        <label>Description<textarea rows={3} value={editForm.custom_description} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} /></label>
+        <label>Your Role<input value={editForm.user_role} onChange={e => setEditForm({ ...editForm, user_role: e.target.value })} placeholder="Lead Developer, Designer…" /></label>
+        <label>Success Evidence<textarea rows={2} value={editForm.success_evidence} onChange={e => setEditForm({ ...editForm, success_evidence: e.target.value })} placeholder="Metrics, feedback, grades…" /></label>
+        <label>Importance Score (0–1)<input type="number" min="0" max="1" step="0.01" value={editForm.importance_score} onChange={e => setEditForm({ ...editForm, importance_score: e.target.value })} /></label>
+        <label>Languages (comma-sep)<input value={editForm.languages} onChange={e => setEditForm({ ...editForm, languages: e.target.value })} /></label>
+        <label>Frameworks (comma-sep)<input value={editForm.frameworks} onChange={e => setEditForm({ ...editForm, frameworks: e.target.value })} /></label>
+        <label>Skills (comma-sep)<input value={editForm.skills} onChange={e => setEditForm({ ...editForm, skills: e.target.value })} /></label>
+        <label>Tags (comma-sep)<input value={editForm.tags} onChange={e => setEditForm({ ...editForm, tags: e.target.value })} /></label>
+      </div>
+      <div className="port-edit-checks">
+        <label><input type="checkbox" checked={editForm.is_featured} onChange={e => setEditForm({ ...editForm, is_featured: e.target.checked })} /> Featured</label>
+        <label><input type="checkbox" checked={editForm.is_hidden} onChange={e => setEditForm({ ...editForm, is_hidden: e.target.checked })} /> Hidden</label>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <button className="btn-primary" onClick={() => saveEdit(p.id)}>Save</button>
+        <button className="btn-secondary" onClick={() => setEditId(null)}>Cancel</button>
       </div>
     </div>
   );
 }
 
-export default Portfolio;
+function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav }) {
+  return (
+    <div className="port-top-card card">
+      <div className="port-rank">#{rank}</div>
+      <div className="port-card-tags">
+        <span className="tag">{p.type || p.project_type}</span>
+        {p.is_featured && <span className="tag success">⭐</span>}
+        {p.is_hidden && <span className="tag warning">hidden</span>}
+      </div>
+      <h3 className="port-proj-name">{projectName(p)}</h3>
+      <p className="port-proj-desc text-muted">{p.description || "No description"}</p>
+      {p.user_role && <p style={{ fontSize: "0.8rem", color: "#a5b4fc", marginTop: 4 }}>Role: {p.user_role}</p>}
+      <EvidenceSection p={p} />
+      <div className="chip-group" style={{ marginTop: 8 }}>
+        {(p.tech_stack || p.languages || []).slice(0, 4).map((t, i) => <span key={i} className="tag accent">{t}</span>)}
+      </div>
+      {p.metrics && (
+        <div className="port-metrics">
+          {p.metrics.lines_of_code > 0 && <span>{p.metrics.lines_of_code?.toLocaleString()} LOC</span>}
+          {p.metrics.file_count > 0 && <span>{p.metrics.file_count} files</span>}
+          {p.importance_score != null && <span>Score: {Number(p.importance_score).toFixed(2)}</span>}
+        </div>
+      )}
+      <div className="port-rank-row">
+        <input type="number" min="0" max="1" step="0.01" placeholder="Score 0–1"
+          value={rankInput[p.id] ?? p.importance_score ?? ""}
+          onChange={e => setRankInput({ ...rankInput, [p.id]: e.target.value })}
+          style={{ width: 100, padding: "5px 8px" }} />
+        <button className="btn-secondary" style={{ padding: "5px 10px", fontSize: "0.8rem" }} onClick={() => saveRank(p.id)}>Set</button>
+      </div>
+      <div className="port-card-actions">
+        <button className="btn-secondary" onClick={() => nav(`/projects/${p.id}`)}>View</button>
+        <button className="btn-secondary" onClick={() => editId === p.id ? setEditId(null) : startEdit(p)}>{editId === p.id ? "Cancel" : "Edit"}</button>
+      </div>
+      {editId === p.id && <EditForm p={p} editForm={editForm} setEditForm={setEditForm} saveEdit={saveEdit} setEditId={setEditId} />}
+    </div>
+  );
+}
+
+function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav }) {
+  return (
+    <div className="port-list-row card">
+      <div className="port-list-main">
+        <div className="port-list-top">
+          <strong className="port-list-name">{projectName(p)}</strong>
+          <div style={{ display: "flex", gap: 6 }}>
+            <span className="tag">{p.type || p.project_type}</span>
+            {p.is_featured && <span className="tag success">⭐</span>}
+            {p.is_hidden && <span className="tag warning">hidden</span>}
+            {p.importance_score != null && <span className="tag accent">{Number(p.importance_score).toFixed(2)}</span>}
+          </div>
+        </div>
+        <p className="port-list-desc text-muted">{p.description?.slice(0, 120) || "No description"}</p>
+        {p.user_role && <p style={{ fontSize: "0.78rem", color: "#a5b4fc", marginTop: 2 }}>Role: {p.user_role}</p>}
+        <EvidenceSection p={p} />
+        <div className="chip-group" style={{ marginTop: 6 }}>
+          {(p.languages || p.tech_stack || []).slice(0, 5).map((t, i) => <span key={i} className="tag accent">{t}</span>)}
+          {(p.skills || []).slice(0, 3).map((s, i) => <span key={i} className="tag">{s}</span>)}
+        </div>
+      </div>
+      <div className="port-list-actions">
+        <div className="port-rank-row">
+          <input type="number" min="0" max="1" step="0.01" placeholder="0–1"
+            value={rankInput[p.id] ?? p.importance_score ?? ""}
+            onChange={e => setRankInput({ ...rankInput, [p.id]: e.target.value })}
+            style={{ width: 70, padding: "5px 6px", fontSize: "0.8rem" }} />
+          <button className="btn-secondary" style={{ padding: "5px 8px", fontSize: "0.75rem" }} onClick={() => saveRank(p.id)}>Set</button>
+        </div>
+        <button className="btn-secondary" style={{ padding: "6px 12px" }} onClick={() => nav(`/projects/${p.id}`)}>View</button>
+        <button className="btn-secondary" style={{ padding: "6px 12px" }} onClick={() => editId === p.id ? setEditId(null) : startEdit(p)}>{editId === p.id ? "Cancel" : "Edit"}</button>
+      </div>
+      {editId === p.id && (
+        <div style={{ width: "100%", marginTop: 12 }}>
+          <EditForm p={p} editForm={editForm} setEditForm={setEditForm} saveEdit={saveEdit} setEditId={setEditId} />
+        </div>
+      )}
+    </div>
+  );
+}

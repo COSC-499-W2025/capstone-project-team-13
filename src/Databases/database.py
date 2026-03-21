@@ -64,12 +64,14 @@ class Project(Base):
     success_evidence = Column(Text, nullable=True)
     resume_bullets = Column(Text, nullable=True)
     thumbnail_path = Column(String(500), nullable=True)
-    
+    content_hash = Column(String(64), nullable=True, index=True)
+
     # User customizations
     custom_description = Column(Text, nullable=True)
     user_role = Column(String(100), nullable=True)
     user_contribution_percent = Column(Float, nullable=True)
     ai_description = Column(Text, nullable=True)
+    ai_analysis = Column(Text, nullable=True)   # full JSON from analyze_project_complete
 
     user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     
@@ -90,66 +92,62 @@ class Project(Base):
         Index('idx_user_projects', 'user_id', 'date_modified'),
     )
     
+    # ── JSON property helpers ─────────────────────────────────────────────────
+
+    @staticmethod
+    def _safe_json_loads(value, fallback):
+        """Parse a JSON string safely, returning fallback on any error."""
+        if not value:
+            return fallback
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return fallback
+
     # Properties for JSON fields
     @property
     def languages(self) -> List[str]:
-        return json.loads(self._languages) if self._languages else []
+        return self._safe_json_loads(self._languages, [])
     
     @languages.setter
     def languages(self, value):
-        # Convert sets to lists before storing
         if isinstance(value, set):
             value = list(value)
         self._languages = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def frameworks(self) -> List[str]:
-        return json.loads(self._frameworks) if self._frameworks else []
-    
-    # @frameworks.setter
-    # def frameworks(self, value: List[str]):
-    #     self._frameworks = json.dumps(value) if isinstance(value, list) else value
+        return self._safe_json_loads(self._frameworks, [])
 
     @frameworks.setter
     def frameworks(self, value):
-        # Convert sets to lists before storing
         if isinstance(value, set):
             value = list(value)
         self._frameworks = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def skills(self) -> List[str]:
-        return json.loads(self._skills) if self._skills else []
+        return self._safe_json_loads(self._skills, [])
     
-    # @skills.setter
-    # def skills(self, value: List[str]):
-    #     self._skills = json.dumps(value) if isinstance(value, list) else value
-
     @skills.setter
     def skills(self, value):
-        # Convert sets to lists before storing
         if isinstance(value, set):
             value = list(value)
         self._skills = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def tags(self) -> List[str]:
-        return json.loads(self._tags) if self._tags else []
+        return self._safe_json_loads(self._tags, [])
     
-    # @tags.setter
-    # def tags(self, value: List[str]):
-    #     self._tags = json.dumps(value) if isinstance(value, list) else value
-
     @tags.setter
     def tags(self, value):
-        # Convert sets to lists before storing
         if isinstance(value, set):
             value = list(value)
         self._tags = json.dumps(value) if isinstance(value, (list, set)) else value
     
     @property
     def success_metrics(self) -> Dict[str, Any]:
-        return json.loads(self.success_evidence) if self.success_evidence else {}
+        return self._safe_json_loads(self.success_evidence, {})
     
     @success_metrics.setter
     def success_metrics(self, value: Dict[str, Any]):
@@ -157,7 +155,7 @@ class Project(Base):
     
     @property
     def bullets(self) -> Optional[Dict[str, Any]]:
-        return json.loads(self.resume_bullets) if self.resume_bullets else None
+        return self._safe_json_loads(self.resume_bullets, None)
     
     @bullets.setter
     def bullets(self, value: Optional[Dict[str, Any]]):
@@ -197,19 +195,18 @@ class Project(Base):
             'thumbnail_path': self.thumbnail_path,
             'custom_description': self.custom_description,
             'user_role': self.user_role,
+            'ai_description': self.ai_description,
+            'ai_analysis': self._safe_json_loads(self.ai_analysis, None),
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-}
+        }
 
-        
-    
         # Only include counts if explicitly requested and relationships are loaded
         if include_counts:
             try:
                 result['file_count_actual'] = len(self.files) if self.files else 0
                 result['contributor_count'] = len(self.contributors) if self.contributors else 0
-            except:
-                # If relationships aren't loaded, skip counts
+            except Exception:
                 pass
         
         return result
@@ -248,7 +245,12 @@ class File(Base):
     
     @property
     def editors(self) -> List[str]:
-        return json.loads(self._editors) if self._editors else []
+        if not self._editors:
+            return []
+        try:
+            return json.loads(self._editors)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return []
     
     @editors.setter
     def editors(self, value: List[str]):
@@ -358,7 +360,12 @@ class User(Base):
 
     @property
     def portfolio(self) -> Optional[Dict[str, Any]]:
-        return json.loads(self._portfolio) if self._portfolio else None
+        if not self._portfolio:
+            return None
+        try:
+            return json.loads(self._portfolio)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return None
 
     @portfolio.setter
     def portfolio(self, value: Optional[Dict[str, Any]]):
@@ -366,7 +373,12 @@ class User(Base):
 
     @property
     def resume(self) -> Optional[Dict[str, Any]]:
-        return json.loads(self._resume) if self._resume else None
+        if not self._resume:
+            return None
+        try:
+            return json.loads(self._resume)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return None
 
     @resume.setter
     def resume(self, value: Optional[Dict[str, Any]]):
@@ -393,10 +405,10 @@ class Education(Base):
 
     # Education info
     institution = Column(String(255), nullable=False)
-    degree_type = Column(String(100), nullable=False)  # e.g. "Bachelor's", "Master's", "PhD"
-    topic = Column(String(255), nullable=False)  # e.g. "Computer Science", "Economics"
+    degree_type = Column(String(100), nullable=False)
+    topic = Column(String(255), nullable=False)
     start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=True)  # NULL means "present"
+    end_date = Column(DateTime, nullable=True)
 
     # Relationships
     user = relationship('User', back_populates='education')
@@ -423,7 +435,7 @@ class WorkHistory(Base):
     company = Column(String(255), nullable=False)
     role = Column(String(255), nullable=False)
     start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=True)  # NULL means "present"
+    end_date = Column(DateTime, nullable=True)
 
     # Relationships
     user = relationship('User', back_populates='work_history')
@@ -483,7 +495,7 @@ class DatabaseManager:
         self.engine = create_engine(
             f'sqlite:///{db_path}',
             connect_args={'check_same_thread': False},
-            pool_pre_ping=True  # Verify connections before using
+            pool_pre_ping=True
         )
 
         # Try to import UserConfig if not already imported
@@ -493,7 +505,6 @@ class DatabaseManager:
             try:
                 from .user_config import UserConfig  # noqa: F401
             except (ImportError, ModuleNotFoundError):
-                # user_config doesn't exist, continue without it
                 pass
         
         Base.metadata.create_all(self.engine)
@@ -508,11 +519,9 @@ class DatabaseManager:
         self.engine.dispose()
     
     def __enter__(self):
-        """Context manager support"""
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """FIXED: Ensure cleanup on exit"""
         self.close()
     
     def _upgrade_schema(self):
@@ -520,16 +529,12 @@ class DatabaseManager:
         from sqlalchemy import text, inspect
         inspector = inspect(self.engine)
         
-        # Check if tables exist
         if 'projects' not in inspector.get_table_names():
-            return  # Fresh database, no upgrade needed
+            return
         
-        # Get current columns for projects table
         existing_columns = [col['name'] for col in inspector.get_columns('projects')]
         
-        # Add missing columns to projects table
         with self.engine.connect() as conn:
-            # Add word_count if missing
             if 'word_count' not in existing_columns:
                 try:
                     conn.execute(text("ALTER TABLE projects ADD COLUMN word_count INTEGER DEFAULT 0;"))
@@ -537,24 +542,23 @@ class DatabaseManager:
                     print("✅ Added word_count column")
                 except Exception as e:
                     print(f"⚠️  Could not add word_count: {e}")
-            
-            # Add ai_description if missing
-            # if 'ai_description' not in existing_columns:
-            #     try:
-            #         conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
-            #         conn.commit()
-            #         print("✅ Added ai_description column")
-            #     except Exception as e:
-            #         print(f"⚠️  Could not add ai_description: {e}")
-            #if 'ai_description' not in existing_columns:
-            #    try:
-            #        conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
-            #        conn.commit()
-            #        print("✅ Added ai_description column")
-            #    except Exception as e:
-            #        print(f"⚠️  Could not add ai_description: {e}")
 
-            # Add user_id if missing (for user ownership)
+            if 'ai_description' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN ai_description TEXT;"))
+                    conn.commit()
+                    print("✅ Added ai_description column")
+                except Exception as e:
+                    print(f"⚠️  Could not add ai_description: {e}")
+
+            if 'ai_analysis' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN ai_analysis TEXT;"))
+                    conn.commit()
+                    print("✅ Added ai_analysis column")
+                except Exception as e:
+                    print(f"⚠️  Could not add ai_analysis: {e}")
+
             if 'user_id' not in existing_columns:
                 try:
                     conn.execute(text("ALTER TABLE projects ADD COLUMN user_id INTEGER;"))
@@ -563,12 +567,58 @@ class DatabaseManager:
                     print("✅ Added user_id column to projects")
                 except Exception as e:
                     print(f"⚠️  Could not add user_id: {e}")
-        
-        # Get current columns for files table
+
+            if 'custom_description' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN custom_description TEXT;"))
+                    conn.commit()
+                    print("✅ Added custom_description column")
+                except Exception as e:
+                    print(f"⚠️  Could not add custom_description: {e}")
+
+            if 'user_role' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN user_role VARCHAR(100);"))
+                    conn.commit()
+                    print("✅ Added user_role column")
+                except Exception as e:
+                    print(f"⚠️  Could not add user_role: {e}")
+
+            if 'user_contribution_percent' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN user_contribution_percent FLOAT;"))
+                    conn.commit()
+                    print("✅ Added user_contribution_percent column")
+                except Exception as e:
+                    print(f"⚠️  Could not add user_contribution_percent: {e}")
+
+            if 'is_hidden' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN is_hidden BOOLEAN DEFAULT 0;"))
+                    conn.commit()
+                    print("✅ Added is_hidden column")
+                except Exception as e:
+                    print(f"⚠️  Could not add is_hidden: {e}")
+
+            if 'user_rank' not in existing_columns:
+                try:
+                    conn.execute(text("ALTER TABLE projects ADD COLUMN user_rank INTEGER;"))
+                    conn.commit()
+                    print("✅ Added user_rank column")
+                except Exception as e:
+                    print(f"⚠️  Could not add user_rank: {e}")
+
+        if 'content_hash' not in existing_columns:
+            try:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN content_hash VARCHAR(64);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_project_content_hash ON projects(content_hash);"))
+                conn.commit()
+                print("✅ Added content_hash column")
+            except Exception as e:
+                print(f"⚠️  Could not add content_hash: {e}")
+
         if 'files' in inspector.get_table_names():
             existing_file_columns = [col['name'] for col in inspector.get_columns('files')]
-            
-            # Add file_hash if missing (for incremental uploads)
             with self.engine.connect() as conn:
                 if 'file_hash' not in existing_file_columns:
                     try:
@@ -580,13 +630,11 @@ class DatabaseManager:
                         print(f"⚠️  Could not add file_hash: {e}")
     
     def get_session(self):
-        """Get a new session"""
         return self.Session()
     
     # ============ PROJECT OPERATIONS ============
     
     def create_project(self, project_data: Dict[str, Any]) -> Project:
-        """Create a new project"""
         session = self.get_session()
         try:
             project = Project(**project_data)
@@ -598,7 +646,6 @@ class DatabaseManager:
             session.close()
     
     def get_project(self, project_id: int) -> Optional[Project]:
-        """Get project by ID with eager loading"""
         session = self.get_session()
         try:
             return session.query(Project).options(
@@ -610,22 +657,20 @@ class DatabaseManager:
             session.close()
     
     def get_project_by_path(self, file_path: str) -> Optional[Project]:
-        """Get project by file path"""
         session = self.get_session()
         try:
             return session.query(Project).filter(Project.file_path == file_path).first()
         finally:
             session.close()
+
+    def get_project_by_content_hash(self, content_hash: str) -> Optional[Project]:
+        session = self.get_session()
+        try:
+            return session.query(Project).filter(Project.content_hash == content_hash).first()
+        finally:
+            session.close()
     
     def get_all_projects(self, include_hidden: bool = False, user_id: Optional[int] = None) -> List[Project]:
-        """
-        Get all projects, optionally filtered by user_id
-        
-        Args:
-            include_hidden: If True, include hidden projects
-            user_id: If provided, only return projects for this user.
-                     If None, return all projects regardless of owner.
-        """
         session = self.get_session()
         try:
             query = session.query(Project)
@@ -638,7 +683,6 @@ class DatabaseManager:
             session.close()
     
     def get_featured_projects(self) -> List[Project]:
-        """Get featured projects"""
         session = self.get_session()
         try:
             return session.query(Project).filter(
@@ -649,7 +693,6 @@ class DatabaseManager:
             session.close()
     
     def update_project(self, project_id: int, updates: Dict[str, Any]) -> Optional[Project]:
-        """Update project - FIXED: Proper timezone handling"""
         session = self.get_session()
         try:
             project = session.query(Project).filter(Project.id == project_id).first()
@@ -664,7 +707,6 @@ class DatabaseManager:
             session.close()
     
     def delete_project(self, project_id: int) -> bool:
-        """Delete project"""
         session = self.get_session()
         try:
             project = session.query(Project).filter(Project.id == project_id).first()
@@ -677,13 +719,6 @@ class DatabaseManager:
             session.close()
 
     def get_projects_for_user(self, user_id: int, include_hidden: bool = False) -> List[Project]:
-        """
-        Get all projects for a specific user
-        
-        Args:
-            user_id: The user's ID
-            include_hidden: If True, include hidden projects
-        """
         session = self.get_session()
         try:
             query = session.query(Project).filter(Project.user_id == user_id)
@@ -694,12 +729,6 @@ class DatabaseManager:
             session.close()
     
     def get_guest_projects(self, include_hidden: bool = False) -> List[Project]:
-        """
-        Get all guest projects (projects with no user_id)
-        
-        Args:
-            include_hidden: If True, include hidden projects
-        """
         session = self.get_session()
         try:
             query = session.query(Project).filter(Project.user_id == None)
@@ -710,63 +739,28 @@ class DatabaseManager:
             session.close()
     
     def delete_guest_projects(self) -> int:
-        """
-        Delete all guest projects (projects with no user_id).
-        Cascade will handle deleting associated files, contributors, keywords.
-        
-        Returns:
-            Number of projects deleted
-        """
         session = self.get_session()
         try:
-            # Get count before deleting
             count = session.query(Project).filter(Project.user_id == None).count()
-            
-            # Delete all guest projects
             session.query(Project).filter(Project.user_id == None).delete()
             session.commit()
-            
             return count
         finally:
             session.close()
     
     def transfer_guest_projects_to_user(self, user_id: int) -> int:
-        """
-        Transfer all guest projects to a specific user.
-        Useful when a guest signs up and wants to keep their work.
-        
-        Args:
-            user_id: The user ID to assign projects to
-            
-        Returns:
-            Number of projects transferred
-        """
         session = self.get_session()
         try:
-            # Get count of guest projects
             count = session.query(Project).filter(Project.user_id == None).count()
-            
-            # Update all guest projects to belong to this user
             session.query(Project).filter(Project.user_id == None).update(
-                {'user_id': user_id},
-                synchronize_session=False
+                {'user_id': user_id}, synchronize_session=False
             )
             session.commit()
-            
             return count
         finally:
             session.close()
     
     def count_projects_for_user(self, user_id: Optional[int] = None) -> int:
-        """
-        Count projects for a user. If user_id is None, counts guest projects.
-        
-        Args:
-            user_id: The user ID, or None for guest projects
-            
-        Returns:
-            Number of projects
-        """
         session = self.get_session()
         try:
             if user_id is None:
@@ -779,7 +773,6 @@ class DatabaseManager:
     # ============ FILE OPERATIONS ============
     
     def add_file_to_project(self, file_data: Dict[str, Any]) -> File:
-        """Add file to project"""
         session = self.get_session()
         try:
             file_obj = File(**file_data)
@@ -791,7 +784,6 @@ class DatabaseManager:
             session.close()
     
     def get_files_for_project(self, project_id: int) -> List[File]:
-        """Get all files for project"""
         session = self.get_session()
         try:
             return session.query(File).filter(File.project_id == project_id).all()
@@ -799,7 +791,6 @@ class DatabaseManager:
             session.close()
     
     def get_file_by_hash(self, file_hash: str) -> Optional[File]:
-        """Get file by hash (for incremental uploads)"""
         session = self.get_session()
         try:
             return session.query(File).filter(File.file_hash == file_hash).first()
@@ -807,21 +798,18 @@ class DatabaseManager:
             session.close()
     
     def file_exists_in_project(self, project_id: int, file_hash: str) -> bool:
-        """Check if file with hash exists in project (for incremental uploads)"""
         session = self.get_session()
         try:
-            exists = session.query(File).filter(
+            return session.query(File).filter(
                 File.project_id == project_id,
                 File.file_hash == file_hash
             ).first() is not None
-            return exists
         finally:
             session.close()
     
     # ============ CONTRIBUTOR OPERATIONS ============
     
     def add_contributor_to_project(self, contributor_data: Dict[str, Any]) -> Contributor:
-        """Add contributor to project"""
         session = self.get_session()
         try:
             contributor = Contributor(**contributor_data)
@@ -833,7 +821,6 @@ class DatabaseManager:
             session.close()
     
     def get_contributors_for_project(self, project_id: int) -> List[Contributor]:
-        """Get all contributors for project"""
         session = self.get_session()
         try:
             return session.query(Contributor).filter(Contributor.project_id == project_id).all()
@@ -843,7 +830,6 @@ class DatabaseManager:
     # ============ KEYWORD OPERATIONS ============
     
     def add_keyword(self, keyword_data: Dict[str, Any]) -> Keyword:
-        """Add keyword to project"""
         session = self.get_session()
         try:
             keyword = Keyword(**keyword_data)
@@ -855,7 +841,6 @@ class DatabaseManager:
             session.close()
     
     def get_keywords_for_project(self, project_id: int) -> List[Keyword]:
-        """Get all keywords for project"""
         session = self.get_session()
         try:
             return session.query(Keyword).filter(
@@ -867,7 +852,6 @@ class DatabaseManager:
     # ============ RESUME BULLETS OPERATIONS ============
     
     def save_resume_bullets(self, project_id: int, bullets: List[str], header: str, ats_score: Optional[float] = None) -> bool:
-        """Save resume bullets to project"""
         session = self.get_session()
         try:
             project = session.query(Project).filter(Project.id == project_id).first()
@@ -886,7 +870,6 @@ class DatabaseManager:
             session.close()
     
     def get_resume_bullets(self, project_id: int) -> Optional[Dict[str, Any]]:
-        """Get resume bullets for project"""
         session = self.get_session()
         try:
             project = session.query(Project).filter(Project.id == project_id).first()
@@ -895,7 +878,6 @@ class DatabaseManager:
             session.close()
     
     def delete_resume_bullets(self, project_id: int) -> bool:
-        """Delete resume bullets from project"""
         session = self.get_session()
         try:
             project = session.query(Project).filter(Project.id == project_id).first()
@@ -924,13 +906,9 @@ class DatabaseManager:
                 return None, None, 0
 
             dates = []
-
-            # Project-level timestamps
             for d in [project.date_created, project.date_modified, project.date_scanned]:
                 if d:
                     dates.append(d)
-
-            # File timestamps
             for f in project.files:
                 if f.file_created:
                     dates.append(f.file_created)
@@ -942,10 +920,8 @@ class DatabaseManager:
 
             first_dt = min(dates)
             last_dt = max(dates)
-
             first_date = first_dt.date()
             last_date = last_dt.date()
-
             duration_days = (last_date - first_date).days + 1
             return first_date, last_date, duration_days
 
@@ -954,11 +930,7 @@ class DatabaseManager:
 
     def get_project_activity_breakdown(self, project_id: int):
         """
-        Categorize file activity by LOC into:
-        - code
-        - test
-        - docs
-        - design
+        Categorize file activity by LOC into: code, test, docs, design
         """
         session = self.get_session()
         try:
@@ -975,16 +947,11 @@ class DatabaseManager:
                 name = (f.file_name or "").lower()
                 ext = os.path.splitext(name)[1]
 
-                # Default bucket
                 bucket = "code"
-
-                # Tests
                 if "test" in path or "tests" in path or name.endswith("_test") or ext in [".test", ".spec"]:
                     bucket = "test"
-                # Docs
                 elif "docs" in path or "doc" in path or name.startswith("readme") or ext in [".md", ".rst", ".txt"]:
                     bucket = "docs"
-                # Design / config
                 elif any(k in path for k in ["design", "config", "infra", "docker"]) or ext in [".json", ".yaml", ".yml"]:
                     bucket = "design"
 
@@ -995,11 +962,9 @@ class DatabaseManager:
         finally:
             session.close()
 
-    
-        # ============ USER OPERATIONS ============
+    # ============ USER OPERATIONS ============
 
     def create_user(self, user_data: Dict[str, Any]) -> User:
-        """Create a new user"""
         session = self.get_session()
         try:
             user = User(**user_data)
@@ -1011,7 +976,6 @@ class DatabaseManager:
             session.close()
 
     def get_user(self, user_id: int) -> Optional[User]:
-        """Get user by ID with eager loading"""
         session = self.get_session()
         try:
             return session.query(User).options(
@@ -1022,7 +986,6 @@ class DatabaseManager:
             session.close()
 
     def get_user_by_email(self, email: str) -> Optional[User]:
-        """Get user by email"""
         session = self.get_session()
         try:
             return session.query(User).filter(User.email == email).first()
@@ -1030,7 +993,6 @@ class DatabaseManager:
             session.close()
 
     def update_user(self, user_id: int, updates: Dict[str, Any]) -> Optional[User]:
-        """Update user profile"""
         session = self.get_session()
         try:
             user = session.query(User).filter(User.id == user_id).first()
@@ -1045,7 +1007,6 @@ class DatabaseManager:
             session.close()
 
     def delete_user(self, user_id: int) -> bool:
-        """Delete user and cascade to education and work history"""
         session = self.get_session()
         try:
             user = session.query(User).filter(User.id == user_id).first()
@@ -1060,7 +1021,6 @@ class DatabaseManager:
     # ============ EDUCATION OPERATIONS ============
 
     def add_education(self, education_data: Dict[str, Any]) -> Education:
-        """Add education entry for a user"""
         session = self.get_session()
         try:
             education = Education(**education_data)
@@ -1072,7 +1032,6 @@ class DatabaseManager:
             session.close()
 
     def get_education_for_user(self, user_id: int) -> List[Education]:
-        """Get all education entries for a user"""
         session = self.get_session()
         try:
             return session.query(Education).filter(
@@ -1082,7 +1041,6 @@ class DatabaseManager:
             session.close()
 
     def update_education(self, education_id: int, updates: Dict[str, Any]) -> Optional[Education]:
-        """Update an education entry"""
         session = self.get_session()
         try:
             education = session.query(Education).filter(Education.id == education_id).first()
@@ -1096,7 +1054,6 @@ class DatabaseManager:
             session.close()
 
     def delete_education(self, education_id: int) -> bool:
-        """Delete an education entry"""
         session = self.get_session()
         try:
             education = session.query(Education).filter(Education.id == education_id).first()
@@ -1111,7 +1068,6 @@ class DatabaseManager:
     # ============ WORK HISTORY OPERATIONS ============
 
     def add_work_history(self, work_data: Dict[str, Any]) -> WorkHistory:
-        """Add work history entry for a user"""
         session = self.get_session()
         try:
             work = WorkHistory(**work_data)
@@ -1123,7 +1079,6 @@ class DatabaseManager:
             session.close()
 
     def get_work_history_for_user(self, user_id: int) -> List[WorkHistory]:
-        """Get all work history entries for a user"""
         session = self.get_session()
         try:
             return session.query(WorkHistory).filter(
@@ -1133,7 +1088,6 @@ class DatabaseManager:
             session.close()
 
     def update_work_history(self, work_id: int, updates: Dict[str, Any]) -> Optional[WorkHistory]:
-        """Update a work history entry"""
         session = self.get_session()
         try:
             work = session.query(WorkHistory).filter(WorkHistory.id == work_id).first()
@@ -1147,7 +1101,6 @@ class DatabaseManager:
             session.close()
 
     def delete_work_history(self, work_id: int) -> bool:
-        """Delete a work history entry"""
         session = self.get_session()
         try:
             work = session.query(WorkHistory).filter(WorkHistory.id == work_id).first()
@@ -1162,7 +1115,6 @@ class DatabaseManager:
     # ============ CONTACT INFO OPERATIONS ============
 
     def add_contact_info(self, contact_data: Dict[str, Any]) -> ContactInfo:
-        """Add contact info entry for a user"""
         session = self.get_session()
         try:
             contact = ContactInfo(**contact_data)
@@ -1174,7 +1126,6 @@ class DatabaseManager:
             session.close()
 
     def get_contact_info_for_user(self, user_id: int) -> List[ContactInfo]:
-        """Get all contact info entries for a user"""
         session = self.get_session()
         try:
             return session.query(ContactInfo).filter(
@@ -1184,7 +1135,6 @@ class DatabaseManager:
             session.close()
 
     def update_contact_info(self, contact_id: int, updates: Dict[str, Any]) -> Optional[ContactInfo]:
-        """Update a contact info entry"""
         session = self.get_session()
         try:
             contact = session.query(ContactInfo).filter(ContactInfo.id == contact_id).first()
@@ -1198,7 +1148,6 @@ class DatabaseManager:
             session.close()
 
     def delete_contact_info(self, contact_id: int) -> bool:
-        """Delete a contact info entry"""
         session = self.get_session()
         try:
             contact = session.query(ContactInfo).filter(ContactInfo.id == contact_id).first()
@@ -1216,7 +1165,6 @@ class DatabaseManager:
         """Clear all data from database"""
         session = self.get_session()
         try:
-            # Child tables first (foreign key order)
             session.query(Keyword).delete()
             session.query(Contributor).delete()
             session.query(File).delete()

@@ -1,0 +1,49 @@
+.navbar {
+  display: flex; justify-content: center; align-items: center;
+  flex-wrap: wrap; gap: 42px;
+  margin: 12px 20px 0; padding: 16px 20px; border-radius: 14px;
+  border: 1px solid rgba(133,143,255,0.28);
+  background: linear-gradient(180deg, rgba(18,25,58,0.96), rgba(15,20,48,0.96));
+  box-shadow: 0 16px 30px rgba(4,8,30,0.45);
+  position: sticky; top: 8px; z-index: 100;
+}
+
+.navbar-brand { font-weight: 700; font-size: 1rem; color: #d8dfff; white-space: nowrap; }
+.navbar-links { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; align-items: center; }
+
+.nav-link {
+  color: #d8dfff; text-decoration: none; font-weight: 600; font-size: 1.02rem;
+  padding: 8px 12px; border-bottom: 2px solid transparent; border-radius: 0;
+  transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  cursor: pointer; font-family: inherit;
+}
+.nav-link:hover, .nav-link.active {
+  color: #fff; border-bottom-color: rgba(208,107,255,0.9);
+  text-shadow: 0 0 20px rgba(180,110,255,0.6);
+}
+
+.nav-dropdown { position: relative; }
+.nav-dropdown-trigger { display: flex; align-items: center; gap: 4px; }
+
+.nav-dropdown-menu {
+  position: absolute; top: calc(100% + 12px); right: 0;
+  background: linear-gradient(180deg, rgba(18,25,58,0.99), rgba(12,16,42,0.99));
+  border: 1px solid rgba(133,143,255,0.3);
+  border-radius: 12px; padding: 8px; min-width: 160px;
+  box-shadow: 0 16px 32px rgba(4,8,30,0.6);
+  z-index: 200; display: flex; flex-direction: column; gap: 2px;
+}
+
+.nav-dropdown-item {
+  color: #d8dfff; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+  padding: 9px 14px; border-radius: 8px; transition: background 0.15s, color 0.15s;
+  display: block; border: none; background: none;
+}
+.nav-dropdown-item:hover { background: rgba(100,108,255,0.15); color: #fff; }
+.nav-dropdown-item.active { background: rgba(100,108,255,0.2); color: #a5b4fc; }
+
+@media (max-width: 820px) {
+  .navbar { gap: 16px; justify-content: flex-start; padding: 14px 16px; margin: 8px 12px 0; }
+  .nav-link { font-size: 0.92rem; }
+}

@@ -1,162 +1,110 @@
 import React, { useEffect, useState } from "react";
-import "./Dashboard.css";
 import { useNavigate } from "react-router-dom";
-import InsightsChart from "../components/InsightsChart";
+import { apiFetch, projectName } from "../apiClient";
+import "./Dashboard.css";
 
-function Dashboard() {
-
+export default function Dashboard() {
   const [projects, setProjects] = useState([]);
-  const [hiddenThumbnails, setHiddenThumbnails] = useState({});
-  const navigate = useNavigate(); 
+  const [skills, setSkills] = useState([]);
+  const [portfolio, setPortfolio] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const nav = useNavigate();
 
   useEffect(() => {
-    loadProjects();
+    Promise.all([
+      apiFetch("/projects").catch(() => []),
+      apiFetch("/skills/").catch(() => null),
+      apiFetch("/portfolio").catch(() => null),
+    ]).then(([p, s, pf]) => {
+      setProjects(Array.isArray(p) ? p : []);
+      // Skills endpoint returns {skills: [{name, count, projects}]}
+      const skillList = s?.skills || (Array.isArray(s) ? s : []);
+      setSkills(skillList.slice(0, 10));
+      setPortfolio(pf);
+      setLoading(false);
+    });
   }, []);
 
-  const loadProjects = async () => {
-    const token = localStorage.getItem("token");
+  if (loading) return <div className="page-wrap"><div className="spinner" /></div>;
 
-    try {
-      const response = await fetch("http://127.0.0.1:8000/projects", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+  const topProjects = [...projects]
+    .sort((a, b) => (b.importance_score || 0) - (a.importance_score || 0))
+    .slice(0, 5);
 
-      const data = await response.json();
-      setProjects(data);
-
-    } catch (error) {
-      console.error("Error loading projects:", error);
-    }
-  };
-
-  const openProject = (projectId) => {
-    window.location.href = `/projects/${projectId}`;
-  };
-
-  const getInitial = (name) => {
-    if (!name || typeof name !== "string") return "P";
-    return name.trim().charAt(0).toUpperCase() || "P";
-  };
-
-  const looksLikeUuid = (value) => {
-    if (!value || typeof value !== "string") return false;
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
-  };
-
-  const getReadableNameFromPath = (filePath) => {
-    if (!filePath || typeof filePath !== "string") return null;
-    const cleanPath = filePath.replace(/\\/g, "/").replace(/\/+$/, "");
-    const lastSegment = cleanPath.split("/").filter(Boolean).pop();
-    if (!lastSegment) return null;
-    return lastSegment.replace(/\.[^.]+$/, "");
-  };
-
-  const getProjectDisplayName = (project) => {
-    const fromPath = getReadableNameFromPath(project?.file_path);
-    if (fromPath && !looksLikeUuid(fromPath)) return fromPath;
-
-    const projectName = project?.name;
-    if (projectName && !looksLikeUuid(projectName)) return projectName;
-
-    return "Untitled Project";
-  };
-
-  const getProjectUuid = (project) => {
-    const projectName = project?.name;
-    if (looksLikeUuid(projectName)) return projectName;
-
-    const projectId = String(project?.id ?? "");
-    if (looksLikeUuid(projectId)) return projectId;
-
-    return null;
-  };
-
-  const formatProjectType = (project) => {
-    const rawType = project?.project_type || project?.language || "Unknown";
-    return String(rawType)
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  };
+  const stats = [
+    { label: "Projects", value: projects.length },
+    { label: "Skills", value: skills.length },
+    { label: "Top Score", value: topProjects[0]?.importance_score != null ? Number(topProjects[0].importance_score).toFixed(2) : "—" },
+    { label: "Portfolio", value: portfolio?.projects?.length ?? "—" },
+  ];
 
   return (
-    <div className="dashboard-grid">
+    <div className="page-wrap">
+      <div className="dash-header">
+        <h1>Dashboard</h1>
+        <button className="btn-primary" onClick={() => nav("/upload")}>+ Upload Project</button>
+      </div>
 
-      <div className="card projects">
-        <h2>Projects</h2>
-
-        {projects.length === 0 ? (
-          <p>No projects uploaded yet.</p>
-        ) : (
-          <div className="project-list">
-
-            {projects.map(project => (
-              <div
-                key={project.id}
-                className="project-card"
-                onClick={() => openProject(project.id)}
-              >
-
-                {project.thumbnail_path && !hiddenThumbnails[project.id] ? (
-                  <img
-                    src={`http://127.0.0.1:8000/${project.thumbnail_path}`}
-                    className="project-thumbnail"
-                    alt="project"
-                    onError={() =>
-                      setHiddenThumbnails((prev) => ({
-                        ...prev,
-                        [project.id]: true,
-                      }))
-                    }
-                  />
-                ) : (
-                  <div className="project-thumbnail-placeholder" aria-hidden="true">
-                    {getInitial(project.name)}
-                  </div>
-                )}
-
-                <div className="project-info">
-                  <div className="project-title-row">
-                    <h3>{getProjectDisplayName(project)}</h3>
-                    <span className="project-type-badge">{formatProjectType(project)}</span>
-                  </div>
-                  {getProjectUuid(project) ? (
-                    <p className="project-id-text">UUID {getProjectUuid(project)}</p>
-                  ) : null}
-                </div>
-
-              </div>
-            ))}
-          <button
-              className="upload-button"
-              onClick={() => window.location.href = "/upload"}
-            >
-              Upload Project
-            </button>
+      <div className="stat-row">
+        {stats.map(s => (
+          <div key={s.label} className="stat-card card">
+            <div className="stat-val">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
           </div>
-        )}
-
+        ))}
       </div>
 
-      <div className="card resumes">
-        <h2>Resume Builder</h2>
-        <p>Generated Resumes will appear here</p>
-      </div>
+      <div className="dash-grid">
+        <div className="card">
+          <h2>Top Projects</h2>
+          {topProjects.length === 0
+            ? <p className="text-muted mt-12">No projects yet. <a href="/upload">Upload one.</a></p>
+            : topProjects.map(p => (
+              <div key={p.id} className="dash-project-row" onClick={() => nav(`/projects/${p.id}`)}>
+                <div className="dash-project-info">
+                  <strong>{projectName(p)}</strong>
+                  <span className="text-muted">{p.project_type || "unknown"}</span>
+                </div>
+                <span className="tag accent">{p.importance_score != null ? Number(p.importance_score).toFixed(1) : "—"}</span>
+              </div>
+            ))
+          }
+          <button className="btn-secondary mt-16" onClick={() => nav("/projects")}>View All →</button>
+        </div>
 
-      <div className="card insights">
-        <h2>Charts & Insights</h2>
-        <InsightsChart />
-      </div>
+        <div className="card">
+          <h2>Top Skills</h2>
+          {skills.length === 0
+            ? <p className="text-muted" style={{ marginTop: 12 }}>
+                No skills detected yet. Upload a project and run AI Analysis to extract skills.
+              </p>
+            : <div className="skill-chip-grid">
+                {skills.map((s, i) => {
+                  const name = s.name || s.skill_name || (typeof s === "string" ? s : "");
+                  const count = s.count || s.project_count || null;
+                  return (
+                    <span key={i} className="tag accent" style={{ cursor: "pointer" }}
+                      onClick={() => nav("/skills")}
+                      title={count ? `${count} project${count !== 1 ? "s" : ""}` : ""}>
+                      {name}
+                    </span>
+                  );
+                })}
+              </div>
+          }
+          <button className="btn-secondary mt-16" onClick={() => nav("/skills")}>All Skills →</button>
+        </div>
 
-      <div className="card portfolios click-card" 
-            onClick={() => navigate("/portfolio")} >
-          <h2>Portfolio Builder</h2>
-          <p>Click to view and manage your portfolio</p>
+        <div className="card dash-portfolio-card" onClick={() => nav("/portfolio")}>
+          <h2>Portfolio</h2>
+          <p className="text-muted">
+            {portfolio?.projects?.length
+              ? `${portfolio.projects.length} project(s) in your portfolio`
+              : "Generate your portfolio from your projects"}
+          </p>
+          <button className="btn-primary mt-16">Open Portfolio →</button>
+        </div>
       </div>
-
     </div>
   );
 }
-
-export default Dashboard;

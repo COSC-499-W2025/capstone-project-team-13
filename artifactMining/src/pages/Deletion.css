@@ -1,0 +1,17 @@
+.del-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.del-tab { background: rgba(255,255,255,0.04); color: #9aa6de; border: 1px solid rgba(167,178,255,0.25); padding: 8px 18px; border-radius: 20px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.del-tab:hover { border-color: rgba(100,108,255,0.5); color: #c4cbf5; }
+.del-tab.active { background: rgba(100,108,255,0.18); border-color: rgba(100,108,255,0.55); color: #a5b4fc; }
+
+.del-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+.del-list-panel { }
+.del-list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+.del-proj-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background 0.12s; border: 1px solid transparent; margin-bottom: 4px; }
+.del-proj-row:hover { background: rgba(100,108,255,0.08); }
+.del-proj-row.selected { background: rgba(239,68,68,0.1); border-color: rgba(248,113,113,0.3); }
+.del-proj-row input[type=checkbox] { width: auto; flex-shrink: 0; }
+.del-proj-info { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.del-proj-name { font-size: 0.88rem; color: #c4cbf5; }
+
+@media (max-width: 768px) { .del-layout { grid-template-columns: 1fr; } }

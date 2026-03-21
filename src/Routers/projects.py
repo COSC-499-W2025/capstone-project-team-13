@@ -1,23 +1,15 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
 from pathlib import Path
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Optional, List
+from pydantic import BaseModel
 import uuid
 import zipfile
-import os
-from datetime import datetime, timezone
+import json
+
 from src.Databases.database import db_manager
 from src.Services.projects_service import process_uploaded_path, upload_project_thumbnail
 from src.Services.auth_service import get_current_user_id, require_auth
-from src.Analysis.multiProjectZip import processZipFile
-from src.Analysis.codingProjectScanner import scan_coding_project
-from src.Analysis.mediaProjectScanner import scan_media_project
-from src.Analysis.textDocumentScanner import scan_text_document
-from src.Analysis.incrementalZipHandler import detect_project_type
-from src.Analysis.projectcollabtype import identify_project_type
-from src.Analysis.roleAttribution import get_role_from_contribution
-from src.Analysis.file_hasher import compute_file_hash
-from src.UserPrompts.config_integration import has_ai_consent
+from src.UserPrompts.config_integration import has_ai_consent, has_basic_consent
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -25,89 +17,190 @@ UPLOAD_DIR = Path("evidence/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-class RoleAssignmentRequest(BaseModel):
-    contributor: Optional[str] = None
-    contribution_percent: Optional[float] = Field(default=None, ge=0.0, le=100.0)
-    role_type: str = "Developer"
+# ── Request models ─────────────────────────────────────────────────────────────
+
+class AnalyzeRequest(BaseModel):
+    analysis_type: Optional[str] = "overview"
+
+class RankRequest(BaseModel):
+    target_skills: Optional[List[str]] = None
+    top_k: Optional[int] = 3
+
+class BatchAnalyzeRequest(BaseModel):
+    analysis_types: Optional[List[str]] = ["overview"]
 
 
-def _assert_project_access(project_id: int, user_id: int):
-    project = db_manager.get_project(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-    if project.user_id != user_id:
-        raise HTTPException(status_code=403, detail="You don't have permission to access this project")
-    return project
+# ── Helper: display name (prefer custom_description over UUID name) ────────────
+
+def _display_name(project) -> str:
+    """Return the best human-readable name for a project."""
+    cd = (project.custom_description or "").strip()
+    if cd:
+        return cd
+    name = (project.name or "").strip()
+    # If name looks like a UUID (contains multiple hyphens and is long), use description or type
+    import re
+    if re.match(r'^[0-9a-f-]{30,}', name, re.IGNORECASE):
+        return project.description or project.ai_description or f"{project.project_type or 'Project'} {project.id}"
+    return name
 
 
-def _store_uploaded_file(file: UploadFile, destination: Path) -> Path:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with open(destination, "wb") as f:
-        f.write(file.file.read())
-    return destination
-
-
-def _get_project_analysis_path(project_id: int, user_id: int) -> tuple[object, str]:
-    project = _assert_project_access(project_id, user_id)
-    path = os.path.abspath(os.path.expanduser(project.file_path))
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"Path not found for project {project_id}: {path}")
-    return project, path
-
+# ── Upload ─────────────────────────────────────────────────────────────────────
 
 @router.post("/upload")
 async def upload_project(
     file: UploadFile = File(...),
     user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    """
-    Upload and scan a project file or ZIP archive.
-    
-    - **file**: Project file or ZIP containing project files
-    - **Authorization header**: Optional Bearer token for authenticated users
-    
-    Returns scanned project details.
-    """
-    project_id = str(uuid.uuid4())
-    upload_path = UPLOAD_DIR / f"{project_id}_{file.filename}"
+    """Upload and scan a project file or ZIP archive."""
+    if not has_basic_consent():
+        raise HTTPException(
+            status_code=403,
+            detail="File access requires consent. Please grant file access in the Upload page."
+        )
 
-    # Save uploaded file
+    original_stem = Path(file.filename).stem  # capture before UUID rename
+    uid = str(uuid.uuid4())
+    upload_path = UPLOAD_DIR / f"{uid}_{file.filename}"
+
     with open(upload_path, "wb") as f:
         f.write(await file.read())
 
-    # If ZIP, extract
-    if upload_path.suffix == ".zip":
-        extract_dir = UPLOAD_DIR / project_id
+    if upload_path.suffix.lower() == ".zip":
+        extract_dir = UPLOAD_DIR / uid
         extract_dir.mkdir()
-
         with zipfile.ZipFile(upload_path, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
-
         process_path = extract_dir
     else:
         process_path = upload_path
 
-    # Process with user_id
     result = process_uploaded_path(str(process_path), user_id=user_id)
+
+    # Store original filename as custom_description so we never show UUIDs
+    if isinstance(result, dict) and result.get("project_id"):
+        pid = result["project_id"]
+        proj = db_manager.get_project(pid)
+        if proj and not proj.custom_description:
+            db_manager.update_project(pid, {"custom_description": original_stem})
+
     return result
 
 
+# ── Incremental upload to existing project ─────────────────────────────────────
+
+@router.post("/{project_id}/upload")
+async def incremental_upload(
+    project_id: int,
+    file: UploadFile = File(...),
+    user_id: Optional[int] = Depends(get_current_user_id)
+):
+    """Add files from a ZIP to an existing project (incremental update)."""
+    if not has_basic_consent():
+        raise HTTPException(
+            status_code=403,
+            detail="File access requires consent. Please grant file access in the Upload page."
+        )
+
+    project = db_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if user_id is not None and project.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not your project")
+
+    uid = str(uuid.uuid4())
+    upload_path = UPLOAD_DIR / f"inc_{uid}_{file.filename}"
+    with open(upload_path, "wb") as f:
+        f.write(await file.read())
+
+    try:
+        from src.Analysis.incrementalZipHandler import IncrementalZipHandler
+        handler = IncrementalZipHandler()
+        result = handler.add_zip_to_existing_project(project_id, str(upload_path))
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Incremental upload failed"))
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Incremental upload failed: {str(e)}")
+
+
+# ── List / Get ─────────────────────────────────────────────────────────────────
+
 @router.get("")
 def list_projects(user_id: Optional[int] = Depends(get_current_user_id)):
-    """
-    Get all projects for current user (or guest projects if not authenticated).
-    
-    - **Authorization header**: Optional Bearer token
-    
-    Returns list of projects filtered by user ownership.
-    """
-    # Filter by user
+    """Get all projects for the current user (or guest projects)."""
     if user_id:
         projects = db_manager.get_projects_for_user(user_id)
     else:
         projects = db_manager.get_guest_projects()
-    
-    return [p.to_dict() for p in projects]
+    result = []
+    for p in projects:
+        d = p.to_dict()
+        d["display_name"] = _display_name(p)
+        result.append(d)
+    return result
+
+
+@router.get("/timeline")
+def get_timeline(user_id: Optional[int] = Depends(get_current_user_id)):
+    """Return all projects sorted chronologically."""
+    if user_id:
+        projects = db_manager.get_projects_for_user(user_id, include_hidden=True)
+    else:
+        projects = db_manager.get_guest_projects(include_hidden=True)
+    projects_sorted = sorted(
+        projects,
+        key=lambda p: p.date_created or p.date_scanned or p.created_at,
+    )
+    return [
+        {
+            "id": p.id,
+            "name": _display_name(p),
+            "project_type": p.project_type,
+            "date_created": p.date_created.isoformat() if p.date_created else None,
+            "date_modified": p.date_modified.isoformat() if p.date_modified else None,
+            "date_scanned": p.date_scanned.isoformat() if p.date_scanned else None,
+            "importance_score": p.importance_score,
+        }
+        for p in projects_sorted
+    ]
+
+
+@router.get("/shared-files")
+def shared_files_report(user_id: Optional[int] = Depends(get_current_user_id)):
+    """Return projects that share files with other projects."""
+    try:
+        from src.deletion_manager import DeletionManager
+        manager = DeletionManager()
+        if user_id:
+            projects = db_manager.get_projects_for_user(user_id, include_hidden=True)
+        else:
+            projects = db_manager.get_guest_projects(include_hidden=True)
+        report = []
+        for p in projects:
+            shared = manager.get_shared_files(p.id)
+            if shared:
+                report.append({
+                    "project_id": p.id,
+                    "project_name": _display_name(p),
+                    "shared_files": shared,
+                })
+        return report
+    except ImportError:
+        return []
+
+
+@router.get("/cache-stats")
+def cache_stats():
+    """Return AI cache statistics."""
+    try:
+        from src.deletion_manager import DeletionManager
+        manager = DeletionManager()
+        return manager.get_cache_statistics()
+    except Exception:
+        return {"total_cache_files": 0, "total_cache_size_bytes": 0}
 
 
 @router.get("/{project_id}")
@@ -115,335 +208,86 @@ def get_project(
     project_id: int,
     user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    """
-    Get a single project by ID.
-    
-    - **project_id**: Project database ID
-    - **Authorization header**: Optional Bearer token
-    
-    Returns project details if user owns it, 403 otherwise.
-    """
+    """Get a single project by ID."""
     project = db_manager.get_project(project_id)
-    
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    
-    # Verify ownership
     if project.user_id != user_id:
-        raise HTTPException(
-            status_code=403,
-            detail="You don't have permission to access this project"
-        )
-    
-    return project.to_dict(include_counts=True)
+        raise HTTPException(status_code=403, detail="You don't have permission to access this project")
+    d = project.to_dict(include_counts=True)
+    d["display_name"] = _display_name(project)
+    return d
 
 
-@router.post("/upload/multi-zip")
-async def upload_multi_zip(
-    file: UploadFile = File(...),
-    user_id: int = Depends(require_auth)
-):
-    if not file.filename or not file.filename.lower().endswith(".zip"):
-        raise HTTPException(status_code=400, detail="File must be a .zip archive")
+# ── Delete ─────────────────────────────────────────────────────────────────────
 
-    project_id = str(uuid.uuid4())
-    upload_path = UPLOAD_DIR / f"{project_id}_{file.filename}"
-    with open(upload_path, "wb") as f:
-        f.write(await file.read())
-
+@router.delete("/ai-insights/all")
+def delete_all_ai_insights(user_id: Optional[int] = Depends(get_current_user_id)):
+    """Delete ALL AI insights for all projects."""
+    if user_id:
+        projects = db_manager.get_projects_for_user(user_id, include_hidden=True)
+    else:
+        projects = db_manager.get_guest_projects(include_hidden=True)
+    for p in projects:
+        db_manager.update_project(p.id, {"ai_description": None, "ai_analysis": None})
+    # Also clear cache files if they exist
+    cache_deleted = 0
     try:
-        results = processZipFile(str(upload_path), user_id=user_id)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to process ZIP: {e}")
+        import shutil
+        from pathlib import Path
+        for cache_dir in [Path("data/ai_cache"), Path("data/ai_text_project_cache"), Path("data/ai_project_analysis_cache")]:
+            if cache_dir.exists():
+                cache_deleted += len(list(cache_dir.glob("*.json")))
+                shutil.rmtree(cache_dir)
+                cache_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    return {"projects_updated": len(projects), "cache_files_deleted": cache_deleted}
 
-    return {
-        "status": "processed",
-        "count": len(results) if results else 0,
-        "projects": results or [],
-        "user_id": user_id,
-    }
+
+@router.delete("/cache")
+def clear_cache():
+    """Clear all AI analysis cache files."""
+    import shutil
+    from pathlib import Path
+    deleted = 0
+    for cache_dir in [Path("data/ai_cache"), Path("data/ai_text_project_cache"), Path("data/ai_project_analysis_cache")]:
+        if cache_dir.exists():
+            count = len(list(cache_dir.glob("*.json")))
+            shutil.rmtree(cache_dir)
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            deleted += count
+    return {"cache_files_deleted": deleted}
 
 
-@router.post("/{project_id}/upload/files")
-async def add_files_to_project(
+@router.delete("/{project_id}")
+def delete_project(
     project_id: int,
-    files: list[UploadFile] = File(...),
-    user_id: int = Depends(require_auth)
+    user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    project = _assert_project_access(project_id, user_id)
-
-    saved = []
-    target_dir = UPLOAD_DIR / f"project_{project_id}"
-    for upload in files:
-        file_path = _store_uploaded_file(upload, target_dir / upload.filename)
-        file_hash = compute_file_hash(str(file_path))
-
-        if db_manager.file_exists_in_project(project_id, file_hash):
-            continue
-
-        stat = file_path.stat()
-        db_manager.add_file_to_project({
-            "project_id": project_id,
-            "file_path": str(file_path),
-            "file_name": file_path.name,
-            "file_type": file_path.suffix.lower(),
-            "file_size": stat.st_size,
-            "file_created": datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc),
-            "file_modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
-            "file_hash": file_hash,
-        })
-        saved.append(file_path.name)
-
-    if saved:
-        db_manager.update_project(project_id, {"file_count": (project.file_count or 0) + len(saved)})
-
-    return {
-        "status": "updated",
-        "project_id": project_id,
-        "files_added": len(saved),
-        "added_files": saved,
-    }
-
-
-@router.post("/{project_id}/upload/zip")
-async def add_zip_to_project(
-    project_id: int,
-    file: UploadFile = File(...),
-    user_id: int = Depends(require_auth)
-):
-    _assert_project_access(project_id, user_id)
-
-    if not file.filename or not file.filename.lower().endswith(".zip"):
-        raise HTTPException(status_code=400, detail="File must be a .zip archive")
-
-    request_id = str(uuid.uuid4())
-    zip_path = UPLOAD_DIR / f"{request_id}_{file.filename}"
-    with open(zip_path, "wb") as f:
-        f.write(await file.read())
-
-    extract_dir = UPLOAD_DIR / f"extract_{request_id}"
-    extract_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(extract_dir)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid ZIP archive: {e}")
-
-    file_payloads = []
-    for root, _, names in os.walk(extract_dir):
-        for name in names:
-            path_obj = Path(root) / name
-            stat = path_obj.stat()
-            file_hash = compute_file_hash(str(path_obj))
-            if db_manager.file_exists_in_project(project_id, file_hash):
-                continue
-            db_manager.add_file_to_project({
-                "project_id": project_id,
-                "file_path": str(path_obj),
-                "file_name": path_obj.name,
-                "file_type": path_obj.suffix.lower(),
-                "file_size": stat.st_size,
-                "file_created": datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc),
-                "file_modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
-                "file_hash": file_hash,
-            })
-            file_payloads.append(path_obj.name)
-
-    if file_payloads:
-        project = db_manager.get_project(project_id)
-        db_manager.update_project(project_id, {"file_count": (project.file_count or 0) + len(file_payloads)})
-
-    return {
-        "status": "updated",
-        "project_id": project_id,
-        "files_added": len(file_payloads),
-        "added_files": file_payloads,
-    }
-
-
-@router.post("/{project_id}/analyze/detect-type")
-def analyze_detect_type(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    _, path = _get_project_analysis_path(project_id, user_id)
-    return detect_project_type(path)
-
-
-@router.post("/{project_id}/analyze/coding")
-def analyze_coding_project(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    _, path = _get_project_analysis_path(project_id, user_id)
-    if not os.path.isdir(path):
-        raise HTTPException(status_code=400, detail="Path must be a directory")
-    analyzed_project_id = scan_coding_project(path, user_id=user_id)
-    if not analyzed_project_id:
-        return {"status": "skipped", "reason": "No code files found"}
-    project = db_manager.get_project(analyzed_project_id)
-    return {
-        "status": "created",
-        "project_id": project.id,
-        "project_name": project.name,
-        "project_type": project.project_type,
-    }
-
-
-@router.post("/{project_id}/analyze/media")
-def analyze_media_project(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    _, path = _get_project_analysis_path(project_id, user_id)
-    if not os.path.isdir(path):
-        raise HTTPException(status_code=400, detail="Path must be a directory")
-    analyzed_project_id = scan_media_project(path, user_id=user_id)
-    if not analyzed_project_id:
-        return {"status": "skipped", "reason": "No media files found"}
-    project = db_manager.get_project(analyzed_project_id)
-    return {
-        "status": "created",
-        "project_id": project.id,
-        "project_name": project.name,
-        "project_type": project.project_type,
-    }
-
-
-@router.post("/{project_id}/analyze/text")
-def analyze_text_project(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    _, path = _get_project_analysis_path(project_id, user_id)
-    analyzed_project_id = scan_text_document(path, single_file=True, user_id=user_id)
-    if not analyzed_project_id:
-        return {"status": "skipped", "reason": "No text content found"}
-    project = db_manager.get_project(analyzed_project_id)
-    return {
-        "status": "created",
-        "project_id": project.id,
-        "project_name": project.name,
-        "project_type": project.project_type,
-    }
-
-
-@router.get("/{project_id}/roles")
-def get_project_roles(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    project = _assert_project_access(project_id, user_id)
-    contributors = db_manager.get_contributors_for_project(project_id)
-    return {
-        "project_id": project.id,
-        "project_name": project.name,
-        "user_role": project.user_role,
-        "user_contribution_percent": project.user_contribution_percent,
-        "contributors": [
-            {
-                "name": c.name,
-                "identifier": c.contributor_identifier,
-                "contribution_percent": c.contribution_percent,
-                "commit_count": c.commit_count,
-            }
-            for c in contributors
-        ],
-    }
-
-
-@router.post("/{project_id}/roles")
-def assign_project_role(
-    project_id: int,
-    payload: RoleAssignmentRequest = Body(...),
-    user_id: int = Depends(require_auth)
-):
-    project = _assert_project_access(project_id, user_id)
-
-    collaboration_type = identify_project_type(project.file_path, {"files": []})
-    is_collaborative = collaboration_type == "Collaborative Project"
-
-    contribution_percent = payload.contribution_percent
-    if contribution_percent is None:
-        contribution_percent = 0.0
-        if payload.contributor:
-            contributors = db_manager.get_contributors_for_project(project_id)
-            target = payload.contributor.lower()
-            for c in contributors:
-                if (c.name and c.name.lower() == target) or (
-                    c.contributor_identifier and c.contributor_identifier.lower() == target
-                ):
-                    contribution_percent = c.contribution_percent or 0.0
-                    break
-
-    role = get_role_from_contribution(
-        contribution_percent=contribution_percent,
-        is_collaborative=is_collaborative,
-        role_type=payload.role_type,
-    )
-
-    updated = db_manager.update_project(project_id, {
-        "collaboration_type": collaboration_type,
-        "user_contribution_percent": contribution_percent,
-        "user_role": role,
-    })
-
-    return {
-        "project_id": project_id,
-        "project_name": updated.name,
-        "collaboration_type": collaboration_type,
-        "user_contribution_percent": contribution_percent,
-        "user_role": role,
-    }
-@router.post("/{project_id}/analyze")
-def analyze_project_with_ai(
-    project_id: int,
-    user_id: Optional[int] = Depends(get_current_user_id),
-):
-    """
-    Generate an AI description for a project and persist it.
-
-    Requires AI consent to be granted (via Settings -> Consent).
-    Returns the updated project with the new ai_description field.
-    """
-    if not has_ai_consent():
-        raise HTTPException(
-            status_code=403,
-            detail="AI consent not granted. Enable AI consent in Settings first.",
-        )
-
+    """Safely delete a project. Protects files shared with other projects."""
     project = db_manager.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-
-    # Optional ownership check (non-fatal for guest projects)
-    if user_id and project.user_id and project.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    if user_id is not None and project.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not your project")
 
     try:
-        from src.AI.ai_project_analyzer import AIProjectAnalyzer
+        from src.deletion_manager import DeletionManager
+        manager = DeletionManager()
+        result = manager.delete_project_safely(project_id, delete_shared_files=False)
+        if not result.get("project_deleted"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Deletion failed"))
+        return {"deleted": True, "project_id": project_id, "files_protected": result.get("files_protected", 0)}
+    except ImportError:
+        # Fallback: basic delete without shared-file protection
+        success = db_manager.delete_project(project_id)
+        if not success:
+            raise HTTPException(status_code=500, detail="Deletion failed")
+        return {"deleted": True, "project_id": project_id}
 
-        analyzer = AIProjectAnalyzer()
-        results = analyzer.analyze_project_complete(project_id)
 
-        if "error" in results:
-            raise HTTPException(status_code=500, detail=results["error"])
-
-        # Persist ai_description to the database
-        analyzer.update_database_with_analysis(project_id, results)
-
-        # Return refreshed project
-        updated = db_manager.get_project(project_id)
-        return {
-            "message": "AI analysis complete",
-            "ai_description": results.get("overview", ""),
-            "project": updated.to_dict() if updated else {},
-        }
-
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+# ── Thumbnail ──────────────────────────────────────────────────────────────────
 
 @router.post("/{project_id}/thumbnail")
 async def upload_thumbnail(
@@ -451,26 +295,228 @@ async def upload_thumbnail(
     file: UploadFile = File(...),
     user_id: int = Depends(require_auth)
 ):
-    """
-    Upload a thumbnail image for an existing project.
-    
-    - **project_id**: Project database ID
-    - **file**: Image file (.jpg, .jpeg, .png, .gif, .webp, .bmp, .svg)
-    - **Authorization header**: Optional Bearer token
-    """
-    thumbnail_path = UPLOAD_DIR / f"thumb_{project_id}_{file.filename}"
-
-    with open(thumbnail_path, "wb") as f:
+    """Upload a thumbnail image for a project."""
+    filename = f"thumb_{project_id}_{file.filename}"
+    thumbnail_disk_path = UPLOAD_DIR / filename
+    with open(thumbnail_disk_path, "wb") as f:
         f.write(await file.read())
-
     try:
-        result = upload_project_thumbnail(project_id, str(thumbnail_path), user_id=user_id)
+        # Store only the filename so frontend builds: /uploads/<filename>
+        result = upload_project_thumbnail(project_id, filename, user_id=user_id)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
     if result is None:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-
     return result
+
+
+@router.delete("/{project_id}/thumbnail")
+def remove_thumbnail(
+    project_id: int,
+    user_id: int = Depends(require_auth)
+):
+    """Remove the thumbnail from a project."""
+    try:
+        result = upload_project_thumbnail(project_id, None, user_id=user_id)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return {"removed": True, "project_id": project_id}
+
+
+# ── AI Analysis ────────────────────────────────────────────────────────────────
+
+@router.post("/{project_id}/analyze")
+def analyze_project(
+    project_id: int,
+    body: AnalyzeRequest = Body(default=AnalyzeRequest()),
+    user_id: Optional[int] = Depends(get_current_user_id)
+):
+    """Run AI analysis on a single project."""
+    # ── Consent gate ──────────────────────────────────────────────────────────
+    if not has_ai_consent():
+        raise HTTPException(
+            status_code=403,
+            detail="AI analysis requires consent. Please enable AI features in Settings."
+        )
+
+    project = db_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if user_id is not None and project.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not your project")
+
+    analysis_type = body.analysis_type or "overview"
+
+    try:
+        from src.AI.ai_project_analyzer import AIProjectAnalyzer
+        analyzer = AIProjectAnalyzer()
+        results = analyzer.analyze_project_complete(project_id)
+        updates = {}
+        # overview is a plain string — save as ai_description
+        if results and "overview" in results:
+            overview = results["overview"]
+            if isinstance(overview, str) and overview.strip():
+                updates["ai_description"] = overview.strip()
+            elif isinstance(overview, dict):
+                desc = overview.get("summary") or overview.get("description") or ""
+                if desc:
+                    updates["ai_description"] = desc
+        # Save full analysis JSON to ai_analysis column for persistence
+        if results:
+            import json as _json
+            safe = {k: v for k, v in results.items()
+                    if k not in ("cache_stats",) and v is not None}
+            updates["ai_analysis"] = _json.dumps(safe)
+        if updates:
+            db_manager.update_project(project_id, updates)
+        return {"project_id": project_id, "analysis_type": analysis_type, "results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@router.post("/analyze/batch")
+def batch_analyze(
+    body: BatchAnalyzeRequest = Body(default=BatchAnalyzeRequest()),
+    user_id: Optional[int] = Depends(get_current_user_id)
+):
+    """Run AI analysis on all projects."""
+    # ── Consent gate ──────────────────────────────────────────────────────────
+    if not has_ai_consent():
+        raise HTTPException(
+            status_code=403,
+            detail="AI analysis requires consent. Please enable AI features in Settings."
+        )
+
+    if user_id:
+        projects = db_manager.get_projects_for_user(user_id)
+    else:
+        projects = db_manager.get_guest_projects()
+
+    if not projects:
+        return {"analyzed": 0, "results": []}
+
+    results = []
+    for p in projects:
+        try:
+            from src.AI.ai_project_analyzer import AIProjectAnalyzer
+            analyzer = AIProjectAnalyzer()
+            r = analyzer.analyze_project_complete(p.id)
+            if r and "overview" in r:
+                overview = r["overview"]
+                if isinstance(overview, str) and overview.strip():
+                    db_manager.update_project(p.id, {"ai_description": overview.strip()})
+                elif isinstance(overview, dict):
+                    desc = overview.get("summary") or overview.get("description") or ""
+                    if desc:
+                        db_manager.update_project(p.id, {"ai_description": desc})
+            results.append({"project_id": p.id, "name": _display_name(p), "success": True})
+        except Exception as e:
+            results.append({"project_id": p.id, "name": _display_name(p), "success": False, "error": str(e)})
+
+    return {"analyzed": len(results), "results": results}
+
+
+# ── Importance Scores ──────────────────────────────────────────────────────────
+
+@router.post("/compute-importance")
+def compute_importance(user_id: Optional[int] = Depends(get_current_user_id)):
+    """Compute and save importance scores for all projects."""
+    if user_id:
+        projects = db_manager.get_projects_for_user(user_id, include_hidden=True)
+    else:
+        projects = db_manager.get_guest_projects(include_hidden=True)
+
+    if not projects:
+        return {"updated": 0, "scores": []}
+
+    try:
+        from src.Analysis.importanceScores import calculate_importance_score
+        scores = []
+        for p in projects:
+            score = calculate_importance_score(p)
+            db_manager.update_project(p.id, {"importance_score": score})
+            scores.append({"project_id": p.id, "name": _display_name(p), "importance_score": round(score, 4)})
+        scores.sort(key=lambda x: x["importance_score"], reverse=True)
+        return {"updated": len(scores), "scores": scores}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
+
+
+# ── AI Ranking ────────────────────────────────────────────────────────────────
+
+@router.post("/rank")
+def rank_projects(
+    body: RankRequest = Body(default=RankRequest()),
+    user_id: Optional[int] = Depends(get_current_user_id)
+):
+    """AI-powered project ranking with optional skill prioritization."""
+    if user_id:
+        projects = db_manager.get_projects_for_user(user_id)
+    else:
+        projects = db_manager.get_guest_projects()
+
+    if not projects:
+        return {"selected": [], "summary": "No projects found."}
+
+    # Build project dicts for ranker
+    project_dicts = []
+    for p in projects:
+        project_dicts.append({
+            "project_id": p.id,
+            "project_name": _display_name(p),
+            "time_spent": p.file_count or 1,
+            "success_score": float(p.importance_score or 0),
+            "contribution_score": float(p.user_contribution_percent or 50),
+            "skills": p.skills or [],
+            "languages": p.languages or [],
+            "project_type": p.project_type or "unknown",
+            "importance_score": float(p.importance_score or 0),
+        })
+
+    try:
+        from src.AI.ai_project_ranker import AIProjectRanker
+        ranker = AIProjectRanker()
+        result = ranker.rank(
+            project_dicts,
+            target_skills=body.target_skills,
+            top_k=body.top_k or 3,
+        )
+        # Clean up internal scoring keys before returning
+        for proj in result.get("selected", []):
+            proj.pop("_rank_score_raw", None)
+        return result
+    except Exception as e:
+        # Fallback: simple importance-score ranking
+        sorted_projects = sorted(project_dicts, key=lambda x: x["importance_score"], reverse=True)
+        top = sorted_projects[:body.top_k or 3]
+        return {
+            "selected": [{"project_name": p["project_name"], "project_id": p["project_id"], "_rank_score": p["importance_score"], "skills": p["skills"]} for p in top],
+            "summary": f"Ranked by importance score (AI unavailable: {str(e)})",
+        }
+
+
+# ── AI Insights deletion ───────────────────────────────────────────────────────
+
+@router.delete("/{project_id}/ai-insights")
+def delete_ai_insights(
+    project_id: int,
+    user_id: Optional[int] = Depends(get_current_user_id)
+):
+    """Delete AI insights (description + cache) for a single project."""
+    project = db_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if user_id is not None and project.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not your project")
+
+    try:
+        from src.deletion_manager import DeletionManager
+        result = DeletionManager().delete_ai_insights_for_project(project_id)
+        return result
+    except ImportError:
+        db_manager.update_project(project_id, {"ai_description": None})
+        return {"success": True, "cache_deleted": 0}
