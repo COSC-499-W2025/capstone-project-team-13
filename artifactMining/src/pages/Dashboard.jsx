@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./Dashboard.css";
@@ -103,6 +104,75 @@ export default function Dashboard() {
               : "Generate your portfolio from your projects"}
           </p>
           <button className="btn-primary mt-16">Open Portfolio →</button>
+        </div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="dash-charts-row" style={{ marginTop: 32 }}>
+        {/* Pie Chart: Projects by Type */}
+        <div className="card insights">
+          <h2>Projects by Type</h2>
+          <div className="insights-chart-area">
+            {projects.length === 0 ? (
+              <p className="text-muted">No projects to display.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={Object.entries(projects.reduce((acc, p) => {
+                      const type = p.project_type || "Unknown";
+                      acc[type] = (acc[type] || 0) + 1;
+                      return acc;
+                    }, {})).map(([type, value]) => ({ name: type, value }))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                    stroke="none"
+                  >
+                    {Object.keys(projects.reduce((acc, p) => {
+                      const type = p.project_type || "Unknown";
+                      acc[type] = true;
+                      return acc;
+                    }, {})).map((type, idx) => (
+                      <Cell key={type} fill={["#6366f1", "#818cf8", "#a5b4fc", "#7c3aed", "#c4b5fd", "#64748b", "#475569"][idx % 7]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{background:'#23295a', border:'1px solid #6366f1', color:'#e0e7ff'}}/>
+                  <Legend wrapperStyle={{color:'#a5b4fc'}} iconType="circle"/>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Bar Chart: Top 10 Skills */}
+        <div className="card insights">
+          <h2>Top 10 Skills</h2>
+          <div className="insights-chart-area">
+            {skills.length === 0 ? (
+              <p className="text-muted">No skills to display.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart
+                  data={skills.map(s => ({
+                    name: s.name || s.skill_name || (typeof s === "string" ? s : ""),
+                    count: s.count || s.project_count || 0
+                  }))}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#23295a" />
+                  <XAxis type="number" allowDecimals={false} stroke="#6366f1" tick={{fill:'#a5b4fc'}} axisLine={{stroke:'#23295a'}} tickLine={{stroke:'#23295a'}}/>
+                  <YAxis type="category" dataKey="name" width={120} stroke="#6366f1" tick={{fill:'#a5b4fc'}} axisLine={{stroke:'#23295a'}} tickLine={{stroke:'#23295a'}}/>
+                  <RechartsTooltip contentStyle={{background:'#23295a', border:'1px solid #6366f1', color:'#e0e7ff'}}/>
+                  <Legend wrapperStyle={{color:'#a5b4fc'}} iconType="circle"/>
+                  <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 6, 6]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
       </div>
     </div>
