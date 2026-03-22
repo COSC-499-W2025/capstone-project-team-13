@@ -11,11 +11,10 @@ const mainLinks = [
 ];
 
 const toolLinks = [
-  { to: "/evidence", label: "Evidence" },
-  { to: "/analysis", label: "Analysis" },
-  { to: "/deletion", label: "Deletion" },
-  { to: "/resumes", label: "Resumes" },
-  { to: "/settings", label: "Settings" },
+  { to: "/evidence", label: "Evidence" }, 
+  { to: "/analysis", label: "Analysis" }, 
+  { to: "/resumes", label: "Resumes" }, 
+  { to: "/settings", label: "Settings" }
 ];
 
 export default function Navbar() {

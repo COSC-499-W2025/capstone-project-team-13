@@ -19,3 +19,44 @@
 
 .proj-meta { display: flex; gap: 12px; margin-top: 4px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
 .text-muted { color: var(--text-muted); }
+
+/* Subtabs */
+.proj-subtabs {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0 20px;
+}
+
+.subtab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.subtab-btn:hover {
+  background: #d1d5db;
+}
+
+.subtab-btn.active {
+  background: #2563eb;
+  color: white;
+}
+/* Deletion tab default (blue like active) */
+.deletion-tab {
+  background: #2563eb;
+  color: white;
+}
+
+/* Hover effect */
+.deletion-tab:hover {
+  background: #1d4ed8;
+}
+
+/* Optional: when actually on deletion page (slightly stronger) */
+.deletion-tab.active {
+  background: #1e40af;
+}
