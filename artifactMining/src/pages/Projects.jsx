@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./Projects.css";
 
 export default function Projects() {
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const nav = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     apiFetch("/projects")
@@ -38,6 +40,23 @@ export default function Projects() {
       <div className="proj-header">
         <h1>Projects</h1>
         <button className="btn-primary" onClick={() => nav("/upload")}>+ Upload</button>
+      </div>
+
+      {/* Sub Tabs */}
+      <div className="proj-subtabs">
+        <button
+          className={`subtab-btn ${pathname === "/projects" ? "active" : ""}`}
+          onClick={() => nav("/projects")}
+        >
+          All Projects
+        </button>
+
+        <button
+          className={`subtab-btn deletion-tab ${pathname === "/deletion" ? "active" : ""}`}
+          onClick={() => nav("/deletion")}
+        >
+          Deletion Manager
+        </button>
       </div>
 
       <div className="proj-filters">

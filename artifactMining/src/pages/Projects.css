@@ -45,3 +45,18 @@
   background: #2563eb;
   color: white;
 }
+/* Deletion tab default (blue like active) */
+.deletion-tab {
+  background: #2563eb;
+  color: white;
+}
+
+/* Hover effect */
+.deletion-tab:hover {
+  background: #1d4ed8;
+}
+
+/* Optional: when actually on deletion page (slightly stronger) */
+.deletion-tab.active {
+  background: #1e40af;
+}
