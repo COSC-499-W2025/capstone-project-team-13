@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
+import SkillsTimeline from "./SkillsTimeline";
+import ActivityHeatmap from "./ActivityHeatmap";
 import "./Portfolio.css";
 
 export default function Portfolio() {
@@ -165,6 +167,16 @@ export default function Portfolio() {
             </div>
           </>
         )}
+
+        <div className="card port-section" style={{ marginTop: 24 }}>
+          <h2 style={{ marginBottom: 16 }}>Skills Timeline</h2>
+          <SkillsTimeline />
+        </div>
+
+        <div className="card port-section" style={{ marginTop: 16 }}>
+          <h2 style={{ marginBottom: 16 }}>Project Activity</h2>
+          <ActivityHeatmap />
+        </div>
       </>}
     </div>
   );
