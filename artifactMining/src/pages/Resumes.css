@@ -355,3 +355,514 @@
   font-size: 9pt;
   color: #aaa;
 }
+/* ── Auth wall ── */
+.resume-auth-wall {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 40px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.resume-auth-wall h2 {
+  color: var(--green);
+  margin-bottom: 12px;
+}
+
+.resume-auth-wall p {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+/* ── Empty state ── */
+.resume-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  color: var(--muted);
+  font-style: italic;
+  font-family: "EB Garamond", serif;
+}
+
+/* ── Sidebar additions ── */
+.resume-btn-active {
+  background: var(--green-dark);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.4);
+}
+
+.resume-btn-save {
+  background: #1a7a3f;
+  color: #fff;
+}
+
+.resume-btn-save:disabled {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.35);
+  cursor: not-allowed;
+}
+
+/* ── Edit mode indicator on resume doc ── */
+.resume-editing {
+  outline: 2px dashed rgba(45, 106, 79, 0.35);
+  outline-offset: 12px;
+  border-radius: 4px;
+}
+
+/* ── Inline edit inputs ── */
+.r-inline-input {
+  background: rgba(45, 106, 79, 0.06);
+  border: 1px solid rgba(45, 106, 79, 0.35);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-family: "EB Garamond", serif;
+  font-size: inherit;
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.r-inline-input:focus {
+  outline: none;
+  border-color: var(--green);
+  background: rgba(45, 106, 79, 0.1);
+}
+
+.r-inline-textarea {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.r-placeholder {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* ── Section wrapper & drag ── */
+.r-section-block {
+  margin-bottom: 6px;
+  transition: opacity 0.15s;
+}
+
+.r-section-block.r-drag-over {
+  outline: 2px dashed var(--green);
+  outline-offset: 4px;
+  opacity: 0.7;
+}
+
+.r-drag-handle {
+  cursor: grab;
+  color: var(--rule);
+  font-size: 1.1rem;
+  margin-right: 6px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.r-drag-handle:active { cursor: grabbing; }
+
+.r-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 8px;
+}
+
+.r-section hr {
+  flex: 1;
+  border: none;
+  border-top: 0.6px solid var(--rule);
+  margin: 0;
+}
+
+.r-section-title {
+  white-space: nowrap;
+  font-size: 11.5pt;
+  font-weight: 600;
+  color: var(--green);
+  text-align: center;
+  letter-spacing: 0.06em;
+  font-family: "EB Garamond", serif;
+  text-transform: uppercase;
+}
+
+/* ── Delete buttons ── */
+.r-delete-section {
+  background: none;
+  border: none;
+  color: #c0392b;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 4px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.r-delete-section:hover { opacity: 1; }
+
+.r-delete-entry {
+  display: block;
+  background: none;
+  border: 1px solid rgba(192, 57, 43, 0.4);
+  border-radius: 3px;
+  color: #c0392b;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+.r-delete-entry:hover { opacity: 1; }
+
+.r-delete-bullet {
+  background: none;
+  border: none;
+  color: #c0392b;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0 4px;
+  opacity: 0.5;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.r-delete-bullet:hover { opacity: 1; }
+
+/* ── Bullet editing ── */
+.proj-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.r-bullet-input {
+  flex: 1;
+  background: rgba(45, 106, 79, 0.05);
+  border: 1px solid rgba(45, 106, 79, 0.3);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-family: "EB Garamond", serif;
+  font-size: 10pt;
+  color: var(--text);
+  resize: vertical;
+  min-height: 36px;
+}
+
+.r-bullet-input:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.r-add-bullet {
+  background: none;
+  border: 1px dashed rgba(45, 106, 79, 0.5);
+  border-radius: 3px;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+.r-add-bullet:hover { opacity: 1; background: rgba(45,106,79,0.06); }
+
+/* ── Contact row in edit mode ── */
+.r-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.r-contact-input {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+  text-align: center;
+  font-size: 9pt;
+}
+
+/* ── Name input ── */
+.r-name-input {
+  font-size: 26pt;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+}
+
+/* ── Date range inputs ── */
+.r-date-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.r-date-input {
+  width: 130px;
+  font-size: 9.5pt;
+}
+
+/* ── Education extra fields (location, gpa) ── */
+.r-edu-extra {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.r-edu-extra .r-inline-input {
+  flex: 1;
+  font-size: 9pt;
+}
+
+/* ── Skills input ── */
+.r-skills-input {
+  font-size: 10pt;
+  flex: 1;
+}
+
+/* ── Education / work entries ── */
+.edu-entry,
+.work-entry {
+  margin-bottom: 14px;
+}
+
+/* ── Present checkbox ── */
+.r-present-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5pt;
+  color: var(--muted);
+  font-family: "EB Garamond", serif;
+}
+
+.r-present-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8.5pt;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.r-present-check input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  accent-color: var(--green);
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ── ATS tooltip ── */
+.proj-ats {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ats-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ats-help-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  background: #fff;
+  color: var(--muted);
+  font-size: 9pt;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ats-help-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.ats-tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 12px 14px;
+  width: 280px;
+  z-index: 100;
+  font-family: system-ui, sans-serif;
+  font-size: 8.5pt;
+  color: var(--text);
+}
+
+.ats-tooltip-bubble strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 9pt;
+  color: var(--green);
+}
+
+.ats-tooltip-bubble ul {
+  margin: 0 0 10px 0;
+  padding-left: 14px;
+}
+
+.ats-tooltip-bubble li {
+  margin-bottom: 4px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.ats-close-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 8pt;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.ats-close-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* ── MonthPicker ── */
+.month-picker-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.month-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 100px;
+  justify-content: space-between;
+  font-size: 9.5pt;
+  padding: 3px 8px;
+  text-align: left;
+}
+
+.month-picker-caret {
+  font-size: 8pt;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.month-picker-popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+  padding: 10px;
+  width: 200px;
+}
+
+.month-picker-year-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 4px;
+}
+
+.month-picker-nav {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.month-picker-nav:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.month-picker-year-select {
+  flex: 1;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 3px 4px;
+  font-size: 9pt;
+  font-family: "EB Garamond", serif;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+}
+
+.month-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.month-picker-month {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 5px 2px;
+  font-size: 8.5pt;
+  font-family: "EB Garamond", serif;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s;
+}
+
+.month-picker-month:hover {
+  background: rgba(45, 106, 79, 0.1);
+  border-color: var(--rule);
+}
+
+.month-picker-month.selected {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+.r-date-sep {
+  color: var(--muted);
+  margin: 0 2px;
+}
