@@ -41,12 +41,33 @@ export default function Settings() {
   const [analysisPrefLoading, setAnalysisPrefLoading] = useState(false);
   const [analysisPrefSaving, setAnalysisPrefSaving] = useState(false);
 
+  // ── Current Configuration ────────────────────────────────────────────────────
+  const [currentConfig, setCurrentConfig] = useState(null);
+  const [currentConfigLoading, setCurrentConfigLoading] = useState(false);
+  const [currentConfigError, setCurrentConfigError] = useState("");
+
   useEffect(() => {
     if (activeSection === "account") { fetchCurrentUser(); fetchGuestProjectCount(); }
     if (activeSection === "consent") { fetchConsentStatuses(); }
     if (activeSection === "privacy") { fetchPrivacySettings(); }
     if (activeSection === "analysis") { fetchAnalysisPreferences(); }
+    if (activeSection === "currentConfig") { fetchCurrentConfiguration(); }
   }, [activeSection]);
+
+  async function fetchCurrentConfiguration() {
+    try {
+      setCurrentConfigLoading(true);
+      setCurrentConfigError("");
+      const res = await fetch(`${API_BASE}/configuration/current-configuration`);
+      if (!res.ok) throw new Error("Failed to fetch current configuration");
+      const data = await res.json();
+      setCurrentConfig(data);
+    } catch (err) {
+      setCurrentConfigError("Could not load current configuration.");
+    } finally {
+      setCurrentConfigLoading(false);
+    }
+  }
 
   // ── Analysis Preferences ────────────────────────────────────────────────────
   async function fetchAnalysisPreferences() {
@@ -326,6 +347,281 @@ export default function Settings() {
       : <span className="settings-badge settings-badge-revoked">Not Granted</span>;
   }
 
+  function renderBooleanBadge(val) {
+    return val
+      ? <span className="settings-badge settings-badge-granted">Yes</span>
+      : <span className="settings-badge settings-badge-revoked">No</span>;
+  }
+
+  function formatKey(key) {
+    return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function formatTimestamp(ts) {
+    if (!ts) return "N/A";
+    try { return new Date(ts).toLocaleString(); } catch { return ts; }
+  }
+
+  // Renders a flat object as config rows — booleans get badges, everything else is plain text
+  function renderConfigRows(obj, skipKeys = []) {
+    return Object.entries(obj)
+      .filter(([key]) => !skipKeys.includes(key))
+      .map(([key, val]) => {
+        if (typeof val === "boolean") {
+          return (
+            <div key={key} className="settings-config-row">
+              <span>{formatKey(key)}</span>
+              {renderBooleanBadge(val)}
+            </div>
+          );
+        }
+        if (Array.isArray(val)) {
+          return val.length > 0 ? (
+            <div key={key} className="settings-config-list-block">
+              <span className="settings-config-list-label">{formatKey(key)}</span>
+              <ul className="settings-config-list">
+                {val.map((item, i) => <li key={i}>{typeof item === "object" ? JSON.stringify(item) : String(item)}</li>)}
+              </ul>
+            </div>
+          ) : null;
+        }
+        if (typeof val === "object" && val !== null) {
+          // Nested object — render as indented sub-rows
+          return (
+            <div key={key} className="settings-config-list-block">
+              <span className="settings-config-list-label">{formatKey(key)}</span>
+              <div className="settings-config-subrows">
+                {renderConfigRows(val)}
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={key} className="settings-config-row">
+            <span>{formatKey(key)}</span>
+            <span className="settings-config-value">{val != null ? String(val) : "N/A"}</span>
+          </div>
+        );
+      });
+  }
+
+  // Known top-level section keys and their display config
+  const CONFIG_SECTIONS = [
+    {
+      key: "consent",
+      title: "Consent",
+      description: "Current consent status and timestamps.",
+      render: (data) => (
+        <>
+          <div className="settings-config-row">
+            <span>Basic Consent</span>
+            {renderBooleanBadge(data.basic_consent_granted)}
+          </div>
+          {data.basic_consent_timestamp && (
+            <div className="settings-config-row">
+              <span>Basic Consent Granted</span>
+              <span className="settings-config-value">{formatTimestamp(data.basic_consent_timestamp)}</span>
+            </div>
+          )}
+          <div className="settings-config-row">
+            <span>AI Consent</span>
+            {renderBooleanBadge(data.ai_consent_granted)}
+          </div>
+          {data.ai_consent_timestamp && (
+            <div className="settings-config-row">
+              <span>AI Consent Granted</span>
+              <span className="settings-config-value">{formatTimestamp(data.ai_consent_timestamp)}</span>
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "privacy_settings",
+      title: "Privacy Settings",
+      description: "Active privacy controls at a glance.",
+      render: (data) => (
+        <>
+          {renderConfigRows(data, ["excluded_folders", "excluded_file_types"])}
+          {data.excluded_folders?.length > 0 && (
+            <div className="settings-config-list-block">
+              <span className="settings-config-list-label">Excluded Folders</span>
+              <ul className="settings-config-list">
+                {data.excluded_folders.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </div>
+          )}
+          {data.excluded_file_types?.length > 0 && (
+            <div className="settings-config-list-block">
+              <span className="settings-config-list-label">Excluded File Types</span>
+              <ul className="settings-config-list">
+                {data.excluded_file_types.map((t, i) => <li key={i}>{t}</li>)}
+              </ul>
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "analysis_preferences",
+      title: "Analysis Preferences",
+      description: "Which analysis features are currently enabled.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "scanning_preferences",
+      title: "Scanning Preferences",
+      description: "File and folder scanning behaviour.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "ai_settings",
+      title: "AI Settings",
+      description: "Active AI provider, model, and feature configuration.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "output_preferences",
+      title: "Output Preferences",
+      description: "Export format, summary style, and resume settings.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "ui_preferences",
+      title: "UI Preferences",
+      description: "Theme, language, and dashboard display options.",
+      render: (data) => {
+        const { dashboard_widgets, favorite_projects, ...rest } = data;
+        return (
+          <>
+            {renderConfigRows(rest)}
+            {dashboard_widgets && typeof dashboard_widgets === "object" && !Array.isArray(dashboard_widgets) && (
+              <div className="settings-config-list-block">
+                <span className="settings-config-list-label">Dashboard Widgets</span>
+                <div className="settings-config-subrows">
+                  {renderConfigRows(dashboard_widgets)}
+                </div>
+              </div>
+            )}
+            {Array.isArray(favorite_projects) && favorite_projects.length > 0 && (
+              <div className="settings-config-list-block">
+                <span className="settings-config-list-label">Favorite Projects</span>
+                <ul className="settings-config-list">
+                  {favorite_projects.map((p, i) => <li key={i}>{String(p)}</li>)}
+                </ul>
+              </div>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: "performance_settings",
+      title: "Performance Settings",
+      description: "Caching, parallel processing, and task limits.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "notification_settings",
+      title: "Notification Settings",
+      description: "When and how notifications are triggered.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "backup_settings",
+      title: "Backup Settings",
+      description: "Backup frequency and data retention policy.",
+      render: (data) => renderConfigRows(data),
+    },
+    {
+      key: "meta",
+      title: "Meta",
+      description: "Configuration version, creation and last-accessed timestamps.",
+      render: (data) => {
+        return Object.entries(data).map(([key, val]) => (
+          <div key={key} className="settings-config-row">
+            <span>{formatKey(key)}</span>
+            <span className="settings-config-value">
+              {key.endsWith("_at") || key.endsWith("_accessed") ? formatTimestamp(val) : String(val ?? "N/A")}
+            </span>
+          </div>
+        ));
+      },
+    },
+  ];
+
+  const KNOWN_KEYS = CONFIG_SECTIONS.map(s => s.key);
+
+  function renderCurrentConfigSection() {
+    return (
+      <div className="settings-section-panel">
+        <h2>Current Configuration</h2>
+        <p className="settings-section-description">
+          A read-only snapshot of the full active configuration.
+        </p>
+
+        {currentConfigError && (
+          <div className="settings-alerts">
+            <div className="settings-alert settings-alert-error">{currentConfigError}</div>
+          </div>
+        )}
+
+        {currentConfigLoading ? (
+          <p>Loading current configuration...</p>
+        ) : !currentConfig ? (
+          <p>No configuration data available.</p>
+        ) : (
+          <div className="settings-content-grid">
+
+            {/* Render all known sections that exist in the response */}
+            {CONFIG_SECTIONS.map(({ key, title, description, render }) =>
+              currentConfig[key] != null ? (
+                <div key={key} className="settings-card">
+                  <div className="settings-card-header">
+                    <div><h3>{title}</h3><p>{description}</p></div>
+                  </div>
+                  <div className="settings-card-body">
+                    {render(currentConfig[key])}
+                  </div>
+                </div>
+              ) : null
+            )}
+
+            {/* Fallback: any unknown top-level keys the API returns in future */}
+            {Object.entries(currentConfig)
+              .filter(([key]) => !KNOWN_KEYS.includes(key))
+              .map(([key, val]) => (
+                <div key={key} className="settings-card">
+                  <div className="settings-card-header">
+                    <div><h3>{formatKey(key)}</h3><p>Additional configuration data.</p></div>
+                  </div>
+                  <div className="settings-card-body">
+                    {typeof val === "object" && val !== null
+                      ? renderConfigRows(val)
+                      : <div className="settings-config-row"><span>{formatKey(key)}</span><span className="settings-config-value">{String(val)}</span></div>
+                    }
+                  </div>
+                </div>
+              ))
+            }
+
+          </div>
+        )}
+
+        <div className="settings-footer">
+          <button
+            className="settings-button settings-button-refresh"
+            onClick={fetchCurrentConfiguration}
+            disabled={currentConfigLoading}
+            type="button"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderAccountSection() {
     return (
       <div className="settings-section-panel">
@@ -394,6 +690,7 @@ export default function Settings() {
 
   function renderSectionContent() {
     if (activeSection === "account") return renderAccountSection();
+    if (activeSection === "currentConfig") return renderCurrentConfigSection();
 
     if (activeSection === "privacy") {
       return (
@@ -582,6 +879,7 @@ export default function Settings() {
               ["privacy", "Privacy"],
               ["analysis", "Analysis Preferences"],
               ["consent", "Consent"],
+              ["currentConfig", "Current Configuration"],
             ].map(([key, label]) => (
               <button key={key} className={`settings-nav-item ${activeSection === key ? "active" : ""}`} onClick={() => setActiveSection(key)}>{label}</button>
             ))}

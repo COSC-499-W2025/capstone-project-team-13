@@ -451,3 +451,21 @@
     align-items: stretch;
   }
 }
+
+.settings-config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color, #eee);
+}
+.settings-config-value { font-size: 0.875rem; color: #555; }
+.settings-config-list-block { margin-top: 12px; }
+.settings-config-list-label { font-weight: 600; font-size: 0.875rem; display: block; margin-bottom: 4px; }
+.settings-config-list { margin: 0; padding-left: 16px; font-size: 0.875rem; }
+
+.settings-config-subrows {
+  padding-left: 12px;
+  border-left: 2px solid var(--border-color, #e2e8f0);
+  margin-top: 4px;
+}
