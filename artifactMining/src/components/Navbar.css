@@ -11,20 +11,108 @@
 .navbar-brand { font-weight: 700; font-size: 1rem; color: #d8dfff; white-space: nowrap; }
 .navbar-links { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; align-items: center; }
 
+
 .nav-link {
-  color: #d8dfff; text-decoration: none; font-weight: 600; font-size: 1.02rem;
-  padding: 8px 12px; border-bottom: 2px solid transparent; border-radius: 0;
-  transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
-  background: none; border-top: none; border-left: none; border-right: none;
-  cursor: pointer; font-family: inherit;
-}
-.nav-link:hover, .nav-link.active {
-  color: #fff; border-bottom-color: rgba(208,107,255,0.9);
-  text-shadow: 0 0 20px rgba(180,110,255,0.6);
+  color: #d8dfff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.02rem;
+  padding: 8px 18px;
+  border-radius: 1.5rem;
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s, box-shadow 0.3s, background 0.3s;
+  z-index: 1;
+  overflow: hidden;
+  isolation: isolate;
 }
 
+/* Token highlight effect */
+.nav-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #d06bff 0%, #a5b4fc 100%);
+  opacity: 0;
+  z-index: -1;
+  border-radius: 1.5rem;
+  transform: scaleX(0.2) scaleY(0.7);
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(.4,2,.6,1);
+}
+
+.nav-link:hover::before,
+.nav-link.active::before {
+  opacity: 0.18;
+  transform: scaleX(1.08) scaleY(1.1);
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #fff;
+  background: rgba(208,107,255,0.10);
+  box-shadow: 0 2px 16px 0 #d06bff33;
+}
+
+/* Animated glowing border token */
+.nav-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1.5rem;
+  border: 2px solid transparent;
+  background: linear-gradient(90deg, #d06bff 0%, #a5b4fc 100%) border-box;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, box-shadow 0.3s;
+  z-index: 2;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  opacity: 1;
+  box-shadow: 0 0 12px 2px #d06bffaa;
+}
+
+/* Subtle pop on click */
+.nav-link:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 8px 0 #d06bff44;
+}
+
+
 .nav-dropdown { position: relative; }
-.nav-dropdown-trigger { display: flex; align-items: center; gap: 4px; }
+.nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+/* Highlight Tools dropdown when open or submenu active */
+.nav-dropdown.open > .nav-dropdown-trigger,
+.nav-dropdown:focus-within > .nav-dropdown-trigger,
+.nav-dropdown .nav-dropdown-trigger.active {
+  color: #fff;
+  background: rgba(208,107,255,0.10);
+  box-shadow: 0 2px 16px 0 #d06bff33;
+}
+.nav-dropdown.open > .nav-dropdown-trigger::before,
+.nav-dropdown:focus-within > .nav-dropdown-trigger::before,
+.nav-dropdown .nav-dropdown-trigger.active::before {
+  opacity: 0.18;
+  transform: scaleX(1.08) scaleY(1.1);
+}
+.nav-dropdown.open > .nav-dropdown-trigger::after,
+.nav-dropdown:focus-within > .nav-dropdown-trigger::after,
+.nav-dropdown .nav-dropdown-trigger.active::after {
+  opacity: 1;
+  box-shadow: 0 0 12px 2px #d06bffaa;
+}
 
 .nav-dropdown-menu {
   position: absolute; top: calc(100% + 12px); right: 0;
