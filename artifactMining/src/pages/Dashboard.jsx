@@ -150,7 +150,7 @@ export default function Dashboard() {
 
         {/* Bar Chart: Top 10 Skills */}
         <div className="card insights">
-          <h2>Top 10 Skills</h2>
+          <h2>Top Skills</h2>
           <div className="insights-chart-area">
             {skills.length === 0 ? (
               <p className="text-muted">No skills to display.</p>

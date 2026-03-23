@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 const mainLinks = [
-  { to: "/", label: "Dashboard" },
   { to: "/projects", label: "Projects" },
   { to: "/skills", label: "Skills" },
   { to: "/portfolio", label: "Portfolio" },
@@ -12,8 +11,7 @@ const mainLinks = [
 
 const toolLinks = [
   { to: "/evidence", label: "Evidence" }, 
-  { to: "/analysis", label: "Analysis" }, 
-  { to: "/settings", label: "Settings" }
+  { to: "/analysis", label: "Analysis" }
 ];
 
 export default function Navbar() {
@@ -22,9 +20,10 @@ export default function Navbar() {
   // Dropdown is active only if a tool page is selected
   const toolActive = toolLinks.some(l => pathname === l.to);
 
+  const isDashboard = pathname === "/" || pathname === "/dashboard";
   return (
     <nav className="navbar" onClick={() => setToolsOpen(false)}>
-      <div className="navbar-brand">⛏ Digital Artifact Mining</div>
+      <Link to="/" className={`navbar-brand nav-link${isDashboard ? " active" : ""}`}>⛏ Digital Artifact Mining</Link>
       <div className="navbar-links">
         {mainLinks.map(({ to, label }) => {
           // Highlight Projects for both /projects and /upload
@@ -58,6 +57,9 @@ export default function Navbar() {
             </div>
           )}
         </div>
+      </div>
+      <div className="navbar-profile">
+        <Link to="/settings" className={`nav-link${pathname === "/settings" ? " active" : ""}`}>Profile</Link>
       </div>
     </nav>
   );

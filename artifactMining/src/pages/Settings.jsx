@@ -13,7 +13,7 @@ export default function Settings() {
   const [guestProjectCount, setGuestProjectCount] = useState(null);
   const [accountMessage, setAccountMessage] = useState("");
   const [accountError, setAccountError] = useState("");
-  const [activeSection, setActiveSection] = useState("consent");
+  const [activeSection, setActiveSection] = useState("account");
   const [basicConsent, setBasicConsent] = useState(false);
   const [aiConsent, setAiConsent] = useState(false);
   const [loadingBasic, setLoadingBasic] = useState(true);

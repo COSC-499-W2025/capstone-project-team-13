@@ -1,11 +1,17 @@
 .navbar {
-  display: flex; justify-content: center; align-items: center;
+  display: flex; justify-content: flex-start; align-items: center;
   flex-wrap: wrap; gap: 42px;
   margin: 12px 20px 0; padding: 16px 20px; border-radius: 14px;
   border: 1px solid rgba(133,143,255,0.28);
   background: linear-gradient(180deg, rgba(18,25,58,0.96), rgba(15,20,48,0.96));
   box-shadow: 0 16px 30px rgba(4,8,30,0.45);
   position: sticky; top: 8px; z-index: 100;
+}
+
+.navbar-profile {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .navbar-brand { font-weight: 700; font-size: 1rem; color: #d8dfff; white-space: nowrap; }
