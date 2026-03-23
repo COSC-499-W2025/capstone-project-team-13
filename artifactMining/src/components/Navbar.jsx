@@ -3,18 +3,15 @@ import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 const mainLinks = [
-  { to: "/", label: "Dashboard" },
-  { to: "/upload", label: "Upload" },
   { to: "/projects", label: "Projects" },
   { to: "/skills", label: "Skills" },
   { to: "/portfolio", label: "Portfolio" },
+  { to: "/resumes", label: "Resume" },
 ];
 
 const toolLinks = [
   { to: "/evidence", label: "Evidence" }, 
-  { to: "/analysis", label: "Analysis" }, 
-  { to: "/resumes", label: "Resumes" }, 
-  { to: "/settings", label: "Settings" }
+  { to: "/analysis", label: "Analysis" }
 ];
 
 export default function Navbar() {
@@ -23,19 +20,25 @@ export default function Navbar() {
   // Dropdown is active only if a tool page is selected
   const toolActive = toolLinks.some(l => pathname === l.to);
 
+  const isDashboard = pathname === "/" || pathname === "/dashboard";
   return (
     <nav className="navbar" onClick={() => setToolsOpen(false)}>
-      <div className="navbar-brand">⛏ Digital Artifact Mining</div>
+      <Link to="/" className={`navbar-brand nav-link${isDashboard ? " active" : ""}`}>⛏ Digital Artifact Mining</Link>
       <div className="navbar-links">
-        {mainLinks.map(({ to, label }) => (
-          <Link
-            key={to}
-            to={to}
-            className={`nav-link ${pathname === to && !toolLinks.some(l => l.to === pathname) ? "active" : ""}`}
-          >
-            {label}
-          </Link>
-        ))}
+        {mainLinks.map(({ to, label }) => {
+          // Highlight Projects for both /projects and /upload
+          const isProjects = to === "/projects" && (pathname === "/projects" || pathname === "/upload");
+          const isActive = isProjects || (pathname === to && to !== "/projects");
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`nav-link ${isActive ? "active" : ""}`}
+            >
+              {label}
+            </Link>
+          );
+        })}
 
         {/* Tools dropdown */}
         <div className={`nav-dropdown${toolActive ? " open" : ""}`} onClick={e => e.stopPropagation()}>
@@ -54,6 +57,9 @@ export default function Navbar() {
             </div>
           )}
         </div>
+      </div>
+      <div className="navbar-profile">
+        <Link to="/settings" className={`nav-link${pathname === "/settings" ? " active" : ""}`}>Profile</Link>
       </div>
     </nav>
   );
