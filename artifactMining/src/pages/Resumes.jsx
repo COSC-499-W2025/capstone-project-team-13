@@ -133,6 +133,28 @@ function MonthPicker({ value, onChange, placeholder = "Select date" }) {
   );
 }
 
+// ── SkillInput — local raw string, parsed to array only on blur ───────────────
+
+function SkillInput({ level, skills, onChange }) {
+  const [raw, setRaw] = useState(skills.join(", "));
+
+  // Sync if parent skills change (e.g. on refresh)
+  useEffect(() => { setRaw(skills.join(", ")); }, [skills.join(",")]);
+
+  return (
+    <input
+      className="r-inline-input r-skills-input"
+      value={raw}
+      onChange={e => setRaw(e.target.value)}
+      onBlur={() => {
+        const updated = raw.split(",").map(s => s.trim()).filter(Boolean);
+        onChange(updated);
+      }}
+      placeholder="Skill 1, Skill 2, ..."
+    />
+  );
+}
+
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function InlineEdit({ value, onChange, editing, placeholder = "", className = "", multiline = false, style = {} }) {
@@ -195,10 +217,8 @@ function AtsTooltip() {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Resumes() {
-  const token = localStorage.getItem("token");
-
-  // ── auth state
-  const [authed, setAuthed] = useState(Boolean(token));
+  // ── auth state — null = still checking, false = not authed, true = authed
+  const [authed, setAuthed] = useState(null);
 
   // ── resume data (mirrors the JSON shape resume_export_service expects)
   const [resume, setResume] = useState(null);
@@ -232,8 +252,34 @@ export default function Resumes() {
     skills: "Technical Skills",
   });
 
+  // ── Validate token against backend on mount ──────────────────────────────────
   useEffect(() => {
-    if (!authed) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setAuthed(false);
+      return;
+    }
+    fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        if (res.ok) {
+          setAuthed(true);
+        } else {
+          // Expired or invalid token — clear it so the user isn't stuck
+          localStorage.removeItem("token");
+          setAuthed(false);
+        }
+      })
+      .catch(() => {
+        // Network error — clear token and show auth wall to be safe
+        localStorage.removeItem("token");
+        setAuthed(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (authed !== true) return;
     checkAiConsent();
     loadExisting();
   }, [authed]);
@@ -559,6 +605,32 @@ export default function Resumes() {
     }
   }
 
+  async function deleteResume() {
+    if (!window.confirm("Delete your resume? This will remove all resume data including sections you've added. Your projects and bullets are not affected.")) return;
+    setLoading(true);
+    try {
+      // Save an empty resume object to clear user.resume
+      await fetch(`${API_BASE}/resume/save`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      setResume(null);
+      setSectionOrder(["projects"]);
+      setSectionLabels({ projects: "Projects", education: "Education", work_history: "Relevant Experience", skills: "Technical Skills" });
+      setShowEdu(false);
+      setShowWork(false);
+      setShowSkills(false);
+      setDirty(false);
+      setEditing(false);
+      showStatus("Resume deleted.");
+    } catch (e) {
+      showStatus("Delete failed: " + e.message, "err");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function downloadFile(endpoint, filename) {
     try {
       // Save current state first so the export reflects the latest section order + changes
@@ -771,13 +843,23 @@ export default function Resumes() {
 
   // ── render ───────────────────────────────────────────────────────────────────
 
+  if (authed === null) {
+    // Still validating token against backend — show nothing yet
+    return (
+      <div className="page-wrap">
+        <div className="resume-loader" style={{ paddingTop: 80 }}>Checking authentication...</div>
+      </div>
+    );
+  }
+
   if (!authed) {
     return (
-      <div className="resume-shell">
-        <div className="resume-auth-wall">
-          <h2>Sign in to use the Resume Builder</h2>
-          <p>Your resume is tied to your account. Please log in to continue.</p>
-          <a className="resume-btn resume-btn-primary" href="/settings">Go to Settings to log in</a>
+      <div className="page-wrap">
+        <div className="resume-auth-wall card">
+          <div className="resume-auth-icon">📄</div>
+          <h2>Resume Builder</h2>
+          <p className="text-muted">This feature requires an account. Sign in or create an account to build and export your resume.</p>
+          <a className="btn-primary" href="/settings">Sign In / Sign Up →</a>
         </div>
       </div>
     );
@@ -808,7 +890,7 @@ export default function Resumes() {
             <span className="resume-label">Add Sections</span>
 
             <button className="resume-btn resume-btn-secondary" onClick={addEduEntry}>
-              + Add Education
+              + Add Award / Education
             </button>
 
             <button className="resume-btn resume-btn-secondary" onClick={addWorkEntry}>
@@ -857,6 +939,14 @@ export default function Resumes() {
               disabled={!dirty || loading}
             >
               {loading ? "Saving..." : "Save Changes"}
+            </button>
+
+            <button
+              className="resume-btn resume-btn-danger"
+              onClick={deleteResume}
+              disabled={loading}
+            >
+              Delete Resume
             </button>
           </>
         )}
@@ -915,11 +1005,11 @@ export default function Resumes() {
           <div key={pIdx} className="proj-item">
             <div className="proj-name">
               <InlineEdit
-                value={p.header || p.name}
+                value={p.name || p.header}
                 onChange={v => {
                   setResume(prev => {
                     const projects = [...prev.projects];
-                    projects[pIdx] = { ...projects[pIdx], header: v };
+                    projects[pIdx] = { ...projects[pIdx], name: v };
                     return { ...prev, projects };
                   });
                   markDirty();
@@ -1085,6 +1175,52 @@ export default function Resumes() {
             )}
           </div>
         ))}
+
+        {/* ── Awards sub-section inside Education ── */}
+        {(editing || (resume.awards && resume.awards.length > 0)) && (
+          <div className="r-awards-subsection">
+            <div className="r-awards-label">Awards <span className="r-awards-optional">(optional)</span></div>
+            {(resume.awards || []).map((award, aIdx) => (
+              <div key={aIdx} className="award-item r-award-row-edit">
+                {editing ? (
+                  <>
+                    <input
+                      className="r-inline-input"
+                      value={award}
+                      onChange={e => {
+                        setResume(prev => {
+                          const awards = [...(prev.awards || [])];
+                          awards[aIdx] = e.target.value;
+                          return { ...prev, awards };
+                        });
+                        markDirty();
+                      }}
+                      placeholder="Award name"
+                    />
+                    <button
+                      className="r-delete-bullet"
+                      onClick={() => {
+                        setResume(prev => ({ ...prev, awards: (prev.awards || []).filter((_, i) => i !== aIdx) }));
+                        markDirty();
+                      }}
+                    >✕</button>
+                  </>
+                ) : (
+                  <span>{award}</span>
+                )}
+              </div>
+            ))}
+            {editing && (
+              <button
+                className="r-add-bullet"
+                onClick={() => {
+                  setResume(prev => ({ ...prev, awards: [...(prev.awards || []), ""] }));
+                  markDirty();
+                }}
+              >+ Add award</button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -1240,16 +1376,15 @@ export default function Resumes() {
         </div>
 
         {Object.entries(skillsByLevel).map(([level, skills]) =>
-          skills.length > 0 ? (
+          skills.length > 0 || editing ? (
             <div key={level} className="skill-row">
               <strong>{level}:</strong>
               <span className="skill-sep">|</span>
               {editing ? (
-                <input
-                  className="r-inline-input r-skills-input"
-                  value={skills.join(", ")}
-                  onChange={e => {
-                    const updated = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
+                <SkillInput
+                  level={level}
+                  skills={skills}
+                  onChange={updated => {
                     setResume(prev => ({
                       ...prev,
                       skills_by_level: { ...prev.skills_by_level, [level]: updated },
@@ -1268,59 +1403,61 @@ export default function Resumes() {
   }
 
   return (
-    <div className="resume-shell">
-      {renderSidebar()}
+    <div className="page-wrap">
+      <div className="resume-shell">
+        {renderSidebar()}
 
-      <main className="resume-main">
-        {loading && <div className="resume-loader">Building your resume...</div>}
+        <main className="resume-main">
+          {loading && <div className="resume-loader">Building your resume...</div>}
 
-        {!loading && !hasResume && (
-          <div className="resume-empty-state">
-            <p>No resume yet. Click <strong>Generate Resume</strong> to get started.</p>
-          </div>
-        )}
-
-        {!loading && hasResume && resume && (
-          <div className={`resume-doc${editing ? " resume-editing" : ""}`}>
-
-            {/* ── Name / contact header ── */}
-            <div className="r-name">
-              <InlineEdit
-                value={resume.name}
-                onChange={v => setResumeField("name", v)}
-                editing={editing}
-                placeholder="Your Name"
-                className="r-name-input"
-              />
+          {!loading && !hasResume && (
+            <div className="resume-empty-state card">
+              <p className="text-muted">No resume yet. Click <strong>Generate Resume</strong> to get started.</p>
             </div>
+          )}
 
-            <div className="r-contact r-contact-row">
-              {editing ? (
-                <>
-                  <input className="r-inline-input r-contact-input" value={resume.email || ""} onChange={e => setResumeField("email", e.target.value)} placeholder="Email" />
-                  <input className="r-inline-input r-contact-input" value={resume.phone || ""} onChange={e => setResumeField("phone", e.target.value)} placeholder="Phone" />
-                  <input className="r-inline-input r-contact-input" value={resume.linkedin || ""} onChange={e => setResumeField("linkedin", e.target.value)} placeholder="LinkedIn URL" />
-                  <input className="r-inline-input r-contact-input" value={resume.github || ""} onChange={e => setResumeField("github", e.target.value)} placeholder="GitHub URL" />
-                </>
-              ) : (
-                [resume.email, resume.phone, resume.linkedin, resume.github]
-                  .filter(Boolean)
-                  .join(" | ")
-              )}
+          {!loading && hasResume && resume && (
+            <div className={`resume-doc card${editing ? " resume-editing" : ""}`}>
+
+              {/* ── Name / contact header ── */}
+              <div className="r-name">
+                <InlineEdit
+                  value={resume.name}
+                  onChange={v => setResumeField("name", v)}
+                  editing={editing}
+                  placeholder="Your Name"
+                  className="r-name-input"
+                />
+              </div>
+
+              <div className="r-contact r-contact-row">
+                {editing ? (
+                  <>
+                    <input className="r-inline-input r-contact-input" value={resume.email || ""} onChange={e => setResumeField("email", e.target.value)} placeholder="Email" />
+                    <input className="r-inline-input r-contact-input" value={resume.phone || ""} onChange={e => setResumeField("phone", e.target.value)} placeholder="Phone" />
+                    <input className="r-inline-input r-contact-input" value={resume.linkedin || ""} onChange={e => setResumeField("linkedin", e.target.value)} placeholder="LinkedIn URL" />
+                    <input className="r-inline-input r-contact-input" value={resume.github || ""} onChange={e => setResumeField("github", e.target.value)} placeholder="GitHub URL" />
+                  </>
+                ) : (
+                  [resume.email, resume.phone, resume.linkedin, resume.github]
+                    .filter(Boolean)
+                    .join(" | ")
+                )}
+              </div>
+
+              <hr className="r-rule" />
+
+              {/* ── Sections in user-defined order ── */}
+              {sectionOrder.map(key => (
+                <React.Fragment key={key}>
+                  {renderSection(key)}
+                </React.Fragment>
+              ))}
+
             </div>
-
-            <hr className="r-rule" />
-
-            {/* ── Sections in user-defined order ── */}
-            {sectionOrder.map(key => (
-              <React.Fragment key={key}>
-                {renderSection(key)}
-              </React.Fragment>
-            ))}
-
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
