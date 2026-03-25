@@ -11,6 +11,7 @@ from src.Helpers.fileDataCheck import sniff_supertype
 from src.Analysis.codingProjectScanner import scan_coding_project
 from src.Analysis.textDocumentScanner import scan_text_document
 from src.Analysis.mediaProjectScanner import scan_media_project
+from src.Analysis.multiProjectZip import identifyProjectType
 from src.Databases.database import db_manager
 
 
@@ -79,7 +80,20 @@ def process_uploaded_path(path: str, user_id: Optional[int] = None):
     except Exception:
         content_hash = None  # non-fatal -- proceed with upload
 
-    supertype = sniff_supertype(path)
+    if os.path.isdir(path):
+        info = identifyProjectType(path)
+        ptype = info.get("type", "unknown")
+        if ptype in ("code", "mixed"):
+            supertype = "code"
+        elif ptype == "text":
+            supertype = "text"
+        elif ptype == "media":
+            supertype = "media"
+        else:
+            supertype = "code"  # fallback: attempt coding scan
+    else:
+        supertype = sniff_supertype(path)
+
     if supertype == "code":
         project_id = scan_coding_project(path, user_id=user_id)
     elif supertype == "text":

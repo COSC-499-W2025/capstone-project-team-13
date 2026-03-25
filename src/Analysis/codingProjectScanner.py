@@ -268,7 +268,16 @@ class CodingProjectScanner:
                 populate_contributors_for_project(project)
             except Exception:
                 pass  # Silently skip Git errors
-        
+
+        # Step 6: Compute importance score now that all data is stored
+        try:
+            from src.Analysis.importanceScores import calculate_importance_score
+            project = db_manager.get_project(project_id)
+            score = calculate_importance_score(project)
+            db_manager.update_project(project_id, {"importance_score": score})
+        except Exception:
+            pass
+
         return project_id
         
     def _find_code_files(self):
@@ -499,7 +508,15 @@ class CodingProjectScanner:
                     'score': float(score),
                     'category': 'code'
                 })
-        
+
+        # Compute importance score now that all data is stored
+        try:
+            from src.Analysis.importanceScores import calculate_importance_score
+            score = calculate_importance_score(project)
+            db_manager.update_project(project.id, {"importance_score": score})
+        except Exception:
+            pass
+
         return project.id
 
 def scan_coding_project(project_path: str, user_id: Optional[int] = None) -> Optional[int]:
