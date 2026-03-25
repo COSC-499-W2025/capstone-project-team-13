@@ -1,0 +1,112 @@
+/* ── Hero ── */
+.iv-hero {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(163,73,255,0.14) 100%);
+  border-color: rgba(163,73,255,0.3);
+}
+.iv-hero-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 4px; color: #eef1ff; }
+.iv-hero-sub   { color: #9aa6de; font-size: 0.9rem; margin: 0; }
+
+/* ── Config panel ── */
+.iv-config { margin-bottom: 20px; }
+.iv-config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+.iv-config-block { display: flex; flex-direction: column; gap: 10px; }
+.iv-label {
+  font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #9aa6de;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.iv-label-count { font-weight: 400; color: #6366f1; }
+
+.iv-role-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.iv-role-pill {
+  background: rgba(255,255,255,0.04); color: #9aa6de;
+  border: 1px solid rgba(167,178,255,0.25); padding: 5px 14px;
+  border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.iv-role-pill:hover  { border-color: rgba(100,108,255,0.5); color: #c4cbf5; }
+.iv-role-pill.active { background: rgba(100,108,255,0.2); border-color: rgba(100,108,255,0.6); color: #a5b4fc; }
+
+.iv-custom-role {
+  margin-top: 4px; font-size: 0.85rem;
+  padding: 8px 12px; border-radius: 8px; width: 100%;
+}
+
+.iv-project-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+.iv-proj-check {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+  border-radius: 8px; cursor: pointer; border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.iv-proj-check:hover    { background: rgba(99,102,241,0.08); }
+.iv-proj-check.selected { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); }
+.iv-proj-check input    { width: auto; accent-color: #6366f1; flex-shrink: 0; }
+.iv-proj-name  { flex: 1; font-size: 0.85rem; color: #d0d5f5; }
+.iv-proj-type  { font-size: 0.72rem; flex-shrink: 0; }
+.iv-proj-shortcuts { display: flex; gap: 8px; margin-top: 4px; }
+.iv-shortcut {
+  background: none; border: none; color: #6366f1;
+  font-size: 0.78rem; cursor: pointer; padding: 0; font-family: inherit;
+  text-decoration: underline;
+}
+.iv-shortcut:hover { color: #a5b4fc; }
+
+.iv-generate-btn { width: 100%; padding: 12px; font-size: 1rem; }
+
+/* ── Loading ── */
+.iv-loading { text-align: center; padding: 40px; margin-bottom: 20px; }
+.iv-loading-icon { font-size: 2.5rem; margin-bottom: 12px; animation: iv-pulse 1.5s ease-in-out infinite; }
+@keyframes iv-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+/* ── Answers ── */
+.iv-answers { display: flex; flex-direction: column; gap: 10px; }
+.iv-answers-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.iv-answers-header h2 { margin: 0; }
+
+.iv-answer-card { padding: 0; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
+.iv-answer-card.open { border-color: rgba(163,73,255,0.5); box-shadow: 0 8px 20px rgba(115,67,255,0.2); }
+
+.iv-answer-toggle {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px; background: none; border: none; cursor: pointer;
+  font-family: inherit; text-align: left;
+  transition: background 0.12s;
+}
+.iv-answer-toggle:hover { background: rgba(99,102,241,0.06); }
+.iv-answer-icon { font-size: 1.2rem; flex-shrink: 0; }
+.iv-answer-q    { flex: 1; font-size: 0.95rem; font-weight: 600; color: #eef1ff; }
+.iv-answer-proj { font-size: 0.75rem; flex-shrink: 0; }
+.iv-chevron     { font-size: 0.65rem; color: #9aa6de; flex-shrink: 0; }
+
+.iv-answer-body { padding: 0 20px 20px; border-top: 1px solid rgba(107,114,244,0.2); padding-top: 16px; }
+
+.iv-star-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.iv-star-block {
+  border-left: 3px solid #6366f1; padding: 10px 14px;
+  background: rgba(255,255,255,0.02); border-radius: 0 8px 8px 0;
+}
+.iv-star-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.iv-star-text  { font-size: 0.88rem; color: #c4cbf5; line-height: 1.65; margin: 0; }
+
+.iv-answer-actions { display: flex; gap: 8px; }
+
+/* ── Light mode ── */
+body[data-theme="light"] .iv-hero         { background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(163,73,255,0.06)); border-color: rgba(163,73,255,0.2); }
+body[data-theme="light"] .iv-hero-title   { color: #1a1d3a; }
+body[data-theme="light"] .iv-hero-sub     { color: #5a6080; }
+body[data-theme="light"] .iv-label        { color: #5a6080; }
+body[data-theme="light"] .iv-role-pill    { background: rgba(0,0,0,0.03); color: #5a6080; border-color: rgba(100,108,200,0.3); }
+body[data-theme="light"] .iv-role-pill:hover  { border-color: rgba(79,70,229,0.5); color: #3730a3; }
+body[data-theme="light"] .iv-role-pill.active { background: rgba(79,70,229,0.1); border-color: rgba(79,70,229,0.55); color: #4f46e5; }
+body[data-theme="light"] .iv-proj-check:hover    { background: rgba(79,70,229,0.05); }
+body[data-theme="light"] .iv-proj-check.selected { background: rgba(79,70,229,0.08); border-color: rgba(79,70,229,0.3); }
+body[data-theme="light"] .iv-proj-name   { color: #2c3060; }
+body[data-theme="light"] .iv-answer-q    { color: #1a1d3a; }
+body[data-theme="light"] .iv-star-block  { background: rgba(0,0,0,0.02); }
+body[data-theme="light"] .iv-star-text   { color: #3a4060; }
+body[data-theme="light"] .iv-answer-card.open { border-color: rgba(109,40,217,0.4); box-shadow: 0 8px 20px rgba(109,40,217,0.12); }
+
+/* ── Responsive ── */
+@media (max-width: 700px) { .iv-config-row { grid-template-columns: 1fr; } }
