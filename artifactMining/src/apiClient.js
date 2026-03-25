@@ -1,3 +1,5 @@
+import { loadingBar } from "./components/LoadingBar";
+
 const BASE = "http://127.0.0.1:8000";
 
 function authHeaders(extra = {}) {
@@ -6,28 +8,38 @@ function authHeaders(extra = {}) {
 }
 
 export async function apiFetch(path, opts = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    ...opts,
-    headers: { ...authHeaders(), ...(opts.headers || {}) },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
+  loadingBar.start();
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      ...opts,
+      headers: { ...authHeaders(), ...(opts.headers || {}) },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  } finally {
+    loadingBar.done();
   }
-  return res.json();
 }
 
 export async function apiUpload(path, formData) {
-  const res = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: formData,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
+  loadingBar.start();
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  } finally {
+    loadingBar.done();
   }
-  return res.json();
 }
 
 /** Return the best human-readable name for a project object from the API */

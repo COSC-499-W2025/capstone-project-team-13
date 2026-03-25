@@ -9,6 +9,39 @@ body {
     linear-gradient(155deg, #080d24 0%, #101637 45%, #151a43 100%);
   color: #eef1ff;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── Animated gradient blobs ── */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: blob-drift 18s ease-in-out infinite alternate;
+}
+body::before {
+  width: 520px; height: 520px;
+  background: radial-gradient(circle, rgba(124,58,237,0.12), transparent 70%);
+  top: -120px; left: -100px;
+}
+body::after {
+  width: 440px; height: 440px;
+  background: radial-gradient(circle, rgba(59,130,246,0.1), transparent 70%);
+  bottom: -80px; right: -80px;
+  animation-delay: -9s;
+}
+#root { position: relative; z-index: 1; }
+
+@keyframes blob-drift {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -20px) scale(1.05); }
+  66%  { transform: translate(-20px, 15px) scale(0.97); }
+  100% { transform: translate(10px, -10px) scale(1.02); }
 }
 
 a { font-weight: 500; color: #646cff; text-decoration: inherit; }
@@ -97,4 +130,5 @@ h3 { font-size: 1rem;   font-weight: 600; color: #d8dfff; }
 
 .text-muted { color: #9aa6de; }
 .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.mt-12 { margin-top: 12px; }
 @media (max-width: 768px) { .page-wrap { padding: 16px; } }

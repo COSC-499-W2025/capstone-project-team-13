@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Settings.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -13,6 +13,46 @@ export default function Settings({ onLogout }) {
   const [accountError, setAccountError] = useState("");
   const [activeSection, setActiveSection] = useState("account");
 
+  // ── Profile ──────────────────────────────────────────────────────────────────
+  const [avatar, setAvatar] = useState(() => localStorage.getItem("profile_avatar") || null);
+  const [avatarDrag, setAvatarDrag] = useState(false);
+  const avatarInputRef = useRef(null);
+
+  function handleImageFile(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      setAvatar(dataUrl);
+      localStorage.setItem("profile_avatar", dataUrl);
+      window.dispatchEvent(new CustomEvent("profile-updated"));
+      // Persist to backend
+      const token = localStorage.getItem("token");
+      if (token) {
+        fetch(`${API_BASE}/auth/avatar`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ avatar: dataUrl }),
+        }).catch(() => {});
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeAvatar() {
+    setAvatar(null);
+    localStorage.removeItem("profile_avatar");
+    window.dispatchEvent(new CustomEvent("profile-updated"));
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetch(`${API_BASE}/auth/avatar`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatar: null }),
+      }).catch(() => {});
+    }
+  }
+
   // ── Theme ────────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
@@ -21,9 +61,6 @@ export default function Settings({ onLogout }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  function toggleTheme() {
-    setTheme(t => t === "dark" ? "light" : "dark");
-  }
 
   // ── Consent ──────────────────────────────────────────────────────────────────
   const [basicConsent, setBasicConsent] = useState(false);
@@ -231,6 +268,7 @@ export default function Settings({ onLogout }) {
       setAccountMessage(data.message || "Login successful.");
       setLoginForm({ email: "", password: "" });
       await fetchCurrentUser();
+      window.dispatchEvent(new CustomEvent("profile-updated"));
     } catch (err) { setAccountError(err.message || "Could not log in."); }
     finally { setAuthLoading(false); }
   }
@@ -241,15 +279,25 @@ export default function Settings({ onLogout }) {
       const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE}/auth/me`, { method: "GET", headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (!response.ok) { if (response.status === 401 || response.status === 403) { setCurrentUser(null); return; } const d = await response.json().catch(() => ({})); throw new Error(d.detail || "Failed to load current user"); }
-      setCurrentUser(await response.json());
+      const user = await response.json();
+      setCurrentUser(user);
+      // Restore avatar from backend
+      if (user.avatar) {
+        setAvatar(user.avatar);
+        localStorage.setItem("profile_avatar", user.avatar);
+        window.dispatchEvent(new CustomEvent("profile-updated"));
+      }
     } catch (err) { setAccountError(err.message || "Could not load current user."); }
     finally { setCurrentUserLoading(false); }
   }
 
   function handleLogout() {
-    localStorage.removeItem("token"); setCurrentUser(null);
+    localStorage.removeItem("token");
+    setAvatar(null);
+    setCurrentUser(null);
     setAccountMessage("Logged out successfully."); setAccountError("");
     if (onLogout) onLogout();
+    window.dispatchEvent(new CustomEvent("profile-updated"));
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────────
@@ -266,9 +314,6 @@ export default function Settings({ onLogout }) {
       : <span className="settings-badge settings-badge-revoked">No</span>;
   }
 
-  function formatKey(key) {
-    return key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  }
 
   function formatTimestamp(ts) {
     if (!ts) return "N/A";
@@ -377,13 +422,39 @@ export default function Settings({ onLogout }) {
     return (
       <div className="settings-section-panel">
         <h2>Account Settings</h2>
-        <p className="settings-section-description">Manage your account and authentication.</p>
+        <p className="settings-section-description">Manage your profile picture and account.</p>
         {(accountMessage || accountError) && (
           <div className="settings-alerts">
             {accountMessage && <div className="settings-alert settings-alert-success">{accountMessage}</div>}
             {accountError && <div className="settings-alert settings-alert-error">{accountError}</div>}
           </div>
         )}
+
+        {/* Avatar picker — only when logged in */}
+        {currentUser && (
+          <div className="settings-avatar-row">
+            <div
+              className={`settings-avatar-pick${avatarDrag ? " drag-over" : ""}`}
+              style={avatar ? { backgroundImage: `url(${avatar})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+              onDragOver={e => { e.preventDefault(); setAvatarDrag(true); }}
+              onDragLeave={() => setAvatarDrag(false)}
+              onDrop={e => { e.preventDefault(); setAvatarDrag(false); handleImageFile(e.dataTransfer.files[0]); }}
+              onClick={() => avatarInputRef.current?.click()}
+              title="Click or drop to set profile picture"
+            >
+              {!avatar && <span className="settings-avatar-placeholder">👤</span>}
+              {avatar && <div className="settings-avatar-overlay">✎</div>}
+              <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }}
+                onChange={e => handleImageFile(e.target.files[0])} />
+            </div>
+            <div className="settings-avatar-info">
+              <p>Profile picture</p>
+              <p className="settings-avatar-hint">Drag & drop or click to upload. Shows in the navbar.</p>
+              {avatar && <button className="settings-button settings-button-secondary" style={{ marginTop: 8 }} onClick={removeAvatar}>Remove</button>}
+            </div>
+          </div>
+        )}
+
         <div className="settings-content-grid">
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Create Account</h3><p>Register a new account.</p></div></div>
@@ -552,13 +623,26 @@ export default function Settings({ onLogout }) {
       <div className="settings-layout">
         <aside className="settings-sidebar">
           <div className="settings-sidebar-header">
-            <div className="settings-sidebar-title-row">
-              <h1>Settings</h1>
-              <button className="settings-theme-toggle" onClick={toggleTheme} title="Toggle theme">
-                {theme === "dark" ? "☀️" : "🌙"}
+            <h1>Settings</h1>
+            <p>Choose a section</p>
+            <div className="settings-theme-cards">
+              <button
+                className={`settings-theme-card settings-theme-card-dark ${theme === "dark" ? "active" : ""}`}
+                onClick={() => setTheme("dark")}
+                title="Dark mode"
+              >
+                <span className="theme-card-preview theme-card-dark-preview" />
+                <span>Dark</span>
+              </button>
+              <button
+                className={`settings-theme-card settings-theme-card-light ${theme === "light" ? "active" : ""}`}
+                onClick={() => setTheme("light")}
+                title="Light mode"
+              >
+                <span className="theme-card-preview theme-card-light-preview" />
+                <span>Light</span>
               </button>
             </div>
-            <p>Choose a section</p>
           </div>
           <nav className="settings-nav">
             {[

@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import confetti from "canvas-confetti";
+import { toast } from "../components/Toast";
 import "./Resumes.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -284,6 +286,73 @@ export default function Resumes() {
     loadExisting();
   }, [authed]);
 
+  // Ctrl+S to save
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (dirty && !loading) saveChanges();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // ── resume completeness score (0-100) ────────────────────────────────────────
+  const completeness = useMemo(() => {
+    if (!resume) return 0;
+    let score = 0;
+
+    // Contact info (up to 20pts)
+    if (resume.name?.trim()) score += 8;
+    if (resume.email?.trim()) score += 5;
+    if (resume.phone?.trim()) score += 4;
+    if (resume.linkedin?.trim() || resume.github?.trim()) score += 3;
+
+    // Projects — count + bullets (up to 30pts)
+    const projects = resume.projects || [];
+    score += Math.min(projects.length * 5, 15);
+    const totalBullets = projects.reduce((n, p) => n + (p.bullets?.filter(b => b?.trim()).length || 0), 0);
+    score += Math.min(totalBullets * 2, 15);
+
+    // Education (up to 20pts — 1 entry maxes it)
+    const edu = resume.education || [];
+    score += Math.min(edu.length * 20, 20);
+
+    // Work experience + bullets (up to 15pts — 1 job + 7 bullets maxes it)
+    const work = resume.work_history || [];
+    const workBullets = work.reduce((n, w) => n + (w.bullets?.filter(b => b?.trim()).length || 0), 0);
+    score += Math.min(work.length * 8 + workBullets, 15);
+
+    // Skills (up to 15pts — 8+ skills maxes it)
+    const allSkills = Object.values(resume.skills_by_level || {}).flat().filter(Boolean);
+    score += Math.min(allSkills.length * 2, 15);
+
+    return Math.min(Math.round(score), 100);
+  }, [resume]);
+
+  // 🎉 100% completeness celebration — fires once when bar first hits 100
+  const prevCompleteness = useRef(0);
+  useEffect(() => {
+    if (completeness === 100 && prevCompleteness.current < 100) {
+      // Side cannons
+      const end = Date.now() + 2200;
+      const colors = ["#a78bfa","#6366f1","#fbbf24","#34d399","#f472b6","#60a5fa"];
+      (function frame() {
+        confetti({ particleCount: 6, angle: 60,  spread: 55, origin: { x: 0 },   colors });
+        confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 },   colors });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      })();
+      // Big central burst after a short delay
+      setTimeout(() => confetti({
+        particleCount: 160, spread: 100, origin: { y: 0.55 },
+        colors, startVelocity: 45, gravity: 0.8,
+      }), 400);
+      toast("🎉 Resume 100% complete!", "ok", 4000);
+    }
+    prevCompleteness.current = completeness;
+  }, [completeness]);
+
   // ── helpers ──────────────────────────────────────────────────────────────────
 
   function showStatus(msg, type = "ok") {
@@ -342,6 +411,7 @@ export default function Resumes() {
         const data = await resumeRes.json();
         const r = data.resume || data;
         if (r && r.projects) {
+          localStorage.setItem("resume_saved", "1");
           // Merge live education/work from DB over whatever's in stored resume
           applyResume({ ...r, education: taggedEdu, work_history: taggedWork });
           // Restore section order if previously saved
@@ -597,9 +667,15 @@ export default function Resumes() {
       setResume(prev => ({ ...prev, education: allEdu, work_history: allWork }));
       setDirty(false);
       setEditing(false);
+      localStorage.setItem("resume_saved", "1");
       showStatus("Changes saved.");
+      toast("Resume saved!", "ok");
+      // Subtle upward ticker-tape for regular saves
+      confetti({ particleCount: 45, angle: 90, spread: 40, origin: { x: 0.5, y: 1 },
+        colors: ["#6366f1","#a78bfa","#818cf8"], startVelocity: 55, ticks: 80, scalar: 0.8 });
     } catch (e) {
       showStatus("Save failed: " + e.message, "err");
+      toast("Save failed: " + e.message, "err");
     } finally {
       setLoading(false);
     }
@@ -679,8 +755,13 @@ export default function Resumes() {
       a.href = url; a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      toast("Downloaded " + filename, "ok");
+      // Two diagonal bursts for download
+      confetti({ particleCount: 60, angle: 135, spread: 45, origin: { x: 1, y: 0 }, colors: ["#34d399","#6366f1","#a78bfa"] });
+      confetti({ particleCount: 60, angle: 45,  spread: 45, origin: { x: 0, y: 0 }, colors: ["#fbbf24","#818cf8","#34d399"] });
     } catch (e) {
       showStatus("Download failed: " + e.message, "err");
+      toast("Download failed: " + e.message, "err");
     }
   }
 
@@ -873,6 +954,21 @@ export default function Resumes() {
         <a className="resume-back" href="/">← Dashboard</a>
         <h2>Resume Controls</h2>
 
+        {hasResume && (
+          <div className="resume-completeness">
+            <div className="resume-completeness-label">
+              <span>Completeness</span>
+              <span>{completeness}%</span>
+            </div>
+            <div className="resume-completeness-bar">
+              <div
+                className="resume-completeness-fill"
+                style={{ width: `${completeness}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {!hasResume ? (
           <button
             className="resume-btn resume-btn-primary"
@@ -1053,7 +1149,9 @@ export default function Resumes() {
 
             {p.ats_score != null && (
               <div className="proj-ats">
-                ATS score: {Math.round(p.ats_score)}/100
+                <span className={`proj-ats-badge ${p.ats_score >= 70 ? "high" : p.ats_score < 40 ? "low" : ""}`}>
+                  ATS {Math.round(p.ats_score)}/100
+                </span>
                 <AtsTooltip />
               </div>
             )}

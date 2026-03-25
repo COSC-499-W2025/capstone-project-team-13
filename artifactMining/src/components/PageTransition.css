@@ -1,0 +1,26 @@
+.page-transition {
+  width: 100%;
+}
+
+.page-transition-idle {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-out {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  pointer-events: none;
+}
+
+.page-transition-in {
+  opacity: 0;
+  transform: translateY(-6px);
+  animation: pt-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes pt-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
