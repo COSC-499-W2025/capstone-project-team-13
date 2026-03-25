@@ -5,6 +5,8 @@ import SkillsTimeline from "./SkillsTimeline";
 import ActivityHeatmap from "./ActivityHeatmap";
 import "./Portfolio.css";
 
+const API_BASE = "http://127.0.0.1:8000";
+
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +17,31 @@ export default function Portfolio() {
   const [editForm, setEditForm] = useState({});
   const [rankInput, setRankInput] = useState({});
   const [sortBy, setSortBy] = useState("importance"); // importance | date | rank | name
+  const [authed, setAuthed] = useState(null);
   const nav = useNavigate();
 
-  useEffect(() => { load(); }, [includeHidden]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) { setAuthed(false); return; }
+    fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => { if (r.ok) setAuthed(true); else { localStorage.removeItem("token"); setAuthed(false); } })
+      .catch(() => { localStorage.removeItem("token"); setAuthed(false); });
+  }, []);
+
+  useEffect(() => { if (authed === true) load(); }, [authed, includeHidden]);
+
+  if (authed === null) return <div className="page-wrap" style={{ paddingTop: 80, textAlign: "center", color: "#818cf8" }}>Checking authentication...</div>;
+
+  if (authed === false) return (
+    <div className="page-wrap">
+      <div className="resume-auth-wall card">
+        <div className="resume-auth-icon">🎨</div>
+        <h2>Portfolio</h2>
+        <p className="text-muted">This feature requires an account. Sign in or create an account to generate and share your portfolio.</p>
+        <a className="btn-primary" href="/settings">Sign In / Sign Up →</a>
+      </div>
+    </div>
+  );
 
   async function load() {
     setLoading(true);
@@ -125,7 +149,7 @@ export default function Portfolio() {
       {loading ? <div className="spinner" style={{ marginTop: 40 }} /> : <>
         {(summaryText || Object.keys(stats).length > 0) && (
           <div className="card port-summary">
-            {summaryText && <p style={{ lineHeight: 1.7, color: "#b8c0e8" }}>{summaryText}</p>}
+            {summaryText && <p className="port-summary-text" style={{ lineHeight: 1.7 }}>{summaryText}</p>}
             {Object.keys(stats).length > 0 && (
               <div className="port-stat-row" style={{ marginTop: summaryText ? 16 : 0, marginBottom: 0 }}>
                 {[
