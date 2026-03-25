@@ -2,6 +2,7 @@ import os
 import re
 from docx import Document
 from PyPDF2 import PdfReader
+from src.Settings.config import EXT_SUPERTYPES
 
 
 def extract_text(file_path: str) -> str:
@@ -75,12 +76,49 @@ def looks_like_code(text: str) -> bool:
     return False
 
 
-def sniff_supertype(file_path: str) -> str:
-    text = extract_text(file_path)
+def sniff_supertype(path: str) -> str:
+    """
+    Determine project type by counting file extensions (code, media, text) in a file or directory.
+    Uses EXT_SUPERTYPES mapping from config.
+    """
+    type_counts = {'code': 0, 'media': 0, 'text': 0}
+    skip_dirs = {'node_modules', '__pycache__', '.git', '.venv', 'venv', 'env',
+                 'dist', 'build', '.next', '.cache', 'vendor', '__MACOSX'}
 
-    if is_text_content(text):
-        if looks_like_code(text):
-            return "code"
-        return "text"
+    if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
+            for filename in files:
+                if filename.startswith('.'):
+                    continue
+                ext = os.path.splitext(filename)[1].lower()
+                file_type = EXT_SUPERTYPES.get(ext)
+                if file_type in type_counts:
+                    type_counts[file_type] += 1
+    else:
+        ext = os.path.splitext(path)[1].lower()
+        file_type = EXT_SUPERTYPES.get(ext)
+        if file_type in type_counts:
+            type_counts[file_type] += 1
 
-    return "media"
+    total_files = sum(type_counts.values())
+    if total_files == 0:
+        return 'media'  # fallback for unknown or binary files
+
+    code_pct = type_counts['code'] / total_files
+    media_pct = type_counts['media'] / total_files
+
+    if code_pct > 0.7:
+        return 'code'
+    elif media_pct > 0.7:
+        return 'media'
+    elif code_pct > 0.2 and media_pct > 0.2:
+        return 'mixed'
+    elif type_counts['code'] > 0:
+        return 'code'
+    elif type_counts['media'] > 0:
+        return 'media'
+    elif type_counts['text'] > 0:
+        return 'text'
+    else:
+        return 'media'
