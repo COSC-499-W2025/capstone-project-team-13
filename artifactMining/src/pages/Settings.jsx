@@ -498,9 +498,122 @@ export default function Settings({ onLogout }) {
     );
   }
 
+  function renderAboutSection() {
+    const TECH = [
+      { name: "React 19", role: "Frontend UI" },
+      { name: "React Router 7", role: "Client-side routing" },
+      { name: "Recharts", role: "Data visualizations" },
+      { name: "FastAPI", role: "Backend API" },
+      { name: "SQLAlchemy", role: "Database ORM" },
+      { name: "SQLite", role: "Local database" },
+      { name: "Python 3", role: "Backend language" },
+      { name: "Vite", role: "Frontend build tool" },
+    ];
+
+    const FEATURES = [
+      { icon: "📁", title: "Project Upload", desc: "Upload ZIP archives, single files, or entire folders. The system extracts metadata, languages, and structure automatically." },
+      { icon: "🔬", title: "AI Analysis", desc: "Run AI-powered analysis to generate project overviews, identify skills, measure technical depth, and track skill growth over time." },
+      { icon: "⚡", title: "Skills Tracking", desc: "Automatically detect and aggregate skills across all your projects. See how your expertise has grown over time." },
+      { icon: "🎨", title: "Portfolio Builder", desc: "Curate your best projects into a shareable portfolio with custom descriptions, thumbnails, and importance rankings." },
+      { icon: "📄", title: "Resume Generator", desc: "Generate tailored resume bullet points from your projects and export them as PDF or DOCX." },
+      { icon: "🔒", title: "Privacy First", desc: "All data is stored locally. Nothing is sent to external services without your explicit AI consent." },
+    ];
+
+    return (
+      <div className="settings-section-panel">
+        <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
+          <div style={{ fontSize: "2.8rem", marginBottom: 12 }}>⛏</div>
+          <h2 style={{ marginBottom: 8 }}>Digital Artifact Mining</h2>
+          <p className="settings-section-description" style={{ maxWidth: 520, margin: "0 auto 16px" }}>
+            A local-first tool for analyzing your projects, discovering your skills,
+            and building professional portfolios and resumes, powered by AI.
+          </p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <span className="tag accent">v1.0</span>
+            <span className="tag">COSC 499 Capstone</span>
+            <span className="tag">UBCO, Team 13</span>
+          </div>
+        </div>
+
+        <div className="settings-content-grid">
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>What it does</h3></div></div>
+            <div className="settings-card-body">
+              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: "0 0 10px" }}>
+                Digital Artifact Mining helps students and developers turn their collection of
+                project files into a structured portfolio. Upload any project - code, documents,
+                images, or media - and the system automatically extracts metadata, detects
+                languages and frameworks, and uses AI to generate descriptions and surface
+                demonstrable skills.
+              </p>
+              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: 0 }}>
+                The result is a living record of your work that you can draw on to build
+                targeted resumes, curate portfolio showcases, and track how your skills
+                have grown across projects.
+              </p>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>Key Features</h3></div></div>
+            <div className="settings-card-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {FEATURES.map(f => (
+                  <div key={f.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>{f.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: "0.88rem", color: "#eef1ff", marginBottom: 2 }}>{f.title}</div>
+                      <div style={{ fontSize: "0.8rem", color: "#9aa6de", lineHeight: 1.55 }}>{f.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>Tech Stack</h3></div></div>
+            <div className="settings-card-body">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
+                {TECH.map(t => (
+                  <div key={t.name} style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(107,114,244,0.2)", borderRadius: 8, padding: "8px 10px" }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "#a5b4fc", marginBottom: 2 }}>{t.name}</div>
+                    <div style={{ fontSize: "0.72rem", color: "#6b7a99" }}>{t.role}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>Privacy and Data</h3></div></div>
+            <div className="settings-card-body">
+              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: "0 0 10px" }}>
+                All project files and analysis results are stored in a local SQLite database
+                on your machine. No data is uploaded to external servers without your explicit
+                consent. AI features require a separately configured AI service and will only
+                activate after you grant AI consent in Settings.
+              </p>
+              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: 0 }}>
+                You can revoke consent, exclude specific folders or file types, and permanently
+                delete any project at any time from the Consent, Privacy, and Deletion Manager sections.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p style={{ textAlign: "center", color: "#6b7a99", fontSize: "0.8rem", marginTop: 24 }}>
+          Built as a capstone project for COSC 499 at the University of British Columbia Okanagan.
+          Team 13, 2025-26.
+        </p>
+      </div>
+    );
+  }
+
   function renderSectionContent() {
     if (activeSection === "account") return renderAccountSection();
     if (activeSection === "currentConfig") return renderCurrentConfigSection();
+    if (activeSection === "about") return renderAboutSection();
 
     if (activeSection === "privacy") {
       return (
@@ -650,6 +763,7 @@ export default function Settings({ onLogout }) {
               ["privacy", "Privacy"],
               ["consent", "Consent"],
               ["currentConfig", "Current Configuration"],
+              ["about", "About"],
             ].map(([key, label]) => (
               <button key={key} className={`settings-nav-item ${activeSection === key ? "active" : ""}`} onClick={() => setActiveSection(key)}>{label}</button>
             ))}

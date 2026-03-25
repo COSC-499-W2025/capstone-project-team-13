@@ -87,14 +87,6 @@ export default function Navbar({ onLogout, user }) {
         <button className="nav-cmd-k" onClick={openCommandPalette} title="Command Palette">
           <span>⌘K</span>
         </button>
-        <Link to="/settings" className={`navbar-profile-link nav-link${pathname === "/settings" ? " active" : ""}`}>
-          {loggedIn && (
-            <span className="navbar-avatar" style={avatar ? { backgroundImage: `url(${avatar})` } : {}}>
-              {!avatar && "👤"}
-            </span>
-          )}
-          Profile
-        </Link>
       </div>
     </nav>
   );

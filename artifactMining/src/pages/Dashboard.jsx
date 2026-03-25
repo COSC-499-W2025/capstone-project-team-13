@@ -54,6 +54,19 @@ export default function Dashboard() {
   const [resumeExists, setResumeExists] = useState(() => !!localStorage.getItem("resume_saved"));
   const [loading, setLoading] = useState(true);
   const [checklistDismissed, setChecklistDismissed] = useState(() => localStorage.getItem("onboarding_dismissed") === "1");
+  const [theme, setTheme] = useState(() => document.body.getAttribute("data-theme") || "dark");
+  useEffect(() => {
+    const obs = new MutationObserver(() => setTheme(document.body.getAttribute("data-theme") || "dark"));
+    obs.observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  const isDark = theme === "dark";
+  const chartLabelColor = isDark ? "#a5b4fc" : "#1a1d3a";
+  const chartMutedColor = isDark ? "#6b7a99" : "#5a6080";
+  const chartTooltipBg = isDark ? "#1a1f4a" : "#ffffff";
+  const chartTooltipBorder = isDark ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(99,102,241,0.3)";
+  const chartTooltipColor = isDark ? "#e0e7ff" : "#1a1d3a";
+
   const nav = useNavigate();
   const streak = getStreak();
   const tip = TIPS[new Date().getDate() % TIPS.length];
@@ -251,7 +264,7 @@ export default function Dashboard() {
             {projects.length === 0 ? (
               <p className="text-muted">No projects to display.</p>
             ) : (
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
                     data={Object.entries(projects.reduce((acc, p) => {
@@ -263,8 +276,7 @@ export default function Dashboard() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
-                    label
+                    outerRadius={95}
                     stroke="none"
                   >
                     {Object.keys(projects.reduce((acc, p) => {
@@ -272,38 +284,68 @@ export default function Dashboard() {
                       acc[type] = true;
                       return acc;
                     }, {})).map((type, idx) => (
-                      <Cell key={type} fill={["#6366f1", "#818cf8", "#a5b4fc", "#7c3aed", "#c4b5fd", "#64748b", "#475569"][idx % 7]} />
+                      <Cell key={type} fill={["#6366f1","#818cf8","#a5b4fc","#7c3aed","#c4b5fd","#4f46e5","#ddd6fe"][idx % 7]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip contentStyle={{background:'#23295a', border:'1px solid #6366f1', color:'#e0e7ff'}}/>
-                  <Legend wrapperStyle={{color:'#a5b4fc'}} iconType="circle"/>
+                  <RechartsTooltip
+                    contentStyle={{ background: chartTooltipBg, border: chartTooltipBorder, borderRadius: 8, color: chartTooltipColor, fontSize: '0.85rem' }}
+                    itemStyle={{ color: chartLabelColor }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ color: chartLabelColor, fontSize: '0.82rem', paddingTop: 12 }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Bar Chart: Top 10 Skills */}
+        {/* Bar Chart: Top Skills */}
         <div className="card insights">
           <h2>Top Skills</h2>
           <div className="insights-chart-area">
             {skills.length === 0 ? (
               <p className="text-muted">No skills to display.</p>
             ) : (
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={260}>
                 <BarChart
                   data={skills.map(s => ({
                     name: s.name || s.skill_name || (typeof s === "string" ? s : ""),
                     count: s.count || s.project_count || 0
                   }))}
                   layout="vertical"
+                  margin={{ left: 8, right: 24, top: 4, bottom: 4 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#23295a" />
-                  <XAxis type="number" allowDecimals={false} stroke="#6366f1" tick={{fill:'#a5b4fc'}} axisLine={{stroke:'#23295a'}} tickLine={{stroke:'#23295a'}}/>
-                  <YAxis type="category" dataKey="name" width={120} stroke="#6366f1" tick={{fill:'#a5b4fc'}} axisLine={{stroke:'#23295a'}} tickLine={{stroke:'#23295a'}}/>
-                  <RechartsTooltip contentStyle={{background:'#23295a', border:'1px solid #6366f1', color:'#e0e7ff'}}/>
-                  <Legend wrapperStyle={{color:'#a5b4fc'}} iconType="circle"/>
-                  <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 6, 6]} />
+                  <defs>
+                    <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#a78bfa" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.1)" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tick={{ fill: chartMutedColor, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={150}
+                    tick={{ fill: chartLabelColor, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <RechartsTooltip
+                    contentStyle={{ background: chartTooltipBg, border: chartTooltipBorder, borderRadius: 8, color: chartTooltipColor, fontSize: '0.85rem' }}
+                    itemStyle={{ color: chartLabelColor }}
+                    cursor={{ fill: 'rgba(99,102,241,0.08)' }}
+                  />
+                  <Bar dataKey="count" fill="url(#barGrad)" radius={[0, 6, 6, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             )}

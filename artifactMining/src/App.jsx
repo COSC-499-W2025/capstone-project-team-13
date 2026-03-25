@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Toast from "./components/Toast";
 import LoadingBar from "./components/LoadingBar";
@@ -20,6 +18,7 @@ import Resumes from "./pages/Resumes";
 import Settings from "./pages/Settings";
 import GuestUpload from "./pages/GuestUpload";
 import WebShowcase from "./pages/WebShowcase";
+import NotFound from "./pages/NotFound";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -160,6 +159,9 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar onLogout={handleLogout} user={user} />
+      <Toast />
+      <KonamiEgg />
+      <CommandPalette />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/upload" element={<Upload />} />
@@ -173,28 +175,8 @@ function App() {
         <Route path="/deletion" element={<Deletion />} />
         <Route path="/resumes" element={<Resumes />} />
         <Route path="/settings" element={<Settings onLogout={handleLogout} />} />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
-      <LoadingBar />
-      <Navbar />
-      <Toast />
-      <KonamiEgg />
-      <CommandPalette />
-      <PageTransition>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/upload" element={<Upload />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:projectId" element={<ProjectPage />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/evidence" element={<Evidence />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/deletion" element={<Deletion />} />
-          <Route path="/resumes" element={<Resumes />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </PageTransition>
     </BrowserRouter>
   );
 }
