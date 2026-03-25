@@ -286,6 +286,20 @@ export default function Resumes() {
     loadExisting();
   }, [authed]);
 
+  // Keep a ref in sync with resume so cleanup can read latest value
+  const resumeRef = useRef(resume);
+  useEffect(() => { resumeRef.current = resume; }, [resume]);
+
+  // On unmount, clear resume_saved if no resume is loaded
+  useEffect(() => {
+    return () => {
+      if (!resumeRef.current?.name?.trim()) {
+        localStorage.removeItem("resume_saved");
+        window.dispatchEvent(new Event("resume-updated"));
+      }
+    };
+  }, []);
+
   // Ctrl+S to save
   useEffect(() => {
     function onKey(e) {
@@ -309,24 +323,21 @@ export default function Resumes() {
     if (resume.phone?.trim()) score += 4;
     if (resume.linkedin?.trim() || resume.github?.trim()) score += 3;
 
-    // Projects — count + bullets (up to 30pts)
+    // Projects (up to 20pts — 3+ projects maxes it)
     const projects = resume.projects || [];
-    score += Math.min(projects.length * 5, 15);
-    const totalBullets = projects.reduce((n, p) => n + (p.bullets?.filter(b => b?.trim()).length || 0), 0);
-    score += Math.min(totalBullets * 2, 15);
+    score += Math.min(projects.length * 7, 20);
 
     // Education (up to 20pts — 1 entry maxes it)
     const edu = resume.education || [];
     score += Math.min(edu.length * 20, 20);
 
-    // Work experience + bullets (up to 15pts — 1 job + 7 bullets maxes it)
+    // Work experience (up to 20pts — 2+ jobs maxes it)
     const work = resume.work_history || [];
-    const workBullets = work.reduce((n, w) => n + (w.bullets?.filter(b => b?.trim()).length || 0), 0);
-    score += Math.min(work.length * 8 + workBullets, 15);
+    score += Math.min(work.length * 10, 20);
 
-    // Skills (up to 15pts — 8+ skills maxes it)
+    // Skills (up to 20pts — 5+ skills maxes it)
     const allSkills = Object.values(resume.skills_by_level || {}).flat().filter(Boolean);
-    score += Math.min(allSkills.length * 2, 15);
+    score += Math.min(allSkills.length * 4, 20);
 
     return Math.min(Math.round(score), 100);
   }, [resume]);
@@ -336,18 +347,18 @@ export default function Resumes() {
   useEffect(() => {
     if (completeness === 100 && prevCompleteness.current < 100) {
       // Side cannons
-      const end = Date.now() + 2200;
+      const end = Date.now() + 1200;
       const colors = ["#a78bfa","#6366f1","#fbbf24","#34d399","#f472b6","#60a5fa"];
       (function frame() {
-        confetti({ particleCount: 6, angle: 60,  spread: 55, origin: { x: 0 },   colors });
-        confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 },   colors });
+        confetti({ particleCount: 3, angle: 60,  spread: 50, origin: { x: 0 }, colors });
+        confetti({ particleCount: 3, angle: 120, spread: 50, origin: { x: 1 }, colors });
         if (Date.now() < end) requestAnimationFrame(frame);
       })();
-      // Big central burst after a short delay
+      // Central burst
       setTimeout(() => confetti({
-        particleCount: 160, spread: 100, origin: { y: 0.55 },
-        colors, startVelocity: 45, gravity: 0.8,
-      }), 400);
+        particleCount: 60, spread: 80, origin: { y: 0.6 },
+        colors, startVelocity: 35, gravity: 0.9,
+      }), 300);
       toast("🎉 Resume 100% complete!", "ok", 4000);
     }
     prevCompleteness.current = completeness;
@@ -410,8 +421,9 @@ export default function Resumes() {
       if (resumeRes.ok) {
         const data = await resumeRes.json();
         const r = data.resume || data;
-        if (r && r.projects) {
+        if (r && r.name?.trim()) {
           localStorage.setItem("resume_saved", "1");
+          window.dispatchEvent(new Event("resume-updated"));
           // Merge live education/work from DB over whatever's in stored resume
           applyResume({ ...r, education: taggedEdu, work_history: taggedWork });
           // Restore section order if previously saved
@@ -423,6 +435,9 @@ export default function Resumes() {
           if (r.skills_by_level && Object.values(r.skills_by_level).some(v => v.length > 0)) {
             setShowSkills(true); addSection("skills");
           }
+        } else {
+          localStorage.removeItem("resume_saved");
+          window.dispatchEvent(new Event("resume-updated"));
         }
       }
     } catch (e) {
@@ -668,11 +683,12 @@ export default function Resumes() {
       setDirty(false);
       setEditing(false);
       localStorage.setItem("resume_saved", "1");
+      window.dispatchEvent(new Event("resume-updated"));
       showStatus("Changes saved.");
       toast("Resume saved!", "ok");
       // Subtle upward ticker-tape for regular saves
-      confetti({ particleCount: 45, angle: 90, spread: 40, origin: { x: 0.5, y: 1 },
-        colors: ["#6366f1","#a78bfa","#818cf8"], startVelocity: 55, ticks: 80, scalar: 0.8 });
+      confetti({ particleCount: 20, angle: 90, spread: 30, origin: { x: 0.5, y: 1 },
+        colors: ["#6366f1","#a78bfa","#818cf8"], startVelocity: 40, ticks: 60, scalar: 0.8 });
     } catch (e) {
       showStatus("Save failed: " + e.message, "err");
       toast("Save failed: " + e.message, "err");
@@ -691,6 +707,8 @@ export default function Resumes() {
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
+      localStorage.removeItem("resume_saved");
+      window.dispatchEvent(new Event("resume-updated"));
       setResume(null);
       setSectionOrder(["projects"]);
       setSectionLabels({ projects: "Projects", education: "Education", work_history: "Relevant Experience", skills: "Technical Skills" });
@@ -757,8 +775,8 @@ export default function Resumes() {
       URL.revokeObjectURL(url);
       toast("Downloaded " + filename, "ok");
       // Two diagonal bursts for download
-      confetti({ particleCount: 60, angle: 135, spread: 45, origin: { x: 1, y: 0 }, colors: ["#34d399","#6366f1","#a78bfa"] });
-      confetti({ particleCount: 60, angle: 45,  spread: 45, origin: { x: 0, y: 0 }, colors: ["#fbbf24","#818cf8","#34d399"] });
+      confetti({ particleCount: 25, angle: 135, spread: 40, origin: { x: 1, y: 0 }, colors: ["#34d399","#6366f1","#a78bfa"] });
+      confetti({ particleCount: 25, angle: 45,  spread: 40, origin: { x: 0, y: 0 }, colors: ["#fbbf24","#818cf8","#34d399"] });
     } catch (e) {
       showStatus("Download failed: " + e.message, "err");
       toast("Download failed: " + e.message, "err");
