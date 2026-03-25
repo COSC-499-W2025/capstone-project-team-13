@@ -39,9 +39,11 @@ def calculate_importance_score(project):
     
     # Determine project type and route to appropriate scorer
     project_type = getattr(project, 'project_type', 'text').lower()
-    
+
     if 'media' in project_type or 'visual' in project_type:
         return _score_media_project(project)
+    elif 'cod' in project_type or 'software' in project_type or 'code' in project_type:
+        return _score_coding_project(project)
     else:  # text or default
         return _score_text_project(project)
 
@@ -109,6 +111,54 @@ def _score_text_project(project):
         recency_score * 0.10
     )
     
+    return round(total_score, 2)
+
+
+def _score_coding_project(project):
+    """
+    Score for CODING projects.
+    Emphasizes: lines of code (40%), file count (20%), language/framework breadth (20%),
+    skill diversity (10%), and recency (10%).
+    """
+    loc = project.lines_of_code or 0
+    loc_score = min(loc / 5000, 1) * 100  # 5000 LOC = 100%
+
+    file_count = project.file_count or 0
+    file_score = min(file_count / 25, 1) * 100  # 25 files = 100%
+
+    try:
+        lang_count = len(project.languages) if project.languages else 0
+    except Exception:
+        lang_count = 0
+    try:
+        tag_count = len(project.tags) if project.tags else 0
+    except Exception:
+        tag_count = 0
+    breadth_score = min((lang_count + tag_count) / 6, 1) * 100
+
+    try:
+        skill_count = len(project.skills) if project.skills else 0
+    except Exception:
+        skill_count = 0
+    skill_score = min(skill_count / 8, 1) * 100
+
+    now = datetime.now(timezone.utc)
+    date_modified = project.date_modified
+    if date_modified:
+        if date_modified.tzinfo is None:
+            date_modified = date_modified.replace(tzinfo=timezone.utc)
+        days_since_update = (now - date_modified).days
+        recency_score = max(0, min(1, (730 - days_since_update) / 730)) * 100
+    else:
+        recency_score = 0
+
+    total_score = (
+        loc_score * 0.40 +
+        file_score * 0.20 +
+        breadth_score * 0.20 +
+        skill_score * 0.10 +
+        recency_score * 0.10
+    )
     return round(total_score, 2)
 
 
@@ -199,7 +249,7 @@ def assign_importance_scores():
     session = db_manager.get_session()
     try:
         projects = session.query(Project).filter(
-            Project.project_type.in_(['media', 'text', 'visual_media'])
+            Project.project_type.in_(['media', 'text', 'visual_media', 'coding', 'software', 'code'])
         ).options(
             joinedload(Project.contributors),
             joinedload(Project.files),
