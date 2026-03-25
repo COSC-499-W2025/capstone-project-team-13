@@ -168,6 +168,26 @@ def get_current_user(user_id: int = Depends(require_auth)):
     }
 
 
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    new_password: str
+
+
+@router.post("/reset-password")
+def reset_password(body: ResetPasswordRequest):
+    """
+    Reset a user's password by email.
+    Verifies the email exists, then updates the password hash.
+    """
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    user = db_manager.get_user_by_email(body.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with that email")
+    db_manager.update_user(user.id, {"password_hash": hash_password(body.new_password)})
+    return {"message": "Password updated successfully"}
+
+
 class AvatarRequest(BaseModel):
     avatar: Optional[str] = None
 
