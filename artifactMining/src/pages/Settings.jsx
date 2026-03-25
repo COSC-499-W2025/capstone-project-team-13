@@ -3,7 +3,7 @@ import "./Settings.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
-export default function Settings() {
+export default function Settings({ onLogout }) {
   const [signupForm, setSignupForm] = useState({ first_name: "", last_name: "", email: "", password: "" });
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [authLoading, setAuthLoading] = useState(false);
@@ -296,6 +296,7 @@ export default function Settings() {
     setAvatar(null);
     setCurrentUser(null);
     setAccountMessage("Logged out successfully."); setAccountError("");
+    if (onLogout) onLogout();
     window.dispatchEvent(new CustomEvent("profile-updated"));
   }
 

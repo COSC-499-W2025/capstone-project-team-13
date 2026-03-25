@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import SkillsTimeline from "./SkillsTimeline";
 import ActivityHeatmap from "./ActivityHeatmap";
@@ -128,6 +128,9 @@ export default function Portfolio() {
           <p className="text-muted">All projects · evidences · ranked</p>
         </div>
         <div className="port-header-actions">
+          <Link to="/showcase" className="btn-primary" style={{ display: "inline-block", padding: "0.6em 1.2em", textDecoration: "none", fontSize: "0.95em", fontWeight: 500, borderRadius: 8 }}>
+            Web Showcase
+          </Link>
           <label className="toggle-label">
             <input type="checkbox" checked={includeHidden} onChange={e => setIncludeHidden(e.target.checked)} />
             Show hidden

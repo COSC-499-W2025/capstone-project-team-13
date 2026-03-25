@@ -10,6 +10,34 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
+
+_EXIF_DATE_TAGS = (36867, 36868, 306)  # DateTimeOriginal, DateTimeDigitized, DateTime
+
+def _exif_date(file_path: Path) -> Optional[datetime]:
+    """Extract capture date from image EXIF metadata, return None on any failure."""
+    if file_path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"}:
+        return None
+    try:
+        from PIL import Image
+        from PIL.ExifTags import TAGS
+        img = Image.open(file_path)
+        exif = img._getexif() if hasattr(img, "_getexif") else None
+        if not exif:
+            # PIL >=10 exposes getexif()
+            exif_obj = img.getexif() if hasattr(img, "getexif") else None
+            exif = dict(exif_obj) if exif_obj else None
+        if not exif:
+            return None
+        for tag in _EXIF_DATE_TAGS:
+            raw = exif.get(tag)
+            if raw:
+                try:
+                    return datetime.strptime(str(raw)[:19], "%Y:%m:%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                except ValueError:
+                    continue
+    except Exception:
+        pass
+    return None
 # Setup path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
@@ -159,7 +187,7 @@ class MediaProjectScanner:
                     'file_name': file_path.name,
                     'file_type': file_path.suffix,
                     'file_size': file_path.stat().st_size,
-                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_created': _exif_date(file_path) or datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_hash': file_hash
                 }
@@ -178,15 +206,15 @@ class MediaProjectScanner:
             print(f"  Added {new_files_count} new files")
             print(f"  Total files: {updates['file_count']}")
             
-# Calculate project dates from files
+# Calculate project dates from files — prefer EXIF, fall back to st_mtime
             file_dates = []
             for file_path in self.media_files:
                 try:
-                    stat = file_path.stat()
-                    file_dates.append(datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc))
+                    embedded = _exif_date(file_path)
+                    file_dates.append(embedded or datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc))
                 except Exception:
                     continue
-            
+
             date_created = min(file_dates) if file_dates else datetime.now(timezone.utc)
             date_modified = max(file_dates) if file_dates else datetime.now(timezone.utc)
 
@@ -224,7 +252,7 @@ class MediaProjectScanner:
                     'file_name': file_path.name,
                     'file_type': file_path.suffix,
                     'file_size': file_path.stat().st_size,
-                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_created': _exif_date(file_path) or datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_hash': file_hash
                 }

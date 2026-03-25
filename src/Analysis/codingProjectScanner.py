@@ -161,7 +161,7 @@ class CodingProjectScanner:
                     'file_name': file_path.name,
                     'file_type': file_path.suffix,
                     'file_size': file_path.stat().st_size,
-                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_hash': file_hash
                 }
@@ -224,7 +224,7 @@ class CodingProjectScanner:
                     'file_name': file_path.name,
                     'file_type': file_path.suffix,
                     'file_size': file_path.stat().st_size,
-                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_hash': file_hash
                 }
@@ -432,8 +432,7 @@ class CodingProjectScanner:
         """Calculate basic project metrics"""
         total_lines = 0
         total_size = 0
-        created_dates = []
-        modified_dates = []
+        file_dates = []
 
         for file_path in self.code_files:
             try:
@@ -444,19 +443,18 @@ class CodingProjectScanner:
                 stat = file_path.stat()
                 total_size += stat.st_size
 
-                # NOTE:
-                # - On Windows: st_ctime is creation time
-                # - On mac/linux: st_ctime is metadata change time (not true creation)
-                created_dates.append(datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc))
-                modified_dates.append(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
+                # Use st_mtime exclusively: it is reliably preserved by zipfile
+                # extraction on all platforms. st_ctime on Windows equals the
+                # extraction time (not the original creation time), so mixing it
+                # in would cause date_modified to always show the scan date.
+                file_dates.append(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
 
             except Exception:
                 continue
 
-        # Use the earliest date as created, latest as modified
-        all_dates = created_dates + modified_dates
-        date_created = min(all_dates) if all_dates else datetime.now(timezone.utc)
-        date_modified = max(all_dates) if all_dates else datetime.now(timezone.utc)
+        # Earliest mtime = project origin; latest mtime = most recent change
+        date_created = min(file_dates) if file_dates else datetime.now(timezone.utc)
+        date_modified = max(file_dates) if file_dates else datetime.now(timezone.utc)
         
         return {
             'lines_of_code': total_lines,

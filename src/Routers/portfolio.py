@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Body, Depends
 from pydantic import BaseModel
 from typing import Optional
 from src.Services.auth_service import require_auth
+from src.Databases.database import db_manager
 from src.Services.portfolio_service import (
     get_portfolio,
     get_portfolio_project,
@@ -51,6 +52,55 @@ def generate_portfolio_endpoint(
     and return the fresh data.
     """
     return generate_portfolio(user_id=user_id, include_hidden=include_hidden)
+
+
+@router.get("/showcase")
+def get_portfolio_showcase(user_id: int = Depends(require_auth)):
+    """
+    Return the top 3 projects by importance score with evolution data.
+    Must appear before /{project_id} so 'showcase' is not parsed as an int.
+    """
+    projects = db_manager.get_all_projects(include_hidden=False, user_id=user_id)
+    top3 = sorted(projects, key=lambda p: p.importance_score or 0, reverse=True)[:3]
+
+    def evolution(p):
+        start = p.date_created or p.created_at
+        end = p.date_modified or p.updated_at
+        milestones = []
+        if start:
+            milestones.append({"label": "Project started", "date": start.strftime("%b %Y") if hasattr(start, "strftime") else str(start)})
+        if p.file_count and p.file_count > 0:
+            milestones.append({"label": f"{p.file_count} files analysed", "date": None})
+        if p.lines_of_code and p.lines_of_code > 0:
+            milestones.append({"label": f"{p.lines_of_code:,} lines of code", "date": None})
+        langs = p.languages if isinstance(p.languages, list) else []
+        if langs:
+            milestones.append({"label": f"Languages: {', '.join(langs[:3])}", "date": None})
+        if end and start and end != start:
+            milestones.append({"label": "Latest version", "date": end.strftime("%b %Y") if hasattr(end, "strftime") else str(end)})
+        return milestones
+
+    result = []
+    for p in top3:
+        result.append({
+            "id": p.id,
+            "name": p.custom_description or p.name,
+            "description": p.description or p.ai_description or "",
+            "project_type": p.project_type,
+            "importance_score": round(p.importance_score or 0, 2),
+            "is_featured": p.is_featured,
+            "languages": p.languages or [],
+            "frameworks": p.frameworks or [],
+            "skills": p.skills or [],
+            "file_count": p.file_count or 0,
+            "lines_of_code": p.lines_of_code or 0,
+            "user_role": p.user_role or "",
+            "success_evidence": p.success_evidence or "",
+            "date_start": p.date_created.strftime("%b %Y") if p.date_created and hasattr(p.date_created, "strftime") else None,
+            "date_end": p.date_modified.strftime("%b %Y") if p.date_modified and hasattr(p.date_modified, "strftime") else None,
+            "evolution": evolution(p),
+        })
+    return {"projects": result, "total": len(projects)}
 
 
 @router.get("/{project_id}")
