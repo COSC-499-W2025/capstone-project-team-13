@@ -19,13 +19,13 @@ function addDays(d, n) {
 function toKey(d) { return d.toISOString().slice(0, 10); }
 
 // Interpolate between two hex colours by intensity 0–1
-function heatColour(intensity) {
-  if (intensity <= 0) return "rgba(255,255,255,0.04)";
+function heatColour(intensity, isDark) {
+  if (intensity <= 0) return isDark ? "rgba(255,255,255,0.06)" : "rgba(100,108,220,0.1)";
   const stops = [
-    [0.001, [59, 64, 120]],
+    [0.001, [99, 102, 200]],
     [0.25,  [99, 102, 241]],
     [0.6,   [139, 92, 246]],
-    [1.0,   [196, 73, 255]],
+    [1.0,   [167, 58, 230]],
   ];
   let lo = stops[0], hi = stops[stops.length - 1];
   for (let i = 0; i < stops.length - 1; i++) {
@@ -60,6 +60,27 @@ export default function ActivityHeatmap() {
   const [error, setError]       = useState(null);
   const [tooltip, setTooltip]   = useState(null);  // { x, y, text }
   const [yearOffset, setYearOffset] = useState(0); // 0 = current year, -1 = last year, etc.
+  const [theme, setTheme] = useState(() => document.body.getAttribute("data-theme") || "dark");
+
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      setTheme(document.body.getAttribute("data-theme") || "dark");
+    });
+    obs.observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+
+  const isDark = theme !== "light";
+  const clr = {
+    text:    isDark ? "#c4cbf5" : "#1f2260",
+    muted:   isDark ? "#a0a8d8" : "#4b5280",
+    dim:     isDark ? "#4a5196" : "#c0c4e8",
+    border:  isDark ? "rgba(107,114,244,0.3)" : "rgba(100,108,200,0.35)",
+    year:    isDark ? "#e0e4ff" : "#1a1d3a",
+    tooltip: isDark ? { bg: "#1e2044", border: "rgba(107,114,244,0.4)", color: "#eef1ff" }
+                    : { bg: "#ffffff", border: "rgba(100,108,200,0.4)", color: "#1a1d3a" },
+    cell:    isDark ? "1px solid rgba(255,255,255,0.04)" : "1px solid rgba(100,108,200,0.12)",
+  };
 
   useEffect(() => {
     apiFetch("/projects")
@@ -96,7 +117,7 @@ export default function ActivityHeatmap() {
     return { weeks, activityMap, maxCount, year };
   }, [projects, yearOffset]);
 
-  if (loading) return <p style={{ color: "#9aa6de", padding: 16 }}>Loading activity heatmap…</p>;
+  if (loading) return <p style={{ color: clr.muted, padding: 16 }}>Loading activity heatmap…</p>;
   if (error)   return <p style={{ color: "#f87171", padding: 16 }}>Failed to load: {error}</p>;
 
   const totalActive = Object.keys(activityMap).filter(k => k.startsWith(String(year))).length;
@@ -124,17 +145,17 @@ export default function ActivityHeatmap() {
         <button
           data-testid="prev-year"
           onClick={() => setYearOffset(o => o - 1)}
-          style={{ background: "none", border: "1px solid rgba(107,114,244,0.3)",
-            color: "#9aa6de", borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>‹</button>
-        <span style={{ fontWeight: 700, color: "#c4c9f0", fontSize: "0.95rem" }}>{year}</span>
+          style={{ background: "none", border: clr.border,
+            color: clr.text, borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>‹</button>
+        <span style={{ fontWeight: 700, color: clr.year, fontSize: "0.95rem" }}>{year}</span>
         <button
           data-testid="next-year"
           onClick={() => setYearOffset(o => o + 1)}
           disabled={yearOffset >= 0}
-          style={{ background: "none", border: "1px solid rgba(107,114,244,0.3)",
-            color: yearOffset >= 0 ? "#4a5196" : "#9aa6de",
+          style={{ background: "none", border: clr.border,
+            color: yearOffset >= 0 ? clr.dim : clr.text,
             borderRadius: 6, padding: "3px 10px", cursor: yearOffset >= 0 ? "default" : "pointer" }}>›</button>
-        <span style={{ fontSize: "0.78rem", color: "#7b87c4" }}>
+        <span style={{ fontSize: "0.78rem", color: clr.muted }}>
           {totalActive} active day{totalActive !== 1 ? "s" : ""} · {totalProjects} project{totalProjects !== 1 ? "s" : ""}
         </span>
       </div>
@@ -143,7 +164,7 @@ export default function ActivityHeatmap() {
         {/* Day-of-week labels */}
         <div style={{ display: "flex", flexDirection: "column", gap: GAP, paddingTop: 20 }}>
           {DAYS.map((d, i) => (
-            <div key={d} style={{ height: CELL, fontSize: "0.6rem", color: "#7b87c4",
+            <div key={d} style={{ height: CELL, fontSize: "0.6rem", color: clr.muted,
               lineHeight: `${CELL}px`, visibility: i % 2 === 1 ? "visible" : "hidden" }}>
               {d}
             </div>
@@ -158,7 +179,7 @@ export default function ActivityHeatmap() {
               const label = monthLabels.find(l => l.wi === wi);
               return (
                 <div key={wi} style={{ width: CELL, flexShrink: 0, fontSize: "0.6rem",
-                  color: "#7b87c4", whiteSpace: "nowrap" }}>
+                  color: clr.muted, whiteSpace: "nowrap" }}>
                   {label ? MONTHS[label.month] : ""}
                 </div>
               );
@@ -172,7 +193,7 @@ export default function ActivityHeatmap() {
                 {week.map(({ date, key, inYear }) => {
                   const count = activityMap[key] || 0;
                   const intensity = count / maxCount;
-                  const colour = inYear ? heatColour(intensity) : "transparent";
+                  const colour = inYear ? heatColour(intensity, isDark) : "transparent";
                   return (
                     <div
                       key={key}
@@ -182,7 +203,7 @@ export default function ActivityHeatmap() {
                       style={{
                         width: CELL, height: CELL, borderRadius: 3,
                         background: colour, cursor: count > 0 ? "pointer" : "default",
-                        border: inYear ? "1px solid rgba(255,255,255,0.04)" : "none",
+                        border: inYear ? clr.cell : "none",
                         boxSizing: "border-box",
                       }}
                       onMouseEnter={e => {
@@ -204,20 +225,21 @@ export default function ActivityHeatmap() {
 
       {/* Legend */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, justifyContent: "flex-end" }}>
-        <span style={{ fontSize: "0.68rem", color: "#7b87c4" }}>Less</span>
+        <span style={{ fontSize: "0.68rem", color: clr.muted }}>Less</span>
         {[0, 0.25, 0.5, 0.75, 1].map(i => (
-          <div key={i} style={{ width: CELL, height: CELL, borderRadius: 3, background: heatColour(i) }} />
+          <div key={i} style={{ width: CELL, height: CELL, borderRadius: 3, background: heatColour(i, isDark) }} />
         ))}
-        <span style={{ fontSize: "0.68rem", color: "#7b87c4" }}>More</span>
+        <span style={{ fontSize: "0.68rem", color: clr.muted }}>More</span>
       </div>
 
       {/* Tooltip */}
       {tooltip && (
         <div style={{
           position: "fixed", left: tooltip.x + 10, top: tooltip.y - 28, zIndex: 999,
-          background: "#1e2044", border: "1px solid rgba(107,114,244,0.4)",
-          borderRadius: 6, padding: "4px 10px", fontSize: "0.75rem", color: "#eef1ff",
+          background: clr.tooltip.bg, border: `1px solid ${clr.tooltip.border}`,
+          borderRadius: 6, padding: "4px 10px", fontSize: "0.75rem", color: clr.tooltip.color,
           pointerEvents: "none", whiteSpace: "nowrap",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
         }}>{tooltip.text}</div>
       )}
     </div>
