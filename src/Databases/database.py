@@ -348,6 +348,9 @@ class User(Base):
     _portfolio = Column('portfolio', Text)
     _resume = Column('resume', Text)
 
+    # Profile
+    avatar = Column(Text, nullable=True)
+
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')

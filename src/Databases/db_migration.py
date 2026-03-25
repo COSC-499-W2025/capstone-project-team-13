@@ -75,12 +75,34 @@ def migrate_add_importance_score():
         session.close()
 
 
+def migrate_add_user_avatar():
+    """Add avatar column to users table if it doesn't exist"""
+    db = DatabaseManager()
+    session = db.get_session()
+    try:
+        result = session.execute(text("PRAGMA table_info(users)"))
+        columns = [row[1] for row in result]
+        if 'avatar' not in columns:
+            print("Adding avatar column to users table...")
+            session.execute(text("ALTER TABLE users ADD COLUMN avatar TEXT"))
+            session.commit()
+            print("✓ Migration complete")
+        else:
+            print("✓ avatar column already exists")
+    except Exception as e:
+        print(f"Migration error: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
 def run_all_migrations():
     """Run all migrations in order"""
     print("Running database migrations...")
     migrate_add_file_hash()
     migrate_add_user_contribution_percent()
     migrate_add_importance_score()
+    migrate_add_user_avatar()
     print("\nAll migrations complete!")
 
 
