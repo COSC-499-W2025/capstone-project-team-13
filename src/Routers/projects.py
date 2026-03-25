@@ -17,6 +17,61 @@ UPLOAD_DIR = Path("evidence/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
+# ── Guest analyze (no account required, no data saved) ────────────────────────
+
+@router.post("/guest-analyze")
+async def guest_analyze(file: UploadFile = File(...)):
+    """Analyze a file for a guest user. Results are returned immediately and NOT saved to the database."""
+    display_name = Path(file.filename).stem  # capture clean name before UUID rename
+    uid = str(uuid.uuid4())
+    upload_path = UPLOAD_DIR / f"guest_{uid}_{file.filename}"
+
+    with open(upload_path, "wb") as f:
+        f.write(await file.read())
+
+    if upload_path.suffix.lower() == ".zip":
+        extract_dir = UPLOAD_DIR / f"guest_{uid}"
+        extract_dir.mkdir()
+        with zipfile.ZipFile(upload_path, 'r') as zf:
+            zf.extractall(extract_dir)
+        process_path = extract_dir
+    else:
+        process_path = upload_path
+
+    try:
+        result = process_uploaded_path(str(process_path), user_id=None)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    finally:
+        # Clean up temp files regardless of outcome
+        import shutil
+        if upload_path.exists():
+            upload_path.unlink(missing_ok=True)
+        if upload_path.suffix.lower() == ".zip" and (UPLOAD_DIR / f"guest_{uid}").exists():
+            shutil.rmtree(UPLOAD_DIR / f"guest_{uid}", ignore_errors=True)
+
+    # If a project was created, read its data then immediately delete it
+    project_id = result.get("project_id")
+    if project_id:
+        project = db_manager.get_project(project_id)
+        analysis = {
+            "status": "analyzed",
+            "name": display_name,
+            "project_type": project.project_type if project else result.get("project_type"),
+            "file_count": project.file_count if project else result.get("file_count", 0),
+            "lines_of_code": project.lines_of_code if project else 0,
+            "languages": project.languages if project else [],
+            "frameworks": project.frameworks if project else [],
+            "skills": project.skills if project else [],
+            "description": (project.description or project.ai_description or "") if project else "",
+            "importance_score": round(project.importance_score or 0, 2) if project else 0,
+        }
+        db_manager.delete_project(project_id)
+        return analysis
+
+    return {"status": result.get("status", "skipped"), "detail": result.get("reason", "No supported files found")}
+
+
 # ── Request models ─────────────────────────────────────────────────────────────
 
 class AnalyzeRequest(BaseModel):

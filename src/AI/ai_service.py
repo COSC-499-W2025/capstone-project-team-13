@@ -24,8 +24,10 @@ from pathlib import Path
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
-# Find .env in project root (go up from src/AI/)
-env_path = Path(__file__).parent.parent.parent / '.env'
+# Find .env — check src/ first, then project root as fallback
+env_path = Path(__file__).parent.parent / '.env'
+if not env_path.exists():
+    env_path = Path(__file__).parent.parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 # DEBUG: Check if key loaded

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
@@ -10,33 +10,25 @@ const mainLinks = [
 ];
 
 const toolLinks = [
-  { to: "/evidence", label: "Evidence" }, 
+  { to: "/evidence", label: "Evidence" },
   { to: "/analysis", label: "Analysis" }
 ];
 
-export default function Navbar() {
+export default function Navbar({ onLogout, user }) {
   const { pathname } = useLocation();
   const [toolsOpen, setToolsOpen] = useState(false);
-  // Dropdown is active only if a tool page is selected
   const toolActive = toolLinks.some(l => pathname === l.to);
-
   const isDashboard = pathname === "/" || pathname === "/dashboard";
+
   return (
     <nav className="navbar" onClick={() => setToolsOpen(false)}>
-      <Link to="/" className={`navbar-brand nav-link${isDashboard ? " active" : ""}`}>⛏ Digital Artifact Mining</Link>
+      <Link to="/" className={`navbar-brand nav-link${isDashboard ? " active" : ""}`}>Digital Artifact Mining</Link>
       <div className="navbar-links">
         {mainLinks.map(({ to, label }) => {
-          // Highlight Projects for both /projects and /upload
           const isProjects = to === "/projects" && (pathname === "/projects" || pathname === "/upload");
           const isActive = isProjects || (pathname === to && to !== "/projects");
           return (
-            <Link
-              key={to}
-              to={to}
-              className={`nav-link ${isActive ? "active" : ""}`}
-            >
-              {label}
-            </Link>
+            <Link key={to} to={to} className={`nav-link ${isActive ? "active" : ""}`}>{label}</Link>
           );
         })}
 
@@ -59,7 +51,13 @@ export default function Navbar() {
         </div>
       </div>
       <div className="navbar-profile">
+        {user && <span className="text-muted" style={{ fontSize: "0.8rem", marginRight: 8 }}>{user.first_name || user.email}</span>}
         <Link to="/settings" className={`nav-link${pathname === "/settings" ? " active" : ""}`}>Profile</Link>
+        {onLogout && (
+          <button className="nav-link" style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }} onClick={onLogout}>
+            Log Out
+          </button>
+        )}
       </div>
     </nav>
   );

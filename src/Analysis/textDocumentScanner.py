@@ -9,8 +9,35 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
+import re as _re
 import nltk
 from nltk.tokenize import word_tokenize
+
+
+def _pdf_date(file_path: Path) -> Optional[datetime]:
+    """Extract CreationDate from PDF internal metadata, return None on any failure."""
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader
+        except ImportError:
+            return None
+    try:
+        reader = PdfReader(str(file_path), strict=False)
+        raw = (reader.metadata or {}).get("/CreationDate") or (reader.metadata or {}).get("/ModDate")
+        if not raw:
+            return None
+        # Format: D:YYYYMMDDHHmmSSOHH'mm'  or  D:YYYYMMDDHHMMSS
+        s = raw.lstrip("D:").replace("'", "")
+        for fmt in ("%Y%m%d%H%M%S%z", "%Y%m%d%H%M%S", "%Y%m%d"):
+            try:
+                return datetime.strptime(s[:len(fmt.replace("%z",""))], fmt.replace("%z","")).replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+    except Exception:
+        pass
+    return None
 
 
 # nltk.download('punkt', quiet=True)
@@ -162,7 +189,7 @@ class TextDocumentScanner:
                     'file_name': file_path.name,
                     'file_type': file_path.suffix,
                     'file_size': file_path.stat().st_size,
-                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_hash': file_hash
                 }
@@ -216,7 +243,7 @@ class TextDocumentScanner:
                     'file_name': file_path.name,
                     'file_type': file_path.suffix,
                     'file_size': file_path.stat().st_size,
-                    'file_created': datetime.fromtimestamp(file_path.stat().st_ctime, tz=timezone.utc),
+                    'file_created': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_modified': datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc),
                     'file_hash': file_hash
                 }
@@ -426,10 +453,11 @@ class TextDocumentScanner:
 
                     total_words += len(word_tokens)
 
-                # File metadata
+                # File metadata — prefer embedded date (PDF), fall back to st_mtime
                 stat = file_path.stat()
                 total_size += stat.st_size
-                file_dates.append(datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
+                embedded = _pdf_date(file_path) if file_path.suffix.lower() == ".pdf" else None
+                file_dates.append(embedded or datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc))
 
             except Exception as e:
                 # Don’t hide errors completely—print once so tests aren’t silent
