@@ -1,15 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./Dashboard.css";
 
+const TIPS = [
+  "Add quantifiable metrics to your resume bullets — numbers stand out to recruiters.",
+  "Tailor your resume keywords to each job description for a higher ATS score.",
+  "A strong GitHub profile can be just as powerful as a degree.",
+  "Your top 3 projects matter more than a long list of mediocre ones.",
+  "Export your resume as both PDF and DOCX to maximize compatibility.",
+  "Keep bullet points to 1–2 lines for maximum readability.",
+  "Showcase side projects — they demonstrate passion and self-motivation.",
+  "Update your portfolio regularly, even with small wins.",
+  "Action verbs like 'built', 'led', 'reduced' score higher in ATS systems.",
+  "Skills section tip: list Expert skills first — recruiters scan top-down.",
+];
+
+function useCountUp(target, duration = 900) {
+  const [value, setValue] = useState(0);
+  const frame = useRef(null);
+  useEffect(() => {
+    if (typeof target !== "number") return;
+    const start = performance.now();
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) frame.current = requestAnimationFrame(step);
+    }
+    frame.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame.current);
+  }, [target, duration]);
+  return value;
+}
+
+function getStreak() {
+  const today = new Date().toDateString();
+  const last = localStorage.getItem("dash_last_visit");
+  const streak = parseInt(localStorage.getItem("dash_streak") || "0", 10);
+  if (last === today) return streak;
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const newStreak = last === yesterday ? streak + 1 : 1;
+  localStorage.setItem("dash_streak", newStreak);
+  localStorage.setItem("dash_last_visit", today);
+  return newStreak;
+}
+
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [skills, setSkills] = useState([]);
   const [portfolio, setPortfolio] = useState(null);
+  const [resumeExists, setResumeExists] = useState(() => !!localStorage.getItem("resume_saved"));
   const [loading, setLoading] = useState(true);
+  const [checklistDismissed, setChecklistDismissed] = useState(() => localStorage.getItem("onboarding_dismissed") === "1");
   const nav = useNavigate();
+  const streak = getStreak();
+  const tip = TIPS[new Date().getDate() % TIPS.length];
 
   useEffect(() => {
     Promise.all([
@@ -18,7 +65,6 @@ export default function Dashboard() {
       apiFetch("/portfolio").catch(() => null),
     ]).then(([p, s, pf]) => {
       setProjects(Array.isArray(p) ? p : []);
-      // Skills endpoint returns {skills: [{name, count, projects}]}
       const skillList = s?.skills || (Array.isArray(s) ? s : []);
       setSkills(skillList.slice(0, 10));
       setPortfolio(pf);
@@ -26,17 +72,54 @@ export default function Dashboard() {
     });
   }, []);
 
-  if (loading) return <div className="page-wrap"><div className="spinner" /></div>;
-
+  // All hooks must be called before any early returns
   const topProjects = [...projects]
     .sort((a, b) => (b.importance_score || 0) - (a.importance_score || 0))
     .slice(0, 5);
 
+  const topScore = topProjects[0]?.importance_score != null ? Number(topProjects[0].importance_score) : null;
+  const portfolioCount = portfolio?.projects?.length ?? null;
+
+  const cProjects = useCountUp(loading ? 0 : projects.length);
+  const cSkills = useCountUp(loading ? 0 : skills.length);
+  const cScore = useCountUp(loading ? 0 : topScore ?? 0);
+  const cPortfolio = useCountUp(loading ? 0 : portfolioCount ?? 0);
+
+  if (loading) return (
+    <div className="page-wrap">
+      <div className="dash-header">
+        <div className="skeleton skeleton-title" />
+        <div className="skeleton skeleton-btn" />
+      </div>
+      <div className="stat-row">
+        {[0,1,2,3].map(i => <div key={i} className="stat-card card skeleton-card"><div className="skeleton skeleton-val" /><div className="skeleton skeleton-label" /></div>)}
+      </div>
+      <div className="dash-grid">
+        {[0,1,2].map(i => <div key={i} className="card skeleton-card"><div className="skeleton skeleton-h2" /><div className="skeleton skeleton-line" /><div className="skeleton skeleton-line short" /></div>)}
+      </div>
+    </div>
+  );
+
+  const onboardingSteps = [
+    { id: "upload",    label: "Upload your first project",       icon: "📁", done: projects.length > 0,                                                            link: "/upload" },
+    { id: "ai",        label: "Run AI Analysis on a project",    icon: "🔬", done: projects.some(p => p.ai_description || p.ats_score != null),                    link: "/analysis" },
+    { id: "skills",    label: "Discover your skills",            icon: "⚡", done: skills.length > 0,                                                              link: "/skills" },
+    { id: "portfolio", label: "Generate your portfolio",         icon: "🎨", done: (portfolio?.projects?.length || 0) > 0,                                         link: "/portfolio" },
+    { id: "resume",    label: "Build your resume",               icon: "📄", done: resumeExists,                                                                  link: "/resumes" },
+  ];
+  const doneCnt = onboardingSteps.filter(s => s.done).length;
+  const allOnboardingDone = doneCnt === onboardingSteps.length;
+
+  function dismissChecklist() {
+    localStorage.setItem("onboarding_dismissed", "1");
+    setChecklistDismissed(true);
+  }
+
   const stats = [
-    { label: "Projects", value: projects.length },
-    { label: "Skills", value: skills.length },
-    { label: "Top Score", value: topProjects[0]?.importance_score != null ? Number(topProjects[0].importance_score).toFixed(2) : "—" },
-    { label: "Portfolio", value: portfolio?.projects?.length ?? "—" },
+    { label: "Projects", icon: "📁", animated: cProjects, raw: projects.length },
+    { label: "Skills", icon: "⚡", animated: cSkills, raw: skills.length },
+    { label: "Top Score", icon: "🏆", animated: topScore !== null ? cScore.toFixed(0) : null, raw: topScore !== null ? topScore.toFixed(2) : "—" },
+    { label: "Portfolio", icon: "🎨", animated: portfolioCount !== null ? cPortfolio : null, raw: portfolioCount ?? "—" },
   ];
 
   return (
@@ -49,17 +132,66 @@ export default function Dashboard() {
       <div className="stat-row">
         {stats.map(s => (
           <div key={s.label} className="stat-card card">
-            <div className="stat-val">{s.value}</div>
+            <div className="stat-icon">{s.icon}</div>
+            <div className="stat-val">{s.animated !== null ? s.animated : s.raw}</div>
             <div className="stat-label">{s.label}</div>
           </div>
         ))}
       </div>
 
+      <div className="dash-meta-row">
+        <div className="dash-streak card">
+          <span className="dash-streak-fire">🔥</span>
+          <div>
+            <div className="dash-streak-num">{streak}-day streak</div>
+            <div className="dash-streak-sub">Keep it up! Come back tomorrow.</div>
+          </div>
+        </div>
+        <div className="dash-tip card">
+          <span className="dash-tip-icon">💡</span>
+          <div>
+            <div className="dash-tip-label">Tip of the day</div>
+            <div className="dash-tip-text">{tip}</div>
+          </div>
+        </div>
+      </div>
+
+      {!checklistDismissed && (
+        <div className="dash-onboarding card">
+          <div className="dash-onboarding-header">
+            <div>
+              <div className="dash-onboarding-title">{allOnboardingDone ? "🎉 You're all set!" : "Getting Started"}</div>
+              <div className="dash-onboarding-sub">{doneCnt} of {onboardingSteps.length} complete</div>
+            </div>
+            <button className="dash-onboarding-dismiss" onClick={dismissChecklist} title="Dismiss">✕</button>
+          </div>
+          <div className="dash-onboarding-track">
+            <div className="dash-onboarding-fill" style={{ width: `${doneCnt / onboardingSteps.length * 100}%` }} />
+          </div>
+          <div className="dash-onboarding-steps">
+            {onboardingSteps.map(step => (
+              <div key={step.id} className={`dash-onboarding-step ${step.done ? "done" : ""}`} onClick={() => !step.done && nav(step.link)}>
+                <div className="dash-onboarding-check">{step.done ? "✓" : ""}</div>
+                <span className="dash-onboarding-icon">{step.icon}</span>
+                <span className="dash-onboarding-label">{step.label}</span>
+                {!step.done && <span className="dash-onboarding-arrow">→</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="dash-grid">
         <div className="card">
           <h2>Top Projects</h2>
           {topProjects.length === 0
-            ? <p className="text-muted mt-12">No projects yet. <a href="/upload">Upload one.</a></p>
+            ? (
+              <div className="dash-empty-state">
+                <div className="dash-empty-icon">📁</div>
+                <p>No projects yet.</p>
+                <a href="/upload" className="btn-primary" style={{ fontSize: "0.82rem", padding: "6px 16px" }}>Upload your first →</a>
+              </div>
+            )
             : topProjects.map(p => (
               <div key={p.id} className="dash-project-row" onClick={() => nav(`/projects/${p.id}`)}>
                 <div className="dash-project-info">
@@ -76,9 +208,12 @@ export default function Dashboard() {
         <div className="card">
           <h2>Top Skills</h2>
           {skills.length === 0
-            ? <p className="text-muted" style={{ marginTop: 12 }}>
-                No skills detected yet. Upload a project and run AI Analysis to extract skills.
-              </p>
+            ? (
+              <div className="dash-empty-state">
+                <div className="dash-empty-icon">⚡</div>
+                <p>No skills yet. Upload a project and run AI Analysis.</p>
+              </div>
+            )
             : <div className="skill-chip-grid">
                 {skills.map((s, i) => {
                   const name = s.name || s.skill_name || (typeof s === "string" ? s : "");
