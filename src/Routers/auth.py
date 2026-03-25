@@ -6,7 +6,7 @@ API endpoints for user signup, login, and profile access.
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Any
 from src.Databases.database import db_manager
 from src.Services.auth_service import hash_password, verify_password, create_access_token, require_auth
 
@@ -160,11 +160,25 @@ def get_current_user(user_id: int = Depends(require_auth)):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "email": user.email,
+        "avatar": user.avatar or None,
         "education_count": education_count,
         "work_history_count": work_count,
         "project_count": project_count,
         "created_at": user.created_at.isoformat() if user.created_at else None
     }
+
+
+class AvatarRequest(BaseModel):
+    avatar: Optional[str] = None
+
+
+@router.put("/avatar")
+def update_avatar(body: AvatarRequest, user_id: int = Depends(require_auth)):
+    """Save or clear the user's profile picture (base64 data URL)."""
+    user = db_manager.update_user(user_id, {"avatar": body.avatar})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"avatar": user.avatar}
 
 
 @router.get("/guest/projects/count")
