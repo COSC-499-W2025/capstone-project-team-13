@@ -407,25 +407,51 @@ def analyze_project(
     analysis_type = body.analysis_type or "overview"
 
     try:
-        from src.AI.ai_project_analyzer import AIProjectAnalyzer
-        analyzer = AIProjectAnalyzer()
-        results = analyzer.analyze_project_complete(project_id)
-        updates = {}
-        # overview is a plain string — save as ai_description
-        if results and "overview" in results:
-            overview = results["overview"]
-            if isinstance(overview, str) and overview.strip():
-                updates["ai_description"] = overview.strip()
-            elif isinstance(overview, dict):
-                desc = overview.get("summary") or overview.get("description") or ""
-                if desc:
-                    updates["ai_description"] = desc
-        # Save full analysis JSON to ai_analysis column for persistence
-        if results:
-            import json as _json
-            safe = {k: v for k, v in results.items()
-                    if k not in ("cache_stats",) and v is not None}
+        import json as _json
+        ptype = (project.project_type or "code").lower()
+
+        if ptype == "text":
+            from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
+            analyzer = AITextProjectAnalyzer()
+            project_dict = {k: v for k, v in project.__dict__.items() if not k.startswith("_")}
+            project_dict["project_name"] = project.name or "Unnamed Project"
+            results = analyzer.analyze_project_complete(project_dict)
+            updates = {}
+            if results.get("ai_description"):
+                updates["ai_description"] = results["ai_description"]
+            if results.get("extracted_skills"):
+                updates["skills"] = ", ".join(results["extracted_skills"])
+            safe = {k: v for k, v in results.items() if v is not None}
             updates["ai_analysis"] = _json.dumps(safe)
+        elif ptype in ("media", "image", "video", "audio"):
+            from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
+            analyzer = AIMediaProjectAnalyzer()
+            project_dict = {k: v for k, v in project.__dict__.items() if not k.startswith("_")}
+            project_dict["project_name"] = project.name or "Unnamed Project"
+            results = analyzer.analyze_project_complete(project_dict)
+            updates = {}
+            if results.get("ai_description"):
+                updates["ai_description"] = results["ai_description"]
+            safe = {k: v for k, v in results.items() if v is not None}
+            updates["ai_analysis"] = _json.dumps(safe)
+        else:
+            from src.AI.ai_project_analyzer import AIProjectAnalyzer
+            analyzer = AIProjectAnalyzer()
+            results = analyzer.analyze_project_complete(project_id)
+            updates = {}
+            if results and "overview" in results:
+                overview = results["overview"]
+                if isinstance(overview, str) and overview.strip():
+                    updates["ai_description"] = overview.strip()
+                elif isinstance(overview, dict):
+                    desc = overview.get("summary") or overview.get("description") or ""
+                    if desc:
+                        updates["ai_description"] = desc
+            if results:
+                safe = {k: v for k, v in results.items()
+                        if k not in ("cache_stats",) and v is not None}
+                updates["ai_analysis"] = _json.dumps(safe)
+
         if updates:
             db_manager.update_project(project_id, updates)
         return {"project_id": project_id, "analysis_type": analysis_type, "results": results}
@@ -455,19 +481,45 @@ def batch_analyze(
         return {"analyzed": 0, "results": []}
 
     results = []
+    import json as _json
     for p in projects:
         try:
-            from src.AI.ai_project_analyzer import AIProjectAnalyzer
-            analyzer = AIProjectAnalyzer()
-            r = analyzer.analyze_project_complete(p.id)
-            if r and "overview" in r:
-                overview = r["overview"]
-                if isinstance(overview, str) and overview.strip():
-                    db_manager.update_project(p.id, {"ai_description": overview.strip()})
-                elif isinstance(overview, dict):
-                    desc = overview.get("summary") or overview.get("description") or ""
-                    if desc:
-                        db_manager.update_project(p.id, {"ai_description": desc})
+            ptype = (p.project_type or "code").lower()
+            updates = {}
+
+            if ptype == "text":
+                from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
+                analyzer = AITextProjectAnalyzer()
+                project_dict = {k: v for k, v in p.__dict__.items() if not k.startswith("_")}
+                project_dict["project_name"] = p.name or "Unnamed Project"
+                r = analyzer.analyze_project_complete(project_dict)
+                if r.get("ai_description"):
+                    updates["ai_description"] = r["ai_description"]
+                if r.get("extracted_skills"):
+                    updates["skills"] = ", ".join(r["extracted_skills"])
+            elif ptype in ("media", "image", "video", "audio"):
+                from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
+                analyzer = AIMediaProjectAnalyzer()
+                project_dict = {k: v for k, v in p.__dict__.items() if not k.startswith("_")}
+                project_dict["project_name"] = p.name or "Unnamed Project"
+                r = analyzer.analyze_project_complete(project_dict)
+                if r.get("ai_description"):
+                    updates["ai_description"] = r["ai_description"]
+            else:
+                from src.AI.ai_project_analyzer import AIProjectAnalyzer
+                analyzer = AIProjectAnalyzer()
+                r = analyzer.analyze_project_complete(p.id)
+                if r and "overview" in r:
+                    overview = r["overview"]
+                    if isinstance(overview, str) and overview.strip():
+                        updates["ai_description"] = overview.strip()
+                    elif isinstance(overview, dict):
+                        desc = overview.get("summary") or overview.get("description") or ""
+                        if desc:
+                            updates["ai_description"] = desc
+
+            if updates:
+                db_manager.update_project(p.id, updates)
             results.append({"project_id": p.id, "name": _display_name(p), "success": True})
         except Exception as e:
             results.append({"project_id": p.id, "name": _display_name(p), "success": False, "error": str(e)})

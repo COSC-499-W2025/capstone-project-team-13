@@ -63,6 +63,112 @@ class EvidenceManager:
             print(f"Error extracting evidence: {e}")
             return {}
     
+    def extract_and_store_evidence_text(self, project) -> Dict[str, Any]:
+        """Extract evidence from a text project using AI."""
+        from src.AI.ai_service import get_ai_service
+        import re
+
+        ai = get_ai_service()
+
+        # Gather what we know about the project
+        word_count = getattr(project, "word_count", None) or 0
+        description = getattr(project, "description", "") or ""
+        ai_description = getattr(project, "ai_description", "") or ""
+        name = project.name or "Untitled"
+
+        # Try to read content from file for richer extraction
+        content_sample = ""
+        try:
+            if project.file_path:
+                from pathlib import Path
+                p = Path(project.file_path)
+                if p.is_file():
+                    content_sample = p.read_text(encoding="utf-8", errors="ignore")[:3000]
+                elif p.is_dir():
+                    for f in sorted(p.rglob("*"))[:5]:
+                        if f.is_file() and f.suffix.lower() in (".txt", ".md", ".docx", ".pdf", ".rtf"):
+                            try:
+                                content_sample += f.read_text(encoding="utf-8", errors="ignore")[:600]
+                            except Exception:
+                                pass
+        except Exception:
+            pass
+
+        context = content_sample or ai_description or description or name
+
+        prompt = f"""Analyze this text/writing project and extract concrete evidence of quality and effort.
+
+Project: {name}
+Word count: {word_count if word_count else "unknown"}
+Content sample: {context[:2000]}
+
+Return ONLY valid JSON with these fields (omit any field you cannot determine):
+{{
+  "word_count": <integer or null>,
+  "document_type": "<essay|report|thesis|article|story|script|other>",
+  "topics": ["<topic1>", "<topic2>"],
+  "writing_strengths": ["<strength1>", "<strength2>"],
+  "estimated_reading_time_min": <integer>,
+  "complexity": "<introductory|intermediate|advanced>",
+  "audience": "<general|academic|technical|creative>"
+}}"""
+
+        try:
+            raw = ai.generate_text(prompt, temperature=0.3)
+            text = raw.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            extracted = json.loads(text.strip())
+        except Exception:
+            extracted = {}
+
+        # Always include word_count from DB if AI didn't return one
+        if word_count and not extracted.get("word_count"):
+            extracted["word_count"] = word_count
+
+        if extracted:
+            self.store_evidence(project.id, extracted)
+        return extracted
+
+    def extract_and_store_evidence_media(self, project) -> Dict[str, Any]:
+        """Extract evidence from a media project using AI."""
+        from src.AI.ai_service import get_ai_service
+
+        ai = get_ai_service()
+        name = project.name or "Untitled"
+        description = getattr(project, "ai_description", "") or getattr(project, "description", "") or ""
+
+        prompt = f"""Analyze this media/creative project and extract concrete evidence of quality and effort.
+
+Project: {name}
+Description: {description[:1000]}
+
+Return ONLY valid JSON with these fields (omit any you cannot determine):
+{{
+  "media_type": "<image|video|audio|animation|other>",
+  "themes": ["<theme1>", "<theme2>"],
+  "creative_strengths": ["<strength1>", "<strength2>"],
+  "tools_used": ["<tool1>"],
+  "complexity": "<simple|moderate|complex>"
+}}"""
+
+        try:
+            raw = ai.generate_text(prompt, temperature=0.3)
+            text = raw.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            extracted = json.loads(text.strip())
+        except Exception:
+            extracted = {}
+
+        if extracted:
+            self.store_evidence(project.id, extracted)
+        return extracted
+
     def store_evidence(self, project_id: int, evidence: Dict[str, Any]) -> bool:
         """
         Store evidence in database

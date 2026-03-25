@@ -48,9 +48,11 @@ export function projectName(p) {
   const cd = (p.display_name || p.custom_description || "").trim();
   if (cd) return cd;
   const name = (p.name || "").trim();
-  // hide UUIDs (36-char hex-dash strings)
+  // hide UUIDs (36-char hex-dash strings) — but extract any readable suffix after the UUID
   if (/^[0-9a-f-]{30,}/i.test(name)) {
-    return p.description || p.ai_description || `${p.project_type || "Project"} ${p.id}`;
+    const suffix = name.replace(/^[0-9a-f-]{30,}_?/i, "").trim();
+    if (suffix && !/^[0-9a-f-]{8,}/i.test(suffix)) return suffix;
+    return `${p.project_type || "Project"} ${p.id}`;
   }
   return name || "Untitled";
 }
