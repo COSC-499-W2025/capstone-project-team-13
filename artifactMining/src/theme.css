@@ -62,11 +62,6 @@ body[data-theme="dark"] .ats-close-btn            { border-color: rgba(99,102,24
 body[data-theme="dark"] .ats-help-btn             { background: #fff; color: #555; }
 
 /* ── Dark: Projects subtabs (these use hardcoded light colors) ── */
-body[data-theme="dark"] .subtab-btn          { background: rgba(255,255,255,0.06); color: #c4cbf5; }
-body[data-theme="dark"] .subtab-btn:hover    { background: rgba(255,255,255,0.1); }
-body[data-theme="dark"] .subtab-btn.active   { background: #2977ff; color: #fff; }
-body[data-theme="dark"] .deletion-tab        { background: #2977ff; color: #fff; }
-body[data-theme="dark"] .deletion-tab:hover  { background: #1d4ed8; }
 
 /* ── Dark: Settings config rows (uses --border-color fallback) ── */
 body[data-theme="dark"] .settings-config-row    { border-bottom-color: rgba(107,114,244,0.18); }
@@ -208,6 +203,11 @@ body[data-theme="light"] .dash-project-info strong { color: #1a1d3a; }
 body[data-theme="light"] .dash-project-info span   { color: #5a6080; }
 body[data-theme="light"] .dash-project-row:hover   { background: rgba(79,70,229,0.06); border-color: rgba(79,70,229,0.2); }
 body[data-theme="light"] .dash-portfolio-card p    { color: #5a6080; }
+body[data-theme="light"] .dash-hover-card:hover,
+body[data-theme="light"] .dash-portfolio-card:hover { border-color: rgba(163,73,255,0.6); transform: translateY(-2px); box-shadow: 0 12px 22px rgba(115,67,255,0.42); }
+body[data-theme="light"] .stat-card:hover           { transform: translateY(-3px); box-shadow: 0 12px 22px rgba(115,67,255,0.42); }
+body[data-theme="light"] .skills-stat:hover         { border-color: rgba(163,73,255,0.6); transform: translateY(-2px); box-shadow: 0 12px 22px rgba(115,67,255,0.42); }
+body[data-theme="light"] .port-stat:hover           { border-color: rgba(163,73,255,0.6); transform: translateY(-2px); box-shadow: 0 12px 22px rgba(115,67,255,0.42); }
 body[data-theme="light"] .dash-streak-num          { color: #d97706; }
 body[data-theme="light"] .dash-streak-sub          { color: #6b7280; }
 body[data-theme="light"] .dash-tip-label           { color: #4f46e5; }
@@ -228,17 +228,17 @@ body[data-theme="light"] .resume-completeness-label { color: #4c1d95; }
 body[data-theme="light"] .resume-completeness-bar   { background: rgba(109,40,217,0.12); }
 
 /* ── Light: Projects ── */
+body[data-theme="light"] .proj-card  { border-color: transparent; }
+body[data-theme="light"] .proj-card:hover { border-color: rgba(100,108,200,0.45); }
 body[data-theme="light"] .proj-name  { color: #1a1d3a; }
 body[data-theme="light"] .proj-desc  { color: #5a6080; }
 body[data-theme="light"] .proj-meta  { color: #5a6080; }
 body[data-theme="light"] .tab-btn    { background: rgba(0,0,0,0.04); color: #5a6080; border-color: rgba(100,108,200,0.25); }
 body[data-theme="light"] .tab-btn:hover  { border-color: #4f46e5; color: #4f46e5; }
 body[data-theme="light"] .tab-btn.active { background: rgba(79,70,229,0.1); border-color: #4f46e5; color: #4f46e5; }
-body[data-theme="light"] .subtab-btn          { background: #e8eaf5; color: #2c3060; }
-body[data-theme="light"] .subtab-btn:hover    { background: #d8daf0; }
-body[data-theme="light"] .subtab-btn.active   { background: #2977ff; color: #fff; }
-body[data-theme="light"] .deletion-tab        { background: #2977ff; color: #fff; }
-body[data-theme="light"] .deletion-tab:hover  { background: #1d4ed8; }
+body[data-theme="light"] .subtab-btn          { background: rgba(79,70,229,0.1); color: #4f46e5; border-color: rgba(79,70,229,0.45); }
+body[data-theme="light"] .subtab-btn:hover    { border-color: rgba(109,40,217,0.7); color: #3730a3; }
+body[data-theme="light"] .subtab-btn.active   { background: rgba(79,70,229,0.18); border-color: rgba(109,40,217,0.7); color: #3730a3; }
 
 /* ── Light: ProjectPage ── */
 body[data-theme="light"] .pp-desc            { color: #5a6080; }

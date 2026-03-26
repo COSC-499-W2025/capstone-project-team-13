@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import "./Settings.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
 export default function Settings({ onLogout }) {
+  const [searchParams] = useSearchParams();
   const [signupForm, setSignupForm] = useState({ first_name: "", last_name: "", email: "", password: "" });
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [authLoading, setAuthLoading] = useState(false);
@@ -11,7 +13,10 @@ export default function Settings({ onLogout }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [accountMessage, setAccountMessage] = useState("");
   const [accountError, setAccountError] = useState("");
-  const [activeSection, setActiveSection] = useState("account");
+  const [activeSection, setActiveSection] = useState(() => searchParams.get("section") || "account");
+  const [showEmojis, setShowEmojis] = useState(() => localStorage.getItem("dash_show_emojis") !== "false");
+  const [showStreak, setShowStreak] = useState(() => localStorage.getItem("dash_show_streak") !== "false");
+  const [showTip, setShowTip] = useState(() => localStorage.getItem("dash_show_tip") !== "false");
 
   // ── Profile ──────────────────────────────────────────────────────────────────
   const [avatar, setAvatar] = useState(() => localStorage.getItem("profile_avatar") || null);
@@ -382,36 +387,85 @@ export default function Settings({ onLogout }) {
   ];
 
   function renderCurrentConfigSection() {
+    function OnOffBadge({ on }) {
+      return on
+        ? <span className="settings-badge settings-badge-granted">On</span>
+        : <span className="settings-badge settings-badge-revoked">Off</span>;
+    }
+
     return (
       <div className="settings-section-panel">
         <h2>Current Configuration</h2>
-        <p className="settings-section-description">A read-only snapshot of the full active configuration.</p>
+        <p className="settings-section-description">A live view of all your active settings.</p>
+
         {currentConfigError && (
           <div className="settings-alerts">
             <div className="settings-alert settings-alert-error">{currentConfigError}</div>
           </div>
         )}
-        {currentConfigLoading ? (
-          <p>Loading current configuration...</p>
-        ) : !currentConfig ? (
-          <p>No configuration data available.</p>
-        ) : (
-          <div className="settings-content-grid">
-            {CONFIG_SECTIONS.map(({ key, title, description, render }) =>
-              currentConfig[key] != null ? (
-                <div key={key} className="settings-card">
-                  <div className="settings-card-header">
-                    <div><h3>{title}</h3><p>{description}</p></div>
+        {!currentConfigLoading && currentConfig && (
+          <>
+            <h3 style={{ marginBottom: 12, marginTop: 8, fontSize: "1rem", opacity: 0.7 }}>System Configuration</h3>
+            <div className="settings-content-grid" style={{ marginBottom: 32 }}>
+              {CONFIG_SECTIONS.map(({ key, title, description, render }) =>
+                currentConfig[key] != null ? (
+                  <div key={key} className="settings-card">
+                    <div className="settings-card-header">
+                      <div><h3>{title}</h3><p>{description}</p></div>
+                    </div>
+                    <div className="settings-card-body">{render(currentConfig[key])}</div>
                   </div>
-                  <div className="settings-card-body">{render(currentConfig[key])}</div>
-                </div>
-              ) : null
-            )}
-          </div>
+                ) : null
+              )}
+            </div>
+          </>
         )}
+
+        <h3 style={{ marginBottom: 12, fontSize: "1rem", opacity: 0.7 }}>Dashboard Display</h3>
+        <div className="settings-content-grid" style={{ marginBottom: 32 }}>
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div><h3>Emojis</h3><p>Decorative icons shown throughout the dashboard.</p></div>
+              <OnOffBadge on={showEmojis} />
+            </div>
+            <div className="settings-card-body">
+              <ul className="settings-list">
+                <li>Stat card icons (projects, skills, score, portfolio)</li>
+                <li>Streak fire and tip of the day bulb</li>
+                <li>Onboarding step icons and empty state icons</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div><h3>Daily Streak</h3><p>Tracks how many consecutive days you've visited.</p></div>
+              <OnOffBadge on={showStreak} />
+            </div>
+            <div className="settings-card-body">
+              <ul className="settings-list">
+                <li>Displays your current login streak</li>
+                <li>Motivational prompt to return tomorrow</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div><h3>Tip of the Day</h3><p>A daily career or resume tip shown on your dashboard.</p></div>
+              <OnOffBadge on={showTip} />
+            </div>
+            <div className="settings-card-body">
+              <ul className="settings-list">
+                <li>Rotates daily based on the current date</li>
+                <li>Covers resume writing, ATS, and portfolio advice</li>
+              </ul>
+            </div>
+          </div>
+        </div>
         <div className="settings-footer">
           <button className="settings-button settings-button-refresh" onClick={fetchCurrentConfiguration} disabled={currentConfigLoading} type="button">
-            Refresh
+            Refresh System Config
           </button>
         </div>
       </div>
@@ -492,6 +546,150 @@ export default function Settings({ onLogout }) {
             <div className="settings-card-actions">
               <button className="settings-button settings-button-refresh" onClick={fetchCurrentUser} disabled={currentUserLoading} type="button">Refresh</button>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderGuideSection() {
+    const shortcutGroups = [
+      {
+        title: "🔍 Search Palette",
+        shortcuts: [
+          { keys: "⌘K / Ctrl+K", desc: "Open the search palette" },
+          { keys: "↑ / ↓", desc: "Navigate results" },
+          { keys: "Enter", desc: "Select a result" },
+          { keys: "Esc", desc: "Close the palette" },
+        ],
+      },
+      {
+        title: "📄 Resume",
+        shortcuts: [
+          { keys: "⌘S / Ctrl+S", desc: "Save your resume" },
+        ],
+      },
+    ];
+    const pages = [
+      { icon: "📁", name: "Projects", desc: "View, filter, and manage all your uploaded projects." },
+      { icon: "⚡", name: "Skills", desc: "See all skills extracted from your projects over time." },
+      { icon: "🎨", name: "Portfolio", desc: "Your ranked master portfolio with stats and visualisations." },
+      { icon: "📄", name: "Resume", desc: "Auto-generate a resume from your projects and skills." },
+      { icon: "🔬", name: "Analysis", desc: "Run AI analysis to extract descriptions, skills, and scores." },
+      { icon: "🏅", name: "Evidence", desc: "Add metrics, feedback, and achievements to each project." },
+      { icon: "🎤", name: "Interview Prep", desc: "Generate personalised STAR-format interview answers from your projects." },
+      { icon: "🌐", name: "Web Showcase", desc: "A public-facing showcase page you can share with employers." },
+    ];
+    return (
+      <div className="settings-section-panel">
+        <h2>How to Use the App</h2>
+        <p className="settings-section-description">A quick guide to getting the most out of Digital Artifact Mining.</p>
+
+        <div className="settings-card" style={{ marginBottom: 24 }}>
+          <div className="settings-card-header"><div><h3>Getting Started</h3></div></div>
+          <div className="settings-card-body">
+            <ol style={{ paddingLeft: 20, lineHeight: 2, margin: 0 }}>
+              <li>Upload a project from the <strong>Projects</strong> page (zip file, text doc, or media).</li>
+              <li>Go to <strong>Analysis</strong> and run AI Analysis to generate a description and extract skills.</li>
+              <li>Visit <strong>Portfolio</strong> and click <strong>↻ Regenerate</strong> to build your ranked portfolio.</li>
+              <li>Head to <strong>Resume</strong> to auto-generate a resume from your data.</li>
+              <li>Use <strong>Interview Prep</strong> to get STAR-format answers tailored to your target role.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="settings-card" style={{ marginBottom: 24 }}>
+          <div className="settings-card-header"><div><h3>Pages Overview</h3></div></div>
+          <div className="settings-card-body">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {pages.map(p => (
+                <div key={p.name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{p.icon}</span>
+                  <div>
+                    <strong>{p.name}</strong>
+                    <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>{p.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-card-header"><div><h3>Keyboard Shortcuts</h3></div></div>
+          <div className="settings-card-body">
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {shortcutGroups.map(group => (
+                <div key={group.title}>
+                  <p style={{ fontWeight: 700, marginBottom: 10, fontSize: "0.88rem" }}>{group.title}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {group.shortcuts.map(s => (
+                      <div key={s.keys} style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <kbd style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", color: "#a5b4fc", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
+                        <span style={{ fontSize: "0.88rem" }}>{s.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderDashboardSection() {
+    function dispatchDashSettings() {
+      window.dispatchEvent(new Event("dash-settings-updated"));
+    }
+    function toggleEmojis() {
+      const next = !showEmojis;
+      setShowEmojis(next);
+      localStorage.setItem("dash_show_emojis", String(next));
+      window.dispatchEvent(new Event("dash-emojis-updated"));
+      dispatchDashSettings();
+    }
+    function toggleStreak() {
+      const next = !showStreak;
+      setShowStreak(next);
+      localStorage.setItem("dash_show_streak", String(next));
+      dispatchDashSettings();
+    }
+    function toggleTip() {
+      const next = !showTip;
+      setShowTip(next);
+      localStorage.setItem("dash_show_tip", String(next));
+      dispatchDashSettings();
+    }
+
+    const checkboxStyle = { width: 18, height: 18, accentColor: "#6366f1" };
+    const rowStyle = { display: "flex", alignItems: "center", gap: 12, cursor: "pointer", marginBottom: 12 };
+
+    return (
+      <div className="settings-section-panel">
+        <h2>Dashboard Settings</h2>
+        <p className="settings-section-description">Customise how your dashboard looks and feels.</p>
+        <div className="settings-card">
+          <div className="settings-card-header">
+            <div>
+              <h3>Display Options</h3>
+              <p>Choose which elements appear on your dashboard.</p>
+            </div>
+          </div>
+          <div className="settings-card-body">
+            <label style={rowStyle}>
+              <input type="checkbox" checked={showEmojis} onChange={toggleEmojis} style={checkboxStyle} />
+              <span>Show emojis</span>
+            </label>
+            <label style={{ ...rowStyle, marginBottom: 0 }}>
+              <input type="checkbox" checked={showStreak} onChange={toggleStreak} style={checkboxStyle} />
+              <span>Show daily streak</span>
+            </label>
+            <label style={{ ...rowStyle, marginBottom: 0, marginTop: 12 }}>
+              <input type="checkbox" checked={showTip} onChange={toggleTip} style={checkboxStyle} />
+              <span>Show tip of the day</span>
+            </label>
           </div>
         </div>
       </div>
@@ -613,6 +811,8 @@ export default function Settings({ onLogout }) {
   function renderSectionContent() {
     if (activeSection === "account") return renderAccountSection();
     if (activeSection === "currentConfig") return renderCurrentConfigSection();
+    if (activeSection === "guide") return renderGuideSection();
+    if (activeSection === "dashboard") return renderDashboardSection();
     if (activeSection === "about") return renderAboutSection();
 
     if (activeSection === "privacy") {
@@ -760,9 +960,11 @@ export default function Settings({ onLogout }) {
           <nav className="settings-nav">
             {[
               ["account", "Account Settings"],
-              ["privacy", "Privacy"],
               ["consent", "Consent"],
+              ["privacy", "Privacy"],
+              ["dashboard", "Dashboard Settings"],
               ["currentConfig", "Current Configuration"],
+              ["guide", "How to Use the App"],
               ["about", "About"],
             ].map(([key, label]) => (
               <button key={key} className={`settings-nav-item ${activeSection === key ? "active" : ""}`} onClick={() => setActiveSection(key)}>{label}</button>

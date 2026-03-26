@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, evidence, education, work_history
+from src.Routers import interview_router
 
 app = FastAPI(title="Digital Artifact Mining API")
 
@@ -30,3 +31,4 @@ app.include_router(consent.router)
 app.include_router(configuration.router)
 app.include_router(auth.router)
 app.include_router(evidence.router)
+app.include_router(interview_router.router)

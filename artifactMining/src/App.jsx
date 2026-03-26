@@ -19,16 +19,20 @@ import Settings from "./pages/Settings";
 import GuestUpload from "./pages/GuestUpload";
 import WebShowcase from "./pages/WebShowcase";
 import NotFound from "./pages/NotFound";
+import Interview from "./pages/Interview";
 
 const API_BASE = "http://127.0.0.1:8000";
 
 function LoginGate({ onLogin }) {
   const [tab, setTab] = useState("login");
   const [form, setForm] = useState({ first_name: "", last_name: "", email: "", password: "" });
+  const [resetForm, setResetForm] = useState({ email: "", new_password: "", confirm: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   function onChange(e) { setForm(f => ({ ...f, [e.target.name]: e.target.value })); }
+  function onResetChange(e) { setResetForm(f => ({ ...f, [e.target.name]: e.target.value })); }
 
   async function submit(e) {
     e.preventDefault(); setError(""); setLoading(true);
@@ -46,6 +50,26 @@ function LoginGate({ onLogin }) {
     finally { setLoading(false); }
   }
 
+  async function submitReset(e) {
+    e.preventDefault(); setError(""); setSuccess(""); setLoading(true);
+    if (resetForm.new_password !== resetForm.confirm) {
+      setError("Passwords do not match"); setLoading(false); return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetForm.email, new_password: resetForm.new_password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed");
+      setSuccess("Password updated! You can now log in.");
+      setResetForm({ email: "", new_password: "", confirm: "" });
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  }
+
+  function switchTab(t) { setTab(t); setError(""); setSuccess(""); }
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <h1 style={{ marginBottom: 8 }}>Digital Artifact Mining</h1>
@@ -53,29 +77,42 @@ function LoginGate({ onLogin }) {
 
       <div className="card" style={{ width: "100%", maxWidth: 420, padding: 32 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {["login", "signup"].map(t => (
+          {[["login", "Log In"], ["signup", "Sign Up"], ["forgot", "Forgot Password"]].map(([t, label]) => (
             <button key={t} className={tab === t ? "btn-primary" : "btn-secondary"}
-              style={{ flex: 1 }} onClick={() => setTab(t)}>
-              {t === "login" ? "Log In" : "Sign Up"}
+              style={{ flex: 1, fontSize: "0.82rem" }} onClick={() => switchTab(t)}>
+              {label}
             </button>
           ))}
         </div>
 
         {error && <div className="alert error" style={{ marginBottom: 16 }}>{error}</div>}
+        {success && <div className="alert success" style={{ marginBottom: 16 }}>{success}</div>}
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {tab === "signup" && (
-            <>
-              <input name="first_name" placeholder="First name" value={form.first_name} onChange={onChange} required style={{ padding: "10px 12px" }} />
-              <input name="last_name" placeholder="Last name" value={form.last_name} onChange={onChange} required style={{ padding: "10px 12px" }} />
-            </>
-          )}
-          <input name="email" type="email" placeholder="Email" value={form.email} onChange={onChange} required style={{ padding: "10px 12px" }} />
-          <input name="password" type="password" placeholder="Password" value={form.password} onChange={onChange} required style={{ padding: "10px 12px" }} />
-          <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 8 }}>
-            {loading ? "..." : tab === "login" ? "Log In" : "Create Account"}
-          </button>
-        </form>
+        {tab !== "forgot" ? (
+          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {tab === "signup" && (
+              <>
+                <input name="first_name" placeholder="First name" value={form.first_name} onChange={onChange} required style={{ padding: "10px 12px" }} />
+                <input name="last_name" placeholder="Last name" value={form.last_name} onChange={onChange} required style={{ padding: "10px 12px" }} />
+              </>
+            )}
+            <input name="email" type="email" placeholder="Email" value={form.email} onChange={onChange} required style={{ padding: "10px 12px" }} />
+            <input name="password" type="password" placeholder="Password" value={form.password} onChange={onChange} required style={{ padding: "10px 12px" }} />
+            <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 8 }}>
+              {loading ? "..." : tab === "login" ? "Log In" : "Create Account"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={submitReset} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p className="text-muted" style={{ fontSize: "0.85rem", marginBottom: 4 }}>Enter your email and choose a new password.</p>
+            <input name="email" type="email" placeholder="Email" value={resetForm.email} onChange={onResetChange} required style={{ padding: "10px 12px" }} />
+            <input name="new_password" type="password" placeholder="New password" value={resetForm.new_password} onChange={onResetChange} required style={{ padding: "10px 12px" }} />
+            <input name="confirm" type="password" placeholder="Confirm new password" value={resetForm.confirm} onChange={onResetChange} required style={{ padding: "10px 12px" }} />
+            <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 8 }}>
+              {loading ? "..." : "Reset Password"}
+            </button>
+          </form>
+        )}
 
         <div style={{ textAlign: "center", marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
           <p className="text-muted" style={{ marginBottom: 12, fontSize: "0.85rem" }}>Just want to try it out?</p>
@@ -158,25 +195,29 @@ function App() {
 
   return (
     <BrowserRouter>
+      <LoadingBar />
       <Navbar onLogout={handleLogout} user={user} />
       <Toast />
       <KonamiEgg />
       <CommandPalette />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/upload" element={<Upload />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/:projectId" element={<ProjectPage />} />
-        <Route path="/skills" element={<Skills />} />
-        <Route path="/portfolio" element={<Portfolio />} />
-        <Route path="/showcase" element={<WebShowcase />} />
-        <Route path="/evidence" element={<Evidence />} />
-        <Route path="/analysis" element={<Analysis />} />
-        <Route path="/deletion" element={<Deletion />} />
-        <Route path="/resumes" element={<Resumes />} />
-        <Route path="/settings" element={<Settings onLogout={handleLogout} />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <PageTransition>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/upload" element={<Upload />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/skills" element={<Skills />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/showcase" element={<WebShowcase />} />
+          <Route path="/evidence" element={<Evidence />} />
+          <Route path="/analysis" element={<Analysis />} />
+          <Route path="/deletion" element={<Deletion />} />
+          <Route path="/resumes" element={<Resumes />} />
+          <Route path="/interview" element={<Interview />} />
+          <Route path="/settings" element={<Settings onLogout={handleLogout} />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </PageTransition>
     </BrowserRouter>
   );
 }
