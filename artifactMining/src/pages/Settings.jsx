@@ -14,6 +14,56 @@ export default function Settings({ onLogout }) {
   const [accountMessage, setAccountMessage] = useState("");
   const [accountError, setAccountError] = useState("");
   const [activeSection, setActiveSection] = useState(() => searchParams.get("section") || "account");
+  // GitHub username state
+  const [githubUsername, setGithubUsername] = useState("");
+  const [githubUsernameLoading, setGithubUsernameLoading] = useState(false);
+  const [githubUsernameMessage, setGithubUsernameMessage] = useState("");
+  const [githubUsernameError, setGithubUsernameError] = useState("");
+    // Fetch GitHub username when user loads or logs in
+    useEffect(() => {
+      async function fetchGithubUsername() {
+        setGithubUsernameLoading(true);
+        setGithubUsernameError("");
+        setGithubUsernameMessage("");
+        const token = localStorage.getItem("token");
+        if (!token) { setGithubUsername(""); setGithubUsernameLoading(false); return; }
+        try {
+          const res = await fetch(`${API_BASE}/user/github-username`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error("Could not fetch GitHub username");
+          const data = await res.json();
+          setGithubUsername(data.github_username || "");
+        } catch (err) {
+          setGithubUsernameError(err.message || "Could not fetch GitHub username");
+        } finally {
+          setGithubUsernameLoading(false);
+        }
+      }
+      if (currentUser) fetchGithubUsername();
+      else setGithubUsername("");
+    }, [currentUser]);
+
+    async function handleGithubUsernameSave(e) {
+      e.preventDefault();
+      setGithubUsernameMessage("");
+      setGithubUsernameError("");
+      setGithubUsernameLoading(true);
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(`${API_BASE}/user/github-username`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ github_username: githubUsername })
+        });
+        if (!res.ok) throw new Error("Could not update GitHub username");
+        setGithubUsernameMessage("GitHub username updated.");
+      } catch (err) {
+        setGithubUsernameError(err.message || "Could not update GitHub username");
+      } finally {
+        setGithubUsernameLoading(false);
+      }
+    }
   const [showEmojis, setShowEmojis] = useState(() => localStorage.getItem("dash_show_emojis") !== "false");
   const [showStreak, setShowStreak] = useState(() => localStorage.getItem("dash_show_streak") !== "false");
   const [showTip, setShowTip] = useState(() => localStorage.getItem("dash_show_tip") !== "false");
@@ -473,6 +523,36 @@ export default function Settings({ onLogout }) {
   }
 
   function renderAccountSection() {
+            {/* GitHub Username Card */}
+            <div className="settings-card">
+              <div className="settings-card-header"><div><h3>GitHub Username</h3><p>Set or update your GitHub username for contributor features.</p></div></div>
+              <form className="settings-form" onSubmit={handleGithubUsernameSave}>
+                <label className="settings-label">GitHub Username
+                  <input
+                    className="settings-input"
+                    type="text"
+                    value={githubUsername}
+                    onChange={e => setGithubUsername(e.target.value)}
+                    placeholder="e.g. octocat"
+                    disabled={githubUsernameLoading || !currentUser}
+                    autoComplete="off"
+                  />
+                </label>
+                <div className="settings-card-actions">
+                  <button
+                    className="settings-button settings-button-primary"
+                    type="submit"
+                    disabled={githubUsernameLoading || !currentUser}
+                  >{githubUsernameLoading ? "Saving..." : "Save Username"}</button>
+                </div>
+                {(githubUsernameMessage || githubUsernameError) && (
+                  <div className="settings-alerts">
+                    {githubUsernameMessage && <div className="settings-alert settings-alert-success">{githubUsernameMessage}</div>}
+                    {githubUsernameError && <div className="settings-alert settings-alert-error">{githubUsernameError}</div>}
+                  </div>
+                )}
+              </form>
+            </div>
     return (
       <div className="settings-section-panel">
         <h2>Account Settings</h2>
@@ -530,6 +610,37 @@ export default function Settings({ onLogout }) {
                 <button className="settings-button settings-button-primary" type="submit" disabled={authLoading}>{authLoading ? "Submitting..." : "Log In"}</button>
                 <button className="settings-button settings-button-secondary" type="button" onClick={handleLogout}>Log Out</button>
               </div>
+            </form>
+          </div>
+
+          {/* GitHub Username Card (now row 2) */}
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>GitHub Username</h3><p>Set or update your GitHub username for contributor features.</p></div></div>
+            <form className="settings-form" onSubmit={handleGithubUsernameSave}>
+              <label className="settings-label">GitHub Username
+                <input
+                  className="settings-input"
+                  type="text"
+                  value={githubUsername}
+                  onChange={e => setGithubUsername(e.target.value)}
+                  placeholder="e.g. octocat"
+                  disabled={githubUsernameLoading || !currentUser}
+                  autoComplete="off"
+                />
+              </label>
+              <div className="settings-card-actions">
+                <button
+                  className="settings-button settings-button-primary"
+                  type="submit"
+                  disabled={githubUsernameLoading || !currentUser}
+                >{githubUsernameLoading ? "Saving..." : "Save Username"}</button>
+              </div>
+              {(githubUsernameMessage || githubUsernameError) && (
+                <div className="settings-alerts">
+                  {githubUsernameMessage && <div className="settings-alert settings-alert-success">{githubUsernameMessage}</div>}
+                  {githubUsernameError && <div className="settings-alert settings-alert-error">{githubUsernameError}</div>}
+                </div>
+              )}
             </form>
           </div>
 
