@@ -156,6 +156,8 @@ class PortfolioFormatter:
         return {
             "id": project.id,
             "name": project.name,
+            "display_name": getattr(project, "display_name", None) or "",
+            "custom_description": getattr(project, "custom_description", None) or "",
             "type": project.project_type,
             "description": description,
             "tech_stack": tech_stack,
@@ -440,6 +442,7 @@ class PortfolioFormatter:
                 "by_type": {},
                 "total_lines_of_code": 0,
                 "total_files": 0,
+                "total_word_count": 0,
                 "total_skills": 0,
                 "unique_skills": [],
                 "avg_importance_score": 0,
@@ -456,6 +459,7 @@ class PortfolioFormatter:
 
         total_loc = sum(p.lines_of_code or 0 for p in projects)
         total_files = sum(p.file_count or 0 for p in projects)
+        total_words = sum(p.word_count or 0 for p in projects if p.word_count)
         avg_importance = sum(p.importance_score or 0 for p in projects) / total_projects
 
         return {
@@ -463,6 +467,7 @@ class PortfolioFormatter:
             "by_type": by_type,
             "total_lines_of_code": total_loc,
             "total_files": total_files,
+            "total_word_count": total_words,
             "total_skills": len(all_skills),
             "unique_skills": sorted(list(all_skills)),
             "avg_importance_score": round(avg_importance, 2),

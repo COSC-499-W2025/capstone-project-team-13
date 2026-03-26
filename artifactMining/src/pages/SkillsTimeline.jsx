@@ -34,7 +34,7 @@ export default function SkillsTimeline() {
       .catch(e => { setError(e.message); setLoading(false); });
   }, []);
 
-  if (loading) return <p style={{ color: "#9aa6de", padding: 16 }}>Loading skills timeline…</p>;
+  if (loading) return <p style={{ color: "var(--text-muted)", padding: 16 }}>Loading skills timeline…</p>;
   if (error)   return <p style={{ color: "#f87171", padding: 16 }}>Failed to load: {error}</p>;
 
   const visible = skills.filter(s =>
@@ -47,7 +47,7 @@ export default function SkillsTimeline() {
     return (
       <div style={{ padding: 16 }}>
         <Controls filter={filter} setFilter={setFilter} minProjects={minProjects} setMinProjects={setMinProjects} />
-        <p style={{ color: "#9aa6de", marginTop: 12 }}>No skills match the current filters.</p>
+        <p style={{ color: "var(--text-muted)", marginTop: 12 }}>No skills match the current filters.</p>
       </div>
     );
 
@@ -74,7 +74,7 @@ export default function SkillsTimeline() {
         {ticks.map(t => (
           <span key={t.year} style={{
             position: "absolute", left: `${t.p}%`, transform: "translateX(-50%)",
-            fontSize: "0.7rem", color: "#7b87c4", userSelect: "none",
+            fontSize: "0.7rem", color: "var(--text-muted)", userSelect: "none",
           }}>{t.year}</span>
         ))}
       </div>
@@ -102,7 +102,7 @@ export default function SkillsTimeline() {
               style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               {/* Label */}
               <div style={{ width: 130, flexShrink: 0, fontSize: "0.78rem",
-                color: "#c4c9f0", textAlign: "right", whiteSpace: "nowrap",
+                color: "var(--text)", textAlign: "right", whiteSpace: "nowrap",
                 overflow: "hidden", textOverflow: "ellipsis" }}
                 title={skill.name}>
                 {skill.name}
@@ -134,7 +134,7 @@ export default function SkillsTimeline() {
         })}
       </div>
 
-      <p style={{ fontSize: "0.72rem", color: "#7b87c4", marginTop: 10 }}>
+      <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 10 }}>
         Hover a bar for date range. Showing {visible.length} skill{visible.length !== 1 ? "s" : ""}.
       </p>
     </div>
@@ -151,7 +151,7 @@ function Controls({ filter, setFilter, minProjects, setMinProjects }) {
         onChange={e => setFilter(e.target.value)}
         style={{ padding: "5px 10px", fontSize: "0.82rem", width: 160 }}
       />
-      <label style={{ fontSize: "0.8rem", color: "#9aa6de", display: "flex", alignItems: "center", gap: 6 }}>
+      <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
         Min projects:
         <select
           data-testid="min-projects-select"

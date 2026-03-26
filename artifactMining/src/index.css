@@ -82,6 +82,7 @@ h3 { font-size: 1rem;   font-weight: 600; color: #d8dfff; }
   border-radius: 14px; padding: 20px;
   box-shadow: 0 14px 30px rgba(5, 10, 32, 0.45);
   color: #d8dfff;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
 .tag {

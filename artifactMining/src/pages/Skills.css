@@ -1,5 +1,12 @@
 .skills-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-.skills-stat { text-align: center; padding: 18px; }
+.skills-stat {
+  text-align: center; padding: 18px; cursor: default;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.skills-stat:hover {
+  border-color: rgba(163,73,255,0.6); transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(99,102,241,0.2);
+}
 .stat-val { font-size: 1.8rem; font-weight: 700; color: #a5b4fc; }
 .stat-label { font-size: 0.75rem; color: #9aa6de; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
 

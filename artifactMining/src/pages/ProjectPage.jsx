@@ -507,11 +507,75 @@ export default function ProjectPage() {
               <p className="text-muted">No evidence yet. Use Auto-Extract or add manually above.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* ── Code evidence ── */}
                 {evidence.test_coverage != null && (
                   <div><strong>Test Coverage:</strong> {evidence.test_coverage}%</div>
                 )}
                 {evidence.code_quality && (
                   <div><strong>Code Quality:</strong> {evidence.code_quality}</div>
+                )}
+                {/* ── Text/writing evidence ── */}
+                {(evidence.word_count || evidence.document_type || evidence.complexity || evidence.audience || evidence.estimated_reading_time_min) && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Document Info</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {evidence.word_count && <span className="tag accent">📝 {evidence.word_count.toLocaleString()} words</span>}
+                      {evidence.document_type && <span className="tag accent">📄 {evidence.document_type}</span>}
+                      {evidence.complexity && <span className="tag accent">⚡ {evidence.complexity}</span>}
+                      {evidence.audience && <span className="tag accent">👥 {evidence.audience}</span>}
+                      {evidence.estimated_reading_time_min && <span className="tag accent">⏱ {evidence.estimated_reading_time_min} min read</span>}
+                    </div>
+                  </div>
+                )}
+                {evidence.topics?.length > 0 && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Topics</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {evidence.topics.map((t, i) => <span key={i} className="tag">{t}</span>)}
+                    </div>
+                  </div>
+                )}
+                {evidence.writing_strengths?.length > 0 && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Writing Strengths</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {evidence.writing_strengths.map((s, i) => <span key={i} className="tag accent">{s}</span>)}
+                    </div>
+                  </div>
+                )}
+                {/* ── Media evidence ── */}
+                {(evidence.media_type || evidence.complexity) && !evidence.word_count && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Media Info</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {evidence.media_type && <span className="tag accent">🎬 {evidence.media_type}</span>}
+                      {evidence.complexity && <span className="tag accent">⚡ {evidence.complexity}</span>}
+                    </div>
+                  </div>
+                )}
+                {evidence.themes?.length > 0 && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Themes</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {evidence.themes.map((t, i) => <span key={i} className="tag">{t}</span>)}
+                    </div>
+                  </div>
+                )}
+                {evidence.creative_strengths?.length > 0 && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Creative Strengths</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {evidence.creative_strengths.map((s, i) => <span key={i} className="tag accent">{s}</span>)}
+                    </div>
+                  </div>
+                )}
+                {evidence.tools_used?.length > 0 && (
+                  <div>
+                    <h4 style={{ marginBottom: 8 }}>Tools Used</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {evidence.tools_used.map((t, i) => <span key={i} className="tag">{t}</span>)}
+                    </div>
+                  </div>
                 )}
                 {evidence.manual_metrics && Object.keys(evidence.manual_metrics).length > 0 && (
                   <div>

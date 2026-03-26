@@ -297,10 +297,8 @@ class AIService:
             
             generation_config = genai.types.GenerationConfig(
                 temperature=temperature,
+                max_output_tokens=max_tokens,
             )
-
-            if max_tokens is not None:
-                generation_config.max_output_tokens = max_tokens
 
             response = self.model.generate_content(
                 prompt,

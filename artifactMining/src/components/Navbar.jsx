@@ -12,7 +12,8 @@ const mainLinks = [
 
 const toolLinks = [
   { to: "/evidence", label: "Evidence" },
-  { to: "/analysis", label: "Analysis" }
+  { to: "/analysis", label: "Analysis" },
+  { to: "/interview", label: "Interview Prep" },
 ];
 
 export default function Navbar({ onLogout, user }) {
@@ -77,23 +78,17 @@ export default function Navbar({ onLogout, user }) {
         </div>
       </div>
       <div className="navbar-profile">
-        {user && <span className="text-muted" style={{ fontSize: "0.8rem", marginRight: 8 }}>{user.first_name || user.email}</span>}
-        <Link to="/settings" className={`nav-link${pathname === "/settings" ? " active" : ""}`}>Profile</Link>
-        {onLogout && (
-          <button className="nav-link" style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }} onClick={onLogout}>
-            Log Out
-          </button>
-        )}
-        <button className="nav-cmd-k" onClick={openCommandPalette} title="Command Palette">
-          <span>⌘K</span>
+        <button className="nav-cmd-k" onClick={openCommandPalette} title="Search (⌘K)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
         </button>
-        <Link to="/settings" className={`navbar-profile-link nav-link${pathname === "/settings" ? " active" : ""}`}>
-          {loggedIn && (
-            <span className="navbar-avatar" style={avatar ? { backgroundImage: `url(${avatar})` } : {}}>
-              {!avatar && "👤"}
-            </span>
-          )}
-          Profile
+        <Link to="/settings" className={`navbar-profile-link nav-link${pathname === "/settings" ? " active" : ""}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="navbar-avatar" style={avatar ? { backgroundImage: `url(${avatar})` } : {}}>
+            {!avatar && "👤"}
+          </span>
+          <span>Profile</span>
         </Link>
       </div>
     </nav>

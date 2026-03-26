@@ -74,7 +74,13 @@ def auto_extract(
     project = _get_project_or_404(project_id, user_id)
     em = _get_evidence_manager()
     try:
-        evidence = em.extract_and_store_evidence(project, project.file_path)
+        ptype = (project.project_type or "code").lower()
+        if ptype == "text":
+            evidence = em.extract_and_store_evidence_text(project)
+        elif ptype in ("media", "image", "video", "audio"):
+            evidence = em.extract_and_store_evidence_media(project)
+        else:
+            evidence = em.extract_and_store_evidence(project, project.file_path)
         return {"extracted": True, "evidence": evidence or {}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
