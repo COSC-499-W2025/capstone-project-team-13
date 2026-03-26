@@ -201,64 +201,70 @@ def _build_pdf(data: dict[str, Any]) -> bytes:
         story.append(Paragraph(" | ".join(contact_parts), contact_style))
     story.append(rule())
 
-    # Education
-    if data.get("education"):
-        story += section_block("Education")
-        for edu in data.get("education", []):
-            end   = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
-            inst  = edu.get("institution", "")
-            loc   = edu.get("location", "")
-            story.append(two_col(f"{inst}  |  {loc}" if loc else inst, end))
-            degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
-            gpa    = edu.get("gpa", "")
-            story.append(Paragraph(f"<i>{degree}{('  |  GPA: ' + gpa) if gpa else ''}</i>", italic_style))
-            for detail in edu.get("details", []):
-                story.append(Paragraph(f"• {detail}", body_style))
-        story.append(Spacer(1, 4))
-
-    # Awards
-    if data.get("awards"):
-        story += section_block("Awards")
-        for award in data.get("awards", []):
-            story.append(Paragraph(f"• {award}", body_style))
-        story.append(Spacer(1, 4))
-
-    # Skills
+    # Render sections in user-defined order, falling back to legacy order
+    section_order = data.get("section_order") or ["education", "awards", "skills", "work_history", "projects"]
+    section_labels = data.get("section_labels") or {}
     skills_by_level = data.get("skills_by_level", {})
-    if any(v for v in skills_by_level.values()) or data.get("skills"):
-        story += section_block("Technical Skills")
-        for level, items in skills_by_level.items():
-            if items:
-                story.append(Paragraph(f"<b>{level}:</b> {', '.join(items)}", body_style))
-        for line in data.get("skills", []):
-            story.append(Paragraph(line, body_style))
-        story.append(Spacer(1, 4))
 
-    # Work history
-    if data.get("work_history"):
-        story += section_block("Relevant Experience")
-        for job in data.get("work_history", []):
-            comp = job.get("company", "")
-            loc  = job.get("location", "")
-            start = job.get("start_date", "")
-            end   = job.get("end_date", "Present")
-            story.append(two_col(f"{comp}  |  {loc}" if loc else comp,
-                                 f"{start} - {end}" if start else end))
-            if job.get("role"):
-                story.append(Paragraph(f"<i>{job['role']}</i>", italic_style))
-            for b in job.get("bullets", []):
-                story.append(Paragraph(f"• {b}", body_style))
+    for key in section_order:
+        if key == "education" and data.get("education"):
+            label = section_labels.get("education", "Education")
+            story += section_block(label)
+            for edu in data.get("education", []):
+                end   = (edu.get("end_date") or "")
+                end   = end[:7].replace("-", "/") if end and end != "Present" else "Present"
+                inst  = edu.get("institution", "")
+                loc   = edu.get("location", "")
+                story.append(two_col(f"{inst}  |  {loc}" if loc else inst, end))
+                degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
+                gpa    = edu.get("gpa", "")
+                story.append(Paragraph(f"<i>{degree}{('  |  GPA: ' + gpa) if gpa else ''}</i>", italic_style))
+                for detail in edu.get("details", []):
+                    story.append(Paragraph(f"• {detail}", body_style))
             story.append(Spacer(1, 4))
 
-    # Projects
-    if data.get("projects"):
-        story += section_block("Projects")
-        for proj in data.get("projects", []):
-            header = proj.get("header") or proj.get("name", "")
-            story.append(two_col(header, proj.get("date", "")))
-            for b in proj.get("bullets", []):
-                story.append(Paragraph(f"• {b}", body_style))
+        elif key == "awards" and data.get("awards"):
+            label = section_labels.get("awards", "Awards")
+            story += section_block(label)
+            for award in data.get("awards", []):
+                story.append(Paragraph(f"• {award}", body_style))
             story.append(Spacer(1, 4))
+
+        elif key == "skills" and (any(v for v in skills_by_level.values()) or data.get("skills")):
+            label = section_labels.get("skills", "Technical Skills")
+            story += section_block(label)
+            for level, items in skills_by_level.items():
+                if items:
+                    story.append(Paragraph(f"<b>{level}:</b> {', '.join(items)}", body_style))
+            for line in data.get("skills", []):
+                story.append(Paragraph(line, body_style))
+            story.append(Spacer(1, 4))
+
+        elif key == "work_history" and data.get("work_history"):
+            label = section_labels.get("work_history", "Relevant Experience")
+            story += section_block(label)
+            for job in data.get("work_history", []):
+                comp  = job.get("company", "")
+                loc   = job.get("location", "")
+                start = job.get("start_date", "")
+                end   = job.get("end_date", "Present")
+                story.append(two_col(f"{comp}  |  {loc}" if loc else comp,
+                                     f"{start} - {end}" if start else end))
+                if job.get("role"):
+                    story.append(Paragraph(f"<i>{job['role']}</i>", italic_style))
+                for b in job.get("bullets", []):
+                    story.append(Paragraph(f"• {b}", body_style))
+                story.append(Spacer(1, 4))
+
+        elif key == "projects" and data.get("projects"):
+            label = section_labels.get("projects", "Projects")
+            story += section_block(label)
+            for proj in data.get("projects", []):
+                header = proj.get("name") or proj.get("header") or ""
+                story.append(two_col(header, proj.get("date", "")))
+                for b in proj.get("bullets", []):
+                    story.append(Paragraph(f"• {b}", body_style))
+                story.append(Spacer(1, 4))
 
     doc.build(story)
     return buf.getvalue()
@@ -337,63 +343,69 @@ def _build_docx(data: dict[str, Any]) -> bytes:
     p_rule = add_para(space_after=4)
     add_rule(p_rule)
 
-    # Education
-    if data.get("education"):
-        section_heading("Education")
-        for edu in data.get("education", []):
-            end    = (edu.get("end_date") or "")[:7].replace("-", "/") or "Present"
-            inst   = edu.get("institution", "")
-            loc    = edu.get("location", "")
-            two_col_row(f"{inst}  |  {loc}" if loc else inst, end)
-            degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
-            gpa    = edu.get("gpa", "")
-            add_para(degree + (f"  |  GPA: {gpa}" if gpa else ""),
-                     italic=True, size=10, space_after=1)
-            for detail in edu.get("details", []):
-                bullet(detail)
-
-    # Awards
-    if data.get("awards"):
-        section_heading("Awards")
-        for award in data.get("awards", []):
-            bullet(award)
-
-    # Skills
+    # Render sections in user-defined order, falling back to legacy order
+    section_order = data.get("section_order") or ["education", "awards", "skills", "work_history", "projects"]
+    section_labels = data.get("section_labels") or {}
     skills_by_level = data.get("skills_by_level", {})
-    if any(v for v in skills_by_level.values()) or data.get("skills"):
-        section_heading("Technical Skills")
-        for level, items in skills_by_level.items():
-            if items:
-                p = doc.add_paragraph()
-                p.paragraph_format.space_after = Pt(1)
-                r1 = p.add_run(f"{level}: "); r1.bold = True; r1.font.size = Pt(10)
-                p.add_run(", ".join(items)).font.size = Pt(10)
-        for line in data.get("skills", []):
-            add_para(line, size=10, space_after=1)
 
-    # Work history
-    if data.get("work_history"):
-        section_heading("Relevant Experience")
-        for job in data.get("work_history", []):
-            comp  = job.get("company", "")
-            loc   = job.get("location", "")
-            start = job.get("start_date", "")
-            end   = job.get("end_date", "Present")
-            two_col_row(f"{comp}  |  {loc}" if loc else comp,
-                        f"{start} - {end}" if start else end)
-            if job.get("role"):
-                add_para(job["role"], italic=True, size=10, space_after=1)
-            for b in job.get("bullets", []):
-                bullet(b)
+    for key in section_order:
+        if key == "education" and data.get("education"):
+            label = section_labels.get("education", "Education")
+            section_heading(label)
+            for edu in data.get("education", []):
+                end   = (edu.get("end_date") or "")
+                end   = end[:7].replace("-", "/") if end and end != "Present" else "Present"
+                inst  = edu.get("institution", "")
+                loc   = edu.get("location", "")
+                two_col_row(f"{inst}  |  {loc}" if loc else inst, end)
+                degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
+                gpa    = edu.get("gpa", "")
+                add_para(degree + (f"  |  GPA: {gpa}" if gpa else ""),
+                         italic=True, size=10, space_after=1)
+                for detail in edu.get("details", []):
+                    bullet(detail)
 
-    # Projects
-    if data.get("projects"):
-        section_heading("Projects")
-        for proj in data.get("projects", []):
-            header = proj.get("header") or proj.get("name", "")
-            two_col_row(header, proj.get("date", ""))
-            for b in proj.get("bullets", []):
-                bullet(b)
+        elif key == "awards" and data.get("awards"):
+            label = section_labels.get("awards", "Awards")
+            section_heading(label)
+            for award in data.get("awards", []):
+                bullet(award)
+
+        elif key == "skills" and (any(v for v in skills_by_level.values()) or data.get("skills")):
+            label = section_labels.get("skills", "Technical Skills")
+            section_heading(label)
+            for level, items in skills_by_level.items():
+                if items:
+                    p = doc.add_paragraph()
+                    p.paragraph_format.space_after = Pt(1)
+                    r1 = p.add_run(f"{level}: "); r1.bold = True; r1.font.size = Pt(10)
+                    p.add_run(", ".join(items)).font.size = Pt(10)
+            for line in data.get("skills", []):
+                add_para(line, size=10, space_after=1)
+
+        elif key == "work_history" and data.get("work_history"):
+            label = section_labels.get("work_history", "Relevant Experience")
+            section_heading(label)
+            for job in data.get("work_history", []):
+                comp  = job.get("company", "")
+                loc   = job.get("location", "")
+                start = job.get("start_date", "")
+                end   = job.get("end_date", "Present")
+                two_col_row(f"{comp}  |  {loc}" if loc else comp,
+                            f"{start} - {end}" if start else end)
+                if job.get("role"):
+                    add_para(job["role"], italic=True, size=10, space_after=1)
+                for b in job.get("bullets", []):
+                    bullet(b)
+
+        elif key == "projects" and data.get("projects"):
+            label = section_labels.get("projects", "Projects")
+            section_heading(label)
+            for proj in data.get("projects", []):
+                header = proj.get("name") or proj.get("header") or ""
+                two_col_row(header, proj.get("date", ""))
+                for b in proj.get("bullets", []):
+                    bullet(b)
 
     buf = io.BytesIO()
     doc.save(buf)
