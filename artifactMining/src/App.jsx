@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import React from "react";
 import Navbar from "./components/Navbar";
 import Toast from "./components/Toast";
 import LoadingBar from "./components/LoadingBar";
@@ -19,6 +18,7 @@ import Resumes from "./pages/Resumes";
 import Settings from "./pages/Settings";
 import GuestUpload from "./pages/GuestUpload";
 import WebShowcase from "./pages/WebShowcase";
+import NotFound from "./pages/NotFound";
 import Interview from "./pages/Interview";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -215,7 +215,7 @@ function App() {
           <Route path="/resumes" element={<Resumes />} />
           <Route path="/interview" element={<Interview />} />
           <Route path="/settings" element={<Settings onLogout={handleLogout} />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </PageTransition>
     </BrowserRouter>
