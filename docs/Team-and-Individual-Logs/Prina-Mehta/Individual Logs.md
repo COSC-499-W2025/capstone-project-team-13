@@ -1,5 +1,7 @@
 ## Weekly Navigation
 
+- [Term 2 – Week 12 (Mar 23 - Mar 29, 2026)](#log-23)
+- [Term 2 – Week 11 (Mar 16 - Mar 22, 2026)](#log-22)
 - [Term 2 – Week 10 (Mar 9 - Mar 15, 2026)](#log-21)
 - [Term 2 – Week 9 (Mar 2 - Mar 8, 2026)](#log-20)
 - [Term 2 – Week 8 (Feb 23–Mar 1, 2026)](#log-19)
@@ -445,3 +447,79 @@ Wrote comprehensive unit tests (test_showcaseSelect.py)
 * Improve resume editing capabilities directly from the browser interface
 * Continue refining AI descriptions for text and media projects
 * Address additional tasks identified during the weekly team meeting
+
+## Log 22:
+
+## Date Range: Term 2 Week 11 – Mar 16 – Mar 22, 2026
+
+## ![week 11 features](T2week12tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+* Completed a large-scale frontend and backend implementation sprint. Built new frontend pages: Analysis, Deletion, Evidence, Projects, Skills
+* Added two new Portfolio visualizations: a Skills Timeline and an Activity Heatmap
+
+### Testing
+
+* Wrote unit tests for both new Portfolio components:
+    * `SkillsTimeline.test.jsx`
+    * `ActivityHeatmap.test.jsx`
+
+### Reviewing
+
+* Reviewed PR #472: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/472
+* Reviewed PR #487: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/487
+* Reviewed PR #488: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/488
+* Reviewed PR #493: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/493
+* Reviewed PR #495: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/495
+* Reviewed PR #500: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/500
+
+### Plan for Next Week
+
+* Implement authentication gating and guest mode
+* Build a public portfolio showcase feature
+* Continue fixing extraction accuracy issues in the backend
+
+## Log 23:
+
+## Date Range: Term 2 Week 12 – Mar 23 – Mar 29, 2026
+
+## ![week 12 features](T2week12tasks.png)
+
+## Recap on your week's goals
+
+### Coding Tasks
+
+* Implemented authentication gate and guest mode:
+    * App.jsx now requires login or signup before accessing the app, with an optional guest path
+    * Added `GuestUpload.jsx` for unauthenticated file analysis without saving to the database
+    * Added `POST /projects/guest-analyze` backend endpoint to support this flow
+* Built a Web Portfolio Showcase feature:
+    * Added `GET /portfolio/showcase` endpoint returning the top 3 projects with an evolution timeline
+    * Created `WebShowcase.jsx` page accessible under the Portfolio section
+* Fixed date extraction logic across file scanners:
+    * Switched to using `st_mtime` only (dropped `st_ctime`)
+    * Added PDF `CreationDate` parsing and image EXIF metadata extraction
+* Fixed skill extraction, framework detection, and importance scoring accuracy across 8 backend files including `importanceScores.py`, `projectcollabtype.py`, `roleAttribution.py`, `skillsExtractCodingImproved.py`, and `keywordExtractorCode.py`
+* Fixed ZIP extraction, project type detection, and coding importance scoring:
+    * Updated `multiProjectZip.py`, `project_upload_service.py`, `projects_service.py`, and `codingProjectScanner.py`
+* Added a 404 (Not Found) page with navigation back to the dashboard
+* Added an About section to the Settings sidebar with project and tech stack information
+* Improved dashboard chart aesthetics including gradient bars, refined color schemes, and theme-aware labels and tooltips
+
+### Testing
+
+* Expanded test coverage for ZIP and importance scoring:
+    * Updated `tests/test_multiProjectZip.py`
+    * Updated `tests/test_projectImportance.py`
+
+### Reviewing
+
+* Reviewed PR #507: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/507
+* Reviewed PR #508: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/508
+* Reviewed PR #509: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/509
+* Reviewed PR #510: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/510
+* Reviewed PR #511: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/511
+* Reviewed PR #512: https://github.com/COSC-499-W2025/capstone-project-team-13/pull/512
