@@ -32,6 +32,17 @@ _GREEN   = "#2d6a4f"
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+def _display_name(project) -> str:
+    """Return the best human-readable name for a project (mirrors projects router logic)."""
+    cd = (project.custom_description or "").strip()
+    if cd:
+        return cd
+    name = (project.name or "").strip()
+    if re.match(r'^[0-9a-f-]{30,}', name, re.IGNORECASE):
+        return project.description or project.ai_description or f"{project.project_type or 'Project'} {project.id}"
+    return name
+
+
 def _skill_level(count: int) -> str:
     if count >= 5: return "Expert"
     if count >= 2: return "Proficient"
@@ -119,13 +130,14 @@ def get_resume_preview_data(user_id: int) -> dict[str, Any]:
     resume_projects = []
 
     for project in all_projects:
+        display = _display_name(project)
         if project.id in has_bullets:
             bd     = db_manager.get_resume_bullets(project.id) or {}
-            header = _clean_header(bd.get("header", ""), project.name)
+            header = _clean_header(bd.get("header", ""), display)
             bullets = bd.get("bullets", [])
             ats     = bd.get("ats_score")
         else:
-            header = project.name
+            header = display
             ats    = None
             # Auto-generate AI bullets if consent is granted
             if ai_enabled:
@@ -134,7 +146,7 @@ def get_resume_preview_data(user_id: int) -> dict[str, Any]:
                 bullets = []
 
         resume_projects.append({
-            "name":      project.name,
+            "name":      display,
             "header":    header,
             "bullets":   bullets,
             "ats_score": ats,
@@ -267,7 +279,7 @@ def _build_pdf(data: dict[str, Any]) -> bytes:
                 story.append(Spacer(1, 4))
 
     doc.build(story)
-    return buf.getvalue()
+    return buf.getvalue(), doc.page
 
 
 # ── DOCX builder ─────────────────────────────────────────────────────────────────────────────────
@@ -338,7 +350,7 @@ def _build_docx(data: dict[str, Any]) -> bytes:
         data.get("linkedin"), data.get("github")
     ] if p]
     if contact_parts:
-        add_para(" | ".join(contact_parts), size=10,
+        add_para(" | ".join(contact_parts),
                  align=WD_ALIGN_PARAGRAPH.CENTER, space_after=4)
     p_rule = add_para(space_after=4)
     add_rule(p_rule)
@@ -361,7 +373,7 @@ def _build_docx(data: dict[str, Any]) -> bytes:
                 degree = f"{edu.get('degree_type','')} in {edu.get('topic','')}".strip(" in")
                 gpa    = edu.get("gpa", "")
                 add_para(degree + (f"  |  GPA: {gpa}" if gpa else ""),
-                         italic=True, size=10, space_after=1)
+                         italic=True, space_after=1)
                 for detail in edu.get("details", []):
                     bullet(detail)
 
@@ -381,7 +393,7 @@ def _build_docx(data: dict[str, Any]) -> bytes:
                     r1 = p.add_run(f"{level}: "); r1.bold = True; r1.font.size = Pt(10)
                     p.add_run(", ".join(items)).font.size = Pt(10)
             for line in data.get("skills", []):
-                add_para(line, size=10, space_after=1)
+                add_para(line, space_after=1)
 
         elif key == "work_history" and data.get("work_history"):
             label = section_labels.get("work_history", "Relevant Experience")
@@ -394,7 +406,7 @@ def _build_docx(data: dict[str, Any]) -> bytes:
                 two_col_row(f"{comp}  |  {loc}" if loc else comp,
                             f"{start} - {end}" if start else end)
                 if job.get("role"):
-                    add_para(job["role"], italic=True, size=10, space_after=1)
+                    add_para(job["role"], italic=True, space_after=1)
                 for b in job.get("bullets", []):
                     bullet(b)
 
@@ -419,7 +431,13 @@ def generate_resume_pdf(user_id: int) -> bytes:
     user = db_manager.get_user(user_id)
     if not user or not user.resume:
         raise ValueError("No resume found. Call POST /resume/generate first.")
-    return _build_pdf(user.resume)
+    pdf_bytes, _ = _build_pdf(user.resume)
+    return pdf_bytes
+
+def get_resume_page_count(resume_data: dict) -> int:
+    """Build the resume PDF in memory and return the page count."""
+    _, page_count = _build_pdf(resume_data)
+    return page_count
 
 def generate_resume_docx(user_id: int) -> bytes:
     """Export the stored user.resume as DOCX. Raises ValueError if no resume generated yet."""
