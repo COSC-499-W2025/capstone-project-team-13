@@ -293,14 +293,35 @@ export default function Dashboard() {
           <button className="btn-primary mt-16" onClick={() => nav("/skills")}>All Skills →</button>
         </div>
 
-        <div className="card dash-portfolio-card" onClick={() => nav("/portfolio")}>
+        <div className="card dash-portfolio-card">
           <h2>Portfolio</h2>
           <p className="text-muted">
             {portfolio?.projects?.length
               ? `${portfolio.projects.length} project(s) in your portfolio`
               : "Generate your portfolio from your projects"}
           </p>
-          <button className="btn-primary mt-16">Open Portfolio →</button>
+          <div className="dash-portfolio-modes">
+            <button
+              className="dash-mode-btn dash-mode-private"
+              onClick={() => { localStorage.setItem("portfolio_mode", "private"); nav("/portfolio"); }}
+              title="Edit and customize your portfolio"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Private
+            </button>
+            <button
+              className="dash-mode-btn dash-mode-public"
+              onClick={() => { localStorage.setItem("portfolio_mode", "public"); nav("/portfolio"); }}
+              title="View your public portfolio"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              Public
+            </button>
+          </div>
         </div>
       </div>
 
