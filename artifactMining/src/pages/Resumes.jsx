@@ -239,6 +239,16 @@ export default function Resumes() {
   const [showWork, setShowWork] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
 
+  // ── export preview mode (hides UI-only elements so view matches export)
+  const [previewMode, setPreviewMode] = useState(false);
+
+  // ── page count (result of /resume/page-count check)
+  const [pageCount, setPageCount] = useState(null);
+  const [pageCountLoading, setPageCountLoading] = useState(false);
+
+  // ── bullet count (2-5, passed to /resume/generate)
+  const [numBullets, setNumBullets] = useState(3);
+
   // ── section order (keys: "projects" | "education" | "work_history" | "skills")
   const [sectionOrder, setSectionOrder] = useState(["projects"]);
 
@@ -340,6 +350,22 @@ export default function Resumes() {
     score += Math.min(allSkills.length * 4, 20);
 
     return Math.min(Math.round(score), 100);
+  }, [resume]);
+
+  // ── word count + page estimate ────────────────────────────────────────────────
+  const wordCount = useMemo(() => {
+    if (!resume) return 0;
+    const chunks = [
+      resume.name, resume.email, resume.phone, resume.linkedin, resume.github,
+      ...(resume.projects || []).flatMap(p => [p.name, ...(p.bullets || [])]),
+      ...(resume.education || []).flatMap(e => [
+        e.institution, e.degree_type, e.topic, ...(e.details || []),
+      ]),
+      ...(resume.work_history || []).flatMap(w => [w.company, w.role, ...(w.bullets || [])]),
+      ...Object.values(resume.skills_by_level || {}).flat(),
+      ...(resume.awards || []),
+    ];
+    return chunks.filter(Boolean).join(" ").split(/\s+/).filter(Boolean).length;
   }, [resume]);
 
   // 🎉 100% completeness celebration — fires once when bar first hits 100
@@ -467,7 +493,8 @@ export default function Resumes() {
     try {
       const res = await fetch(`${API_BASE}/resume/generate`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ num_bullets: numBullets }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -510,12 +537,20 @@ export default function Resumes() {
 
       // skills endpoint returns { skills: [ { name, projects, ... } ] } or similar
       const skillList = data.skills || data;
-      const skillNames = Array.isArray(skillList)
-        ? skillList.map(s => (typeof s === "string" ? s : s.name || s.skill_name || ""))
-        : [];
 
-      // Group into a single "Familiar" bucket since we don't have level data from this endpoint
-      const byLevel = { Expert: [], Proficient: [], Familiar: skillNames.filter(Boolean) };
+      // Categorize by project count using same thresholds as backend
+      // (>=5 projects → Expert, >=2 → Proficient, else → Familiar)
+      const byLevel = { Expert: [], Proficient: [], Familiar: [] };
+      if (Array.isArray(skillList)) {
+        for (const s of skillList) {
+          const name = typeof s === "string" ? s : (s.name || s.skill_name || "");
+          if (!name) continue;
+          const count = typeof s === "object" ? (s.project_count ?? (Array.isArray(s.projects) ? s.projects.length : 0)) : 0;
+          if (count >= 5) byLevel.Expert.push(name);
+          else if (count >= 2) byLevel.Proficient.push(name);
+          else byLevel.Familiar.push(name);
+        }
+      }
 
       setResume(prev => ({ ...prev, skills_by_level: byLevel }));
       setShowSkills(true);
@@ -644,6 +679,11 @@ export default function Resumes() {
         end_date: _endPresent ? "Present" : normDate(rest.end_date) || "Present",
       }));
 
+      const cleanProjects = (resume.projects || []).map(
+        // eslint-disable-next-line no-unused-vars
+        ({ lines_of_code, file_count, importance_score, ...rest }) => rest
+      );
+
       const resumePayload = {
         name: resume.name,
         email: resume.email,
@@ -654,7 +694,7 @@ export default function Resumes() {
         awards: resume.awards || [],
         skills_by_level: resume.skills_by_level || {},
         work_history: cleanWork,
-        projects: resume.projects,
+        projects: cleanProjects,
         section_order: sectionOrder,
         section_labels: sectionLabels,
       };
@@ -686,6 +726,7 @@ export default function Resumes() {
       window.dispatchEvent(new Event("resume-updated"));
       showStatus("Changes saved.");
       toast("Resume saved!", "ok");
+      checkPageCount();
       // Subtle upward ticker-tape for regular saves
       confetti({ particleCount: 20, angle: 90, spread: 30, origin: { x: 0.5, y: 1 },
         colors: ["#6366f1","#a78bfa","#818cf8"], startVelocity: 40, ticks: 60, scalar: 0.8 });
@@ -725,6 +766,57 @@ export default function Resumes() {
     }
   }
 
+  async function checkPageCount() {
+    if (!resume) return;
+    setPageCountLoading(true);
+    try {
+      const normDate = (v) => (!v || v === "Present") ? (v || null) : v.slice(0, 7);
+      const cleanEdu = (resume.education || [])
+        .filter(e => !e._isNew)
+        .map(({ _id, _isNew, _endPresent, ...rest }) => ({
+          ...rest,
+          start_date: normDate(rest.start_date),
+          end_date: _endPresent ? null : normDate(rest.end_date),
+        }));
+      const cleanWork = (resume.work_history || [])
+        .filter(w => !w._isNew)
+        .map(({ _id, _isNew, _endPresent, ...rest }) => ({
+          ...rest,
+          start_date: normDate(rest.start_date),
+          end_date: _endPresent ? "Present" : normDate(rest.end_date) || "Present",
+        }));
+      const cleanProjects = (resume.projects || []).map(
+        // eslint-disable-next-line no-unused-vars
+        ({ lines_of_code, file_count, importance_score, ...rest }) => rest
+      );
+      const res = await fetch(`${API_BASE}/resume/page-count`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: resume.name,
+          email: resume.email,
+          phone: resume.phone || null,
+          linkedin: resume.linkedin || null,
+          github: resume.github || null,
+          education: cleanEdu,
+          awards: resume.awards || [],
+          skills_by_level: resume.skills_by_level || {},
+          work_history: cleanWork,
+          projects: cleanProjects,
+          section_order: sectionOrder,
+          section_labels: sectionLabels,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setPageCount(data.pages);
+    } catch (e) {
+      showStatus("Page count check failed: " + e.message, "err");
+    } finally {
+      setPageCountLoading(false);
+    }
+  }
+
   async function downloadFile(endpoint, filename) {
     try {
       // Save current state first so the export reflects the latest section order + changes
@@ -746,6 +838,11 @@ export default function Resumes() {
           start_date: normDate(rest.start_date),
           end_date: rest.end_date === "Present" || !rest.end_date ? "Present" : normDate(rest.end_date),
         }));
+      const dlCleanProjects = (resume.projects || []).map(
+        // eslint-disable-next-line no-unused-vars
+        ({ lines_of_code, file_count, importance_score, ...rest }) => rest
+      );
+
       await fetch(`${API_BASE}/resume/save`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -759,7 +856,7 @@ export default function Resumes() {
           awards: resume.awards || [],
           skills_by_level: resume.skills_by_level || {},
           work_history: cleanWork,
-          projects: resume.projects,
+          projects: dlCleanProjects,
           section_order: sectionOrder,
           section_labels: sectionLabels,
         }),
@@ -909,6 +1006,41 @@ export default function Resumes() {
     markDirty();
   }
 
+  // ── per-project regen + remove ───────────────────────────────────────────────
+
+  const [regenLoading, setRegenLoading] = useState(new Set());
+
+  async function regenerateProjectBullets(pIdx) {
+    const p = resume.projects[pIdx];
+    if (!p.project_id) return;
+    setRegenLoading(prev => new Set([...prev, pIdx]));
+    try {
+      const res = await fetch(`${API_BASE}/resume/projects/${p.project_id}/regenerate`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ num_bullets: numBullets }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setResume(prev => {
+        const projects = [...prev.projects];
+        projects[pIdx] = { ...projects[pIdx], bullets: data.bullets || [], ats_score: data.ats_score };
+        return { ...prev, projects };
+      });
+      markDirty();
+      toast("Bullets regenerated!", "ok");
+    } catch (e) {
+      toast("Regenerate failed: " + e.message, "err");
+    } finally {
+      setRegenLoading(prev => { const next = new Set(prev); next.delete(pIdx); return next; });
+    }
+  }
+
+  function removeProject(pIdx) {
+    setResume(prev => ({ ...prev, projects: prev.projects.filter((_, i) => i !== pIdx) }));
+    markDirty();
+  }
+
   // ── project bullet helpers ───────────────────────────────────────────────────
 
   function updateProjectBullet(pIdx, bIdx, value) {
@@ -984,8 +1116,30 @@ export default function Resumes() {
                 style={{ width: `${completeness}%` }}
               />
             </div>
+            <div className="resume-word-count">
+              {wordCount} words · ~{Math.max(1, Math.ceil(wordCount / 450))} page{Math.ceil(wordCount / 450) !== 1 ? "s" : ""}
+            </div>
           </div>
         )}
+
+        <div className="resume-bullet-count">
+          <span className="resume-label" style={{ marginTop: 0 }}>Bullets per project</span>
+          <div className="resume-bullet-stepper">
+            <button
+              type="button"
+              className="resume-bullet-step"
+              onClick={() => setNumBullets(n => Math.max(2, n - 1))}
+              disabled={numBullets <= 2}
+            >−</button>
+            <span className="resume-bullet-val">{numBullets}</span>
+            <button
+              type="button"
+              className="resume-bullet-step"
+              onClick={() => setNumBullets(n => Math.min(5, n + 1))}
+              disabled={numBullets >= 5}
+            >+</button>
+          </div>
+        </div>
 
         {!hasResume ? (
           <button
@@ -1003,11 +1157,17 @@ export default function Resumes() {
 
             <span className="resume-label">Add Sections</span>
 
-            <button className="resume-btn resume-btn-secondary" onClick={addEduEntry}>
+            <button
+              className="resume-btn resume-btn-secondary"
+              onClick={addEduEntry}
+            >
               + Add Award / Education
             </button>
 
-            <button className="resume-btn resume-btn-secondary" onClick={addWorkEntry}>
+            <button
+              className="resume-btn resume-btn-secondary"
+              onClick={addWorkEntry}
+            >
               + Add Experience
             </button>
 
@@ -1020,20 +1180,49 @@ export default function Resumes() {
               {showSkills ? "Skills Added ✓" : "+ Add Skills"}
             </button>
 
+            <span className="resume-label">Export Preview</span>
+
+            <button
+              className={`resume-btn ${previewMode ? "resume-btn-active" : "resume-btn-secondary"}`}
+              onClick={() => {
+                const next = !previewMode;
+                setPreviewMode(next);
+                if (next) setEditing(false);
+              }}
+            >
+              {previewMode ? "Exit Preview" : "Export Preview"}
+            </button>
+
+            <button
+              className="resume-btn resume-btn-secondary"
+              onClick={checkPageCount}
+              disabled={pageCountLoading}
+            >
+              {pageCountLoading ? "Checking…" : "Check Fit"}
+            </button>
+
+            {pageCount !== null && (
+              <div className={`resume-page-count-badge ${pageCount === 1 ? "ok" : "over"}`}>
+                {pageCount === 1 ? `✓ Fits on 1 page` : `${pageCount} pages — trim content`}
+              </div>
+            )}
+
             <span className="resume-label">Export</span>
 
             <button
-              className="resume-btn resume-btn-outline"
+              className="resume-btn resume-btn-secondary"
               onClick={() => downloadFile("/resume/download/pdf", `resume_${resume?.name?.replace(/ /g, "_") || "export"}.pdf`)}
-              disabled={loading}
+              disabled={loading || (pageCount !== null && pageCount > 1)}
+              title={pageCount > 1 ? "Resume exceeds 1 page — trim content before exporting" : ""}
             >
               Save as PDF
             </button>
 
             <button
-              className="resume-btn resume-btn-outline"
+              className="resume-btn resume-btn-secondary"
               onClick={() => downloadFile("/resume/download/docx", `resume_${resume?.name?.replace(/ /g, "_") || "export"}.docx`)}
-              disabled={loading}
+              disabled={loading || (pageCount !== null && pageCount > 1)}
+              title={pageCount > 1 ? "Resume exceeds 1 page — trim content before exporting" : ""}
             >
               Save as DOCX
             </button>
@@ -1117,6 +1306,9 @@ export default function Resumes() {
 
         {resume.projects.map((p, pIdx) => (
           <div key={pIdx} className="proj-item">
+            {editing && (
+              <button className="r-delete-entry" onClick={() => removeProject(pIdx)}>✕ Remove</button>
+            )}
             <div className="proj-name">
               <InlineEdit
                 value={p.name || p.header}
@@ -1132,6 +1324,14 @@ export default function Resumes() {
                 className="proj-name-text"
                 placeholder="Project name"
               />
+              {p.project_id && !previewMode && (
+                <button
+                  className={`proj-regen-btn${regenLoading.has(pIdx) ? " proj-regen-spinning" : ""}`}
+                  onClick={() => regenerateProjectBullets(pIdx)}
+                  disabled={regenLoading.has(pIdx)}
+                  title="Regenerate bullets for this project"
+                >↻</button>
+              )}
             </div>
 
             {p.bullets && p.bullets.length > 0 ? (
@@ -1165,12 +1365,25 @@ export default function Resumes() {
               </div>
             )}
 
-            {p.ats_score != null && (
+            {!previewMode && p.ats_score != null && (
               <div className="proj-ats">
                 <span className={`proj-ats-badge ${p.ats_score >= 70 ? "high" : p.ats_score < 40 ? "low" : ""}`}>
                   ATS {Math.round(p.ats_score)}/100
                 </span>
                 <AtsTooltip />
+              </div>
+            )}
+            {!previewMode && (p.lines_of_code > 0 || p.file_count > 0 || p.importance_score > 0) && (
+              <div className="proj-stats">
+                {p.lines_of_code > 0 && (
+                  <span className="proj-stat-badge">{p.lines_of_code.toLocaleString()} LOC</span>
+                )}
+                {p.file_count > 0 && (
+                  <span className="proj-stat-badge">{p.file_count} files</span>
+                )}
+                {p.importance_score > 0 && (
+                  <span className="proj-stat-badge">score {p.importance_score}</span>
+                )}
               </div>
             )}
           </div>
@@ -1569,6 +1782,7 @@ export default function Resumes() {
                   {renderSection(key)}
                 </React.Fragment>
               ))}
+
 
             </div>
           )}
