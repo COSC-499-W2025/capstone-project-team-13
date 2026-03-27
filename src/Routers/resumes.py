@@ -48,6 +48,7 @@ from src.Services.resume_service import (
 from src.Services.resume_export_service import (
     generate_resume_pdf,
     generate_resume_docx,
+    get_resume_page_count,
 )
 
 router = APIRouter(prefix="/resume", tags=["Resume"])
@@ -168,6 +169,22 @@ def save_resume_endpoint(
     Called after the frontend adds education, work history, skills, etc.
     """
     return save_full_resume(user_id=user_id, resume_data=body)
+
+
+@router.post("/page-count")
+def page_count_endpoint(
+    body: dict = Body(...),
+    user_id: int = Depends(require_auth)
+):
+    """
+    Build the resume PDF in memory from the supplied payload and return
+    the page count. Nothing is saved to the database.
+    """
+    try:
+        pages = get_resume_page_count(body)
+        return {"pages": pages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Page count failed: {e}")
 
 
 @router.get("/download/pdf")
