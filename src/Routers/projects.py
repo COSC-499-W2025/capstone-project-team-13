@@ -627,3 +627,23 @@ def delete_ai_insights(
     except ImportError:
         db_manager.update_project(project_id, {"ai_description": None})
         return {"success": True, "cache_deleted": 0}
+
+@router.get("/{project_id}/contributors")
+def get_project_contributors(project_id: int):
+    """Return all contributors for a given project ID."""
+    project = db_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    contributors = db_manager.get_contributors_for_project(project_id)
+    # Return as list of dicts
+    return [
+        {
+            "name": c.name,
+            "email": c.contributor_identifier,
+            "commit_count": c.commit_count,
+            "lines_added": c.lines_added,
+            "lines_deleted": c.lines_deleted,
+            "contribution_percent": c.contribution_percent,
+        }
+        for c in contributors
+    ]

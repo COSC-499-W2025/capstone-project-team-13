@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, evidence, education, work_history
+from src.Routers import projects, resumes, portfolio, skills, analytics, consent, auth, configuration, evidence, education, work_history, contributors
 from src.Routers import interview_router
 from src.Routers import user_profile
 
@@ -34,3 +34,4 @@ app.include_router(auth.router)
 app.include_router(evidence.router)
 app.include_router(interview_router.router)
 app.include_router(user_profile.router)
+app.include_router(contributors.router)
