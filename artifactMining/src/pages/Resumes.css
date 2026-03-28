@@ -81,6 +81,71 @@
   border-radius: 99px;
   transition: width 0.8s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
+.resume-page-count-badge {
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+.resume-page-count-badge.ok {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #34d399;
+}
+.resume-page-count-badge.over {
+  background: rgba(251, 113, 133, 0.15);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  color: #fda4af;
+}
+
+.resume-word-count {
+  font-size: 0.68rem;
+  color: #6b7ba8;
+  margin-top: 5px;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+/* ── Bullet count stepper ── */
+.resume-bullet-count { margin-bottom: 4px; }
+.resume-bullet-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+.resume-bullet-step {
+  background: none;
+  border: none;
+  color: #a5b4fc;
+  font-size: 1.1rem;
+  font-weight: 700;
+  width: 36px;
+  height: 32px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.resume-bullet-step:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  color: #eef1ff;
+}
+.resume-bullet-step:disabled { opacity: 0.35; cursor: not-allowed; }
+.resume-bullet-val {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #eef1ff;
+  user-select: none;
+}
 
 /* ── Sidebar buttons ── */
 .resume-btn {
@@ -102,8 +167,9 @@
 .resume-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .resume-btn-primary {
-  background: #6366f1;
+  background: linear-gradient(135deg, #2977ff 0%, #a349ff 100%);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(92, 82, 255, 0.35);
 }
 .resume-btn-secondary {
   background: rgba(99, 102, 241, 0.2);
@@ -130,12 +196,14 @@
   border: 1px solid rgba(99, 102, 241, 0.6);
 }
 .resume-btn-save {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #2977ff 0%, #a349ff 100%);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(92, 82, 255, 0.35);
 }
 .resume-btn-save:disabled {
   background: rgba(99, 102, 241, 0.12);
   color: rgba(165, 180, 252, 0.35);
+  box-shadow: none;
 }
 .resume-btn-danger {
   background: rgba(220, 53, 69, 0.15);
@@ -217,11 +285,11 @@
 ──────────────────────────────────────────────────────────────────────── */
 .resume-doc {
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 10.5pt;
-  line-height: 1.55;
+  font-size: 10pt;
+  line-height: 1.4;
   color: #1a1a1a;
   background: #fff;
-  padding: 56px 64px;
+  padding: 58px 72px; /* 0.6in top/bottom, 0.75in left/right — matches PDF margins */
   border-radius: 4px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 4px 24px rgba(3, 7, 26, 0.22);
@@ -241,7 +309,7 @@
   text-align: center; letter-spacing: 0.02em; margin-bottom: 4px;
 }
 .r-contact {
-  text-align: center; font-size: 9pt;
+  text-align: center; font-size: 0.9em;
   color: #555; margin-bottom: 10px;
 }
 .r-rule { border: none; border-top: 1px solid #d1d5db; margin: 6px 0; }
@@ -258,7 +326,7 @@
 .r-section hr { flex: 1; border: none; border-top: 0.6px solid #d1d5db; margin: 0; }
 
 .r-section-title {
-  white-space: nowrap; font-size: 10.5pt; font-weight: 700;
+  white-space: nowrap; font-size: 1em; font-weight: 700;
   color: #1a1a1a; letter-spacing: 0.08em;
   font-family: "EB Garamond", Georgia, serif; text-transform: uppercase;
 }
@@ -326,9 +394,9 @@
 /* ── Education / work ── */
 .edu-entry, .work-entry { margin-bottom: 12px; }
 .edu-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.edu-degree { font-size: 10pt; font-weight: 700; }
-.edu-dates  { font-size: 9.5pt; color: #555; white-space: nowrap; }
-.edu-inst   { font-style: italic; font-size: 9.5pt; color: #555; margin-bottom: 6px; }
+.edu-degree { font-size: 1em; font-weight: 700; }
+.edu-dates  { font-size: 0.95em; color: #555; white-space: nowrap; }
+.edu-inst   { font-style: italic; font-size: 0.95em; color: #555; margin-bottom: 6px; }
 
 .r-date-range { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .r-date-sep   { color: #9ca3af; margin: 0 2px; }
@@ -349,7 +417,7 @@
   text-transform: none; letter-spacing: 0;
 }
 .r-award-row-edit { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.award-item { font-size: 9.5pt; padding: 2px 0 2px 4px; color: #374151; }
+.award-item { font-size: 0.95em; padding: 2px 0 2px 4px; color: #374151; }
 .award-item::before { content: "—"; margin-right: 8px; color: #9ca3af; }
 
 /* ── Present checkbox ── */
@@ -376,7 +444,7 @@
   border: 1px solid rgba(99, 102, 241, 0.25);
   border-radius: 4px; padding: 3px 6px;
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 10pt; color: #1a1a1a;
+  font-size: 1em; color: #1a1a1a;
   resize: vertical; min-height: 36px;
 }
 .r-bullet-input:focus { outline: none; border-color: #6366f1; }
@@ -389,23 +457,66 @@
 }
 .r-add-bullet:hover { opacity: 1; background: rgba(99, 102, 241, 0.08); }
 
+/* ── Per-project regenerate button ── */
+.proj-regen-btn {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 5px;
+  color: #6366f1;
+  cursor: pointer;
+  font-size: 1.05rem;
+  padding: 2px 7px;
+  margin-left: 7px;
+  opacity: 0.7;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+.proj-regen-btn:hover:not(:disabled) { opacity: 1; background: rgba(99, 102, 241, 0.18); border-color: #6366f1; }
+.proj-regen-btn:disabled { cursor: not-allowed; }
+.proj-regen-spinning { animation: regen-spin 0.8s linear infinite; opacity: 0.7; }
+@keyframes regen-spin { to { transform: rotate(360deg); } }
+
 /* ── Projects ── */
 .proj-item    { margin-bottom: 14px; }
-.proj-name    { font-size: 10.5pt; font-weight: 700; margin-bottom: 2px; }
+.proj-name    { font-size: 10.5pt; font-weight: 700; margin-bottom: 2px; display: flex; align-items: center; gap: 2px; }
+.proj-name-text { flex: 1; min-width: 0; }
 .proj-sub     { font-style: italic; font-size: 9.5pt; color: #555; margin-bottom: 4px; }
 .proj-bullets { padding-left: 18px; margin: 4px 0; }
-.proj-bullets li { font-size: 10pt; line-height: 1.55; color: #333; margin-bottom: 2px; }
-.proj-no-bul  { font-style: italic; font-size: 9pt; color: #aaa; }
+.proj-bullets li { font-size: 1em; line-height: 1.4; color: #333; margin-bottom: 2px; }
+.proj-no-bul  { font-style: italic; font-size: 0.9em; color: #aaa; }
 .proj-ats {
   font-size: 8pt; color: #6b7280;
   margin-top: 2px; display: flex; align-items: center; gap: 5px;
 }
 
 /* ── Skills ── */
-.skill-row        { font-size: 10pt; margin-bottom: 4px; }
+.skill-row        { font-size: 1em; margin-bottom: 4px; }
 .skill-row strong { font-weight: 700; }
 .skill-sep        { color: #d1d5db; margin: 0 5px; }
-.r-skills-input   { font-size: 10pt; flex: 1; }
+.r-skills-input   { font-size: 1em; flex: 1; }
+
+/* ── Project stats badges (UI-only, not exported) ── */
+.proj-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 3px;
+}
+.proj-stat-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 7.5pt;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #6b7280;
+  font-family: system-ui, sans-serif;
+}
 
 /* ── ATS score pulse ── */
 .proj-ats {
@@ -511,6 +622,27 @@
 }
 .month-picker-month:hover    { background: rgba(99, 102, 241, 0.1); border-color: #e5e7eb; }
 .month-picker-month.selected { background: #6366f1; color: #fff; border-color: #6366f1; }
+
+/* ── Light mode overrides ── */
+body[data-theme="light"] .resume-btn-danger {
+  background: rgba(220, 53, 69, 0.08);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+body[data-theme="light"] .resume-btn-danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.16);
+  color: #991b1b;
+}
+body[data-theme="light"] .r-delete-section {
+  color: #dc2626;
+}
+body[data-theme="light"] .r-delete-entry {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+body[data-theme="light"] .r-delete-bullet {
+  color: #dc2626;
+}
 
 /* ── Responsive ── */
 @media (max-width: 960px) {

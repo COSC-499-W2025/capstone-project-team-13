@@ -27,6 +27,18 @@ def _get_generator(project):
     return MediaBulletGenerator()
 
 
+def _display_name(project) -> str:
+    """Return the best human-readable name for a project (mirrors projects router logic)."""
+    import re
+    cd = (project.custom_description or "").strip()
+    if cd:
+        return cd
+    name = (project.name or "").strip()
+    if re.match(r'^[0-9a-f-]{30,}', name, re.IGNORECASE):
+        return project.description or project.ai_description or f"{project.project_type or 'Project'} {project.id}"
+    return name
+
+
 def _check_project_ownership(project_id: int, user_id: int):
     """
     Fetch project and verify it belongs to the authenticated user.
@@ -282,32 +294,33 @@ def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
             detail="No projects found. Upload a project first."
         )
 
-    # Generate missing bullets — skip projects that fail, don't block the whole resume
+    # Always regenerate bullets for every project with the requested count
     generated_count = 0
     for project in all_projects:
-        if not db_manager.get_resume_bullets(project.id):
-            try:
-                generator = _get_generator(project)
-                bullets = generator.generate_resume_bullets(project, num_bullets)
-                header = generator.generate_project_header(project)
-                scoring = score_all_bullets(bullets, project.project_type)
-                db_manager.save_resume_bullets(
-                    project_id=project.id,
-                    bullets=bullets,
-                    header=header,
-                    ats_score=scoring["overall_score"]
-                )
-                generated_count += 1
-            except Exception:
-                continue
+        try:
+            generator = _get_generator(project)
+            bullets = generator.generate_resume_bullets(project, num_bullets)
+            header = generator.generate_project_header(project)
+            scoring = score_all_bullets(bullets, project.project_type)
+            db_manager.save_resume_bullets(
+                project_id=project.id,
+                bullets=bullets,
+                header=header,
+                ats_score=scoring["overall_score"]
+            )
+            generated_count += 1
+        except Exception:
+            continue
 
-    # Assemble in resumeGenerator.py format: name header + projects with bullets
+    # Assemble projects — use display name, store project_id for stats lookup
     resume_projects = []
     for project in all_projects:
         bd = db_manager.get_resume_bullets(project.id) or {}
+        display = _display_name(project)
         resume_projects.append({
-            "name": project.name,
-            "header": bd.get("header") or project.name,
+            "project_id": project.id,
+            "name": display,
+            "header": bd.get("header") or display,
             "bullets": bd.get("bullets") or [],
             "ats_score": bd.get("ats_score"),
         })
@@ -320,10 +333,22 @@ def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
 
     db_manager.update_user(user_id, {"resume": resume_data})
 
+    # Enrich response with project stats (not saved to DB)
+    stats_by_id = {p.id: {
+        "lines_of_code": p.lines_of_code or 0,
+        "file_count": p.file_count or 0,
+        "importance_score": round(p.importance_score or 0.0, 1),
+    } for p in all_projects}
+
+    response_projects = [
+        {**rp, **stats_by_id.get(rp["project_id"], {})}
+        for rp in resume_projects
+    ]
+
     return {
         "message": "Resume generated",
         "bullets_generated_for": generated_count,
-        "resume": resume_data,
+        "resume": {**resume_data, "projects": response_projects},
     }
 
 
@@ -342,7 +367,21 @@ def get_full_resume(user_id: int) -> dict:
             detail="No resume found. Call POST /resume/generate first."
         )
 
-    return {"resume": user.resume}
+    # Enrich projects with live stats (not stored in user.resume)
+    stored = user.resume
+    all_projects = db_manager.get_all_projects(user_id=user_id)
+    stats_by_id = {p.id: {
+        "lines_of_code": p.lines_of_code or 0,
+        "file_count": p.file_count or 0,
+        "importance_score": round(p.importance_score or 0.0, 1),
+    } for p in all_projects}
+
+    enriched_projects = [
+        {**rp, **stats_by_id.get(rp.get("project_id"), {})}
+        for rp in stored.get("projects", [])
+    ]
+
+    return {"resume": {**stored, "projects": enriched_projects}}
 
 
 def save_full_resume(user_id: int, resume_data: dict) -> dict:
