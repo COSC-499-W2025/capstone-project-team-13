@@ -96,7 +96,7 @@ def auto_extract(
                     pass
         else:
             evidence = em.extract_and_store_evidence(project, project.file_path)
-        return {"extracted": True, "evidence": evidence or {}}
+        return {"extracted": True, "evidence": evidence or {}, "nothing_found": not evidence}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 

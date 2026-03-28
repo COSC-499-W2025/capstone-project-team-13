@@ -82,6 +82,7 @@ export default function ProjectPage() {
   const [evidenceTab, setEvidenceTab] = useState("view");
   const [evidence, setEvidence] = useState(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [evidenceNotFound, setEvidenceNotFound] = useState(false);
   const [metricForm, setMetricForm] = useState({ name: "", value: "", description: "" });
   const [feedbackForm, setFeedbackForm] = useState({ text: "", source: "", rating: "" });
   const [achieveForm, setAchieveForm] = useState({ description: "", date: "" });
@@ -109,8 +110,13 @@ export default function ProjectPage() {
   async function autoExtractEvidence() {
     setEvidenceLoading(true); setMsg(null);
     try {
-      await apiFetch(`/evidence/${projectId}/extract`, { method: "POST" });
-      setMsg({ type: "success", text: "Evidence extracted!" });
+      const res = await apiFetch(`/evidence/${projectId}/extract`, { method: "POST" });
+      if (res.nothing_found) {
+        setEvidenceNotFound(true);
+      } else {
+        setEvidenceNotFound(false);
+        setMsg({ type: "success", text: "Evidence extracted!" });
+      }
       loadEvidence();
     } catch (e) { setMsg({ type: "error", text: e.message }); setEvidenceLoading(false); }
   }
@@ -685,7 +691,7 @@ export default function ProjectPage() {
         {evidenceLoading ? <div className="spinner" /> : evidenceTab === "view" ? (
           <div>
             {(!evidence || Object.keys(evidence).length === 0) ? (
-              <p className="text-muted">No evidence yet. Use Auto-Extract or add manually above.</p>
+              <p className="text-muted">{evidenceNotFound ? "Nothing to extract — no README, test reports, or CI config found." : "No evidence yet. Use Auto-Extract or add manually above."}</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {/* ── Code evidence ── */}

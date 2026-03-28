@@ -47,7 +47,10 @@ class EvidenceManager:
         Returns:
             Dictionary of extracted evidence
         """
-        from Evidence.autoExtractor import AutoEvidenceExtractor
+        try:
+            from src.Evidence.autoExtractor import AutoEvidenceExtractor
+        except ImportError:
+            from Evidence.autoExtractor import AutoEvidenceExtractor
         
         try:
             # Extract evidence
