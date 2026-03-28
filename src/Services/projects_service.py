@@ -44,7 +44,7 @@ def _hash_file(path: str) -> str:
     return h.hexdigest()
 
 
-def process_uploaded_path(path: str, user_id: Optional[int] = None):
+def process_uploaded_path(path: str, user_id: Optional[int] = None, progress_cb=None):
     """
     Core logic used by BOTH:
     - CLI (old main.py)
@@ -96,11 +96,11 @@ def process_uploaded_path(path: str, user_id: Optional[int] = None):
     supertype = sniff_supertype(path)
 
     if supertype == "code":
-        project_id = scan_coding_project(path, user_id=user_id)
+        project_id = scan_coding_project(path, user_id=user_id, progress_cb=progress_cb)
     elif supertype == "text":
-        project_id = scan_text_document(path, single_file=True, user_id=user_id)
+        project_id = scan_text_document(path, single_file=True, user_id=user_id, progress_cb=progress_cb)
     elif supertype == "media":
-        project_id = scan_media_project(path, user_id=user_id)
+        project_id = scan_media_project(path, user_id=user_id, progress_cb=progress_cb)
     else:
         raise ValueError("Unsupported project type")
 

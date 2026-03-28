@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { apiUpload, apiFetch } from "../apiClient";
+import { apiUpload, apiUploadWithProgress, apiFetch } from "../apiClient";
 import "./Upload.css";
 
 const ACCEPTED = ".zip,.py,.js,.ts,.jsx,.tsx,.java,.cpp,.c,.cs,.go,.rs,.rb,.php,.swift,.kt,.r,.m,.txt,.md,.pdf,.docx,.csv,.json,.xml,.html,.css,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.avi,.mp3,.wav";
@@ -10,6 +10,9 @@ export default function Upload() {
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [processingProgress, setProcessingProgress] = useState(null);
+  const [processingStage, setProcessingStage] = useState("");
   const [result, setResult] = useState(null);
   const [basicConsent, setBasicConsent] = useState(false);
   // incremental
@@ -43,20 +46,43 @@ export default function Upload() {
   async function upload() {
     if (!basicConsent) { setStatus({ type: "error", text: "File access consent is required. Grant it using the button below." }); return; }
     if (!file) { setStatus({ type: "error", text: "Select a file first." }); return; }
-    setLoading(true); setStatus(null); setResult(null);
+    setLoading(true); setStatus(null); setResult(null); setUploadProgress(0); setProcessingProgress(null);
     const fd = new FormData(); fd.append("file", file);
     try {
-      const d = await apiUpload("/projects/upload", fd);
-      if (d.status === "skipped") {
-        setStatus({ type: "error", text: `File was skipped — it may be an excluded file type. Check your excluded file types under Settings → Privacy before uploading.` });
-      } else if (d.status === "exists") {
-        setStatus({ type: "info", text: `This project already exists: "${d.project_name}".` });
-      } else {
-        setStatus({ type: "success", text: "Uploaded and analyzed!" });
-        setFile(null);
-      }
+      // Step 1: upload file, get job_id
+      const { job_id } = await apiUploadWithProgress("/projects/upload", fd, setUploadProgress);
+      if (!job_id) throw new Error("No job ID returned from server.");
+
+      // Step 2: stream progress via SSE
+      await new Promise((resolve, reject) => {
+        const url = `http://127.0.0.1:8000/projects/upload-stream/${job_id}`;
+        const es = new EventSource(url);
+        es.onmessage = e => {
+          const data = JSON.parse(e.data);
+          setProcessingProgress(data.percent);
+          setProcessingStage(data.stage || "");
+          if (data.done) {
+            es.close();
+            if (data.error) { reject(new Error(data.error)); return; }
+            const d = data.result || {};
+            if (d.status === "skipped") {
+              setStatus({ type: "error", text: "File was skipped — it may be an excluded file type." });
+            } else if (d.status === "exists") {
+              setStatus({ type: "info", text: `This project already exists: "${d.project_name}".` });
+            } else {
+              setStatus({ type: "success", text: "Uploaded and analyzed!" });
+              setFile(null);
+            }
+            resolve();
+          }
+        };
+        es.onerror = () => { es.close(); reject(new Error("Connection lost during processing.")); };
+      });
     } catch (e) { setStatus({ type: "error", text: e.message }); }
-    finally { setLoading(false); }
+    finally {
+      setTimeout(() => { setUploadProgress(null); setProcessingProgress(null); setProcessingStage(""); }, 800);
+      setLoading(false);
+    }
   }
 
   async function loadProjects() {
@@ -136,9 +162,18 @@ export default function Upload() {
               )}
             </div>
             {file && <button className="btn-danger" style={{ alignSelf: "flex-start", marginTop: 8 }} onClick={() => setFile(null)}>Remove</button>}
+            {uploadProgress !== null && (
+              <div>
+                {processingStage && <p className="text-muted" style={{ fontSize: "0.8rem", marginBottom: 4 }}>{processingStage}</p>}
+                <div className="upload-progress">
+                  <div className="upload-progress-bar" style={{ width: `${processingProgress !== null ? processingProgress : uploadProgress}%` }} />
+                  <span className="upload-progress-label">{processingProgress !== null ? `${processingProgress}%` : `${uploadProgress}%`}</span>
+                </div>
+              </div>
+            )}
             <button className="btn-primary upload-btn" onClick={upload} disabled={loading || !file || !basicConsent}
               title={!basicConsent ? "Grant file access consent first" : ""}>
-              {loading ? <><div className="spinner" /> Uploading…</> : "Upload & Analyze"}
+              {loading ? "Uploading…" : "Upload & Analyze"}
             </button>
           </div>
         ) : (

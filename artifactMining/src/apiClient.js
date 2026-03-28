@@ -42,6 +42,31 @@ export async function apiUpload(path, formData) {
   }
 }
 
+export function apiUploadWithProgress(path, formData, onProgress) {
+  loadingBar.start();
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const token = localStorage.getItem("token");
+    xhr.open("POST", `${BASE}${path}`);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      loadingBar.done();
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch { resolve({}); }
+      } else {
+        try { reject(new Error(JSON.parse(xhr.responseText).detail || `HTTP ${xhr.status}`)); }
+        catch { reject(new Error(`HTTP ${xhr.status}`)); }
+      }
+    };
+    xhr.onerror = () => { loadingBar.done(); reject(new Error("Network error")); };
+    xhr.send(formData);
+  });
+}
+
 /** Return the best human-readable name for a project object from the API */
 export function projectName(p) {
   if (!p) return "Untitled";

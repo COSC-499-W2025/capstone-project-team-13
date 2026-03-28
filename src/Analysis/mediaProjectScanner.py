@@ -108,7 +108,7 @@ class MediaProjectScanner:
             'archives', '.trash', 'trash', 'temp', 'tmp', '.tmp'
         }
     
-    def scan_and_store(self, user_id: Optional[int] = None) -> int:
+    def scan_and_store(self, user_id: Optional[int] = None, progress_cb=None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
         Supports incremental updates.
@@ -143,6 +143,7 @@ class MediaProjectScanner:
                 existing = None
         
         # Step 1: Find media files
+        if progress_cb: progress_cb(52, "Finding media files…")
         print("Step 1: Finding media files...")
         self._find_files()
         print(f"  ✓ Found {len(self.media_files)} media files")
@@ -158,6 +159,7 @@ class MediaProjectScanner:
 
         
         # Step 2: Detect software/tools
+        if progress_cb: progress_cb(65, "Analysing media & detecting tools…")
         print("\nStep 2: Detecting software used...")
         self._analyze_media()
         print(f"  ✓ Software detected: {', '.join(self.software_used) if self.software_used else 'None'}")
@@ -232,10 +234,12 @@ class MediaProjectScanner:
                 'user_id': user_id
             }
             
+            if progress_cb: progress_cb(76, "Saving project to database…")
             project = db_manager.create_project(project_data)
             project_id = project.id
-            
+
             # Calculate and store importance score
+            if progress_cb: progress_cb(84, "Storing files & computing score…")
             from src.Analysis.importanceScores import calculate_importance_score
             importance_score = calculate_importance_score(project)
             db_manager.update_project(project_id, {'importance_score': importance_score})
@@ -516,7 +520,7 @@ class MediaProjectScanner:
         return project.id
 
 
-def scan_media_project(project_path: str, user_id: Optional[int] = None) -> Optional[int]:
+def scan_media_project(project_path: str, user_id: Optional[int] = None, progress_cb=None) -> Optional[int]:
     """
     Convenience function to scan a visual media project
     
@@ -529,7 +533,7 @@ def scan_media_project(project_path: str, user_id: Optional[int] = None) -> Opti
     """
     try:
         scanner = MediaProjectScanner(project_path)
-        return scanner.scan_and_store(user_id=user_id)
+        return scanner.scan_and_store(user_id=user_id, progress_cb=progress_cb)
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
         return None

@@ -86,7 +86,7 @@ class CodingProjectScanner:
 
         return normalized_extensions
 
-    def scan_and_store(self, user_id: Optional[int] = None) -> int:
+    def scan_and_store(self, user_id: Optional[int] = None, progress_cb=None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
         Supports incremental updates.
@@ -122,6 +122,7 @@ class CodingProjectScanner:
                 existing = None
         
         # Step 1: Find all code files
+        if progress_cb: progress_cb(52, "Finding code files…")
         print("Step 1: Finding code files...")
         self._find_code_files()
         print(f"  ✓ Found {len(self.code_files)} code files")
@@ -129,14 +130,16 @@ class CodingProjectScanner:
         if len(self.code_files) == 0:
             print("\n⚠️  No code files found. This may not be a coding project.")
             return None
-        
+
         # Step 2: Detect languages and frameworks
+        if progress_cb: progress_cb(60, "Detecting languages & frameworks…")
         print("\nStep 2: Detecting languages and frameworks...")
         self._detect_languages_and_frameworks()
         print(f"  ✓ Languages: {', '.join(self.languages) if self.languages else 'None detected'}")
         print(f"  ✓ Frameworks: {', '.join(self.frameworks) if self.frameworks else 'None detected'}")
 
         # Step 2b: Extract keywords and analyze skills
+        if progress_cb: progress_cb(68, "Extracting skills…")
         print("\nStep 2b: Analyzing skills...")
         self._extract_keywords()
         self._analyze_skills()
@@ -209,12 +212,14 @@ class CodingProjectScanner:
                 'user_id': user_id
             }
             
+            if progress_cb: progress_cb(76, "Saving project to database…")
             project = db_manager.create_project(project_data)
             project_id = project.id
-            
+
             print(f"\n✓ Project stored with ID: {project_id}")
-            
+
             # Step 3: Store file information
+            if progress_cb: progress_cb(82, "Storing file information…")
             print("\nStep 3: Storing file information...")
             for file_path in self.code_files:
                 file_hash = compute_file_hash(str(file_path))
@@ -270,6 +275,7 @@ class CodingProjectScanner:
                 pass  # Silently skip Git errors
 
         # Step 6: Compute importance score now that all data is stored
+        if progress_cb: progress_cb(90, "Computing importance score…")
         try:
             from src.Analysis.importanceScores import calculate_importance_score
             project = db_manager.get_project(project_id)
@@ -517,7 +523,7 @@ class CodingProjectScanner:
 
         return project.id
 
-def scan_coding_project(project_path: str, user_id: Optional[int] = None) -> Optional[int]:
+def scan_coding_project(project_path: str, user_id: Optional[int] = None, progress_cb=None) -> Optional[int]:
     """
     Convenience function to scan a coding project
     
@@ -529,7 +535,7 @@ def scan_coding_project(project_path: str, user_id: Optional[int] = None) -> Opt
     """
     try:
         scanner = CodingProjectScanner(project_path)
-        return scanner.scan_and_store(user_id=user_id)
+        return scanner.scan_and_store(user_id=user_id, progress_cb=progress_cb)
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
         return None

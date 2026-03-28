@@ -4,6 +4,10 @@
 .upload-tab.active { background: rgba(100,108,255,0.22); color: #a5b4fc; }
 
 .upload-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; margin-bottom: 24px; }
+
+.upload-progress { position: relative; width: 100%; height: 32px; background: rgba(255,255,255,0.06); border-radius: 8px; overflow: hidden; }
+.upload-progress-bar { height: 100%; background: linear-gradient(90deg, #6366f1, #a5b4fc); border-radius: 8px; transition: width 0.2s ease; }
+.upload-progress-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); z-index: 1; }
 .upload-main { display: flex; flex-direction: column; gap: 14px; }
 
 .drop-zone {

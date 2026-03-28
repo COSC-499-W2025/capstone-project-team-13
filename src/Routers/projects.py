@@ -1,10 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
+from fastapi.responses import StreamingResponse
 from pathlib import Path
 from typing import Optional, List
 from pydantic import BaseModel
 import uuid
 import zipfile
 import json
+import threading
+import time
 
 from src.Databases.database import db_manager
 from src.Services.projects_service import process_uploaded_path, upload_project_thumbnail
@@ -12,6 +15,49 @@ from src.Services.auth_service import get_current_user_id, require_auth
 from src.UserPrompts.config_integration import has_ai_consent, has_basic_consent
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
+
+# ── Upload progress store ──────────────────────────────────────────────────────
+# job_id -> {"percent": int, "stage": str, "done": bool, "result": dict|None, "error": str|None}
+_upload_jobs: dict = {}
+
+def _set_progress(job_id: str, percent: int, stage: str):
+    if job_id in _upload_jobs:
+        _upload_jobs[job_id]["percent"] = percent
+        _upload_jobs[job_id]["stage"] = stage
+
+def _run_upload_job(job_id: str, upload_path: Path, original_stem: str, user_id: Optional[int]):
+    def progress_cb(percent, stage):
+        _set_progress(job_id, percent, stage)
+
+    try:
+        _set_progress(job_id, 10, "Checking for duplicates…")
+        if upload_path.suffix.lower() == ".zip":
+            _set_progress(job_id, 20, "Extracting archive…")
+            extract_dir = UPLOAD_DIR / job_id
+            extract_dir.mkdir()
+            with zipfile.ZipFile(upload_path, 'r') as zip_ref:
+                zip_ref.extractall(extract_dir)
+            process_path = extract_dir
+        else:
+            process_path = upload_path
+
+        _set_progress(job_id, 35, "Detecting project type…")
+
+        result = process_uploaded_path(str(process_path), user_id=user_id, progress_cb=progress_cb)
+
+        if isinstance(result, dict) and result.get("project_id"):
+            pid = result["project_id"]
+            proj = db_manager.get_project(pid)
+            if proj and not proj.custom_description:
+                db_manager.update_project(pid, {"custom_description": original_stem})
+
+        _upload_jobs[job_id]["percent"] = 100
+        _upload_jobs[job_id]["stage"] = "Complete"
+        _upload_jobs[job_id]["result"] = result
+    except Exception as e:
+        _upload_jobs[job_id]["error"] = str(e)
+    finally:
+        _upload_jobs[job_id]["done"] = True
 
 UPLOAD_DIR = Path("evidence/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -107,39 +153,51 @@ async def upload_project(
     file: UploadFile = File(...),
     user_id: Optional[int] = Depends(get_current_user_id)
 ):
-    """Upload and scan a project file or ZIP archive."""
+    """Save the uploaded file and start background processing. Returns job_id for SSE progress tracking."""
     if not has_basic_consent():
-        raise HTTPException(
-            status_code=403,
-            detail="File access requires consent. Please grant file access in the Upload page."
-        )
+        raise HTTPException(status_code=403, detail="File access requires consent.")
 
-    original_stem = Path(file.filename).stem  # capture before UUID rename
-    uid = str(uuid.uuid4())
-    upload_path = UPLOAD_DIR / f"{uid}_{file.filename}"
+    original_stem = Path(file.filename).stem
+    job_id = str(uuid.uuid4())
+    upload_path = UPLOAD_DIR / f"{job_id}_{file.filename}"
 
     with open(upload_path, "wb") as f:
         f.write(await file.read())
 
-    if upload_path.suffix.lower() == ".zip":
-        extract_dir = UPLOAD_DIR / uid
-        extract_dir.mkdir()
-        with zipfile.ZipFile(upload_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
-        process_path = extract_dir
-    else:
-        process_path = upload_path
+    _upload_jobs[job_id] = {"percent": 5, "stage": "File received…", "done": False, "result": None, "error": None}
+    threading.Thread(target=_run_upload_job, args=(job_id, upload_path, original_stem, user_id), daemon=True).start()
 
-    result = process_uploaded_path(str(process_path), user_id=user_id)
+    return {"job_id": job_id}
 
-    # Store original filename as custom_description so we never show UUIDs
-    if isinstance(result, dict) and result.get("project_id"):
-        pid = result["project_id"]
-        proj = db_manager.get_project(pid)
-        if proj and not proj.custom_description:
-            db_manager.update_project(pid, {"custom_description": original_stem})
 
-    return result
+@router.get("/upload-stream/{job_id}")
+async def upload_stream(job_id: str):
+    """SSE endpoint — streams progress events until the upload job completes."""
+    if job_id not in _upload_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    def event_stream():
+        last_pct = -1
+        while True:
+            job = _upload_jobs.get(job_id, {})
+            pct = job.get("percent", 0)
+            stage = job.get("stage", "")
+            done = job.get("done", False)
+            error = job.get("error")
+
+            if pct != last_pct or done:
+                payload = json.dumps({"percent": pct, "stage": stage, "done": done,
+                                      "result": job.get("result"), "error": error})
+                yield f"data: {payload}\n\n"
+                last_pct = pct
+
+            if done:
+                _upload_jobs.pop(job_id, None)
+                break
+            time.sleep(0.3)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream",
+                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 # ── Incremental upload to existing project ─────────────────────────────────────

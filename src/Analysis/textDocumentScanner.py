@@ -126,7 +126,7 @@ class TextDocumentScanner:
 
         return normalized_extensions
     
-    def scan_and_store(self, user_id: Optional[int] = None) -> int:
+    def scan_and_store(self, user_id: Optional[int] = None, progress_cb=None) -> int:
         """
         Complete workflow: scan, analyze, and store in database
         Supports incremental updates.
@@ -161,6 +161,7 @@ class TextDocumentScanner:
                 existing = None
         
         # Step 1: Find text files
+        if progress_cb: progress_cb(52, "Finding document files…")
         print("Step 1: Finding text files...")
         self._find_text_files()
         print(f"  ✓ Found {len(self.text_files)} text files")
@@ -208,11 +209,14 @@ class TextDocumentScanner:
             
         else:
             # Pre-calculate metadata and metrics for accurate scoring
+            if progress_cb: progress_cb(60, "Detecting document type…")
             self._detect_document_types()
+            if progress_cb: progress_cb(68, "Extracting skills…")
             self._analyze_skills()
             metrics = self._calculate_metrics()
 
             # Create new project
+            if progress_cb: progress_cb(76, "Saving project to database…")
             project_data = {
                 'name': self.document_name,
                 'file_path': str(self.document_path),
@@ -234,6 +238,7 @@ class TextDocumentScanner:
             
             print(f"\n✓ Project stored with ID: {project_id}")
             
+            if progress_cb: progress_cb(82, "Storing file information…")
             print("\nStep 2: Storing file information...")
             for file_path in self.text_files:
                 file_hash = compute_file_hash(str(file_path))
@@ -267,6 +272,7 @@ class TextDocumentScanner:
                     print(f"  ✓ Extracted {len(self.all_keywords)} keywords")
 
             # Calculate and store importance score after metadata/keywords are saved
+            if progress_cb: progress_cb(90, "Computing importance score…")
             from src.Analysis.importanceScores import calculate_importance_score
             importance_score = calculate_importance_score(project)
             db_manager.update_project(project_id, {'importance_score': importance_score})
@@ -520,7 +526,7 @@ class TextDocumentScanner:
         return project.id
 
 
-def scan_text_document(document_path: str, single_file: Optional[bool] = None, user_id: Optional[int] = None) -> Optional[int]:
+def scan_text_document(document_path: str, single_file: Optional[bool] = None, user_id: Optional[int] = None, progress_cb=None) -> Optional[int]:
     """
     Convenience function to scan a text document or folder
     
@@ -533,7 +539,7 @@ def scan_text_document(document_path: str, single_file: Optional[bool] = None, u
     """
     try:
         scanner = TextDocumentScanner(document_path)
-        return scanner.scan_and_store(user_id=user_id)
+        return scanner.scan_and_store(user_id=user_id, progress_cb=progress_cb)
     except Exception as e:
         print(f"\n✗ Error scanning project: {e}")
         return None
