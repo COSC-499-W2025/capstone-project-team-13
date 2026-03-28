@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import "./Settings.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -935,13 +935,13 @@ export default function Settings({ onLogout }) {
               </div>
             </div>
             <div className="settings-card-body">
-              <a
-                href="/public-portfolios"
+              <Link
+                to="/public-portfolios"
                 className="settings-button settings-button-primary"
                 style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
               >
                 View Public Portfolios →
-              </a>
+              </Link>
             </div>
           </div>
           {currentUser && (
