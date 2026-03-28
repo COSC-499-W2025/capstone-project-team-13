@@ -38,6 +38,8 @@ from src.Services.resume_service import (
     get_project_bullets,
     generate_project_bullets,
     regenerate_project_bullets,
+    ai_generate_project_bullets,
+    ai_enhance_project_bullets,
     edit_project_bullets,
     get_project_ats,
     delete_project_bullets,
@@ -63,6 +65,11 @@ class GenerateBulletsRequest(BaseModel):
 class EditBulletsRequest(BaseModel):
     bullets: list[str]
     header: Optional[str] = None
+
+
+class EnhanceBulletsRequest(BaseModel):
+    bullets: Optional[list[str]] = None
+    num_bullets: int = 3
 
 
 # ── per-project bullet endpoints ──────────────────────────────────────────────
@@ -102,6 +109,35 @@ def edit_bullets_endpoint(
         user_id=user_id,
         bullets=body.bullets,
         header=body.header
+    )
+
+
+@router.post("/projects/{project_id}/ai-generate")
+def ai_generate_bullets_endpoint(
+    project_id: int,
+    body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    user_id: int = Depends(require_auth)
+):
+    """Generate resume bullets for a project using Gemini AI."""
+    return ai_generate_project_bullets(
+        project_id=project_id,
+        user_id=user_id,
+        num_bullets=body.num_bullets
+    )
+
+
+@router.post("/projects/{project_id}/ai-enhance")
+def ai_enhance_bullets_endpoint(
+    project_id: int,
+    body: EnhanceBulletsRequest = Body(default=EnhanceBulletsRequest()),
+    user_id: int = Depends(require_auth)
+):
+    """Enhance existing resume bullets using Gemini AI. Falls back to generation if none exist."""
+    return ai_enhance_project_bullets(
+        project_id=project_id,
+        user_id=user_id,
+        current_bullets=body.bullets,
+        num_bullets=body.num_bullets,
     )
 
 
