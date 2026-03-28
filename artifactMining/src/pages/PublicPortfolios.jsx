@@ -14,6 +14,13 @@ function typeColor(type) {
   return TYPE_COLORS.default;
 }
 
+function thumbUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const filename = path.split(/[/\\]/).pop();
+  return `${API_BASE}/uploads/${filename}`;
+}
+
 // ── List of all public portfolios ───────────────────────────────────────────
 
 export function PublicPortfoliosList() {
@@ -316,9 +323,25 @@ export function PublicPortfolioView() {
           const color = typeColor(p.type || p.project_type);
           const langs = p.languages || p.tech_stack || [];
           const skills = p.skills || [];
+          const thumb = thumbUrl(p.thumbnail_path);
           return (
             <div key={p.id} className="card" style={{ borderLeft: `3px solid ${color}`, padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flex: 1 }}>
+                  {thumb ? (
+                    <img src={thumb} alt="thumbnail"
+                      style={{ width: 52, height: 52, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid rgba(255,255,255,0.1)" }}
+                      onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                    />
+                  ) : null}
+                  <div style={{
+                    display: thumb ? "none" : "flex", width: 52, height: 52, borderRadius: 8, flexShrink: 0,
+                    background: `${color}22`, border: `1px solid ${color}44`,
+                    alignItems: "center", justifyContent: "center",
+                    fontSize: "1.2rem", fontWeight: 700, color,
+                  }}>
+                    {(p.name || "?")[0].toUpperCase()}
+                  </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
                     <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#eef1ff" }}>
@@ -357,6 +380,7 @@ export function PublicPortfolioView() {
                       </span>
                     ))}
                   </div>
+                </div>
                 </div>
                 {p.importance_score != null && (
                   <div style={{ textAlign: "center", minWidth: 52 }}>

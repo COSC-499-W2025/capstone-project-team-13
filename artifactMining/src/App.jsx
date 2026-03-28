@@ -11,7 +11,6 @@ import Projects from "./pages/Projects";
 import ProjectPage from "./pages/ProjectPage";
 import Skills from "./pages/Skills";
 import Portfolio from "./pages/Portfolio";
-import Evidence from "./pages/Evidence";
 import Analysis from "./pages/Analysis";
 import Deletion from "./pages/Deletion";
 import Resumes from "./pages/Resumes";
@@ -208,7 +207,6 @@ function AppContent({ user, onLogin, onLogout }) {
           <Route path="/skills" element={<Skills />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/showcase" element={<WebShowcase />} />
-          <Route path="/evidence" element={<Evidence />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/deletion" element={<Deletion />} />
           <Route path="/resumes" element={<Resumes />} />

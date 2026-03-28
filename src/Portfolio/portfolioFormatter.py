@@ -169,8 +169,10 @@ class PortfolioFormatter:
             "is_hidden": bool(getattr(project, "is_hidden", False)),
             "languages": self._as_list(project.languages),
             "frameworks": self._as_list(project.frameworks),
-            "total_size_bytes": project.total_size_bytes,  
-
+            "total_size_bytes": project.total_size_bytes,
+            "thumbnail_path": getattr(project, "thumbnail_path", None) or "",
+            "user_role": getattr(project, "user_role", None) or "",
+            "success_evidence": getattr(project, "success_evidence", None) or "",
         }
 
     def _format_project_detail(self, project: Project) -> Dict[str, Any]:
