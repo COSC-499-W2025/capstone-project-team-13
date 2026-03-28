@@ -720,7 +720,21 @@ export default function ProjectPage() {
           </div>
         ) : (
           <div className="card">
-            <h3>Metrics</h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0 }}>Metrics</h3>
+              <a
+                href="/settings"
+                style={{
+                  fontSize: "0.92em",
+                  color: "var(--text-muted, #9aa6de)",
+                  textDecoration: "underline dotted",
+                  marginLeft: 12,
+                  whiteSpace: "nowrap"
+                }}
+              >
+                Add GitHub Username
+              </a>
+            </div>
             <table className="pp-table">
               <tbody>
                 {[
