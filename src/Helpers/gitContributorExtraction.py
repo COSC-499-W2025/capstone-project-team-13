@@ -52,9 +52,32 @@ def run_git_command(repo_path: str, command: List[str]) -> Optional[str]:
 
 
 def is_git_repository(path: str) -> bool:
-    """Check if path is a git repository"""
-    result = run_git_command(path, ['rev-parse', '--git-dir'])
-    return result is not None
+    """Check if path is a git repository and contains a .git directory"""
+    # Only allow paths within the uploads directory
+    uploads_root = os.path.abspath(os.path.join(PROJECT_ROOT, 'evidence', 'uploads'))
+    abs_path = os.path.abspath(path)
+    if not abs_path.startswith(uploads_root):
+        print(f"[SECURITY] Refusing to run git commands outside uploads directory: {abs_path}")
+        return False
+    # Check for .git directory at top level
+    git_dir = os.path.join(abs_path, '.git')
+    if os.path.isdir(git_dir):
+        result = run_git_command(abs_path, ['rev-parse', '--git-dir'])
+        return result is not None
+    # If not found, check all first-level subdirectories for .git
+    try:
+        entries = [e for e in os.listdir(abs_path) if not e.startswith('.') and os.path.isdir(os.path.join(abs_path, e))]
+        for entry in entries:
+            subfolder = os.path.join(abs_path, entry)
+            git_dir2 = os.path.join(subfolder, '.git')
+            if os.path.isdir(git_dir2):
+                result = run_git_command(subfolder, ['rev-parse', '--git-dir'])
+                if result is not None:
+                    return True
+    except Exception as e:
+        print(f"[SECURITY] Error checking subfolders for .git: {e}")
+    print(f"[SECURITY] No .git directory found in: {abs_path} or any first-level subfolder")
+    return False
 
 
 def extract_git_contributors(project_path: str, since_date: Optional[str] = None, until_date: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -70,9 +93,28 @@ def extract_git_contributors(project_path: str, since_date: Optional[str] = None
     Returns:
         List of contributor dictionaries with name, email, commits, and line changes
     """
-    if not is_git_repository(project_path):
-        print(f"Not a Git repository: {project_path}")
+    # Try top-level, then all first-level subfolders if needed
+    abs_path = os.path.abspath(project_path)
+    repo_path = None
+    git_dir = os.path.join(abs_path, '.git')
+    if os.path.isdir(git_dir):
+        repo_path = abs_path
+    else:
+        try:
+            entries = [e for e in os.listdir(abs_path) if not e.startswith('.') and os.path.isdir(os.path.join(abs_path, e))]
+            for entry in entries:
+                subfolder = os.path.join(abs_path, entry)
+                git_dir2 = os.path.join(subfolder, '.git')
+                if os.path.isdir(git_dir2):
+                    repo_path = subfolder
+                    break
+        except Exception as e:
+            print(f"[SECURITY] Error checking subfolders for .git: {e}")
+    if not repo_path or not is_git_repository(repo_path):
+        print(f"Not a Git repository or not allowed: {project_path}")
         return []
+    project_path = repo_path
+    # ...existing code...
     
     print(f"\nAnalyzing Git repository: {project_path}")
     if since_date or until_date:
@@ -482,4 +524,8 @@ def check_contributor_status():
 
 
 if __name__ == "__main__":
-    check_contributor_status()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "refresh":
+        populate_all_projects()
+    else:
+        check_contributor_status()

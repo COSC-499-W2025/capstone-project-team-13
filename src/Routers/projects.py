@@ -174,6 +174,18 @@ async def incremental_upload(
         result = handler.add_zip_to_existing_project(project_id, str(upload_path))
         if not result.get("success"):
             raise HTTPException(status_code=400, detail=result.get("error", "Incremental upload failed"))
+
+        # --- Populate Git contributors for this project ---
+        try:
+            from src.Helpers.gitContributorExtraction import populate_contributors_for_project
+            # Refresh project object in case path changed
+            project = db_manager.get_project(project_id)
+            if project:
+                populate_contributors_for_project(project)
+        except Exception as e:
+            # Log but do not fail the upload if contributor extraction fails
+            print(f"[WARN] Failed to populate Git contributors: {e}")
+
         return result
     except HTTPException:
         raise
