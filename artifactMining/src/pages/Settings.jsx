@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import "./Settings.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -14,6 +14,56 @@ export default function Settings({ onLogout }) {
   const [accountMessage, setAccountMessage] = useState("");
   const [accountError, setAccountError] = useState("");
   const [activeSection, setActiveSection] = useState(() => searchParams.get("section") || "account");
+  // GitHub username state
+  const [githubUsername, setGithubUsername] = useState("");
+  const [githubUsernameLoading, setGithubUsernameLoading] = useState(false);
+  const [githubUsernameMessage, setGithubUsernameMessage] = useState("");
+  const [githubUsernameError, setGithubUsernameError] = useState("");
+    // Fetch GitHub username when user loads or logs in
+    useEffect(() => {
+      async function fetchGithubUsername() {
+        setGithubUsernameLoading(true);
+        setGithubUsernameError("");
+        setGithubUsernameMessage("");
+        const token = localStorage.getItem("token");
+        if (!token) { setGithubUsername(""); setGithubUsernameLoading(false); return; }
+        try {
+          const res = await fetch(`${API_BASE}/user/github-username`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error("Could not fetch GitHub username");
+          const data = await res.json();
+          setGithubUsername(data.github_username || "");
+        } catch (err) {
+          setGithubUsernameError(err.message || "Could not fetch GitHub username");
+        } finally {
+          setGithubUsernameLoading(false);
+        }
+      }
+      if (currentUser) fetchGithubUsername();
+      else setGithubUsername("");
+    }, [currentUser]);
+
+    async function handleGithubUsernameSave(e) {
+      e.preventDefault();
+      setGithubUsernameMessage("");
+      setGithubUsernameError("");
+      setGithubUsernameLoading(true);
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(`${API_BASE}/user/github-username`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ github_username: githubUsername })
+        });
+        if (!res.ok) throw new Error("Could not update GitHub username");
+        setGithubUsernameMessage("GitHub username updated.");
+      } catch (err) {
+        setGithubUsernameError(err.message || "Could not update GitHub username");
+      } finally {
+        setGithubUsernameLoading(false);
+      }
+    }
   const [showEmojis, setShowEmojis] = useState(() => localStorage.getItem("dash_show_emojis") !== "false");
   const [showStreak, setShowStreak] = useState(() => localStorage.getItem("dash_show_streak") !== "false");
   const [showTip, setShowTip] = useState(() => localStorage.getItem("dash_show_tip") !== "false");
@@ -473,6 +523,36 @@ export default function Settings({ onLogout }) {
   }
 
   function renderAccountSection() {
+            {/* GitHub Username Card */}
+            <div className="settings-card">
+              <div className="settings-card-header"><div><h3>GitHub Username</h3><p>Set or update your GitHub username for contributor features.</p></div></div>
+              <form className="settings-form" onSubmit={handleGithubUsernameSave}>
+                <label className="settings-label">GitHub Username
+                  <input
+                    className="settings-input"
+                    type="text"
+                    value={githubUsername}
+                    onChange={e => setGithubUsername(e.target.value)}
+                    placeholder="e.g. octocat"
+                    disabled={githubUsernameLoading || !currentUser}
+                    autoComplete="off"
+                  />
+                </label>
+                <div className="settings-card-actions">
+                  <button
+                    className="settings-button settings-button-primary"
+                    type="submit"
+                    disabled={githubUsernameLoading || !currentUser}
+                  >{githubUsernameLoading ? "Saving..." : "Save Username"}</button>
+                </div>
+                {(githubUsernameMessage || githubUsernameError) && (
+                  <div className="settings-alerts">
+                    {githubUsernameMessage && <div className="settings-alert settings-alert-success">{githubUsernameMessage}</div>}
+                    {githubUsernameError && <div className="settings-alert settings-alert-error">{githubUsernameError}</div>}
+                  </div>
+                )}
+              </form>
+            </div>
     return (
       <div className="settings-section-panel">
         <h2>Account Settings</h2>
@@ -510,6 +590,7 @@ export default function Settings({ onLogout }) {
         )}
 
         <div className="settings-content-grid">
+          {!currentUser && (
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Create Account</h3><p>Register a new account.</p></div></div>
             <form className="settings-form" onSubmit={handleSignup}>
@@ -520,7 +601,9 @@ export default function Settings({ onLogout }) {
               <button className="settings-button settings-button-primary" type="submit" disabled={authLoading}>{authLoading ? "Submitting..." : "Sign Up"}</button>
             </form>
           </div>
+          )}
 
+          {!currentUser && (
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Login</h3><p>Sign in to your account.</p></div></div>
             <form className="settings-form" onSubmit={handleLogin}>
@@ -528,8 +611,39 @@ export default function Settings({ onLogout }) {
               <label className="settings-label">Password<input className="settings-input" type="password" name="password" value={loginForm.password} onChange={handleLoginChange} required /></label>
               <div className="settings-card-actions">
                 <button className="settings-button settings-button-primary" type="submit" disabled={authLoading}>{authLoading ? "Submitting..." : "Log In"}</button>
-                <button className="settings-button settings-button-secondary" type="button" onClick={handleLogout}>Log Out</button>
               </div>
+            </form>
+          </div>
+          )}
+
+          {/* GitHub Username Card (now row 2) */}
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>GitHub Username</h3><p>Set or update your GitHub username for contributor features.</p></div></div>
+            <form className="settings-form" onSubmit={handleGithubUsernameSave}>
+              <label className="settings-label">GitHub Username
+                <input
+                  className="settings-input"
+                  type="text"
+                  value={githubUsername}
+                  onChange={e => setGithubUsername(e.target.value)}
+                  placeholder="e.g. octocat"
+                  disabled={githubUsernameLoading || !currentUser}
+                  autoComplete="off"
+                />
+              </label>
+              <div className="settings-card-actions">
+                <button
+                  className="settings-button settings-button-primary"
+                  type="submit"
+                  disabled={githubUsernameLoading || !currentUser}
+                >{githubUsernameLoading ? "Saving..." : "Save Username"}</button>
+              </div>
+              {(githubUsernameMessage || githubUsernameError) && (
+                <div className="settings-alerts">
+                  {githubUsernameMessage && <div className="settings-alert settings-alert-success">{githubUsernameMessage}</div>}
+                  {githubUsernameError && <div className="settings-alert settings-alert-error">{githubUsernameError}</div>}
+                </div>
+              )}
             </form>
           </div>
 
@@ -545,6 +659,7 @@ export default function Settings({ onLogout }) {
             </div>
             <div className="settings-card-actions">
               <button className="settings-button settings-button-refresh" onClick={fetchCurrentUser} disabled={currentUserLoading} type="button">Refresh</button>
+              {currentUser && <button className="settings-button settings-button-secondary" type="button" onClick={handleLogout}>Log Out</button>}
             </div>
           </div>
         </div>
@@ -808,12 +923,62 @@ export default function Settings({ onLogout }) {
     );
   }
 
+  function renderCommunitySection() {
+    return (
+      <div className="settings-section-panel">
+        <h2>Community Portfolios</h2>
+        <p className="settings-section-description">
+          Browse portfolios that other users have chosen to make public. No account required.
+        </p>
+        <div className="settings-content-grid">
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div>
+                <h3>Browse Public Portfolios</h3>
+                <p>See the work of other users who have opted in to public visibility.</p>
+              </div>
+            </div>
+            <div className="settings-card-body">
+              <Link
+                to="/public-portfolios"
+                className="settings-button settings-button-primary"
+                style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+              >
+                View Public Portfolios →
+              </Link>
+            </div>
+          </div>
+          {currentUser && (
+            <div className="settings-card">
+              <div className="settings-card-header">
+                <div>
+                  <h3>Your Portfolio Visibility</h3>
+                  <p>Control whether your portfolio appears in the public listing. Manage this from your Portfolio page.</p>
+                </div>
+              </div>
+              <div className="settings-card-body">
+                <a
+                  href="/portfolio"
+                  className="settings-button settings-button-secondary"
+                  style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+                >
+                  Go to My Portfolio →
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   function renderSectionContent() {
     if (activeSection === "account") return renderAccountSection();
     if (activeSection === "currentConfig") return renderCurrentConfigSection();
     if (activeSection === "guide") return renderGuideSection();
     if (activeSection === "dashboard") return renderDashboardSection();
     if (activeSection === "about") return renderAboutSection();
+    if (activeSection === "community") return renderCommunitySection();
 
     if (activeSection === "privacy") {
       return (
@@ -964,6 +1129,7 @@ export default function Settings({ onLogout }) {
               ["privacy", "Privacy"],
               ["dashboard", "Dashboard Settings"],
               ["currentConfig", "Current Configuration"],
+              ["community", "Community Portfolios"],
               ["guide", "How to Use the App"],
               ["about", "About"],
             ].map(([key, label]) => (

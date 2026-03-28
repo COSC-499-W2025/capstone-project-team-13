@@ -96,6 +96,139 @@
 .port-edit-checks label { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; color: #d8dfff; cursor: pointer; }
 .port-edit-checks input[type=checkbox] { width: auto; background: none; }
 
+/* ── Editable hero ── */
+.port-hero-edit-row {
+  display: flex; align-items: center; gap: 8px; min-height: 2rem;
+}
+.port-hero-pencil {
+  background: none; border: none; cursor: pointer; padding: 3px 5px;
+  color: #6b7a99; border-radius: 5px; line-height: 1; flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0;
+}
+.port-hero-text:hover .port-hero-pencil { opacity: 1; }
+.port-hero-pencil:hover { color: #a5b4fc; background: rgba(99,102,241,0.12); }
+.port-hero-input {
+  background: rgba(255,255,255,0.06); border: 1.5px solid rgba(99,102,241,0.5);
+  border-radius: 8px; color: #eef1ff; font-family: inherit; padding: 4px 10px;
+  outline: none;
+}
+.port-hero-input-title { font-size: 1.5rem; font-weight: 800; width: 340px; max-width: 100%; }
+.port-hero-input-sub   { font-size: 0.88rem; width: 340px; max-width: 100%; }
+.port-hero-edit-save, .port-hero-edit-cancel {
+  background: none; border: none; cursor: pointer; font-size: 0.9rem;
+  padding: 3px 7px; border-radius: 5px; line-height: 1;
+}
+.port-hero-edit-save   { color: #6ee7b7; }
+.port-hero-edit-save:hover { background: rgba(16,185,129,0.15); }
+.port-hero-edit-cancel { color: #f87171; }
+.port-hero-edit-cancel:hover { background: rgba(239,68,68,0.1); }
+
+/* ── Section count badge ── */
+.port-section-count {
+  background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+  color: #818cf8; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
+  padding: 2px 9px; margin-left: 4px;
+}
+
+/* ── Layout toggle ── */
+.port-layout-toggle {
+  display: flex; gap: 0; margin-left: auto;
+  border: 1.5px solid rgba(99,102,241,0.3); border-radius: 8px; overflow: hidden;
+}
+.port-layout-btn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 10px; background: transparent; border: none; cursor: pointer;
+  color: #6b7a99; transition: background 0.15s, color 0.15s;
+}
+.port-layout-btn:hover { background: rgba(99,102,241,0.1); color: #c4cbf5; }
+.port-layout-btn.active { background: rgba(99,102,241,0.18); color: #a5b4fc; }
+.port-layout-btn + .port-layout-btn { border-left: 1.5px solid rgba(99,102,241,0.3); }
+
+/* ── No results state ── */
+.port-no-results {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 20px; text-align: center; color: #9aa6de;
+}
+.port-no-results p { font-size: 0.95rem; margin: 0; }
+
+/* ── Viz chevron ── */
+.port-viz-chevron {
+  margin-left: auto; font-size: 1rem; color: #6b7a99;
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+.port-section-header-btn:hover .port-viz-chevron { color: #a5b4fc; }
+
+/* ── Result count badge ── */
+.port-result-count {
+  font-size: 0.78rem; color: #818cf8;
+  background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 20px; padding: 4px 12px; white-space: nowrap; flex-shrink: 0;
+}
+
+body[data-theme="light"] .port-hero-pencil { color: #9aa6de; }
+body[data-theme="light"] .port-hero-input { background: #f0f1ff; border-color: rgba(99,102,241,0.4); color: #1a1d3a; }
+body[data-theme="light"] .port-section-count { background: rgba(79,70,229,0.08); border-color: rgba(79,70,229,0.25); color: #4f46e5; }
+body[data-theme="light"] .port-layout-toggle { border-color: rgba(99,102,241,0.25); }
+body[data-theme="light"] .port-layout-btn + .port-layout-btn { border-color: rgba(99,102,241,0.25); }
+body[data-theme="light"] .port-result-count { background: rgba(79,70,229,0.07); border-color: rgba(79,70,229,0.2); color: #4f46e5; }
+body[data-theme="light"] .port-no-results { color: #5a6080; }
+
+/* ── Mode switcher ── */
+.port-mode-switcher {
+  display: flex; gap: 0; border-radius: 10px; overflow: hidden;
+  border: 1.5px solid rgba(99,102,241,0.35);
+}
+.port-mode-btn {
+  display: flex; align-items: center; gap: 6px; padding: 7px 16px;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  background: transparent; border: none; color: #9aa6de;
+  transition: background 0.15s, color 0.15s;
+}
+.port-mode-btn:hover { background: rgba(99,102,241,0.1); color: #c4cbf5; }
+.port-mode-btn.active.private { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+.port-mode-btn.active.public  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+.port-mode-btn + .port-mode-btn { border-left: 1.5px solid rgba(99,102,241,0.35); }
+
+/* ── Public toolbar (search + filter) ── */
+.port-public-toolbar {
+  display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+}
+.port-search-wrap {
+  flex: 1; min-width: 200px; position: relative; display: flex; align-items: center;
+}
+.port-search-icon {
+  position: absolute; left: 12px; color: #818cf8; pointer-events: none;
+}
+.port-search-input {
+  width: 100%; padding: 9px 36px 9px 36px;
+  background: rgba(255,255,255,0.04); border: 1.5px solid rgba(99,102,241,0.3);
+  border-radius: 10px; color: #e0e7ff; font-size: 0.88rem; font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.port-search-input::placeholder { color: #6b7a99; }
+.port-search-input:focus { outline: none; border-color: rgba(99,102,241,0.6); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+.port-search-clear {
+  position: absolute; right: 10px; background: none; border: none; color: #6b7a99;
+  cursor: pointer; font-size: 0.8rem; padding: 2px 4px; line-height: 1;
+}
+.port-search-clear:hover { color: #a5b4fc; }
+.port-type-select {
+  padding: 9px 12px; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(99,102,241,0.3);
+  border-radius: 10px; color: #c4cbf5; font-size: 0.85rem; font-family: inherit; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.port-type-select:focus { outline: none; border-color: rgba(99,102,241,0.6); }
+.port-type-select option { background: #1a1f4a; color: #e0e7ff; }
+
+body[data-theme="light"] .port-search-input  { background: #f5f6ff; border-color: rgba(99,102,241,0.25); color: #1a1d3a; }
+body[data-theme="light"] .port-search-input::placeholder { color: #9aa6de; }
+body[data-theme="light"] .port-type-select   { background: #f5f6ff; border-color: rgba(99,102,241,0.25); color: #1a1d3a; }
+body[data-theme="light"] .port-type-select option { background: #fff; color: #1a1d3a; }
+body[data-theme="light"] .port-mode-switcher { border-color: rgba(99,102,241,0.25); }
+body[data-theme="light"] .port-mode-btn + .port-mode-btn { border-color: rgba(99,102,241,0.25); }
+
 /* ── Viz cards (timeline + heatmap) ── */
 .port-viz-card {
   background: linear-gradient(180deg, rgba(22,28,63,0.98), rgba(17,22,52,0.98));

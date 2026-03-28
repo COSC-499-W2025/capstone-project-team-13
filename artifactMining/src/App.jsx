@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Toast from "./components/Toast";
 import LoadingBar from "./components/LoadingBar";
@@ -20,6 +20,7 @@ import GuestUpload from "./pages/GuestUpload";
 import WebShowcase from "./pages/WebShowcase";
 import NotFound from "./pages/NotFound";
 import Interview from "./pages/Interview";
+import { PublicPortfoliosList, PublicPortfolioView } from "./pages/PublicPortfolios";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -117,6 +118,9 @@ function LoginGate({ onLogin }) {
         <div style={{ textAlign: "center", marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
           <p className="text-muted" style={{ marginBottom: 12, fontSize: "0.85rem" }}>Just want to try it out?</p>
           <a href="/guest" style={{ color: "var(--accent)", fontSize: "0.9rem" }}>Continue as Guest (no account needed)</a>
+          <div style={{ marginTop: 10 }}>
+            <a href="/public-portfolios" style={{ color: "var(--accent)", fontSize: "0.85rem", opacity: 0.8 }}>Browse public portfolios →</a>
+          </div>
         </div>
       </div>
     </div>
@@ -167,6 +171,56 @@ function KonamiEgg() {
   );
 }
 
+function AppContent({ user, onLogin, onLogout }) {
+  const location = useLocation();
+  const path = location.pathname;
+
+  // Always-accessible routes (no account required)
+  if (path === "/guest") return <GuestUpload />;
+
+  if (path === "/public-portfolios" || path.startsWith("/public-portfolios/")) {
+    return (
+      <>
+        {user && <Navbar onLogout={onLogout} user={user} />}
+        <Routes>
+          <Route path="/public-portfolios" element={<PublicPortfoliosList />} />
+          <Route path="/public-portfolios/:userId" element={<PublicPortfolioView />} />
+        </Routes>
+      </>
+    );
+  }
+
+  if (!user) return <LoginGate onLogin={onLogin} />;
+
+  return (
+    <>
+      <LoadingBar />
+      <Navbar onLogout={onLogout} user={user} />
+      <Toast />
+      <KonamiEgg />
+      <CommandPalette />
+      <PageTransition>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/upload" element={<Upload />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/skills" element={<Skills />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/showcase" element={<WebShowcase />} />
+          <Route path="/evidence" element={<Evidence />} />
+          <Route path="/analysis" element={<Analysis />} />
+          <Route path="/deletion" element={<Deletion />} />
+          <Route path="/resumes" element={<Resumes />} />
+          <Route path="/interview" element={<Interview />} />
+          <Route path="/settings" element={<Settings onLogout={onLogout} />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </PageTransition>
+    </>
+  );
+}
+
 function App() {
   const [user, setUser] = useState(undefined); // undefined = loading, null = not logged in
 
@@ -186,38 +240,9 @@ function App() {
 
   if (user === undefined) return <div style={{ padding: 40 }}>Loading…</div>;
 
-  // Guest route is always accessible
-  if (window.location.pathname === "/guest") {
-    return <BrowserRouter><GuestUpload /></BrowserRouter>;
-  }
-
-  if (!user) return <BrowserRouter><LoginGate onLogin={u => setUser(u)} /></BrowserRouter>;
-
   return (
     <BrowserRouter>
-      <LoadingBar />
-      <Navbar onLogout={handleLogout} user={user} />
-      <Toast />
-      <KonamiEgg />
-      <CommandPalette />
-      <PageTransition>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/upload" element={<Upload />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/:projectId" element={<ProjectPage />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/showcase" element={<WebShowcase />} />
-          <Route path="/evidence" element={<Evidence />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/deletion" element={<Deletion />} />
-          <Route path="/resumes" element={<Resumes />} />
-          <Route path="/interview" element={<Interview />} />
-          <Route path="/settings" element={<Settings onLogout={handleLogout} />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </PageTransition>
+      <AppContent user={user} onLogin={u => setUser(u)} onLogout={handleLogout} />
     </BrowserRouter>
   );
 }

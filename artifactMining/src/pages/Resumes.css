@@ -479,6 +479,14 @@
 .proj-regen-spinning { animation: regen-spin 0.8s linear infinite; opacity: 0.7; }
 @keyframes regen-spin { to { transform: rotate(360deg); } }
 
+/* ── AI generate button (same shape, amber accent) ── */
+.proj-ai-btn {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #f59e0b;
+}
+.proj-ai-btn:hover:not(:disabled) { background: rgba(245, 158, 11, 0.18); border-color: #f59e0b; }
+
 /* ── Projects ── */
 .proj-item    { margin-bottom: 14px; }
 .proj-name    { font-size: 10.5pt; font-weight: 700; margin-bottom: 2px; display: flex; align-items: center; gap: 2px; }

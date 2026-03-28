@@ -167,6 +167,122 @@ def regenerate_project_bullets(project_id: int, user_id: int, num_bullets: int =
         )
 
 
+def ai_enhance_project_bullets(
+    project_id: int, user_id: int, num_bullets: int = 3, current_bullets: list = None
+) -> dict:
+    """
+    Enhance existing resume bullets for a project using AI.
+    Uses current_bullets from the request if provided, otherwise reads from DB.
+    Falls back to AI generation from scratch if no bullets exist anywhere.
+    """
+    project = _check_project_ownership(project_id, user_id)
+
+    try:
+        from src.AI.ai_enhanced_summarizer import enhance_resume_bullets, generate_resume_bullets
+
+        existing = db_manager.get_resume_bullets(project_id)
+        # Prefer bullets passed from the frontend (reflects unsaved edits)
+        existing_bullets = current_bullets or (existing.get("bullets") if existing else None)
+        header = existing.get("header", project.name) if existing else project.name
+
+        skills = [s.strip() for s in (project.skills or "").split(",") if s.strip()] \
+                 if isinstance(project.skills, str) else (project.skills or [])
+
+        if existing_bullets:
+            bullets = enhance_resume_bullets(existing_bullets, project.name, skills)
+        else:
+            # No bullets yet — generate from scratch
+            project_dict = {
+                "project_name": project.name,
+                "skills": skills,
+                "file_count": project.file_count,
+                "lines_of_code": project.lines_of_code,
+                "success_score": getattr(project, "importance_score", 0) or 0,
+                "contribution_score": getattr(project, "contribution_score", 0) or 0,
+            }
+            bullets = generate_resume_bullets(project_dict, num_bullets=num_bullets)
+
+        if not bullets:
+            raise ValueError("AI returned no bullets")
+
+        scoring = score_all_bullets(bullets, project.project_type)
+        db_manager.save_resume_bullets(
+            project_id=project_id,
+            bullets=bullets,
+            header=header,
+            ats_score=scoring["overall_score"],
+        )
+
+        return {
+            "success": True,
+            "project_id": project_id,
+            "project_name": project.name,
+            "header": header,
+            "bullets": bullets,
+            "ats_score": scoring["overall_score"],
+            "num_bullets": len(bullets),
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI bullet enhancement failed: {str(e)}"
+        )
+
+
+def ai_generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3) -> dict:
+    """
+    Generate resume bullets for a project using Gemini AI.
+    Replaces any existing bullets. Raises 404/403 if project not found or not owned.
+    """
+    project = _check_project_ownership(project_id, user_id)
+
+    try:
+        from src.AI.ai_enhanced_summarizer import generate_resume_bullets
+
+        project_dict = {
+            "project_name": project.name,
+            "skills": [s.strip() for s in (project.skills or "").split(",") if s.strip()]
+                      if isinstance(project.skills, str)
+                      else (project.skills or []),
+            "file_count": project.file_count,
+            "lines_of_code": project.lines_of_code,
+            "success_score": getattr(project, "importance_score", 0) or 0,
+            "contribution_score": getattr(project, "contribution_score", 0) or 0,
+        }
+
+        bullets = generate_resume_bullets(project_dict, num_bullets=num_bullets)
+        if not bullets:
+            raise ValueError("AI returned no bullets")
+
+        existing = db_manager.get_resume_bullets(project_id)
+        header = existing.get("header", project.name) if existing else project.name
+        scoring = score_all_bullets(bullets, project.project_type)
+
+        db_manager.save_resume_bullets(
+            project_id=project_id,
+            bullets=bullets,
+            header=header,
+            ats_score=scoring["overall_score"],
+        )
+
+        return {
+            "success": True,
+            "project_id": project_id,
+            "project_name": project.name,
+            "header": header,
+            "bullets": bullets,
+            "ats_score": scoring["overall_score"],
+            "num_bullets": len(bullets),
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI bullet generation failed: {str(e)}"
+        )
+
+
 def edit_project_bullets(
     project_id: int,
     user_id: int,

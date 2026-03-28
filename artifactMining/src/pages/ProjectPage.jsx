@@ -18,7 +18,65 @@ export default function ProjectPage() {
   const [aiType, setAiType] = useState("overview");
   const [deleting, setDeleting] = useState(false);
   const [thumbFile, setThumbFile] = useState(null);
+
+  // Contributor stats state
+  const [githubUsername, setGithubUsername] = useState(null);
+  const [contributors, setContributors] = useState(null);
+  const [contribLoading, setContribLoading] = useState(true);
+  const [contribError, setContribError] = useState(null);
+  const [userContrib, setUserContrib] = useState(null);
   const [aiConsentGranted, setAiConsentGranted] = useState(false);
+  // Load user's GitHub username and contributors for this project
+  useEffect(() => {
+    async function fetchContribData(allowAutoExtract = true) {
+      setContribLoading(true);
+      setContribError(null);
+      setUserContrib(null);
+      try {
+        // Get user's GitHub username
+        const userResp = await apiFetch("/user/github-username");
+        const username = userResp.github_username;
+        setGithubUsername(username);
+        // Get contributors for this project
+        let contribResp = await apiFetch(`/projects/${projectId}/contributors`);
+        // If no contributors and allowed, trigger extraction and retry
+        if (Array.isArray(contribResp) && contribResp.length === 0 && allowAutoExtract) {
+          try {
+            await apiFetch(`/contributors/populate/project?project_id=${projectId}`, { method: "POST" });
+            // Wait briefly to allow backend to populate
+            await new Promise(res => setTimeout(res, 1200));
+            contribResp = await apiFetch(`/projects/${projectId}/contributors`);
+          } catch (extractErr) {
+            // Extraction failed, show error
+            setContribError("No contributors found and extraction failed.");
+            setContribLoading(false);
+            return;
+          }
+        }
+        setContributors(contribResp);
+        // Try to find user in contributors (by GitHub username or email)
+        let found = null;
+        if (username && Array.isArray(contribResp)) {
+          found = contribResp.find(c => {
+            // Try to match by GitHub username (case-insensitive)
+            if (c.email && c.email.includes("noreply.github.com")) {
+              const match = c.email.match(/\d+\+([^@]+)@users\.noreply\.github\.com/);
+              if (match && match[1].toLowerCase() === username.toLowerCase()) return true;
+            }
+            // Optionally, match by name (if user has set it)
+            if (c.name && c.name.toLowerCase() === username.toLowerCase()) return true;
+            return false;
+          });
+        }
+        setUserContrib(found || null);
+      } catch (e) {
+        setContribError(e.message || "Failed to load contributor data");
+      } finally {
+        setContribLoading(false);
+      }
+    }
+    fetchContribData();
+  }, [projectId]);
 
   // Evidence state
   const [evidenceTab, setEvidenceTab] = useState("view");
@@ -439,6 +497,8 @@ export default function ProjectPage() {
 
       {msg && <div className={`alert ${msg.type}`}>{msg.text}</div>}
 
+
+
       {/* ── Hero ── */}
       <div className="pp-hero">
         <div className="pp-thumbnail-wrap">
@@ -772,21 +832,50 @@ export default function ProjectPage() {
         const isMedia = ["visual_media", "media", "image", "video", "audio"].includes(ptype);
         return (
       <div className="pp-detail-grid">
-        <div className="card">
-          <h3>Metrics</h3>
-          <table className="pp-table">
-            <tbody>
-              {[
-                ["Files", project.file_count],
-                ...(!isText && !isMedia ? [["Lines of Code", project.lines_of_code?.toLocaleString()]] : []),
-                ...(!isCode && !isMedia ? [["Word Count", project.word_count?.toLocaleString()]] : []),
-                ["Total Size", fmtBytes(project.total_size_bytes)],
-              ].filter(([,v]) => v != null && v !== "").map(([k, v]) => (
-                <tr key={k}><td>{k}</td><td>{v}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {userContrib ? (
+          <div className="card">
+            <h3>Contribution</h3>
+            <table className="pp-table">
+              <tbody>
+                <tr><td>Name</td><td>{userContrib.name}</td></tr>
+                <tr><td>Commits</td><td>{userContrib.commit_count}</td></tr>
+                <tr><td>Lines added</td><td>{userContrib.lines_added}</td></tr>
+                <tr><td>Lines deleted</td><td>{userContrib.lines_deleted}</td></tr>
+                <tr><td>Contribution</td><td>{userContrib.contribution_percent}%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0 }}>Metrics</h3>
+              <a
+                href="/settings"
+                style={{
+                  fontSize: "0.92em",
+                  color: "var(--text-muted, #9aa6de)",
+                  textDecoration: "underline dotted",
+                  marginLeft: 12,
+                  whiteSpace: "nowrap"
+                }}
+              >
+                Add GitHub Username
+              </a>
+            </div>
+            <table className="pp-table">
+              <tbody>
+                {[
+                  ["Files", project.file_count],
+                  ...(!isText && !isMedia ? [["Lines of Code", project.lines_of_code?.toLocaleString()]] : []),
+                  ...(!isCode && !isMedia ? [["Word Count", project.word_count?.toLocaleString()]] : []),
+                  ["Total Size", fmtBytes(project.total_size_bytes)],
+                ].filter(([,v]) => v != null && v !== "").map(([k, v]) => (
+                  <tr key={k}><td>{k}</td><td>{v}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {!isText && (
         <div className="card">

@@ -227,6 +227,56 @@ def _generate_portfolio_summary(result: Dict[str, Any], ai_service) -> str:
         print(f"⚠️ AI summary generation failed: {e}")
         return result['summary']  # Fall back to original summary
 
+def enhance_resume_bullets(bullets: List[str], project_name: str, skills: List[str]) -> List[str]:
+    """
+    Improve existing resume bullet points using AI.
+    Preserves meaning and count; makes bullets more achievement-focused and action-verb led.
+    """
+    ai_service = get_ai_service()
+    num = len(bullets)
+    numbered = "\n".join(f"{i+1}. {b}" for i, b in enumerate(bullets))
+
+    prompt = f"""Improve these {num} resume bullet points to be stronger, more achievement-focused, and lead with a powerful action verb.
+Keep the same number of bullets and preserve the core meaning of each one.
+Start each improved bullet with a number and period (1. 2. 3.).
+
+Project: {project_name}
+Technologies: {', '.join(skills[:6])}
+
+Original bullets:
+{numbered}
+
+Improved bullets:"""
+
+    try:
+        response = ai_service.generate_text(prompt, temperature=0.5)
+
+        # First pass: only lines that start with a number (1. 2. 3. etc.)
+        improved = []
+        for line in response.strip().split('\n'):
+            line = line.strip()
+            if not line or line.startswith('```'):
+                continue
+            # Only accept numbered bullet lines
+            if not re.match(r'^\d+[\.\)]', line):
+                continue
+            # Strip the number prefix and any markdown bold markers
+            cleaned = re.sub(r'^\d+[\.\)]\s*', '', line).strip()
+            cleaned = re.sub(r'\*+', '', cleaned).strip()
+            if cleaned and len(cleaned) >= 15:
+                improved.append(cleaned)
+                if len(improved) >= num:
+                    break
+
+        if improved:
+            return improved[:num]
+        return bullets  # fall back to originals if parsing fails
+
+    except Exception as e:
+        print(f"⚠️ Resume bullet enhancement failed: {e}")
+        return bullets  # fall back to originals on error
+
+
 def generate_resume_bullets(project: Dict[str, Any], num_bullets: int = 3) -> List[str]:
     """
     Generate professional resume bullet points for a project.
@@ -250,11 +300,7 @@ def generate_resume_bullets(project: Dict[str, Any], num_bullets: int = 3) -> Li
             Resume Bullets:"""
     
     try:
-        response = ai_service.generate_text(
-            prompt,
-            temperature=0.6,
-            max_tokens=250
-        )
+        response = ai_service.generate_text(prompt, temperature=0.6)
         
         # DEBUG: Print what we got
         print(f"\n[DEBUG] AI Response:\n{repr(response)}\n")
@@ -276,7 +322,9 @@ def generate_resume_bullets(project: Dict[str, Any], num_bullets: int = 3) -> Li
             # Remove ALL leading non-letter characters
             # This catches: "1. ", "• ", "- ", "* ", "1) ", etc.
             cleaned = re.sub(r'^[^a-zA-Z]+', '', line).strip()
-            
+            # Strip markdown bold markers
+            cleaned = re.sub(r'\*+', '', cleaned).strip()
+
             # If we got something substantial, keep it
             if cleaned and len(cleaned) >= 15:
                 bullets.append(cleaned)
@@ -304,7 +352,16 @@ def generate_resume_bullets(project: Dict[str, Any], num_bullets: int = 3) -> Li
     
     except Exception as e:
         print(f"⚠️ Resume bullet generation failed: {e}")
-        return [f"Developed {project.get('project_name')} using {', '.join(project.get('skills', ['various technologies'])[:3])}"]
+        name = project.get('project_name', 'this project')
+        skills = project.get('skills', ['various technologies'])
+        fallbacks = [
+            f"Developed {name} using {', '.join(skills[:3])}",
+            f"Implemented features and functionality for {name}",
+            f"Contributed to the design and development of {name}",
+            f"Built and tested components for {name}",
+            f"Maintained and improved {name} codebase",
+        ]
+        return fallbacks[:num_bullets]
     
 # CLI Functions
 

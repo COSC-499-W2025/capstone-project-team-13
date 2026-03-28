@@ -174,6 +174,18 @@ async def incremental_upload(
         result = handler.add_zip_to_existing_project(project_id, str(upload_path))
         if not result.get("success"):
             raise HTTPException(status_code=400, detail=result.get("error", "Incremental upload failed"))
+
+        # --- Populate Git contributors for this project ---
+        try:
+            from src.Helpers.gitContributorExtraction import populate_contributors_for_project
+            # Refresh project object in case path changed
+            project = db_manager.get_project(project_id)
+            if project:
+                populate_contributors_for_project(project)
+        except Exception as e:
+            # Log but do not fail the upload if contributor extraction fails
+            print(f"[WARN] Failed to populate Git contributors: {e}")
+
         return result
     except HTTPException:
         raise
@@ -743,3 +755,23 @@ def delete_ai_insights(
     except ImportError:
         db_manager.update_project(project_id, {"ai_description": None})
         return {"success": True, "cache_deleted": 0}
+
+@router.get("/{project_id}/contributors")
+def get_project_contributors(project_id: int):
+    """Return all contributors for a given project ID."""
+    project = db_manager.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    contributors = db_manager.get_contributors_for_project(project_id)
+    # Return as list of dicts
+    return [
+        {
+            "name": c.name,
+            "email": c.contributor_identifier,
+            "commit_count": c.commit_count,
+            "lines_added": c.lines_added,
+            "lines_deleted": c.lines_deleted,
+            "contribution_percent": c.contribution_percent,
+        }
+        for c in contributors
+    ]

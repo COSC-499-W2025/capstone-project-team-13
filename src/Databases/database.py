@@ -350,6 +350,8 @@ class User(Base):
 
     # Profile
     avatar = Column(Text, nullable=True)
+    github_username = Column(String(255), nullable=True, unique=False)
+    portfolio_public = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
@@ -1233,3 +1235,4 @@ class DatabaseManager:
 
 # Global database manager instance
 db_manager = DatabaseManager()
+db_manager.User = User
