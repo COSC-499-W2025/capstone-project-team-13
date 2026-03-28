@@ -49,7 +49,16 @@ function getStreak() {
 }
 
 export default function Dashboard() {
-  const [runWalkthrough, setRunWalkthrough] = useState(true);
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('dashboard_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('dashboard_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
   const walkthroughSteps = [
     {
       target: 'body',
@@ -227,10 +236,6 @@ export default function Dashboard() {
             spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
             spotlightPadding: 0,
           },
-          spotlight: {
-            transform: 'translateY(-6px) scaleY(1.25)',
-            transition: 'transform 0.2s',
-          },
           tooltipContainer: {
             borderRadius: 10,
             boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
@@ -276,6 +281,12 @@ export default function Dashboard() {
           },
         }}
         disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('dashboard_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
       />
       <div className="page-wrap">
       <div className="dash-header">
