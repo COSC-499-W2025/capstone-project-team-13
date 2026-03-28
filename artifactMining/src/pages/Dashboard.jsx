@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { Joyride } from 'react-joyride';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
@@ -48,6 +49,45 @@ function getStreak() {
 }
 
 export default function Dashboard() {
+  const [runWalkthrough, setRunWalkthrough] = useState(true);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Welcome to your Dashboard',
+      content: 'This dashboard is your launch point for the rest of the app. Let’s take a quick tour!'
+    },
+    {
+      target: '#upload-project-btn',
+      placement: 'bottom',
+      title: 'Upload Project',
+      content: 'Click here to add new projects into the system.'
+    },
+    {
+      target: '.stat-row',
+      placement: 'bottom',
+      title: 'Portfolio Snap Judgements',
+      content: 'This row gives you quick stats and snap judgements about your portfolio.'
+    },
+    {
+      target: '.dash-grid',
+      placement: 'top',
+      title: 'Top Projects, Skills, Portfolio',
+      content: 'Here you’ll find your top projects, top skills, and portfolio generation tools.'
+    },
+    {
+      target: '.dash-charts-row',
+      placement: 'top',
+      title: 'Charts & Insights',
+      content: 'This section contains charts for your projects and skills.'
+    },
+    {
+      target: '.navbar-projects, [href="/projects"]',
+      placement: 'bottom',
+      title: 'Next: Projects',
+      content: 'Click on Projects in the navigation bar to view and manage your projects.'
+    }
+  ];
   const [projects, setProjects] = useState([]);
   const [skills, setSkills] = useState([]);
   const [portfolio, setPortfolio] = useState(null);
@@ -169,7 +209,75 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            spotlightPadding: 0,
+          },
+          spotlight: {
+            transform: 'translateY(-6px) scaleY(1.25)',
+            transition: 'transform 0.2s',
+          },
+          tooltipContainer: {
+            borderRadius: 10,
+            boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
+            padding: '8px 14px',
+            fontSize: '0.97rem',
+            minWidth: 200,
+            maxWidth: 300,
+          },
+          tooltip: {
+            margin: 0,
+          },
+          buttonNext: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+            borderRadius: 7,
+            fontWeight: 600,
+            boxShadow: '0 1px 4px 0 rgba(99,102,241,0.08)',
+            padding: '6px 18px',
+            fontSize: '0.98rem',
+          },
+          buttonBack: {
+            color: 'var(--accent, #6366f1)',
+            background: 'transparent',
+            fontWeight: 500,
+            fontSize: '0.98rem',
+          },
+          buttonSkip: {
+            color: 'var(--text-muted, #a5b4fc)',
+            background: 'transparent',
+            fontSize: '0.98rem',
+          },
+          dot: {
+            background: 'var(--accent, #6366f1)',
+          },
+          badge: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+      />
+      <div className="page-wrap">
       <div className="dash-header">
         <h1 style={{ display: "flex", alignItems: "center", gap: 8 }}>
           Dashboard
@@ -181,7 +289,7 @@ export default function Dashboard() {
           </button>
         </h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="btn-primary" onClick={() => nav("/upload")}>+ Upload Project</button>
+          <button id="upload-project-btn" className="btn-primary" onClick={() => nav("/upload")}>+ Upload Project</button>
         </div>
       </div>
 
@@ -423,5 +531,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

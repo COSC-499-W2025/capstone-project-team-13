@@ -1,3 +1,65 @@
+/* === Joyride Custom Walkthrough Styling === */
+.react-joyride__spotlight {
+  box-shadow: 0 0 0 4px var(--accent, #6366f1), 0 2px 24px 0 rgba(99,102,241,0.18) !important;
+  border-radius: 14px !important;
+  background: rgba(99,102,241,0.08) !important;
+  transition: box-shadow 0.2s, border-radius 0.2s, background 0.2s, transform 0.2s !important;
+  transform: scaleY(1.022) !important;
+}
+.react-joyride__tooltip {
+  background: var(--card-bg, #181a2a) !important;
+  color: var(--text, #e0e7ff) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 32px 0 rgba(30,34,54,0.18) !important;
+  padding: 18px 22px !important;
+  min-width: 220px !important;
+  max-width: 340px !important;
+  font-size: 1.05rem !important;
+  border: 1.5px solid var(--accent, #6366f1) !important;
+}
+.react-joyride__tooltip h4 {
+  color: var(--accent, #6366f1) !important;
+  font-size: 1.18rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+}
+.react-joyride__tooltip button {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  box-shadow: 0 2px 8px 0 rgba(99,102,241,0.10) !important;
+  margin: 0 4px !important;
+}
+.react-joyride__tooltip button[aria-label="Close"] {
+  color: var(--text-muted, #a5b4fc) !important;
+  background: transparent !important;
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  box-shadow: none !important;
+}
+.react-joyride__tooltip button[aria-label="Back"] {
+  color: var(--accent, #6366f1) !important;
+  background: transparent !important;
+}
+.react-joyride__tooltip button[aria-label="Primary"] {
+  background: var(--accent, #6366f1) !important;
+  color: #fff !important;
+}
+.react-joyride__tooltip button[aria-label="Skip"] {
+  color: var(--text-muted, #a5b4fc) !important;
+  background: transparent !important;
+}
+.react-joyride__tooltip .react-joyride__tooltip__footer {
+  margin-top: 10px !important;
+}
+.react-joyride__tooltip .react-joyride__tooltip__badge {
+  background: var(--accent, #6366f1) !important;
+  color: #fff !important;
+}
+.react-joyride__tooltip .react-joyride__tooltip__dot {
+  background: var(--accent, #6366f1) !important;
+}
 .insights {
   background: linear-gradient(180deg, rgba(22, 28, 63, 0.98), rgba(17, 22, 52, 0.98));
   border: 1px solid rgba(120, 130, 255, 0.25);
