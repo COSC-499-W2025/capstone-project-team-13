@@ -20,6 +20,13 @@ function typeColor(type) {
   return TYPE_COLORS.default;
 }
 
+function thumbUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const filename = path.split(/[/\\]/).pop();
+  return `${API_BASE}/uploads/${filename}`;
+}
+
 const SORT_OPTIONS = [
   { value: "importance", label: "Importance" },
   { value: "rank",       label: "User Rank" },
@@ -522,12 +529,19 @@ function EditForm({ p, editForm, setEditForm, saveEdit, setEditId }) {
 
 function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav, isPublic }) {
   const accent = typeColor(p.type || p.project_type);
+  const thumb = thumbUrl(p.thumbnail_path);
   return (
     <div className="port-top-card card" style={{ borderLeft: `3px solid ${accent}` }}>
       <div className="port-rank">#{rank}</div>
       <div className="port-card-tags">
         <span className="tag">{p.type || p.project_type}</span>
         {p.is_hidden && !isPublic && <span className="tag warning">hidden</span>}
+      </div>
+      {thumb ? (
+        <img src={thumb} alt="thumbnail" className="port-card-thumb" onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
+      ) : null}
+      <div className="port-card-thumb-placeholder" style={{ display: thumb ? "none" : "flex" }}>
+        {(projectName(p) || "?")[0].toUpperCase()}
       </div>
       <h3 className="port-proj-name">{projectName(p)}</h3>
       <p className="port-proj-desc text-muted">{p.description || "No description"}</p>
@@ -566,10 +580,17 @@ function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEd
 function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav, isPublic }) {
   const accent = typeColor(p.type || p.project_type);
   const score = p.importance_score ?? 0;
+  const thumb = thumbUrl(p.thumbnail_path);
   return (
     <div className="port-list-row card" style={{ borderLeft: `3px solid ${accent}` }}>
       {/* Importance bar on left */}
       <div className="port-score-bar" style={{ background: accent, height: `${Math.round(score * 100)}%` }} />
+      {thumb ? (
+        <img src={thumb} alt="thumbnail" className="port-row-thumb" onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
+      ) : null}
+      <div className="port-row-thumb-placeholder" style={{ display: thumb ? "none" : "flex" }}>
+        {(projectName(p) || "?")[0].toUpperCase()}
+      </div>
       <div className="port-list-main">
         <div className="port-list-top">
           <strong className="port-list-name">{projectName(p)}</strong>

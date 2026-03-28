@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Code2, FileText, Film, Image, Music } from "lucide-react";
 import { apiFetch, projectName } from "../apiClient";
 import "./Projects.css";
 
@@ -35,6 +36,23 @@ export default function Projects() {
     return (b / Math.pow(k, i)).toFixed(1) + " " + sz[i];
   }
 
+  function thumbUrl(path) {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    const filename = path.split(/[/\\]/).pop();
+    return `http://127.0.0.1:8000/uploads/${filename}`;
+  }
+
+  const TYPE_ICONS = {
+    code:         <Code2 size={40} strokeWidth={1.5} />,
+    text:         <FileText size={40} strokeWidth={1.5} />,
+    visual_media: <Film size={40} strokeWidth={1.5} />,
+    media:        <Film size={40} strokeWidth={1.5} />,
+    image:        <Image size={40} strokeWidth={1.5} />,
+    video:        <Film size={40} strokeWidth={1.5} />,
+    audio:        <Music size={40} strokeWidth={1.5} />,
+  };
+
   return (
     <div className="page-wrap">
       <div className="proj-header">
@@ -64,7 +82,7 @@ export default function Projects() {
         <div className="type-tabs">
           {types.map(t => (
             <button key={t} className={`tab-btn ${typeFilter === t ? "active" : ""}`} onClick={() => setTypeFilter(t)}>
-              {t}
+              {t === "visual_media" ? "Media" : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
@@ -77,6 +95,12 @@ export default function Projects() {
           : <div className="proj-grid">
               {sorted.map(p => (
                 <div key={p.id} className="proj-card card" onClick={() => nav(`/projects/${p.id}`)}>
+                  <div className="proj-card-banner">
+                    {thumbUrl(p.thumbnail_path)
+                      ? <img src={thumbUrl(p.thumbnail_path)} alt="" className="proj-card-thumb" />
+                      : <span className="proj-card-placeholder-icon">{TYPE_ICONS[p.project_type] || <FileText size={40} strokeWidth={1.5} />}</span>
+                    }
+                  </div>
                   <div className="proj-card-top">
                     <span className="tag">{p.project_type || "unknown"}</span>
                     {p.is_featured && <span className="tag success">⭐ featured</span>}

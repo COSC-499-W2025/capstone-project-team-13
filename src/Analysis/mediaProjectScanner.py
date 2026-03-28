@@ -226,6 +226,7 @@ class MediaProjectScanner:
                 'name': self.project_name,
                 'file_path': str(self.project_path),
                 'file_count': len(self.media_files),
+                'total_size_bytes': sum(f.stat().st_size for f in self.media_files),
                 'project_type': 'visual_media',
                 'languages': list(self.software_used),  # store software in languages
                 'skills': list(self.skills_detected)[:10] if self.skills_detected else [],
