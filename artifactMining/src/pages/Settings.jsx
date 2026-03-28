@@ -590,6 +590,7 @@ export default function Settings({ onLogout }) {
         )}
 
         <div className="settings-content-grid">
+          {!currentUser && (
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Create Account</h3><p>Register a new account.</p></div></div>
             <form className="settings-form" onSubmit={handleSignup}>
@@ -600,6 +601,7 @@ export default function Settings({ onLogout }) {
               <button className="settings-button settings-button-primary" type="submit" disabled={authLoading}>{authLoading ? "Submitting..." : "Sign Up"}</button>
             </form>
           </div>
+          )}
 
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Login</h3><p>Sign in to your account.</p></div></div>
