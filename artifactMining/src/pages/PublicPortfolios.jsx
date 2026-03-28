@@ -57,9 +57,16 @@ export function PublicPortfoliosList() {
             Browse portfolios shared by other users
           </p>
         </div>
-        <button className="btn-secondary" onClick={() => nav(-1)}>
-          ← Back
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {!localStorage.getItem("token") && (
+            <a href="/" className="btn-primary" style={{ textDecoration: "none" }}>
+              ← Back to Login
+            </a>
+          )}
+          <button className="btn-secondary" onClick={() => nav(-1)}>
+            ← Back
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -209,7 +216,12 @@ export function PublicPortfolioView() {
             </p>
           )}
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {!localStorage.getItem("token") && (
+            <a href="/" className="btn-primary" style={{ textDecoration: "none" }}>
+              ← Back to Login
+            </a>
+          )}
           <button className="btn-secondary" onClick={() => nav("/public-portfolios")}>
             ← All Portfolios
           </button>
