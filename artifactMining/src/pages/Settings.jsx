@@ -603,6 +603,7 @@ export default function Settings({ onLogout }) {
           </div>
           )}
 
+          {!currentUser && (
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Login</h3><p>Sign in to your account.</p></div></div>
             <form className="settings-form" onSubmit={handleLogin}>
@@ -610,10 +611,10 @@ export default function Settings({ onLogout }) {
               <label className="settings-label">Password<input className="settings-input" type="password" name="password" value={loginForm.password} onChange={handleLoginChange} required /></label>
               <div className="settings-card-actions">
                 <button className="settings-button settings-button-primary" type="submit" disabled={authLoading}>{authLoading ? "Submitting..." : "Log In"}</button>
-                <button className="settings-button settings-button-secondary" type="button" onClick={handleLogout}>Log Out</button>
               </div>
             </form>
           </div>
+          )}
 
           {/* GitHub Username Card (now row 2) */}
           <div className="settings-card">
@@ -658,6 +659,7 @@ export default function Settings({ onLogout }) {
             </div>
             <div className="settings-card-actions">
               <button className="settings-button settings-button-refresh" onClick={fetchCurrentUser} disabled={currentUserLoading} type="button">Refresh</button>
+              {currentUser && <button className="settings-button settings-button-secondary" type="button" onClick={handleLogout}>Log Out</button>}
             </div>
           </div>
         </div>
