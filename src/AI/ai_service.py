@@ -300,11 +300,24 @@ class AIService:
                 max_output_tokens=max_tokens,
             )
 
-            response = self.model.generate_content(
-                prompt,
-                generation_config=generation_config
-            )
-            
+            # Retry up to 3 times on quota/rate-limit errors (429)
+            for _attempt in range(3):
+                try:
+                    response = self.model.generate_content(
+                        prompt,
+                        generation_config=generation_config
+                    )
+                    break
+                except Exception as _e:
+                    if "429" in str(_e) and _attempt < 2:
+                        import re as _re
+                        delay_match = _re.search(r'retry.*?(\d+(?:\.\d+)?)s', str(_e), _re.IGNORECASE)
+                        delay = float(delay_match.group(1)) + 1 if delay_match else 5
+                        print(f"  ⚠️ Rate limited, retrying in {delay:.0f}s...")
+                        time.sleep(delay)
+                    else:
+                        raise
+
             # Check for safety blocks
             if not response.candidates or len(response.candidates) == 0:
                 print("✗ AI response blocked")
@@ -331,7 +344,23 @@ class AIService:
                 return None
             
             try:
-                result_text = response.text
+                # response.text raises when finish_reason == 2 (MAX_TOKENS) because
+                # the library treats a truncated response as having no valid Part.
+                # Read from candidate.content.parts directly as a safe fallback.
+                result_text = None
+                if candidate.content is not None and candidate.content.parts:
+                    try:
+                        result_text = "".join(
+                            part.text for part in candidate.content.parts if hasattr(part, "text")
+                        )
+                    except Exception:
+                        pass
+                if not result_text:
+                    if candidate.finish_reason == 2:
+                        # Truncated with no recoverable parts
+                        print("✗ Truncated response with no content parts — skipping")
+                        return None
+                    result_text = response.text
                 if not result_text or not isinstance(result_text, str):
                     print("✗ Empty or invalid response text")
                     return None

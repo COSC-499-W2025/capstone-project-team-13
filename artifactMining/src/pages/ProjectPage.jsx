@@ -117,9 +117,17 @@ export default function ProjectPage() {
         is_hidden: d.is_hidden || false,
         importance_score: d.importance_score ?? "",
       });
-      // If project already has stored analysis, show it
-      if (d.ai_analysis && !analysisResult) {
-        setAnalysisResult(d.ai_analysis);
+      // If project already has stored analysis, show it (parse if stored as JSON string)
+      if ((d.ai_analysis || d.ai_description) && !analysisResult) {
+        try {
+          const parsed = d.ai_analysis
+            ? (typeof d.ai_analysis === "string" ? JSON.parse(d.ai_analysis) : d.ai_analysis)
+            : {};
+          // Merge top-level project fields so the card always has something to show
+          if (!parsed.ai_description && d.ai_description) parsed.ai_description = d.ai_description;
+          if (!parsed.extracted_skills?.length && d.skills?.length) parsed.extracted_skills = d.skills;
+          setAnalysisResult(Object.keys(parsed).length ? parsed : null);
+        } catch { setAnalysisResult(null); }
       }
     } catch (e) { setMsg({ type: "error", text: e.message }); }
     finally { setLoading(false); }
@@ -208,7 +216,7 @@ export default function ProjectPage() {
   }
 
   function fmtBytes(b) {
-    if (!b) return "—";
+    if (b == null || b <= 0) return null;
     const k = 1024, sz = ["B","KB","MB","GB"], i = Math.floor(Math.log(b)/Math.log(k));
     return (b/Math.pow(k,i)).toFixed(1) + " " + sz[i];
   }
@@ -223,76 +231,109 @@ export default function ProjectPage() {
     return `${BASE}/uploads/${filename}`;
   }
 
+  function stripMd(text) {
+    return (text || "")
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/\*(.+?)\*/g, "$1")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/`(.+?)`/g, "$1")
+      .trim();
+  }
+
   // Render AI analysis results cleanly — no raw JSON, no meta-word cards
   function renderAnalysis(r) {
     if (!r) return null;
     const cards = [];
 
-    // Overview — plain string
+    // Overview
     if (r.overview) {
-      const text = typeof r.overview === "string" ? r.overview
-        : r.overview.summary || r.overview.description || "";
-      if (text.trim()) cards.push(
+      const text = stripMd(typeof r.overview === "string" ? r.overview
+        : r.overview.summary || r.overview.description || "");
+      if (text) cards.push(
         <div key="ov" className="ai-result-block">
           <h4 className="ai-result-title">📝 Overview</h4>
-          <p className="ai-result-text">{text.trim()}</p>
+          <p className="ai-result-text" style={{ lineHeight: 1.7 }}>{text}</p>
         </div>
       );
     }
 
-    // Technical depth — raw_analysis string or dict of string values
+    // Technical depth — render each line as formatted text
     if (r.technical_depth) {
       const td = r.technical_depth;
       const rawText = typeof td === "string" ? td : (td.raw_analysis || "");
-      const extras = typeof td === "object"
-        ? Object.entries(td).filter(([k, v]) => k !== "raw_analysis" && typeof v === "string" && v.trim())
-        : [];
-      if (rawText.trim() || extras.length > 0) {
+      if (rawText.trim()) {
+        const lines = rawText.split("\n").map(l => l.trim()).filter(Boolean);
         cards.push(
           <div key="td" className="ai-result-block">
             <h4 className="ai-result-title">🔬 Technical Depth</h4>
-            {rawText.trim() && <p className="ai-result-text">{rawText.trim()}</p>}
-            {extras.length > 0 && (
-              <ul className="ai-result-list">
-                {extras.map(([k, v]) => (
-                  <li key={k}><strong>{k.replace(/_/g, " ")}:</strong> {v}</li>
-                ))}
-              </ul>
-            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+              {lines.map((line, i) => {
+                const clean = stripMd(line);
+                const isBullet = /^[-•*]\s/.test(line);
+                const isNumbered = /^\d+\.\s/.test(line);
+                const isHeader = /^#{1,6}\s/.test(line) || (line.replace(/\*\*/g,"").endsWith(":") && line.length < 80);
+                if (isHeader) return (
+                  <p key={i} style={{ fontWeight: 600, color: "var(--text, #e2e8f0)", margin: "8px 0 2px" }}>
+                    {clean.replace(/:$/, "")}
+                  </p>
+                );
+                if (isBullet || isNumbered) return (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ color: "var(--accent, #818cf8)", flexShrink: 0, marginTop: 3, fontSize: "0.7rem" }}>▸</span>
+                    <span style={{ fontSize: "0.88rem", lineHeight: 1.6, color: "var(--text-muted, #9aa6de)" }}>
+                      {stripMd(line.replace(/^[-•*\d.]\s*/, ""))}
+                    </span>
+                  </div>
+                );
+                return <p key={i} style={{ fontSize: "0.88rem", lineHeight: 1.6, color: "var(--text-muted, #9aa6de)", margin: 0 }}>{clean}</p>;
+              })}
+            </div>
           </div>
         );
       }
     }
 
-    // Skills — handle both plain strings and {skill, justification} objects
+    // Skills — name + evidence level badge + justification
     if (r.skills && r.skills.length > 0) {
       const JUNK = new Set([
         "skill name", "skill", "justification", "n/a", "none", "—", "",
         "strong", "moderate", "weak", "demonstrated", "evidence", "level",
       ]);
+      const LEVEL_COLOR = { strong: "#4ade80", moderate: "#facc15", weak: "#f87171" };
       const items = [];
       const seen = new Set();
       for (const s of r.skills) {
-        const name = (typeof s === "string" ? s : (s.skill || s.name || ""))
-          .replace(/\*+/g, "").replace(/^skill name:?\s*/i, "").trim();
-        const justification = typeof s === "object"
+        const name = stripMd((typeof s === "string" ? s : (s.skill || s.name || ""))
+          .replace(/^skill name:?\s*/i, "").trim());
+        const level = typeof s === "object" ? (s.evidence_level || s.level || "").toLowerCase() : "";
+        const justification = stripMd(typeof s === "object"
           ? (s.justification || s.evidence || "").replace(/^justification:?\s*/i, "").trim()
-          : "";
+          : "");
         const lower = name.toLowerCase();
         if (!name || JUNK.has(lower) || seen.has(lower) || name.split(" ").length > 8) continue;
         seen.add(lower);
-        items.push({ name, justification });
+        items.push({ name, level, justification });
       }
       if (items.length > 0) {
         cards.push(
           <div key="sk" className="ai-result-block">
             <h4 className="ai-result-title">💡 Demonstrated Skills</h4>
-            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map(({ name, justification }, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                  <span className="tag accent" style={{ fontSize: "0.82rem", whiteSpace: "nowrap" }}>{name}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+              {items.map(({ name, level, justification }, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span className="tag accent" style={{ fontSize: "0.85rem" }}>{name}</span>
+                    {level && (
+                      <span style={{
+                        fontSize: "0.72rem", fontWeight: 600, textTransform: "uppercase",
+                        letterSpacing: "0.05em", color: LEVEL_COLOR[level] || "#9aa6de"
+                      }}>{level}</span>
+                    )}
+                  </div>
                   {justification && (
-                    <span style={{ fontSize: "0.82rem", color: "var(--text-muted, #9aa6de)" }}>{justification}</span>
+                    <span style={{ fontSize: "0.82rem", color: "var(--text-muted, #9aa6de)", paddingLeft: 4, lineHeight: 1.5 }}>
+                      {justification}
+                    </span>
                   )}
                 </div>
               ))}
@@ -302,8 +343,86 @@ export default function ProjectPage() {
       }
     }
 
+    // Text analysis fields
+    if (r.ai_description) {
+      cards.push(
+        <div key="td-desc" className="ai-result-block">
+          <h4 className="ai-result-title">📝 Description</h4>
+          <p className="ai-result-text">{r.ai_description}</p>
+        </div>
+      );
+    }
+    if (r.extracted_skills?.length > 0) {
+      cards.push(
+        <div key="td-sk" className="ai-result-block">
+          <h4 className="ai-result-title">💡 Demonstrated Skills</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {r.extracted_skills.map((s, i) => (
+              <span key={i} className="tag accent">{typeof s === "string" ? s : (s.skill || s.name || s)}</span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (r.contribution_score != null) {
+      cards.push(
+        <div key="td-cs" className="ai-result-block">
+          <h4 className="ai-result-title">⭐ Contribution Score</h4>
+          <p className="ai-result-text">{r.contribution_score}</p>
+        </div>
+      );
+    }
+
+    // Media evidence fields
+    if (r.media_type) {
+      cards.push(
+        <div key="mt" className="ai-result-block">
+          <h4 className="ai-result-title">🎬 Media Type</h4>
+          <p className="ai-result-text" style={{ textTransform: "capitalize" }}>{r.media_type}</p>
+        </div>
+      );
+    }
+    if (r.themes?.length > 0) {
+      cards.push(
+        <div key="th" className="ai-result-block">
+          <h4 className="ai-result-title">🎨 Themes</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {r.themes.map((t, i) => <span key={i} className="tag accent">{t}</span>)}
+          </div>
+        </div>
+      );
+    }
+    if (r.creative_strengths?.length > 0) {
+      cards.push(
+        <div key="cs" className="ai-result-block">
+          <h4 className="ai-result-title">💡 Creative Strengths</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {r.creative_strengths.map((s, i) => <span key={i} className="tag accent">{s}</span>)}
+          </div>
+        </div>
+      );
+    }
+    if (r.tools_used?.length > 0) {
+      cards.push(
+        <div key="tu" className="ai-result-block">
+          <h4 className="ai-result-title">🛠 Tools Used</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+            {r.tools_used.map((t, i) => <span key={i} className="tag">{t}</span>)}
+          </div>
+        </div>
+      );
+    }
+    if (r.complexity) {
+      cards.push(
+        <div key="cx" className="ai-result-block">
+          <h4 className="ai-result-title">⚡ Complexity</h4>
+          <p className="ai-result-text" style={{ textTransform: "capitalize" }}>{r.complexity}</p>
+        </div>
+      );
+    }
+
     if (cards.length === 0) {
-      return <p className="text-muted" style={{ padding: "8px 0" }}>No results yet. Choose a type and click Run AI Analysis.</p>;
+      return <p className="text-muted" style={{ padding: "8px 0" }}>No results yet. Click Run Analysis to generate insights.</p>;
     }
     return <>{cards}</>;
   }
@@ -432,16 +551,18 @@ export default function ProjectPage() {
                 ? "AI features are disabled. Enable them in Settings to run analysis."
                 : hasStoredAnalysis
                   ? "Showing saved analysis. Run again to refresh."
-                  : "No analysis yet. Choose a type and run to generate insights."}
+                  : "No analysis yet. Run to generate insights."}
             </p>
           </div>
           <div className="pp-ai-controls">
-            <select value={aiType} onChange={e => setAiType(e.target.value)} disabled={!aiConsentGranted}>
-              <option value="overview">Overview</option>
-              <option value="technical_depth">Technical Depth</option>
-              <option value="skills_extraction">Skills Extraction</option>
-              <option value="skill_growth">Skill Growth</option>
-            </select>
+            {!["visual_media", "media", "image", "video", "audio", "text"].includes(project.project_type?.toLowerCase()) && (
+              <select value={aiType} onChange={e => setAiType(e.target.value)} disabled={!aiConsentGranted}>
+                <option value="overview">Overview</option>
+                <option value="technical_depth">Technical Depth</option>
+                <option value="skills_extraction">Skills Extraction</option>
+                <option value="skill_growth">Skill Growth</option>
+              </select>
+            )}
             <button
               className="btn-primary"
               onClick={analyze}
@@ -464,7 +585,7 @@ export default function ProjectPage() {
             : analyzing
               ? <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 0", color: "#9aa6de" }}>
                   <div className="spinner" />
-                  <span>Running {aiType.replace(/_/g, " ")} analysis…</span>
+                  <span>Running analysis…</span>
                 </div>
               : renderAnalysis(analysisResult)
           }
@@ -644,6 +765,12 @@ export default function ProjectPage() {
       </div>
 
       {/* ── Stats grid ── */}
+      {(() => {
+        const ptype = project.project_type?.toLowerCase() ?? "";
+        const isCode = ptype === "code";
+        const isText = ptype === "text";
+        const isMedia = ["visual_media", "media", "image", "video", "audio"].includes(ptype);
+        return (
       <div className="pp-detail-grid">
         <div className="card">
           <h3>Metrics</h3>
@@ -651,8 +778,8 @@ export default function ProjectPage() {
             <tbody>
               {[
                 ["Files", project.file_count],
-                ["Lines of Code", project.lines_of_code?.toLocaleString()],
-                ["Word Count", project.word_count?.toLocaleString()],
+                ...(!isText && !isMedia ? [["Lines of Code", project.lines_of_code?.toLocaleString()]] : []),
+                ...(!isCode && !isMedia ? [["Word Count", project.word_count?.toLocaleString()]] : []),
                 ["Total Size", fmtBytes(project.total_size_bytes)],
               ].filter(([,v]) => v != null && v !== "").map(([k, v]) => (
                 <tr key={k}><td>{k}</td><td>{v}</td></tr>
@@ -661,16 +788,19 @@ export default function ProjectPage() {
           </table>
         </div>
 
+        {!isText && (
         <div className="card">
-          <h3>Languages & Frameworks</h3>
+          <h3>{isMedia ? "Tools & Software" : "Languages & Frameworks"}</h3>
           <div className="chip-group">
             {(project.languages || []).map((l, i) => <span key={i} className="tag accent">{l}</span>)}
-            {(project.frameworks || []).map((f, i) => <span key={i} className="tag">{f}</span>)}
-            {!project.languages?.length && !project.frameworks?.length &&
+            {!isMedia && (project.frameworks || []).map((f, i) => <span key={i} className="tag">{f}</span>)}
+            {!project.languages?.length && (isMedia || !project.frameworks?.length) &&
               <span className="text-muted">None detected</span>}
           </div>
         </div>
+        )}
 
+        {(project.project_type?.toLowerCase() !== "text" || (project.skills || []).length > 0) && (
         <div className="card">
           <h3>Skills</h3>
           <div className="chip-group">
@@ -682,6 +812,7 @@ export default function ProjectPage() {
             }
           </div>
         </div>
+        )}
 
         <div className="card">
           <h3>Details</h3>
@@ -699,6 +830,8 @@ export default function ProjectPage() {
           </table>
         </div>
       </div>
+        );
+      })()}
     </div>
   );
 }

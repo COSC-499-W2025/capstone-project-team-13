@@ -269,6 +269,33 @@ def get_project(
         raise HTTPException(status_code=404, detail="Project not found")
     if project.user_id != user_id:
         raise HTTPException(status_code=403, detail="You don't have permission to access this project")
+    # Backfill total_size_bytes from files table if missing
+    if not project.total_size_bytes:
+        try:
+            files = db_manager.get_files_for_project(project_id)
+            total = sum(f.file_size or 0 for f in files)
+            if not total:
+                from pathlib import Path as _Path
+                _p = _Path(project.file_path)
+                if _p.is_file():
+                    total = _p.stat().st_size
+                elif _p.is_dir():
+                    total = sum(f.stat().st_size for f in _p.rglob("*") if f.is_file())
+            if total:
+                db_manager.update_project(project_id, {"total_size_bytes": total})
+                project.total_size_bytes = total
+        except Exception:
+            pass
+    # Backfill skills from stored ai_analysis if skills list is empty
+    if not project.skills and project.ai_analysis:
+        try:
+            stored = json.loads(project.ai_analysis) if isinstance(project.ai_analysis, str) else project.ai_analysis
+            extracted = stored.get("extracted_skills", [])
+            if extracted:
+                db_manager.update_project(project_id, {"skills": extracted})
+                project._skills = json.dumps(extracted)
+        except Exception:
+            pass
     d = project.to_dict(include_counts=True)
     d["display_name"] = _display_name(project)
     return d
@@ -411,29 +438,118 @@ def analyze_project(
         ptype = (project.project_type or "code").lower()
 
         if ptype == "text":
-            from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
-            analyzer = AITextProjectAnalyzer()
-            project_dict = {k: v for k, v in project.__dict__.items() if not k.startswith("_")}
-            project_dict["project_name"] = project.name or "Unnamed Project"
-            results = analyzer.analyze_project_complete(project_dict)
+            import base64 as _b64
+            import google.generativeai as _genai
+            from pathlib import Path as _Path
+
+            name = project.name or "Untitled"
+            fp = _Path(project.file_path) if project.file_path else None
+            ext = fp.suffix.lower() if fp else ""
+
+            prompt_text = f"""You are analyzing a document for someone's portfolio. Read the document carefully and return ONLY valid JSON with no markdown fences.
+
+Project name: {name}
+
+Return exactly this JSON:
+{{
+  "ai_description": "<3-4 sentence description: what is this document, what does it cover, and what does it show about the author's abilities>",
+  "extracted_skills": ["<skill1>", "<skill2>", "<skill3>", "<skill4>", "<skill5>"],
+  "document_type": "<essay|report|resume|cover_letter|thesis|article|story|research|other>",
+  "topics": ["<topic1>", "<topic2>", "<topic3>"],
+  "writing_strengths": ["<strength1>", "<strength2>"],
+  "complexity": "<introductory|intermediate|advanced>",
+  "contribution_score": <1-10>
+}}"""
+
+            results = {}
+            raw = None
+
+            # Send file bytes directly to Gemini for native PDF/DOCX understanding
+            if fp and fp.is_file() and ext in {".pdf", ".docx", ".doc"}:
+                try:
+                    from src.AI.ai_service import get_ai_service
+                    ai = get_ai_service()
+                    mime = "application/pdf" if ext == ".pdf" else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    file_bytes = fp.read_bytes()
+                    gen_config = _genai.types.GenerationConfig(temperature=0.4, max_output_tokens=1024)
+                    response = ai.model.generate_content(
+                        [{"mime_type": mime, "data": _b64.b64encode(file_bytes).decode()}, prompt_text],
+                        generation_config=gen_config
+                    )
+                    candidate = response.candidates[0] if response.candidates else None
+                    if candidate and candidate.content and candidate.content.parts:
+                        raw = "".join(p.text for p in candidate.content.parts if hasattr(p, "text"))
+                    else:
+                        raw = response.text
+                except Exception as ex:
+                    print(f"  ⚠️ Native file analysis failed: {ex}")
+
+            # Fallback for plain text files
+            if raw is None:
+                from src.AI.ai_service import get_ai_service
+                ai = get_ai_service()
+                content = ""
+                try:
+                    if fp and fp.is_file() and ext in {".txt", ".md", ".rst", ".tex"}:
+                        content = fp.read_text(encoding="utf-8", errors="ignore")[:4000]
+                except Exception:
+                    pass
+                full_prompt = prompt_text + f"\n\nDocument content:\n\"\"\"\n{content or '(unavailable)'}\n\"\"\""
+                raw = ai.generate_text(full_prompt, temperature=0.4, max_tokens=800)
+
+            if raw:
+                try:
+                    text = raw.strip()
+                    print(f"  Raw AI response (first 300): {text[:300]}")
+                    if text.startswith("```"):
+                        text = text.split("```")[1]
+                        if text.startswith("json"):
+                            text = text[4:]
+                    results = _json.loads(text.strip())
+                    print(f"  Parsed keys: {list(results.keys())}")
+                except Exception as parse_err:
+                    print(f"  JSON parse failed: {parse_err} | raw: {raw[:200] if raw else None}")
+                    results = {}
+
             updates = {}
             if results.get("ai_description"):
                 updates["ai_description"] = results["ai_description"]
             if results.get("extracted_skills"):
-                updates["skills"] = ", ".join(results["extracted_skills"])
-            safe = {k: v for k, v in results.items() if v is not None}
-            updates["ai_analysis"] = _json.dumps(safe)
-        elif ptype in ("media", "image", "video", "audio"):
-            from src.AI.ai_media_project_analyzer import AIMediaProjectAnalyzer
-            analyzer = AIMediaProjectAnalyzer()
-            project_dict = {k: v for k, v in project.__dict__.items() if not k.startswith("_")}
-            project_dict["project_name"] = project.name or "Unnamed Project"
-            results = analyzer.analyze_project_complete(project_dict)
+                updates["skills"] = results["extracted_skills"]
+            updates["ai_analysis"] = _json.dumps({k: v for k, v in results.items() if v is not None})
+        elif ptype in ("media", "visual_media", "image", "video", "audio"):
+            from src.Evidence.evidenceManager import evidence_manager
+            results = evidence_manager.extract_and_store_evidence_media(project)
             updates = {}
-            if results.get("ai_description"):
-                updates["ai_description"] = results["ai_description"]
-            safe = {k: v for k, v in results.items() if v is not None}
-            updates["ai_analysis"] = _json.dumps(safe)
+            # Backfill total_size_bytes if missing
+            if not project.total_size_bytes:
+                try:
+                    from pathlib import Path as _Path
+                    _p = _Path(project.file_path)
+                    if _p.is_file():
+                        updates["total_size_bytes"] = _p.stat().st_size
+                    elif _p.is_dir():
+                        updates["total_size_bytes"] = sum(
+                            f.stat().st_size for f in _p.rglob("*") if f.is_file()
+                        )
+                except Exception:
+                    pass
+            # Build a plain description from extracted fields
+            if results:
+                parts = []
+                if results.get("media_type"):
+                    parts.append(f"Media type: {results['media_type']}.")
+                if results.get("themes"):
+                    parts.append(f"Themes: {', '.join(results['themes'])}.")
+                if results.get("creative_strengths"):
+                    parts.append(f"Creative strengths: {', '.join(results['creative_strengths'])}.")
+                if results.get("tools_used"):
+                    parts.append(f"Tools: {', '.join(results['tools_used'])}.")
+                if results.get("complexity"):
+                    parts.append(f"Complexity: {results['complexity']}.")
+                if parts:
+                    updates["ai_description"] = " ".join(parts)
+                updates["ai_analysis"] = _json.dumps(results)
         else:
             from src.AI.ai_project_analyzer import AIProjectAnalyzer
             analyzer = AIProjectAnalyzer()

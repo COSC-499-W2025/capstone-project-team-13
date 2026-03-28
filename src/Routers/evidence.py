@@ -76,9 +76,24 @@ def auto_extract(
     try:
         ptype = (project.project_type or "code").lower()
         if ptype == "text":
-            evidence = em.extract_and_store_evidence_text(project)
-        elif ptype in ("media", "image", "video", "audio"):
-            evidence = em.extract_and_store_evidence_media(project)
+            evidence = em.extract_and_store_evidence_text_noai(project)
+        elif ptype in ("media", "visual_media", "image", "video", "audio"):
+            evidence = em.extract_and_store_evidence_media_noai(project)
+            # Backfill total_size_bytes if missing
+            if not project.total_size_bytes:
+                try:
+                    from pathlib import Path as _Path
+                    _p = _Path(project.file_path)
+                    if _p.is_file():
+                        size = _p.stat().st_size
+                    elif _p.is_dir():
+                        size = sum(f.stat().st_size for f in _p.rglob("*") if f.is_file())
+                    else:
+                        size = 0
+                    if size:
+                        db_manager.update_project(project_id, {"total_size_bytes": size})
+                except Exception:
+                    pass
         else:
             evidence = em.extract_and_store_evidence(project, project.file_path)
         return {"extracted": True, "evidence": evidence or {}}

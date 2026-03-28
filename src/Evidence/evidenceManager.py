@@ -63,6 +63,91 @@ class EvidenceManager:
             print(f"Error extracting evidence: {e}")
             return {}
     
+    def extract_and_store_evidence_text_noai(self, project) -> Dict[str, Any]:
+        """Extract evidence from a text project without AI, using file metadata only."""
+        from pathlib import Path
+
+        extracted: Dict[str, Any] = {}
+
+        word_count = getattr(project, "word_count", None) or 0
+        if word_count:
+            extracted["word_count"] = word_count
+            extracted["estimated_reading_time_min"] = max(1, round(word_count / 200))
+
+        # Infer document type from file extension
+        _ext_to_type = {
+            ".pdf": "pdf", ".docx": "word", ".doc": "word",
+            ".txt": "text", ".md": "markdown", ".tex": "latex",
+            ".rtf": "rtf", ".odt": "odt",
+        }
+        try:
+            if project.file_path:
+                p = Path(project.file_path)
+                if p.is_file():
+                    doc_type = _ext_to_type.get(p.suffix.lower())
+                    if doc_type:
+                        extracted["document_type"] = doc_type
+                elif p.is_dir():
+                    for f in sorted(p.rglob("*")):
+                        if f.is_file() and f.suffix.lower() in _ext_to_type:
+                            extracted["document_type"] = _ext_to_type[f.suffix.lower()]
+                            break
+        except Exception:
+            pass
+
+        if extracted:
+            self.store_evidence(project.id, extracted)
+        return extracted
+
+    def extract_and_store_evidence_media_noai(self, project) -> Dict[str, Any]:
+        """Extract evidence from a media project without AI, using file metadata only."""
+        from pathlib import Path
+
+        extracted: Dict[str, Any] = {}
+
+        # Tools already detected by the media scanner and stored in project.languages
+        tools = getattr(project, "languages", None) or []
+        if isinstance(tools, list) and tools:
+            extracted["tools_used"] = tools
+
+        # Infer media type and collect file formats from the project path
+        _ext_to_media = {
+            ".jpg": "image", ".jpeg": "image", ".png": "image", ".gif": "image",
+            ".bmp": "image", ".tiff": "image", ".tif": "image", ".webp": "image",
+            ".svg": "image", ".psd": "design", ".ai": "design", ".sketch": "design",
+            ".xd": "design", ".figma": "design", ".indd": "design",
+            ".mp4": "video", ".mov": "video", ".avi": "video", ".mkv": "video",
+            ".wmv": "video", ".flv": "video", ".webm": "video",
+            ".mp3": "audio", ".wav": "audio", ".flac": "audio", ".aac": "audio",
+            ".ogg": "audio", ".m4a": "audio",
+            ".blend": "3d", ".obj": "3d", ".fbx": "3d", ".c4d": "3d",
+            ".stl": "3d", ".maya": "3d", ".ma": "3d", ".mb": "3d",
+        }
+        type_counts: Dict[str, int] = {}
+        formats: set = set()
+        try:
+            if project.file_path:
+                p = Path(project.file_path)
+                files = [p] if p.is_file() else list(p.rglob("*"))
+                for f in files:
+                    if f.is_file():
+                        ext = f.suffix.lower()
+                        if ext in _ext_to_media:
+                            formats.add(ext.lstrip("."))
+                            mtype = _ext_to_media[ext]
+                            type_counts[mtype] = type_counts.get(mtype, 0) + 1
+        except Exception:
+            pass
+
+        if type_counts:
+            extracted["media_type"] = max(type_counts, key=type_counts.get)
+        if formats:
+            extracted["file_formats"] = sorted(formats)
+
+        if extracted:
+            self.store_evidence(project.id, extracted)
+        return extracted
+
     def extract_and_store_evidence_text(self, project) -> Dict[str, Any]:
         """Extract evidence from a text project using AI."""
         from src.AI.ai_service import get_ai_service
