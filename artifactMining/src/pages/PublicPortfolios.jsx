@@ -57,14 +57,23 @@ export function PublicPortfoliosList() {
             Browse portfolios shared by other users
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {!localStorage.getItem("token") && (
-            <a href="/" className="btn-primary" style={{ textDecoration: "none" }}>
-              ← Back to Login
+            <a href="/" className="btn-secondary" style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              textDecoration: "none", padding: "0.45em 1em",
+              fontSize: "0.88rem", fontWeight: 500, borderRadius: 8,
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+              Log In
             </a>
           )}
-          <button className="btn-secondary" onClick={() => nav(-1)}>
-            ← Back
+          <button className="btn-secondary" onClick={() => nav(-1)} style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "0.45em 1em", fontSize: "0.88rem", fontWeight: 500, borderRadius: 8,
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
           </button>
         </div>
       </div>
@@ -218,12 +227,21 @@ export function PublicPortfolioView() {
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {!localStorage.getItem("token") && (
-            <a href="/" className="btn-primary" style={{ textDecoration: "none" }}>
-              ← Back to Login
+            <a href="/" className="btn-secondary" style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              textDecoration: "none", padding: "0.45em 1em",
+              fontSize: "0.88rem", fontWeight: 500, borderRadius: 8,
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+              Log In
             </a>
           )}
-          <button className="btn-secondary" onClick={() => nav("/public-portfolios")}>
-            ← All Portfolios
+          <button className="btn-secondary" onClick={() => nav("/public-portfolios")} style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "0.45em 1em", fontSize: "0.88rem", fontWeight: 500, borderRadius: 8,
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            All Portfolios
           </button>
         </div>
       </div>
