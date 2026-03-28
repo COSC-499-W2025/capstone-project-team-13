@@ -919,12 +919,62 @@ export default function Settings({ onLogout }) {
     );
   }
 
+  function renderCommunitySection() {
+    return (
+      <div className="settings-section-panel">
+        <h2>Community Portfolios</h2>
+        <p className="settings-section-description">
+          Browse portfolios that other users have chosen to make public. No account required.
+        </p>
+        <div className="settings-content-grid">
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <div>
+                <h3>Browse Public Portfolios</h3>
+                <p>See the work of other users who have opted in to public visibility.</p>
+              </div>
+            </div>
+            <div className="settings-card-body">
+              <a
+                href="/public-portfolios"
+                className="settings-button settings-button-primary"
+                style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+              >
+                View Public Portfolios →
+              </a>
+            </div>
+          </div>
+          {currentUser && (
+            <div className="settings-card">
+              <div className="settings-card-header">
+                <div>
+                  <h3>Your Portfolio Visibility</h3>
+                  <p>Control whether your portfolio appears in the public listing. Manage this from your Portfolio page.</p>
+                </div>
+              </div>
+              <div className="settings-card-body">
+                <a
+                  href="/portfolio"
+                  className="settings-button settings-button-secondary"
+                  style={{ display: "inline-block", textDecoration: "none", marginTop: 8 }}
+                >
+                  Go to My Portfolio →
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   function renderSectionContent() {
     if (activeSection === "account") return renderAccountSection();
     if (activeSection === "currentConfig") return renderCurrentConfigSection();
     if (activeSection === "guide") return renderGuideSection();
     if (activeSection === "dashboard") return renderDashboardSection();
     if (activeSection === "about") return renderAboutSection();
+    if (activeSection === "community") return renderCommunitySection();
 
     if (activeSection === "privacy") {
       return (
@@ -1075,6 +1125,7 @@ export default function Settings({ onLogout }) {
               ["privacy", "Privacy"],
               ["dashboard", "Dashboard Settings"],
               ["currentConfig", "Current Configuration"],
+              ["community", "Community Portfolios"],
               ["guide", "How to Use the App"],
               ["about", "About"],
             ].map(([key, label]) => (

@@ -20,6 +20,7 @@ import GuestUpload from "./pages/GuestUpload";
 import WebShowcase from "./pages/WebShowcase";
 import NotFound from "./pages/NotFound";
 import Interview from "./pages/Interview";
+import { PublicPortfoliosList, PublicPortfolioView } from "./pages/PublicPortfolios";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -117,6 +118,9 @@ function LoginGate({ onLogin }) {
         <div style={{ textAlign: "center", marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
           <p className="text-muted" style={{ marginBottom: 12, fontSize: "0.85rem" }}>Just want to try it out?</p>
           <a href="/guest" style={{ color: "var(--accent)", fontSize: "0.9rem" }}>Continue as Guest (no account needed)</a>
+          <div style={{ marginTop: 10 }}>
+            <a href="/public-portfolios" style={{ color: "var(--accent)", fontSize: "0.85rem", opacity: 0.8 }}>Browse public portfolios →</a>
+          </div>
         </div>
       </div>
     </div>
@@ -186,12 +190,27 @@ function App() {
 
   if (user === undefined) return <div style={{ padding: 40 }}>Loading…</div>;
 
-  // Guest route is always accessible
-  if (window.location.pathname === "/guest") {
+  // Routes accessible without an account
+  const path = window.location.pathname;
+  if (path === "/guest") {
     return <BrowserRouter><GuestUpload /></BrowserRouter>;
   }
+  if (path === "/public-portfolios" || path.startsWith("/public-portfolios/")) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/public-portfolios" element={<PublicPortfoliosList />} />
+          <Route path="/public-portfolios/:userId" element={<PublicPortfolioView />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
 
-  if (!user) return <BrowserRouter><LoginGate onLogin={u => setUser(u)} /></BrowserRouter>;
+  if (!user) return (
+    <BrowserRouter>
+      <LoginGate onLogin={u => setUser(u)} />
+    </BrowserRouter>
+  );
 
   return (
     <BrowserRouter>
@@ -215,6 +234,8 @@ function App() {
           <Route path="/resumes" element={<Resumes />} />
           <Route path="/interview" element={<Interview />} />
           <Route path="/settings" element={<Settings onLogout={handleLogout} />} />
+          <Route path="/public-portfolios" element={<PublicPortfoliosList />} />
+          <Route path="/public-portfolios/:userId" element={<PublicPortfolioView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PageTransition>

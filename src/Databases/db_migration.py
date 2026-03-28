@@ -96,6 +96,27 @@ def migrate_add_user_avatar():
         session.close()
 
 
+def migrate_add_portfolio_public():
+    """Add portfolio_public column to users table if it doesn't exist"""
+    db = DatabaseManager()
+    session = db.get_session()
+    try:
+        result = session.execute(text("PRAGMA table_info(users)"))
+        columns = [row[1] for row in result]
+        if 'portfolio_public' not in columns:
+            print("Adding portfolio_public column to users table...")
+            session.execute(text("ALTER TABLE users ADD COLUMN portfolio_public BOOLEAN NOT NULL DEFAULT 0"))
+            session.commit()
+            print("✓ Migration complete")
+        else:
+            print("✓ portfolio_public column already exists")
+    except Exception as e:
+        print(f"Migration error: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+
 def run_all_migrations():
     """Run all migrations in order"""
     print("Running database migrations...")
@@ -103,6 +124,7 @@ def run_all_migrations():
     migrate_add_user_contribution_percent()
     migrate_add_importance_score()
     migrate_add_user_avatar()
+    migrate_add_portfolio_public()
     print("\nAll migrations complete!")
 
 

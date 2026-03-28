@@ -115,6 +115,28 @@ def get_portfolio_project_endpoint(
     return result
 
 
+@router.get("/visibility")
+def get_portfolio_visibility(user_id: int = Depends(require_auth)):
+    """Return whether the authenticated user's portfolio is public."""
+    user = db_manager.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"portfolio_public": bool(getattr(user, "portfolio_public", False))}
+
+
+@router.post("/visibility")
+def set_portfolio_visibility(
+    body: dict = Body(...),
+    user_id: int = Depends(require_auth)
+):
+    """Set whether the authenticated user's portfolio is public."""
+    is_public = bool(body.get("portfolio_public", False))
+    user = db_manager.update_user(user_id, {"portfolio_public": is_public})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"portfolio_public": bool(getattr(user, "portfolio_public", False))}
+
+
 @router.post("/{project_id}/edit")
 def edit_portfolio_project_endpoint(
     project_id: int,
