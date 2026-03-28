@@ -12,6 +12,11 @@
 .proj-card { cursor: pointer; transition: border-color 0.15s, transform 0.1s; display: flex; flex-direction: column; gap: 10px; }
 .proj-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 
+.proj-card-banner { width: 100%; height: 140px; border-radius: 6px; overflow: hidden; margin-bottom: 2px; background: linear-gradient(135deg, #1e2d6b 0%, #2a3a85 100%); display: flex; align-items: center; justify-content: center; }
+.proj-card-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
+.proj-card-placeholder-icon { display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); user-select: none; }
+body[data-theme="light"] .proj-card-banner { background: linear-gradient(135deg, #dde1f5 0%, #c9cff0 100%); }
+body[data-theme="light"] .proj-card-placeholder-icon { color: #4f52a0; }
 .proj-card-top { display: flex; gap: 6px; flex-wrap: wrap; }
 .proj-name { font-size: 15px; font-weight: 600; }
 .proj-desc { font-size: 12px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2;
