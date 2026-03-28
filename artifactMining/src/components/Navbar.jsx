@@ -11,7 +11,6 @@ const mainLinks = [
 ];
 
 const toolLinks = [
-  { to: "/evidence", label: "Evidence" },
   { to: "/analysis", label: "Analysis" },
   { to: "/interview", label: "Interview Prep" },
 ];
