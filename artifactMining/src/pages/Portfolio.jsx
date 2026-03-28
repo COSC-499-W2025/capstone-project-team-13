@@ -52,6 +52,8 @@ export default function Portfolio() {
   const [heroDraft, setHeroDraft] = useState("");
   const [showTimeline, setShowTimeline] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(true);
+  const [portfolioPublic, setPortfolioPublic] = useState(false);
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
   const nav = useNavigate();
 
   useEffect(() => {
@@ -99,7 +101,28 @@ export default function Portfolio() {
       .catch(() => { localStorage.removeItem("token"); setAuthed(false); });
   }, []);
 
-  useEffect(() => { if (authed === true) load(); }, [authed, includeHidden]);
+  useEffect(() => {
+    if (authed === true) {
+      load();
+      apiFetch("/portfolio/visibility")
+        .then(d => setPortfolioPublic(d.portfolio_public))
+        .catch(() => {});
+    }
+  }, [authed, includeHidden]);
+
+  async function togglePortfolioPublic() {
+    setVisibilityLoading(true);
+    try {
+      const d = await apiFetch("/portfolio/visibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portfolio_public: !portfolioPublic }),
+      });
+      setPortfolioPublic(d.portfolio_public);
+      setMsg({ type: "success", text: d.portfolio_public ? "Portfolio is now public!" : "Portfolio is now private." });
+    } catch (e) { setMsg({ type: "error", text: e.message }); }
+    finally { setVisibilityLoading(false); }
+  }
 
   if (authed === null) return <div className="page-wrap" style={{ paddingTop: 80, textAlign: "center", color: "#818cf8" }}>Checking authentication...</div>;
 
@@ -291,6 +314,20 @@ export default function Portfolio() {
           <Link to="/showcase" className="btn-primary" style={{ display: "inline-block", textDecoration: "none", padding: "0.6em 1.2em", borderRadius: 8, fontSize: "0.95em", fontWeight: 500, transition: "opacity 0.25s, border-color 0.25s", color: "#fff" }}>
             Web Showcase
           </Link>
+          <Link to="/public-portfolios" className="btn-secondary" style={{ display: "inline-block", textDecoration: "none", padding: "0.6em 1.2em", borderRadius: 8, fontSize: "0.95em", fontWeight: 500, transition: "opacity 0.25s, border-color 0.25s" }}>
+            Browse Others
+          </Link>
+          {isPublic && (
+            <button
+              className={portfolioPublic ? "btn-primary" : "btn-secondary"}
+              onClick={togglePortfolioPublic}
+              disabled={visibilityLoading}
+              title={portfolioPublic ? "Your portfolio is publicly listed — click to make private" : "Make your portfolio publicly visible to others"}
+              style={{ fontSize: "0.85em" }}
+            >
+              {visibilityLoading ? "…" : portfolioPublic ? "Listed Public ✓" : "Make Public"}
+            </button>
+          )}
           {!isPublic && (
             <>
               <label className="toggle-label">
