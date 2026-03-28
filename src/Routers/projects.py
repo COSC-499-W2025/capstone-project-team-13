@@ -376,6 +376,8 @@ async def upload_thumbnail(
         raise HTTPException(status_code=400, detail=str(e))
     if result is None:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    # Invalidate the cached portfolio so the next GET /portfolio regenerates with the new thumbnail
+    db_manager.update_user(user_id, {"portfolio": None})
     return result
 
 
@@ -391,6 +393,8 @@ def remove_thumbnail(
         raise HTTPException(status_code=403, detail=str(e))
     if result is None:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    # Invalidate the cached portfolio so the next GET /portfolio regenerates without the thumbnail
+    db_manager.update_user(user_id, {"portfolio": None})
     return {"removed": True, "project_id": project_id}
 
 
