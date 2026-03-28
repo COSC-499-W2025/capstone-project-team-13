@@ -79,7 +79,7 @@ def process_uploaded_path(path: str, user_id: Optional[int] = None):
             }
     except Exception:
         content_hash = None  # non-fatal -- proceed with upload
-
+    """
     if os.path.isdir(path):
         info = identifyProjectType(path)
         ptype = info.get("type", "unknown")
@@ -92,7 +92,8 @@ def process_uploaded_path(path: str, user_id: Optional[int] = None):
         else:
             supertype = "code"  # fallback: attempt coding scan
     else:
-        supertype = sniff_supertype(path)
+    """
+    supertype = sniff_supertype(path)
 
     if supertype == "code":
         project_id = scan_coding_project(path, user_id=user_id)
