@@ -89,12 +89,6 @@ export default function Dashboard() {
       placement: 'top',
       title: 'Charts & Insights',
       content: 'This section contains charts for your projects and skills.'
-    },
-    {
-      target: '.navbar-projects, [href="/projects"]',
-      placement: 'bottom',
-      title: 'Next: Projects',
-      content: 'Click on Projects in the navigation bar to view and manage your projects.'
     }
   ];
   const [projects, setProjects] = useState([]);

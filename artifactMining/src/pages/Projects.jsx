@@ -1,9 +1,46 @@
 import React, { useEffect, useState } from "react";
+import { Joyride } from 'react-joyride';
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./Projects.css";
 
 export default function Projects() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('projects_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('projects_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Projects Overview',
+      content: 'This page lets you view, filter, and manage all your uploaded projects. Let’s take a quick tour!'
+    },
+    {
+      target: '.proj-grid, .empty-state',
+      placement: 'top',
+      title: 'Your Projects',
+      content: 'Here you can find all of your uploaded projects. When populated, you will be able to see a project\'s stats.'
+    },
+    {
+      target: '.btn-primary',
+      placement: 'bottom',
+      title: 'Upload a Project',
+      content: 'Like on the dashboard, you can also upload projects through here.'
+    },
+    {
+      target: '.deletion-tab',
+      placement: 'bottom',
+      title: 'Deletion Manager & Insights',
+      content: 'Here is a deletion manager for your project as well as generated insights.'
+    }
+  ];
 
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +73,77 @@ export default function Projects() {
   }
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            spotlightPadding: 0,
+          },
+          tooltipContainer: {
+            borderRadius: 10,
+            boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
+            padding: '8px 14px',
+            fontSize: '0.97rem',
+            minWidth: 200,
+            maxWidth: 300,
+          },
+          tooltip: {
+            margin: 0,
+          },
+          buttonNext: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+            borderRadius: 7,
+            fontWeight: 600,
+            boxShadow: '0 1px 4px 0 rgba(99,102,241,0.08)',
+            padding: '6px 18px',
+            fontSize: '0.98rem',
+          },
+          buttonBack: {
+            color: 'var(--accent, #6366f1)',
+            background: 'transparent',
+            fontWeight: 500,
+            fontSize: '0.98rem',
+          },
+          buttonSkip: {
+            color: 'var(--text-muted, #a5b4fc)',
+            background: 'transparent',
+            fontSize: '0.98rem',
+          },
+          dot: {
+            background: 'var(--accent, #6366f1)',
+          },
+          badge: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('projects_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
       <div className="proj-header">
         <h1>Projects</h1>
         <button className="btn-primary" onClick={() => nav("/upload")}>+ Upload</button>
@@ -99,5 +206,6 @@ export default function Projects() {
             </div>
       }
     </div>
+    </>
   );
 }
