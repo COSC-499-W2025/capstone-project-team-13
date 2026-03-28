@@ -1009,6 +1009,36 @@ export default function Resumes() {
   // ── per-project regen + remove ───────────────────────────────────────────────
 
   const [regenLoading, setRegenLoading] = useState(new Set());
+  const [aiRegenLoading, setAiRegenLoading] = useState(new Set());
+
+  async function aiEnhanceProjectBullets(pIdx) {
+    const p = resume.projects[pIdx];
+    if (!p.project_id) return;
+    setAiRegenLoading(prev => new Set([...prev, pIdx]));
+    try {
+      const res = await fetch(`${API_BASE}/resume/projects/${p.project_id}/ai-enhance`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bullets: p.bullets?.length ? p.bullets : null,
+          num_bullets: numBullets,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setResume(prev => {
+        const projects = [...prev.projects];
+        projects[pIdx] = { ...projects[pIdx], bullets: data.bullets || [], ats_score: data.ats_score };
+        return { ...prev, projects };
+      });
+      markDirty();
+      toast("Bullets enhanced!", "ok");
+    } catch (e) {
+      toast("AI enhance failed: " + e.message, "err");
+    } finally {
+      setAiRegenLoading(prev => { const next = new Set(prev); next.delete(pIdx); return next; });
+    }
+  }
 
   async function regenerateProjectBullets(pIdx) {
     const p = resume.projects[pIdx];
@@ -1331,6 +1361,14 @@ export default function Resumes() {
                   disabled={regenLoading.has(pIdx)}
                   title="Regenerate bullets for this project"
                 >↻</button>
+              )}
+              {p.project_id && !previewMode && aiConsent && (
+                <button
+                  className={`proj-regen-btn proj-ai-btn${aiRegenLoading.has(pIdx) ? " proj-regen-spinning" : ""}`}
+                  onClick={() => aiEnhanceProjectBullets(pIdx)}
+                  disabled={aiRegenLoading.has(pIdx)}
+                  title={p.bullets?.length ? "Enhance existing bullets with AI" : "Generate AI-powered bullets"}
+                >✦</button>
               )}
             </div>
 
