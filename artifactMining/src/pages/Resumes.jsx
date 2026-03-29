@@ -301,6 +301,15 @@ export default function Resumes() {
     skills: "Technical Skills",
   });
 
+  // ── multi-resume list view state
+  const [view, setView] = useState("list"); // "list" | "editor"
+  const [resumeList, setResumeList] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [activeResumeId, setActiveResumeId] = useState(null);
+  const [activeResumeName, setActiveResumeName] = useState("");
+  const [renamingCardId, setRenamingCardId] = useState(null);
+  const [renameCardValue, setRenameCardValue] = useState("");
+
   // ── Validate token against backend on mount ──────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -330,7 +339,7 @@ export default function Resumes() {
   useEffect(() => {
     if (authed !== true) return;
     checkAiConsent();
-    loadExisting();
+    loadResumeList();
   }, [authed]);
 
   // Keep a ref in sync with resume so cleanup can read latest value
@@ -461,12 +470,199 @@ export default function Resumes() {
     } catch { setAiConsent(false); }
   }
 
-  async function loadExisting() {
+  // ── Multi-resume list management ─────────────────────────────────────────────
+
+  async function loadResumeList() {
+    setListLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/resume/list`, { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setResumeList(data.resumes || []);
+      } else {
+        setResumeList([]);
+      }
+    } catch {
+      // If listing fails, just show empty
+      setResumeList([]);
+    } finally {
+      setListLoading(false);
+    }
+  }
+
+  async function openResume(id, name) {
+    setActiveResumeId(id);
+    setView("editor");
+    await loadExisting(id);
+  }
+
+  async function handleNewResume() {
+    try {
+      const res = await fetch(`${API_BASE}/resume/create`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "New Resume" }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const newId = data.resume?.id;
+      if (!newId) throw new Error("No resume ID returned");
+      setResume(null);
+      setDirty(false);
+      setEditing(false);
+      setPageCount(null);
+      setSectionOrder(["projects"]);
+      setSectionLabels({ projects: "Projects", education: "Education", work_history: "Relevant Experience", skills: "Technical Skills" });
+      setShowEdu(false);
+      setShowWork(false);
+      setShowSkills(false);
+      setActiveResumeId(newId);
+      setActiveResumeName("New Resume");
+      setView("editor");
+    } catch (e) {
+      toast("Failed to create resume: " + e.message, "err");
+    }
+  }
+
+  async function duplicateResume(id) {
+    try {
+      const res = await fetch(`${API_BASE}/resume/${id}/duplicate`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        toast("Resume duplicated!", "ok");
+        await loadResumeList();
+      } else {
+        toast("Duplicate failed", "err");
+      }
+    } catch {
+      toast("Duplicate failed", "err");
+    }
+  }
+
+  async function deleteResumeFromList(id) {
+    if (!window.confirm("Delete this resume?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/resume/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (res.ok) {
+        toast("Resume deleted", "ok");
+        setResumeList(prev => prev.filter(r => r.id !== id));
+      } else {
+        toast("Delete failed", "err");
+      }
+    } catch {
+      toast("Delete failed", "err");
+    }
+  }
+
+  async function saveCardRename(id) {
+    const name = renameCardValue.trim();
+    if (!name) { setRenamingCardId(null); return; }
+    try {
+      const res = await fetch(`${API_BASE}/resume/${id}/rename`, {
+        method: "PUT",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setResumeList(prev => prev.map(r => r.id === id ? { ...r, name } : r));
+      if (activeResumeId === id) setActiveResumeName(name);
+    } catch (e) {
+      toast("Rename failed: " + e.message, "err");
+    } finally {
+      setRenamingCardId(null);
+    }
+  }
+
+  function renderList() {
+    return (
+      <div className="resume-list-container">
+        <div className="resume-list-header">
+          <div>
+            <h2 className="resume-list-title">My Resumes</h2>
+            <p className="resume-list-subtitle">Select a resume to edit or create a new one</p>
+          </div>
+        </div>
+
+        {listLoading ? (
+          <div className="resume-loader">Loading resumes...</div>
+        ) : resumeList.length === 0 ? (
+          <div className="resume-list-empty">
+            <div className="resume-list-empty-icon">📄</div>
+            <p className="resume-list-empty-title">No resumes yet</p>
+            <p className="resume-list-empty-sub">Create your first resume to get started</p>
+            <button className="resume-btn resume-btn-primary" onClick={handleNewResume}>
+              Create Resume
+            </button>
+          </div>
+        ) : (
+          <div className="resume-list-grid">
+            <div className="resume-new-card" onClick={handleNewResume}>
+              <span className="resume-new-card-icon">+</span>
+              <span className="resume-new-card-label">New Resume</span>
+            </div>
+            {resumeList.map(r => (
+              <div key={r.id} className="resume-list-card" onClick={() => renamingCardId === r.id ? null : openResume(r.id, r.name)}>
+                <div className="resume-card-accent" />
+                <div className="resume-card-body">
+                  <div className="resume-card-icon">📄</div>
+                  <div className="resume-card-info">
+                    {renamingCardId === r.id ? (
+                      <input
+                        className="resume-card-rename-input"
+                        autoFocus
+                        value={renameCardValue}
+                        onChange={e => setRenameCardValue(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                        onKeyDown={e => { if (e.key === "Enter") saveCardRename(r.id); if (e.key === "Escape") setRenamingCardId(null); }}
+                        onBlur={() => saveCardRename(r.id)}
+                      />
+                    ) : (
+                      <div className="resume-card-name">{r.name}</div>
+                    )}
+                    <div className="resume-card-date">
+                      {r.updated_at ? `Edited ${new Date(r.updated_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}` : "Not yet saved"}
+                    </div>
+                  </div>
+                </div>
+                <div className="resume-card-actions" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="resume-card-icon-btn"
+                    title="Rename"
+                    onClick={() => { setRenamingCardId(r.id); setRenameCardValue(r.name); }}
+                  >✏</button>
+                  <button
+                    className="resume-card-icon-btn"
+                    title="Duplicate"
+                    onClick={async () => { await duplicateResume(r.id); }}
+                  >⧉</button>
+                  <button
+                    className="resume-card-icon-btn resume-card-icon-btn-danger"
+                    title="Delete"
+                    onClick={async () => { await deleteResumeFromList(r.id); }}
+                  >🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  async function loadExisting(resumeIdOverride) {
+    const rid = resumeIdOverride ?? activeResumeId;
+    if (!rid) return;
     setLoading(true);
     try {
       // Fetch resume JSON + education + work history in parallel
       const [resumeRes, eduRes, workRes] = await Promise.all([
-        fetch(`${API_BASE}/resume`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/resume?resume_id=${rid}`, { headers: authHeaders() }),
         fetch(`${API_BASE}/education`, { headers: authHeaders() }),
         fetch(`${API_BASE}/work-history`, { headers: authHeaders() }),
       ]);
@@ -487,21 +683,28 @@ export default function Resumes() {
         if (r && r.name?.trim()) {
           localStorage.setItem("resume_saved", "1");
           window.dispatchEvent(new Event("resume-updated"));
-          // Merge live education/work from DB over whatever's in stored resume
-          applyResume({ ...r, education: taggedEdu, work_history: taggedWork });
-          // Restore section order if previously saved
+          // Use only what's stored in the resume blob — never pre-populate
+          // from the global DB (which spans all resumes and would bleed data).
+          const resumeEdu = (r.education || []).map(e => ({ ...e, _id: e._id || String(e.id || ""), _isNew: false, _endPresent: !e.end_date || e.end_date === "Present" }));
+          const resumeWork = (r.work_history || []).map(w => ({ ...w, _id: w._id || String(w.id || ""), _isNew: false, _endPresent: !w.end_date || w.end_date === "Present" }));
+          applyResume({ ...r, education: resumeEdu, work_history: resumeWork });
           if (r.section_order) setSectionOrder(r.section_order);
           if (r.section_labels) setSectionLabels(prev => ({ ...prev, ...r.section_labels }));
-          // Determine which sections were present
-          if (taggedEdu.length > 0) { setShowEdu(true); addSection("education"); }
-          if (taggedWork.length > 0) { setShowWork(true); addSection("work_history"); }
+          if (resumeEdu.length > 0) { setShowEdu(true); addSection("education"); }
+          if (resumeWork.length > 0) { setShowWork(true); addSection("work_history"); }
           if (r.skills_by_level && Object.values(r.skills_by_level).some(v => v.length > 0)) {
             setShowSkills(true); addSection("skills");
           }
-        } else {
-          localStorage.removeItem("resume_saved");
-          window.dispatchEvent(new Event("resume-updated"));
         }
+      } else {
+        // 404 = new empty resume — reset to a clean slate
+        setResume(null);
+        setSectionOrder(["projects"]);
+        setSectionLabels({ projects: "Projects", education: "Education", work_history: "Relevant Experience", skills: "Technical Skills" });
+        setShowEdu(false);
+        setShowWork(false);
+        setShowSkills(false);
+        setDirty(false);
       }
     } catch (e) {
       showStatus("Failed to load resume data: " + e.message, "err");
@@ -528,7 +731,8 @@ export default function Resumes() {
   async function generateResume() {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/resume/generate`, {
+      if (!activeResumeId) { toast("No resume selected", "err"); return; }
+      const res = await fetch(`${API_BASE}/resume/generate?resume_id=${activeResumeId}`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ num_bullets: numBullets }),
@@ -549,7 +753,9 @@ export default function Resumes() {
 
       setOriginalEdu(taggedEdu);
       setOriginalWork(taggedWork);
-      applyResume({ ...r, education: taggedEdu, work_history: taggedWork });
+      const resumeEdu = (r.education || []).map(e => ({ ...e, _id: e._id || String(e.id || ""), _isNew: false, _endPresent: !e.end_date || e.end_date === "Present" }));
+      const resumeWork = (r.work_history || []).map(w => ({ ...w, _id: w._id || String(w.id || ""), _isNew: false, _endPresent: !w.end_date || w.end_date === "Present" }));
+      applyResume({ ...r, education: resumeEdu, work_history: resumeWork });
 
       // Reset section visibility to match refreshed data
       const hasSkills = r.skills_by_level && Object.values(r.skills_by_level).some(v => v.length > 0);
@@ -600,6 +806,12 @@ export default function Resumes() {
 
   async function saveChanges() {
     if (!resume) return;
+    // Check page count before saving — abort if resume exceeds 1 page
+    const currentPageCount = await checkPageCount();
+    if (currentPageCount !== null && currentPageCount > 1) {
+      toast("Resume exceeds 1 page — trim content before saving", "err");
+      return;
+    }
     setLoading(true);
     try {
       // 1. Sync education: delete removed entries, add new ones
@@ -736,7 +948,7 @@ export default function Resumes() {
         section_labels: sectionLabels,
       };
 
-      const saveRes = await fetch(`${API_BASE}/resume/save`, {
+      const saveRes = await fetch(`${API_BASE}/resume/save?resume_id=${activeResumeId}`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify(resumePayload),
@@ -776,26 +988,17 @@ export default function Resumes() {
   }
 
   async function deleteResume() {
-    if (!window.confirm("Delete your resume? This will remove all resume data including sections you've added. Your projects and bullets are not affected.")) return;
+    if (!window.confirm("Delete this resume? Your projects and bullets are not affected.")) return;
     setLoading(true);
     try {
-      // Save an empty resume object to clear user.resume
-      await fetch(`${API_BASE}/resume/save`, {
-        method: "POST",
-        headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+      const res = await fetch(`${API_BASE}/resume/${activeResumeId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
       });
-      localStorage.removeItem("resume_saved");
-      window.dispatchEvent(new Event("resume-updated"));
-      setResume(null);
-      setSectionOrder(["projects"]);
-      setSectionLabels({ projects: "Projects", education: "Education", work_history: "Relevant Experience", skills: "Technical Skills" });
-      setShowEdu(false);
-      setShowWork(false);
-      setShowSkills(false);
-      setDirty(false);
-      setEditing(false);
-      showStatus("Resume deleted.");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast("Resume deleted", "ok");
+      await loadResumeList();
+      setView("list");
     } catch (e) {
       showStatus("Delete failed: " + e.message, "err");
     } finally {
@@ -804,7 +1007,7 @@ export default function Resumes() {
   }
 
   async function checkPageCount() {
-    if (!resume) return;
+    if (!resume) return null;
     setPageCountLoading(true);
     try {
       const normDate = (v) => (!v || v === "Present") ? (v || null) : v.slice(0, 7);
@@ -847,8 +1050,10 @@ export default function Resumes() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setPageCount(data.pages);
+      return data.pages;
     } catch (e) {
       showStatus("Page count check failed: " + e.message, "err");
+      return null;
     } finally {
       setPageCountLoading(false);
     }
@@ -880,7 +1085,7 @@ export default function Resumes() {
         ({ lines_of_code, file_count, importance_score, ...rest }) => rest
       );
 
-      await fetch(`${API_BASE}/resume/save`, {
+      await fetch(`${API_BASE}/resume/save?resume_id=${activeResumeId}`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -899,7 +1104,7 @@ export default function Resumes() {
         }),
       });
 
-      const res = await fetch(`${API_BASE}${endpoint}`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}${endpoint}?resume_id=${activeResumeId}`, { headers: authHeaders() });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -1053,7 +1258,7 @@ export default function Resumes() {
     if (!p.project_id) return;
     setAiRegenLoading(prev => new Set([...prev, pIdx]));
     try {
-      const res = await fetch(`${API_BASE}/resume/projects/${p.project_id}/ai-enhance`, {
+      const res = await fetch(`${API_BASE}/resume/projects/${p.project_id}/ai-enhance?resume_id=${activeResumeId}`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1082,7 +1287,7 @@ export default function Resumes() {
     if (!p.project_id) return;
     setRegenLoading(prev => new Set([...prev, pIdx]));
     try {
-      const res = await fetch(`${API_BASE}/resume/projects/${p.project_id}/regenerate`, {
+      const res = await fetch(`${API_BASE}/resume/projects/${p.project_id}/regenerate?resume_id=${activeResumeId}`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ num_bullets: numBullets }),
@@ -1168,11 +1373,35 @@ export default function Resumes() {
   function renderSidebar() {
     return (
       <aside className="resume-sidebar">
-        <a className="resume-back" href="/">← Dashboard</a>
-        <h2>Resume Controls</h2>
+        {/* Back button */}
+        <button className="resume-back-btn" onClick={() => { setView("list"); setResume(null); setDirty(false); setEditing(false); loadResumeList(); }}>
+          ← Back to Resumes
+        </button>
+
+        {/* Resume name — click to rename */}
+        {renamingCardId === activeResumeId ? (
+          <input
+            className="resume-name-input"
+            autoFocus
+            value={renameCardValue}
+            onChange={e => setRenameCardValue(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") saveCardRename(activeResumeId); if (e.key === "Escape") setRenamingCardId(null); }}
+            onBlur={() => saveCardRename(activeResumeId)}
+          />
+        ) : (
+          <div
+            className="resume-name-display"
+            onClick={() => { setRenamingCardId(activeResumeId); setRenameCardValue(activeResumeName || resume?.name || ""); }}
+            title="Click to rename"
+          >
+            {activeResumeName || resume?.name || "Untitled Resume"}
+          </div>
+        )}
+
+        <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.08)", margin: "4px 0 10px" }} />
 
         {hasResume && (
-          <div className="resume-completeness">
+          <div className="resume-completeness" style={{ marginBottom: 10 }}>
             <div className="resume-completeness-label">
               <span>Completeness</span>
               <span>{completeness}%</span>
@@ -1189,135 +1418,149 @@ export default function Resumes() {
           </div>
         )}
 
-        <div className="resume-bullet-count">
-          <span className="resume-label" style={{ marginTop: 0 }}>Bullets per project</span>
-          <div className="resume-bullet-stepper">
-            <button
-              type="button"
-              className="resume-bullet-step"
-              onClick={() => setNumBullets(n => Math.max(2, n - 1))}
-              disabled={numBullets <= 2}
-            >−</button>
-            <span className="resume-bullet-val">{numBullets}</span>
-            <button
-              type="button"
-              className="resume-bullet-step"
-              onClick={() => setNumBullets(n => Math.min(5, n + 1))}
-              disabled={numBullets >= 5}
-            >+</button>
-          </div>
-        </div>
-
         {!hasResume ? (
-          <button
-            className="resume-btn resume-btn-primary"
-            onClick={generateResume}
-            disabled={loading}
-          >
-            {loading ? "Generating..." : "Generate Resume"}
-          </button>
-        ) : (
-          <>
-            <button className="resume-btn resume-btn-primary" onClick={generateResume} disabled={loading}>
-              Refresh Resume
-            </button>
-
-            <span className="resume-label">Add Sections</span>
-
+          /* ── No resume yet: just the generate button ── */
+          <div className="resume-ctrl-group">
             <button
-              className="resume-btn resume-btn-secondary"
-              onClick={addEduEntry}
-            >
-              + Add Award / Education
-            </button>
-
-            <button
-              className="resume-btn resume-btn-secondary"
-              onClick={addWorkEntry}
-            >
-              + Add Experience
-            </button>
-
-            <button
-              className="resume-btn resume-btn-secondary"
-              onClick={addSkillsSection}
-              disabled={showSkills}
-              title={showSkills ? "Skills section already added" : ""}
-            >
-              {showSkills ? "Skills Added ✓" : "+ Add Skills"}
-            </button>
-
-            <span className="resume-label">Export Preview</span>
-
-            <button
-              className={`resume-btn ${previewMode ? "resume-btn-active" : "resume-btn-secondary"}`}
-              onClick={() => {
-                const next = !previewMode;
-                setPreviewMode(next);
-                if (next) setEditing(false);
-              }}
-            >
-              {previewMode ? "Exit Preview" : "Export Preview"}
-            </button>
-
-            <button
-              className="resume-btn resume-btn-secondary"
-              onClick={checkPageCount}
-              disabled={pageCountLoading}
-            >
-              {pageCountLoading ? "Checking…" : "Check Fit"}
-            </button>
-
-            {pageCount !== null && (
-              <div className={`resume-page-count-badge ${pageCount === 1 ? "ok" : "over"}`}>
-                {pageCount === 1 ? `✓ Fits on 1 page` : `${pageCount} pages — trim content`}
-              </div>
-            )}
-
-            <span className="resume-label">Export</span>
-
-            <button
-              className="resume-btn resume-btn-secondary"
-              onClick={() => downloadFile("/resume/download/pdf", `resume_${resume?.name?.replace(/ /g, "_") || "export"}.pdf`)}
-              disabled={loading || (pageCount !== null && pageCount > 1)}
-              title={pageCount > 1 ? "Resume exceeds 1 page — trim content before exporting" : ""}
-            >
-              Save as PDF
-            </button>
-
-            <button
-              className="resume-btn resume-btn-secondary"
-              onClick={() => downloadFile("/resume/download/docx", `resume_${resume?.name?.replace(/ /g, "_") || "export"}.docx`)}
-              disabled={loading || (pageCount !== null && pageCount > 1)}
-              title={pageCount > 1 ? "Resume exceeds 1 page — trim content before exporting" : ""}
-            >
-              Save as DOCX
-            </button>
-
-            <span className="resume-label">Editing</span>
-
-            <button
-              className={`resume-btn ${editing ? "resume-btn-active" : "resume-btn-secondary"}`}
-              onClick={() => setEditing(e => !e)}
-            >
-              {editing ? "Exit Edit Mode" : "Edit"}
-            </button>
-
-            <button
-              className="resume-btn resume-btn-save"
-              onClick={saveChanges}
-              disabled={!dirty || loading}
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
-
-            <button
-              className="resume-btn resume-btn-danger"
-              onClick={deleteResume}
+              className="resume-btn resume-btn-primary"
+              onClick={generateResume}
               disabled={loading}
             >
-              Delete Resume
+              {loading ? "Generating..." : "Generate Resume"}
             </button>
+          </div>
+        ) : (
+          <>
+            {/* ── View group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">View</span>
+              <button
+                className={`resume-btn ${previewMode ? "resume-btn-active" : "resume-btn-secondary"}`}
+                onClick={() => {
+                  const next = !previewMode;
+                  setPreviewMode(next);
+                  if (next) setEditing(false);
+                }}
+              >
+                {previewMode ? "Exit Preview" : "Export Preview"}
+              </button>
+            </div>
+
+            {/* ── Edit group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">Edit</span>
+              <div className="resume-ctrl-row">
+                <button
+                  className={`resume-btn ${editing ? "resume-btn-active" : "resume-btn-secondary"}`}
+                  onClick={() => setEditing(e => !e)}
+                >
+                  {editing ? "Exit Edit" : "Edit Mode"}
+                </button>
+                <button
+                  className="resume-btn resume-btn-save"
+                  onClick={saveChanges}
+                  disabled={!dirty || loading || (pageCount !== null && pageCount > 1)}
+                >
+                  {loading ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Generate group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">Generate</span>
+              <div className="resume-ctrl-row-generate">
+                <div className="resume-bullet-stepper" style={{ flex: 1 }}>
+                  <button
+                    type="button"
+                    className="resume-bullet-step"
+                    onClick={() => setNumBullets(n => Math.max(2, n - 1))}
+                    disabled={numBullets <= 2}
+                  >−</button>
+                  <span className="resume-bullet-val">{numBullets}</span>
+                  <button
+                    type="button"
+                    className="resume-bullet-step"
+                    onClick={() => setNumBullets(n => Math.min(5, n + 1))}
+                    disabled={numBullets >= 5}
+                  >+</button>
+                </div>
+                <button
+                  className="resume-btn resume-btn-primary"
+                  onClick={generateResume}
+                  disabled={loading}
+                  style={{ flex: 1 }}
+                >
+                  {loading ? "…" : "Refresh"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Fit check group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">Fit check</span>
+              <div className="resume-ctrl-row-fit">
+                <button
+                  className="resume-btn resume-btn-secondary"
+                  onClick={checkPageCount}
+                  disabled={pageCountLoading}
+                  style={{ flex: 1 }}
+                >
+                  {pageCountLoading ? "Checking…" : "Check Fit"}
+                </button>
+                {pageCount !== null && (
+                  <div className={`resume-page-count-badge ${pageCount === 1 ? "ok" : "over"}`} style={{ flex: "none" }}>
+                    {pageCount === 1 ? "✓ 1 page" : `${pageCount} pages`}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Export group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">Export</span>
+              <div className="resume-ctrl-row">
+                <button
+                  className="resume-btn resume-btn-secondary"
+                  onClick={() => downloadFile("/resume/download/pdf", `resume_${resume?.name?.replace(/ /g, "_") || "export"}.pdf`)}
+                  disabled={loading || (pageCount !== null && pageCount > 1)}
+                  title={pageCount > 1 ? "Resume exceeds 1 page — trim content before exporting" : ""}
+                >
+                  PDF
+                </button>
+                <button
+                  className="resume-btn resume-btn-secondary"
+                  onClick={() => downloadFile("/resume/download/docx", `resume_${resume?.name?.replace(/ /g, "_") || "export"}.docx`)}
+                  disabled={loading || (pageCount !== null && pageCount > 1)}
+                  title={pageCount > 1 ? "Resume exceeds 1 page — trim content before exporting" : ""}
+                >
+                  DOCX
+                </button>
+              </div>
+            </div>
+
+            {/* ── Add sections group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">Add sections</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <button className="resume-btn resume-btn-secondary" onClick={addEduEntry}>+ Education / Awards</button>
+                <button className="resume-btn resume-btn-secondary" onClick={addWorkEntry}>+ Experience</button>
+                <button className="resume-btn resume-btn-secondary" onClick={addSkillsSection} disabled={showSkills}>+ Skills</button>
+              </div>
+            </div>
+
+            <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.08)", margin: "4px 0 10px" }} />
+
+            {/* ── Delete ── */}
+            <div className="resume-ctrl-group">
+              <button
+                className="resume-btn resume-btn-danger"
+                onClick={deleteResume}
+                disabled={loading}
+              >
+                Delete Resume
+              </button>
+            </div>
           </>
         )}
 
@@ -1580,10 +1823,14 @@ export default function Resumes() {
           </div>
         ))}
 
+        {editing && (
+          <button className="r-add-bullet" style={{ marginBottom: 6 }} onClick={addEduEntry}>+ Add education / awards entry</button>
+        )}
+
         {/* ── Awards sub-section inside Education ── */}
         {(editing || (resume.awards && resume.awards.length > 0)) && (
           <div className="r-awards-subsection">
-            <div className="r-awards-label">Awards <span className="r-awards-optional">(optional)</span></div>
+            <div className="r-awards-label">Awards {editing && <span className="r-awards-optional">(optional)</span>}</div>
             {(resume.awards || []).map((award, aIdx) => (
               <div key={aIdx} className="award-item r-award-row-edit">
                 {editing ? (
@@ -1746,6 +1993,10 @@ export default function Resumes() {
             </ul>
           </div>
         ))}
+
+        {editing && (
+          <button className="r-add-bullet" style={{ marginBottom: 6 }} onClick={addWorkEntry}>+ Add experience entry</button>
+        )}
       </div>
     );
   }
@@ -1806,6 +2057,16 @@ export default function Resumes() {
     );
   }
 
+  // ── List view ──────────────────────────────────────────────────────────────
+  if (view === "list") {
+    return (
+      <div className="page-wrap">
+        {renderList()}
+      </div>
+    );
+  }
+
+  // ── Editor view ─────────────────────────────────────────────────────────────
   return (
     <>
       <Joyride

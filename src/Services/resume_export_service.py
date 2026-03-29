@@ -29,6 +29,19 @@ from src.UserPrompts.config_integration import has_ai_consent
 _UUID_RE = re.compile(r"^[0-9a-f\-]{36}$", re.IGNORECASE)
 _GREEN   = "#2d6a4f"
 
+_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+def _fmt_date(s: str | None) -> str:
+    """Convert 'YYYY-MM' or 'YYYY-MM-DD' → 'Mon YYYY'. Pass-through for 'Present'/empty."""
+    if not s or s == "Present":
+        return s or ""
+    try:
+        parts = s.split("-")
+        year, month = int(parts[0]), int(parts[1])
+        return f"{_MONTHS[month - 1]} {year}"
+    except Exception:
+        return s
+
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -223,8 +236,7 @@ def _build_pdf(data: dict[str, Any]) -> bytes:
             label = section_labels.get("education", "Education")
             story += section_block(label)
             for edu in data.get("education", []):
-                end   = (edu.get("end_date") or "")
-                end   = end[:7].replace("-", "/") if end and end != "Present" else "Present"
+                end   = _fmt_date(edu.get("end_date") or "Present")
                 inst  = edu.get("institution", "")
                 loc   = edu.get("location", "")
                 story.append(two_col(f"{inst}  |  {loc}" if loc else inst, end))
@@ -258,10 +270,10 @@ def _build_pdf(data: dict[str, Any]) -> bytes:
             for job in data.get("work_history", []):
                 comp  = job.get("company", "")
                 loc   = job.get("location", "")
-                start = job.get("start_date", "")
-                end   = job.get("end_date", "Present")
+                start = _fmt_date(job.get("start_date", ""))
+                end   = _fmt_date(job.get("end_date") or "Present")
                 story.append(two_col(f"{comp}  |  {loc}" if loc else comp,
-                                     f"{start} - {end}" if start else end))
+                                     f"{start} – {end}" if start else end))
                 if job.get("role"):
                     story.append(Paragraph(f"<i>{job['role']}</i>", italic_style))
                 for b in job.get("bullets", []):
@@ -365,8 +377,7 @@ def _build_docx(data: dict[str, Any]) -> bytes:
             label = section_labels.get("education", "Education")
             section_heading(label)
             for edu in data.get("education", []):
-                end   = (edu.get("end_date") or "")
-                end   = end[:7].replace("-", "/") if end and end != "Present" else "Present"
+                end   = _fmt_date(edu.get("end_date") or "Present")
                 inst  = edu.get("institution", "")
                 loc   = edu.get("location", "")
                 two_col_row(f"{inst}  |  {loc}" if loc else inst, end)
@@ -401,10 +412,10 @@ def _build_docx(data: dict[str, Any]) -> bytes:
             for job in data.get("work_history", []):
                 comp  = job.get("company", "")
                 loc   = job.get("location", "")
-                start = job.get("start_date", "")
-                end   = job.get("end_date", "Present")
+                start = _fmt_date(job.get("start_date", ""))
+                end   = _fmt_date(job.get("end_date") or "Present")
                 two_col_row(f"{comp}  |  {loc}" if loc else comp,
-                            f"{start} - {end}" if start else end)
+                            f"{start} – {end}" if start else end)
                 if job.get("role"):
                     add_para(job["role"], italic=True, space_after=1)
                 for b in job.get("bullets", []):
@@ -426,12 +437,12 @@ def _build_docx(data: dict[str, Any]) -> bytes:
 
 # ── public API ────────────────────────────────────────────────────────────────
 
-def generate_resume_pdf(user_id: int) -> bytes:
-    """Export the stored user.resume as PDF. Raises ValueError if no resume generated yet."""
-    user = db_manager.get_user(user_id)
-    if not user or not user.resume:
+def generate_resume_pdf(user_id: int, resume_id: int) -> bytes:
+    """Export the stored resume as PDF. Raises ValueError if no resume generated yet."""
+    resume_row = db_manager.get_resume_by_id(resume_id)
+    if not resume_row or not resume_row.get("resume_data"):
         raise ValueError("No resume found. Call POST /resume/generate first.")
-    pdf_bytes, _ = _build_pdf(user.resume)
+    pdf_bytes, _ = _build_pdf(resume_row["resume_data"])
     return pdf_bytes
 
 def get_resume_page_count(resume_data: dict) -> int:
@@ -439,9 +450,9 @@ def get_resume_page_count(resume_data: dict) -> int:
     _, page_count = _build_pdf(resume_data)
     return page_count
 
-def generate_resume_docx(user_id: int) -> bytes:
-    """Export the stored user.resume as DOCX. Raises ValueError if no resume generated yet."""
-    user = db_manager.get_user(user_id)
-    if not user or not user.resume:
+def generate_resume_docx(user_id: int, resume_id: int) -> bytes:
+    """Export the stored resume as DOCX. Raises ValueError if no resume generated yet."""
+    resume_row = db_manager.get_resume_by_id(resume_id)
+    if not resume_row or not resume_row.get("resume_data"):
         raise ValueError("No resume found. Call POST /resume/generate first.")
-    return _build_docx(user.resume)
+    return _build_docx(resume_row["resume_data"])
