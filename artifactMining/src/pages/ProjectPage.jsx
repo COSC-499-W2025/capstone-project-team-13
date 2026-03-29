@@ -2,10 +2,71 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./ProjectPage.css";
+import { Joyride } from 'react-joyride';
 
 const BASE = "http://127.0.0.1:8000";
 
 export default function ProjectPage() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('projects_page_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('projects_page_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Project Details Walkthrough',
+      content: 'Let’s take a quick tour of your project details page!'
+    },
+    {
+      target: '.pp-hero',
+      placement: 'bottom',
+      title: 'Top Section',
+      content: 'This section shows your project name, type, tags, and lets you edit, delete, or upload a thumbnail.'
+    },
+    {
+      target: '.pp-ai-section',
+      placement: 'top',
+      title: 'AI Analysis',
+      content: 'Run AI-powered analysis to generate insights, skills, and technical depth for your project.'
+    },
+    {
+      target: '.pp-ai-section + .pp-ai-section',
+      placement: 'top',
+      title: 'Evidence',
+      content: 'Add or auto-extract evidence like metrics, feedback, and achievements to demonstrate project success.'
+    },
+    {
+      target: '.pp-detail-grid .card:first-child',
+      placement: 'top',
+      title: 'Metrics',
+      content: 'See project metrics here. For code projects, providing your GitHub username in Settings enables more accurate contribution stats for git-based repositories.'
+    },
+    {
+      target: '.pp-detail-grid .card:nth-child(2)',
+      placement: 'top',
+      title: 'Languages & Frameworks',
+      content: 'View detected programming languages, frameworks, or tools used in your project.'
+    },
+    {
+      target: '.pp-detail-grid .card:nth-child(3)',
+      placement: 'top',
+      title: 'Skills',
+      content: 'See the skills demonstrated in this project, either detected automatically or added manually.'
+    },
+    {
+      target: '.pp-detail-grid .card:nth-child(4)',
+      placement: 'top',
+      title: 'Details',
+      content: 'Find additional project details like scan date, creation date, tags, and collaboration type.'
+    }
+  ];
   const { projectId } = useParams();
   const nav = useNavigate();
   const [project, setProject] = useState(null);
@@ -499,6 +560,77 @@ export default function ProjectPage() {
 
   return (
     <div className="page-wrap">
+      {/* Joyride Walkthrough */}
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            spotlightPadding: 0,
+          },
+          tooltipContainer: {
+            borderRadius: 10,
+            boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
+            padding: '8px 14px',
+            fontSize: '0.97rem',
+            minWidth: 200,
+            maxWidth: 300,
+          },
+          tooltip: {
+            margin: 0,
+          },
+          buttonNext: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+            borderRadius: 7,
+            fontWeight: 600,
+            boxShadow: '0 1px 4px 0 rgba(99,102,241,0.08)',
+            padding: '6px 18px',
+            fontSize: '0.98rem',
+          },
+          buttonBack: {
+            color: 'var(--accent, #6366f1)',
+            background: 'transparent',
+            fontWeight: 500,
+            fontSize: '0.98rem',
+          },
+          buttonSkip: {
+            color: 'var(--text-muted, #a5b4fc)',
+            background: 'transparent',
+            fontSize: '0.98rem',
+          },
+          dot: {
+            background: 'var(--accent, #6366f1)',
+          },
+          badge: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('projects_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+
       <button className="btn-secondary back-btn" onClick={() => nav(-1)}>← Back</button>
 
       {msg && <div className={`alert ${msg.type}`}>{msg.text}</div>}
@@ -882,7 +1014,7 @@ export default function ProjectPage() {
             </table>
           </div>
         )}
-)
+
 
         {!isText && (
         <div className="card">
