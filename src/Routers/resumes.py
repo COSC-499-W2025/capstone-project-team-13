@@ -9,6 +9,13 @@ to guests. Users can only access/modify bullets for their own projects.
 
 Endpoints
 ---------
+Resume management:
+  GET    /resume/list                    list all resumes for user
+  POST   /resume/create                  create a new resume
+  PUT    /resume/{resume_id}/rename      rename a resume
+  DELETE /resume/{resume_id}             delete a resume (not last one)
+  POST   /resume/{resume_id}/duplicate   duplicate a resume
+
 Per-project bullet endpoints:
   POST   /resume/projects/{project_id}/generate    generate & store bullets
   GET    /resume/projects/{project_id}             get stored bullets
@@ -27,7 +34,7 @@ Full resume endpoints:
 
 import io
 
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -46,6 +53,11 @@ from src.Services.resume_service import (
     generate_full_resume,
     get_full_resume,
     save_full_resume,
+    list_user_resumes,
+    create_user_resume,
+    rename_user_resume,
+    delete_user_resume,
+    duplicate_user_resume,
 )
 from src.Services.resume_export_service import (
     generate_resume_pdf,
@@ -72,35 +84,82 @@ class EnhanceBulletsRequest(BaseModel):
     num_bullets: int = 3
 
 
+class CreateResumeRequest(BaseModel):
+    name: str = "New Resume"
+
+
+class RenameResumeRequest(BaseModel):
+    name: str
+
+
+class DuplicateResumeRequest(BaseModel):
+    name: Optional[str] = None
+
+
+# ── resume management endpoints ───────────────────────────────────────────────
+
+@router.get("/list")
+def list_resumes_endpoint(user_id: int = Depends(require_auth)):
+    return list_user_resumes(user_id)
+
+
+@router.post("/create")
+def create_resume_endpoint(body: CreateResumeRequest, user_id: int = Depends(require_auth)):
+    return create_user_resume(user_id, body.name)
+
+
+@router.put("/{resume_id}/rename")
+def rename_resume_endpoint(resume_id: int, body: RenameResumeRequest, user_id: int = Depends(require_auth)):
+    return rename_user_resume(resume_id, user_id, body.name)
+
+
+@router.delete("/{resume_id}")
+def delete_resume_endpoint(resume_id: int, user_id: int = Depends(require_auth)):
+    return delete_user_resume(resume_id, user_id)
+
+
+@router.post("/{resume_id}/duplicate")
+def duplicate_resume_endpoint(
+    resume_id: int,
+    body: DuplicateResumeRequest = Body(default=DuplicateResumeRequest()),
+    user_id: int = Depends(require_auth)
+):
+    return duplicate_user_resume(resume_id, user_id, body.name)
+
+
 # ── per-project bullet endpoints ──────────────────────────────────────────────
 
 @router.post("/projects/{project_id}/generate")
 def generate_bullets_endpoint(
     project_id: int,
     body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Generate and store resume bullets for a project."""
     return generate_project_bullets(
         project_id=project_id,
         user_id=user_id,
-        num_bullets=body.num_bullets
+        num_bullets=body.num_bullets,
+        resume_id=resume_id,
     )
 
 
 @router.get("/projects/{project_id}")
 def get_bullets_endpoint(
     project_id: int,
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Get stored resume bullets for a project."""
-    return get_project_bullets(project_id=project_id, user_id=user_id)
+    return get_project_bullets(project_id=project_id, user_id=user_id, resume_id=resume_id)
 
 
 @router.post("/projects/{project_id}/edit")
 def edit_bullets_endpoint(
     project_id: int,
     body: EditBulletsRequest,
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Edit stored resume bullets and/or header for a project."""
@@ -108,7 +167,8 @@ def edit_bullets_endpoint(
         project_id=project_id,
         user_id=user_id,
         bullets=body.bullets,
-        header=body.header
+        header=body.header,
+        resume_id=resume_id,
     )
 
 
@@ -116,13 +176,15 @@ def edit_bullets_endpoint(
 def ai_generate_bullets_endpoint(
     project_id: int,
     body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Generate resume bullets for a project using Gemini AI."""
     return ai_generate_project_bullets(
         project_id=project_id,
         user_id=user_id,
-        num_bullets=body.num_bullets
+        num_bullets=body.num_bullets,
+        resume_id=resume_id,
     )
 
 
@@ -130,6 +192,7 @@ def ai_generate_bullets_endpoint(
 def ai_enhance_bullets_endpoint(
     project_id: int,
     body: EnhanceBulletsRequest = Body(default=EnhanceBulletsRequest()),
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Enhance existing resume bullets using Gemini AI. Falls back to generation if none exist."""
@@ -138,6 +201,7 @@ def ai_enhance_bullets_endpoint(
         user_id=user_id,
         current_bullets=body.bullets,
         num_bullets=body.num_bullets,
+        resume_id=resume_id,
     )
 
 
@@ -145,32 +209,36 @@ def ai_enhance_bullets_endpoint(
 def regenerate_bullets_endpoint(
     project_id: int,
     body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Regenerate all bullets for a project, replacing existing ones."""
     return regenerate_project_bullets(
         project_id=project_id,
         user_id=user_id,
-        num_bullets=body.num_bullets
+        num_bullets=body.num_bullets,
+        resume_id=resume_id,
     )
 
 
 @router.get("/projects/{project_id}/ats")
 def get_ats_endpoint(
     project_id: int,
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Get detailed ATS scores for a project's stored bullets."""
-    return get_project_ats(project_id=project_id, user_id=user_id)
+    return get_project_ats(project_id=project_id, user_id=user_id, resume_id=resume_id)
 
 
 @router.delete("/projects/{project_id}")
 def delete_bullets_endpoint(
     project_id: int,
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Delete stored resume bullets for a project."""
-    return delete_project_bullets(project_id=project_id, user_id=user_id)
+    return delete_project_bullets(project_id=project_id, user_id=user_id, resume_id=resume_id)
 
 
 # ── full resume endpoints ─────────────────────────────────────────────────────
@@ -178,33 +246,36 @@ def delete_bullets_endpoint(
 @router.post("/generate")
 def generate_resume_endpoint(
     body: GenerateBulletsRequest = Body(default=GenerateBulletsRequest()),
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """
     Smart full-resume generate. Checks all user projects for stored bullets —
     generates missing ones, then assembles and stores the full resume.
     """
-    return generate_full_resume(user_id=user_id, num_bullets=body.num_bullets)
+    return generate_full_resume(user_id=user_id, num_bullets=body.num_bullets, resume_id=resume_id)
 
 
 @router.get("")
 def get_resume_endpoint(
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Return the stored resume JSON."""
-    return get_full_resume(user_id=user_id)
+    return get_full_resume(user_id=user_id, resume_id=resume_id)
 
 
 @router.post("/save")
 def save_resume_endpoint(
     body: dict = Body(...),
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """
     Save the enriched resume back to the database.
     Called after the frontend adds education, work history, skills, etc.
     """
-    return save_full_resume(user_id=user_id, resume_data=body)
+    return save_full_resume(user_id=user_id, resume_data=body, resume_id=resume_id)
 
 
 @router.post("/page-count")
@@ -225,6 +296,7 @@ def page_count_endpoint(
 
 @router.get("/download/pdf")
 def download_pdf_endpoint(
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Export the stored resume as a downloadable PDF."""
@@ -233,7 +305,7 @@ def download_pdf_endpoint(
         raise HTTPException(status_code=404, detail="User not found")
 
     try:
-        pdf_bytes = generate_resume_pdf(user_id)
+        pdf_bytes = generate_resume_pdf(user_id, resume_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -249,6 +321,7 @@ def download_pdf_endpoint(
 
 @router.get("/download/docx")
 def download_docx_endpoint(
+    resume_id: int = Query(...),
     user_id: int = Depends(require_auth)
 ):
     """Export the stored resume as a downloadable DOCX."""
@@ -257,7 +330,7 @@ def download_docx_endpoint(
         raise HTTPException(status_code=404, detail="User not found")
 
     try:
-        docx_bytes = generate_resume_docx(user_id)
+        docx_bytes = generate_resume_docx(user_id, resume_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

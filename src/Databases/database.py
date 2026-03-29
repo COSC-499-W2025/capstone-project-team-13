@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, Index, func
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, Index, func, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, joinedload
 from datetime import datetime, timezone
 import json
@@ -332,6 +332,50 @@ class Keyword(Base):
             'category': self.category,
         }
 
+class Resume(Base):
+    __tablename__ = 'resumes'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(255), nullable=False, default='My Resume')
+    _resume_data = Column('resume_data', Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    user = relationship('User', back_populates='resumes')
+    bullets = relationship('ResumeBullets', back_populates='resume', cascade='all, delete-orphan')
+
+    @property
+    def resume_data(self):
+        if not self._resume_data: return None
+        try: return json.loads(self._resume_data)
+        except: return None
+
+    @resume_data.setter
+    def resume_data(self, value):
+        self._resume_data = json.dumps(value) if value is not None else None
+
+
+class ResumeBullets(Base):
+    __tablename__ = 'resume_bullets'
+    id = Column(Integer, primary_key=True)
+    resume_id = Column(Integer, ForeignKey('resumes.id', ondelete='CASCADE'), nullable=False, index=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False, index=True)
+    _bullets_data = Column('bullets_data', Text)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    resume = relationship('Resume', back_populates='bullets')
+    __table_args__ = (UniqueConstraint('resume_id', 'project_id', name='uq_resume_project'),)
+
+    @property
+    def bullets_data(self):
+        if not self._bullets_data: return None
+        try: return json.loads(self._bullets_data)
+        except: return None
+
+    @bullets_data.setter
+    def bullets_data(self, value):
+        self._bullets_data = json.dumps(value) if value is not None else None
+
+
 class User(Base):
     """Store user profile information"""
     __tablename__ = 'users'
@@ -357,6 +401,7 @@ class User(Base):
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')
     contact_info = relationship('ContactInfo', back_populates='user', cascade='all, delete-orphan', lazy='select')
     projects = relationship('Project', back_populates='user', lazy='select')
+    resumes = relationship('Resume', back_populates='user', cascade='all, delete-orphan', order_by='Resume.created_at')
 
     # Timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -928,7 +973,158 @@ class DatabaseManager:
             return False
         finally:
             session.close()
-    
+
+    # ============ MULTI-RESUME OPERATIONS ============
+
+    def create_resume(self, user_id: int, name: str, resume_data=None):
+        session = self.get_session()
+        try:
+            r = Resume(user_id=user_id, name=name)
+            if resume_data is not None:
+                r.resume_data = resume_data
+            session.add(r)
+            session.commit()
+            resume_id = r.id
+        finally:
+            session.close()
+        return self.get_resume_by_id(resume_id)
+
+    def list_resumes(self, user_id: int):
+        session = self.get_session()
+        try:
+            rows = session.query(Resume).filter(Resume.user_id == user_id).order_by(Resume.created_at).all()
+            return [{"id": r.id, "name": r.name, "updated_at": r.updated_at.isoformat() if r.updated_at else None} for r in rows]
+        finally:
+            session.close()
+
+    def get_resume_by_id(self, resume_id: int):
+        session = self.get_session()
+        try:
+            r = session.query(Resume).filter(Resume.id == resume_id).first()
+            if not r:
+                return None
+            return {"id": r.id, "user_id": r.user_id, "name": r.name, "resume_data": r.resume_data, "updated_at": r.updated_at.isoformat() if r.updated_at else None}
+        finally:
+            session.close()
+
+    def update_resume(self, resume_id: int, name=None, resume_data=None) -> bool:
+        session = self.get_session()
+        try:
+            r = session.query(Resume).filter(Resume.id == resume_id).first()
+            if not r:
+                return False
+            if name is not None:
+                r.name = name
+            if resume_data is not None:
+                r.resume_data = resume_data
+            r.updated_at = datetime.now(timezone.utc)
+            session.commit()
+            return True
+        finally:
+            session.close()
+
+    def delete_resume_by_id(self, resume_id: int) -> bool:
+        session = self.get_session()
+        try:
+            r = session.query(Resume).filter(Resume.id == resume_id).first()
+            if not r:
+                return False
+            session.delete(r)
+            session.commit()
+            return True
+        finally:
+            session.close()
+
+    def get_or_create_default_resume(self, user_id: int) -> int:
+        """Get first resume id for user, or create one migrating from user._resume."""
+        session = self.get_session()
+        try:
+            r = session.query(Resume).filter(Resume.user_id == user_id).order_by(Resume.created_at).first()
+            if r:
+                return r.id
+        finally:
+            session.close()
+        # No resume yet — create from old user._resume
+        user = self.get_user(user_id)
+        old_data = user.resume if user else None
+        new_resume = self.create_resume(user_id, "My Resume", old_data)
+        resume_id = new_resume["id"]
+        # Migrate per-project bullets
+        if old_data and old_data.get("projects"):
+            for proj in old_data["projects"]:
+                pid = proj.get("project_id")
+                if pid:
+                    old_bullets = self.get_resume_bullets(pid)
+                    if old_bullets:
+                        self.save_resume_bullets_for(
+                            resume_id=resume_id,
+                            project_id=pid,
+                            bullets=old_bullets.get("bullets", []),
+                            header=old_bullets.get("header", ""),
+                            ats_score=old_bullets.get("ats_score"),
+                        )
+        return resume_id
+
+    def copy_resume_bullets(self, from_resume_id: int, to_resume_id: int) -> None:
+        session = self.get_session()
+        try:
+            rows = session.query(ResumeBullets).filter(ResumeBullets.resume_id == from_resume_id).all()
+            for rb in rows:
+                new_rb = ResumeBullets(resume_id=to_resume_id, project_id=rb.project_id)
+                new_rb.bullets_data = rb.bullets_data
+                session.add(new_rb)
+            session.commit()
+        finally:
+            session.close()
+
+    def save_resume_bullets_for(self, resume_id: int, project_id: int, bullets, header: str, ats_score=None) -> bool:
+        session = self.get_session()
+        try:
+            rb = session.query(ResumeBullets).filter(
+                ResumeBullets.resume_id == resume_id,
+                ResumeBullets.project_id == project_id
+            ).first()
+            data = {"bullets": bullets, "header": header, "generated_at": datetime.now(timezone.utc).isoformat(), "num_bullets": len(bullets), "ats_score": ats_score}
+            if rb:
+                rb.bullets_data = data
+            else:
+                rb = ResumeBullets(resume_id=resume_id, project_id=project_id)
+                rb.bullets_data = data
+                session.add(rb)
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+    def get_resume_bullets_for(self, resume_id: int, project_id: int):
+        session = self.get_session()
+        try:
+            rb = session.query(ResumeBullets).filter(
+                ResumeBullets.resume_id == resume_id,
+                ResumeBullets.project_id == project_id
+            ).first()
+            return rb.bullets_data if rb else None
+        finally:
+            session.close()
+
+    def delete_resume_bullets_for(self, resume_id: int, project_id: int) -> bool:
+        session = self.get_session()
+        try:
+            rb = session.query(ResumeBullets).filter(
+                ResumeBullets.resume_id == resume_id,
+                ResumeBullets.project_id == project_id
+            ).first()
+            if not rb:
+                return False
+            session.delete(rb)
+            session.commit()
+            return True
+        finally:
+            session.close()
+
     # ============ PROJECT ANALYSIS OPERATIONS ============
 
     def get_project_duration(self, project_id: int):
