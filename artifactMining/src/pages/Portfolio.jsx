@@ -404,14 +404,38 @@ export default function Portfolio() {
   }
 
   async function saveEdit(id) {
+    const toArr = s => (s || "").split(",").map(t => t.trim()).filter(Boolean);
+    const payload = {
+      ...editForm,
+      languages:  toArr(editForm.languages),
+      frameworks: toArr(editForm.frameworks),
+      skills:     toArr(editForm.skills),
+      tags:       toArr(editForm.tags),
+    };
+    if (payload.importance_score === "" || payload.importance_score == null) {
+      delete payload.importance_score;
+    } else {
+      payload.importance_score = parseFloat(payload.importance_score);
+    }
     try {
       await apiFetch(`/portfolio/${id}/edit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
       setMsg({ type: "success", text: "Saved!" });
       setEditId(null);
+      load();
+    } catch (e) { setMsg({ type: "error", text: e.message }); }
+  }
+
+  async function toggleHidden(p) {
+    try {
+      await apiFetch(`/portfolio/${p.id}/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_hidden: !p.is_hidden }),
+      });
       load();
     } catch (e) { setMsg({ type: "error", text: e.message }); }
   }
@@ -431,6 +455,11 @@ export default function Portfolio() {
 
   function startEdit(p) {
     setEditId(p.id);
+    const techSet = new Set([
+      ...(p.languages || []).map(s => s.toLowerCase()),
+      ...(p.frameworks || []).map(s => s.toLowerCase()),
+    ]);
+    const pureSkills = (p.skills || []).filter(s => !techSet.has(s.toLowerCase()));
     setEditForm({
       custom_description: p.description || "",
       is_featured: p.is_featured || false,
@@ -440,7 +469,7 @@ export default function Portfolio() {
       success_evidence: p.success_evidence || "",
       languages: (p.languages || []).join(", "),
       frameworks: (p.frameworks || []).join(", "),
-      skills: (p.skills || []).join(", "),
+      skills: pureSkills.join(", "),
       tags: (p.tags || []).join(", "),
     });
   }
@@ -635,11 +664,13 @@ export default function Portfolio() {
                     />
                     {search && <button className="port-search-clear" onClick={() => setSearch("")} title="Clear">✕</button>}
                   </div>
-                  <select className="port-type-select" value={typeFilter} onChange={ev => setTypeFilter(ev.target.value)}>
+                  <div className="port-type-chips">
                     {projectTypes.map(t => (
-                      <option key={t} value={t}>{t === "all" ? "All Types" : t}</option>
+                      <button key={t} className={`port-type-chip ${typeFilter === t ? "active" : ""}`} onClick={() => setTypeFilter(t)}>
+                        {t === "all" ? "All" : t}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                   {(search || typeFilter !== "all") && (
                     <span className="port-result-count">{sorted.length} result{sorted.length !== 1 ? "s" : ""}</span>
                   )}
@@ -649,13 +680,15 @@ export default function Portfolio() {
               {projects.length > 0 && (
                 <div className="port-sort-row">
                   <span className="port-sort-label">Sort by</span>
-                  {SORT_OPTIONS.map(o => (
-                    <button key={o.value}
-                      className={`port-sort-pill ${sortBy === o.value ? "active" : ""}`}
-                      onClick={() => setSortBy(o.value)}>
-                      {o.label}
-                    </button>
-                  ))}
+                  <div className="port-sort-group">
+                    {SORT_OPTIONS.map(o => (
+                      <button key={o.value}
+                        className={`port-sort-pill ${sortBy === o.value ? "active" : ""}`}
+                        onClick={() => setSortBy(o.value)}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="port-layout-toggle">
                     <button className={`port-layout-btn ${layout === "list" ? "active" : ""}`} onClick={() => setLayoutPersist("list")} title="List view">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -668,9 +701,12 @@ export default function Portfolio() {
               )}
 
               {projects.length === 0 ? (
-                <div className="empty-state">
-                  <p>No portfolio data yet.</p>
-                  <p style={{ marginTop: 8, fontSize: "0.9rem" }}>Click <strong>Regenerate</strong> to build from your projects.</p>
+                <div className="empty-state port-empty-illustrated">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#6366f1", opacity: 0.6, marginBottom: 16 }}>
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <p style={{ fontWeight: 700, fontSize: "1.05rem", color: "#c4cbf5", margin: 0 }}>No portfolio data yet</p>
+                  <p style={{ marginTop: 8, fontSize: "0.88rem", color: "#6b7a99", maxWidth: 280, margin: "8px auto 0" }}>Hit <strong style={{ color: "#a5b4fc" }}>Regenerate</strong> to mine your projects and build your portfolio automatically.</p>
                 </div>
               ) : sorted.length === 0 && isPublic ? (
                 <div className="port-no-results">
@@ -684,11 +720,11 @@ export default function Portfolio() {
                 <>
                   {featured.length > 0 && (
                     <div className="port-section">
-                      <div className="port-section-header">
+                      <div className="port-section-header port-section-header-featured">
                         <span>{e("⭐ ")}Featured Projects</span>
                       </div>
                       <div className="port-top-grid">
-                        {featured.map((p, i) => <ProjectCard key={p.id} p={p} rank={i + 1} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} isPublic={isPublic} />)}
+                        {featured.map((p, i) => <ProjectCard key={p.id} p={p} rank={i + 1} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} isPublic={isPublic} toggleHidden={toggleHidden} />)}
                       </div>
                     </div>
                   )}
@@ -699,11 +735,11 @@ export default function Portfolio() {
                     </div>
                     {layout === "grid" ? (
                       <div className="port-top-grid">
-                        {rest.map((p, i) => <ProjectCard key={p.id} p={p} rank={featured.length + i + 1} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} isPublic={isPublic} />)}
+                        {rest.map((p, i) => <ProjectCard key={p.id} p={p} rank={featured.length + i + 1} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} isPublic={isPublic} toggleHidden={toggleHidden} />)}
                       </div>
                     ) : (
                       <div className="port-all-list">
-                        {rest.map(p => <ProjectRow key={p.id} p={p} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} isPublic={isPublic} />)}
+                        {rest.map(p => <ProjectRow key={p.id} p={p} editId={editId} editForm={editForm} setEditForm={setEditForm} startEdit={startEdit} saveEdit={saveEdit} setEditId={setEditId} rankInput={rankInput} setRankInput={setRankInput} saveRank={saveRank} nav={nav} isPublic={isPublic} toggleHidden={toggleHidden} />)}
                       </div>
                     )}
                   </div>
@@ -716,6 +752,37 @@ export default function Portfolio() {
         {/* Skills & Stats */}
         {activeSection === "skills" && (
           <div className="port-section-page">
+            {projects.length > 0 && (() => {
+              const skillMap = {};
+              projects.forEach(p => {
+                [...new Set([...(p.skills || []), ...(p.languages || []), ...(p.frameworks || [])])].forEach(s => {
+                  const key = s.toLowerCase().trim();
+                  if (!key) return;
+                  if (!skillMap[key]) skillMap[key] = { name: s, count: 0 };
+                  skillMap[key].count++;
+                });
+              });
+              const allSkills = Object.values(skillMap).sort((a, b) => b.count - a.count);
+              return (
+                <div className="port-viz-card card" style={{ marginBottom: 16 }}>
+                  <div className="port-section-header">
+                    <span>All Skills</span>
+                    <span className="port-section-count">{allSkills.length}</span>
+                  </div>
+                  <div className="port-skills-cloud">
+                    {allSkills.map(({ name, count }) => {
+                      const tc = typeColor(name);
+                      return (
+                        <span key={name} className="port-skill-chip" style={{ color: tc, borderColor: `${tc}55`, background: `${tc}15` }}>
+                          {name}
+                          {count > 1 && <span className="port-skill-chip-count" style={{ background: `${tc}30`, color: tc }}>{count}</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
             {Object.keys(stats).length > 0 && (
               <div className="port-stat-row" style={{ marginBottom: 24 }}>
                 {[
@@ -1328,34 +1395,52 @@ function EditForm({ p, editForm, setEditForm, saveEdit, setEditId }) {
   );
 }
 
-function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav, isPublic }) {
+function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav, isPublic, toggleHidden }) {
   const accent = typeColor(p.type || p.project_type);
   const thumb = thumbUrl(p.thumbnail_path);
   return (
-    <div className="port-top-card card" style={{ borderLeft: `3px solid ${accent}` }}>
+    <div className={`port-top-card card${p.is_featured ? " port-featured-card" : ""}`} style={{ borderLeft: `3px solid ${accent}` }}>
       <div className="port-rank">#{rank}</div>
       <div className="port-card-tags">
         <span className="tag">{p.type || p.project_type}</span>
+        {p.is_featured && <span className="port-featured-badge">★ Featured</span>}
         {p.is_hidden && !isPublic && <span className="tag warning">hidden</span>}
       </div>
-      {thumb ? (
-        <img src={thumb} alt="thumbnail" className="port-card-thumb" onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
-      ) : null}
-      <div className="port-card-thumb-placeholder" style={{ display: thumb ? "none" : "flex" }}>
-        {(projectName(p) || "?")[0].toUpperCase()}
+      <div className="port-card-thumb-wrapper">
+        <img
+          src={thumb}
+          alt="thumbnail"
+          className="port-card-thumb"
+          style={{ display: thumb ? "block" : "none" }}
+          onError={e => { e.target.style.display = "none"; e.target.parentNode.querySelector(".port-card-thumb-placeholder").style.display = "flex"; }}
+        />
+        <div className="port-card-thumb-placeholder" style={{ display: thumb ? "none" : "flex", background: `linear-gradient(135deg, ${accent}22 0%, ${accent}44 100%)`, borderColor: `${accent}44` }}>
+          {(projectName(p) || "?")[0].toUpperCase()}
+        </div>
+        {thumb && <div className="port-card-thumb-overlay" />}
       </div>
       <h3 className="port-proj-name">{projectName(p)}</h3>
       <p className="port-proj-desc text-muted">{p.description || "No description"}</p>
       {p.user_role && <p style={{ fontSize: "0.8rem", color: "#a5b4fc", marginTop: 4 }}>Role: {p.user_role}</p>}
       <EvidenceSection p={p} />
       <div className="chip-group" style={{ marginTop: 8 }}>
-        {[...(p.tech_stack || p.languages || []), ...(p.skills || [])].slice(0, 6).map((t, i) => <span key={i} className="tag accent">{t}</span>)}
+        {[...new Set([...(p.skills || []), ...(p.tech_stack || p.languages || [])])].slice(0, 6).map((t, i) => {
+          const tc = typeColor(t);
+          return <span key={i} className="tag accent" style={{ color: tc, borderColor: `${tc}55`, background: `${tc}18` }}>{t}</span>;
+        })}
       </div>
+      {p.importance_score != null && (
+        <div className="port-score-track">
+          <div className="port-score-track-inner">
+            <div className="port-score-fill" style={{ width: `${Math.round((p.importance_score || 0) * 100)}%`, background: accent }} />
+          </div>
+          <span className="port-score-label">{Number(p.importance_score).toFixed(2)}</span>
+        </div>
+      )}
       {p.metrics && (
         <div className="port-metrics">
           {p.metrics.lines_of_code > 0 && <span>{p.metrics.lines_of_code?.toLocaleString()} lines</span>}
           {p.metrics.file_count > 0 && <span>{p.metrics.file_count} files</span>}
-          {p.importance_score != null && <span>Score: {Number(p.importance_score).toFixed(2)}</span>}
         </div>
       )}
       {!isPublic && (
@@ -1372,13 +1457,18 @@ function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEd
         {!isPublic && (
           <button className="btn-secondary" onClick={() => editId === p.id ? setEditId(null) : startEdit(p)}>{editId === p.id ? "Cancel" : "Edit"}</button>
         )}
+        {!isPublic && (
+          <button className={`btn-secondary port-hide-btn${p.is_hidden ? " hidden-active" : ""}`} onClick={() => toggleHidden(p)} title={p.is_hidden ? "Show in portfolio" : "Hide from portfolio"}>
+            {p.is_hidden ? "Unhide" : "Hide"}
+          </button>
+        )}
       </div>
       {!isPublic && editId === p.id && <EditForm p={p} editForm={editForm} setEditForm={setEditForm} saveEdit={saveEdit} setEditId={setEditId} />}
     </div>
   );
 }
 
-function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav, isPublic }) {
+function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, setEditId, rankInput, setRankInput, saveRank, nav, isPublic, toggleHidden }) {
   const accent = typeColor(p.type || p.project_type);
   const score = p.importance_score ?? 0;
   const thumb = thumbUrl(p.thumbnail_path);
@@ -1395,18 +1485,26 @@ function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, set
       <div className="port-list-main">
         <div className="port-list-top">
           <strong className="port-list-name">{projectName(p)}</strong>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
             <span className="tag">{p.type || p.project_type}</span>
             {p.is_hidden && !isPublic && <span className="tag warning">hidden</span>}
-            {p.importance_score != null && <span className="tag accent">{Number(p.importance_score).toFixed(2)}</span>}
+            {p.importance_score != null && (
+              <div className="port-row-score-wrap" title={`Score: ${Number(p.importance_score).toFixed(2)}`}>
+                <div className="port-row-score-bar" style={{ width: `${Math.round((p.importance_score || 0) * 100)}%`, background: accent }} />
+              </div>
+            )}
           </div>
         </div>
-        <p className="port-list-desc text-muted">{p.description?.slice(0, 120) || "No description"}</p>
+        <div className="port-list-desc-fade">
+          <p className="port-list-desc text-muted">{p.description || "No description"}</p>
+        </div>
         {p.user_role && <p style={{ fontSize: "0.78rem", color: "#a5b4fc", marginTop: 2 }}>Role: {p.user_role}</p>}
         <EvidenceSection p={p} />
         <div className="chip-group" style={{ marginTop: 6 }}>
-          {(p.languages || p.tech_stack || []).slice(0, 5).map((t, i) => <span key={i} className="tag accent">{t}</span>)}
-          {(p.skills || []).slice(0, 3).map((s, i) => <span key={i} className="tag">{s}</span>)}
+          {[...new Set([...(p.skills || []), ...(p.languages || p.tech_stack || [])])].slice(0, 8).map((t, i) => {
+            const tc = typeColor(t);
+            return <span key={i} className="tag accent" style={{ color: tc, borderColor: `${tc}55`, background: `${tc}18` }}>{t}</span>;
+          })}
         </div>
       </div>
       <div className="port-list-actions">
@@ -1422,6 +1520,11 @@ function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, set
         <button className="btn-secondary" style={{ padding: "6px 12px" }} onClick={() => nav(`/projects/${p.id}`)}>View</button>
         {!isPublic && (
           <button className="btn-secondary" style={{ padding: "6px 12px" }} onClick={() => editId === p.id ? setEditId(null) : startEdit(p)}>{editId === p.id ? "Cancel" : "Edit"}</button>
+        )}
+        {!isPublic && (
+          <button className={`btn-secondary port-hide-btn${p.is_hidden ? " hidden-active" : ""}`} style={{ padding: "6px 12px" }} onClick={() => toggleHidden(p)} title={p.is_hidden ? "Show in portfolio" : "Hide from portfolio"}>
+            {p.is_hidden ? "Unhide" : "Hide"}
+          </button>
         )}
       </div>
       {!isPublic && editId === p.id && (
