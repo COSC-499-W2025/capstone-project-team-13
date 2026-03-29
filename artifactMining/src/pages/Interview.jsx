@@ -32,12 +32,6 @@ export default function Interview() {
       content: 'This page helps you generate STAR-format interview answers from your real projects. Let’s take a quick tour!'
     },
     {
-      target: '.iv-hero',
-      placement: 'bottom',
-      title: 'Hero Section',
-      content: 'See what this tool does and how it can help you prepare for interviews.'
-    },
-    {
       target: '.iv-role-pills',
       placement: 'bottom',
       title: 'Target Role',
