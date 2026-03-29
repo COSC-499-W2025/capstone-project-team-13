@@ -734,7 +734,7 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 **Date Range:** Mar 16 - March 29, 2026
 | Team Member | Work Completed / Focus This Week | PR # |
 |--------------|----------------------------------|-----------------|
-| **Illina Islam** | Updated resume UI, updated documentation, implemented multiple resume features, implemented AI resume bullets, implemented resume export, made multiple updates to portfolio page | 571, 550, 549, 538, 527, 488, 487, 485 |
+| **Illina Islam** | Updated resume UI, updated documentation, implemented multiple resume features, implemented AI resume bullets, implemented resume export, made multiple updates to portfolio page, updated public mode for portfolio | 571, 550, 549, 538, 527, 488, 487, 485 |
 | **Sana Shah** | Improved skills analysis efficiency, implemented private/public mode for portfolio, added thumbnails to portfolio page, updated system architecture diagram, made multiple updates to portfolio page, implemented public portfolio browsing, UI updates | 555, 542, 541, 539, 528, 494 |
 | **Maya Knutsvig** | made multiple updates to portfolio page, updated projects page, updated dashbaord customization, updates settings page, fixed AI token limit bug, project type routing, and evidence extraction, implemented AI interview prep feature, fixed light mode and dark mode inconsistencies, implemented avatar upload, implemented resume completeness scores, implemented dashboard onboarding, implemented search bar | 544, 523, 522, 521, 520, 513, 514, 512, 511, 510, 509, 508, 493, 507 |
 | **Prina Mehta** | Added 404 page, updated settings page, implemented dashboard columns, improves zip extraction, coding projects importance score, implemented portfolio showcase, impelmented skills timeline and heatmap, made many updates to frontend  | 517, 518, 519, 489, 490 |
@@ -761,8 +761,9 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 
 **What went well:** 
 - Majorty of the team was able to collectively make finishing touches to the frontend, as well as make a script for the milestone 3 demo. 
+- Our team members made significant progress in updating the frontend for submission in these weeks.
   
 **What didn’t go as planned:**
-- There were minor bugs in the UI, ex. styling inconsistencies that needed to be fixed and were time consuming.
+- There were minor bugs in the UI, (ex. styling inconsistencies) that needed to be fixed and were time consuming.
 
 
