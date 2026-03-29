@@ -149,7 +149,9 @@ export default function Portfolio() {
     finally { setVisibilityLoading(false); }
   }
 
+  const [saveStatus, setSaveStatus] = useState("idle");
   const aboutSaveTimer = React.useRef(null);
+  const savedTimer = React.useRef(null);
   function saveAbout(field, value) {
     clearTimeout(aboutSaveTimer.current);
     aboutSaveTimer.current = setTimeout(() => {
@@ -157,7 +159,13 @@ export default function Portfolio() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: value }),
-      }).catch(() => {});
+      })
+        .then(() => {
+          setSaveStatus("saved");
+          clearTimeout(savedTimer.current);
+          savedTimer.current = setTimeout(() => setSaveStatus("idle"), 2000);
+        })
+        .catch(() => {});
     }, 800);
   }
 
@@ -343,56 +351,64 @@ export default function Portfolio() {
         {/* About Me */}
         {activeSection === "about" && (
           <div className="port-about-wrapper">
-            {/* Banner + avatar */}
+            {/* Banner — contains identity */}
             <div className="port-about-banner">
-              <div className="port-about-avatar">
-                {heroTitle ? heroTitle.trim().charAt(0).toUpperCase() : "?"}
+              <div className="port-about-identity">
+                {isPublic ? (
+                  <p className="port-about-name-text">{heroTitle || "—"}</p>
+                ) : (
+                  <input
+                    className="port-about-name-input"
+                    placeholder="Your name"
+                    value={heroTitle}
+                    onChange={ev => { setHeroTitle(ev.target.value); localStorage.setItem("portfolio_hero_title", ev.target.value); saveAbout("about_name", ev.target.value); }}
+                    maxLength={60}
+                  />
+                )}
+                {isPublic ? (
+                  heroSub && <p className="port-about-sub-text">{heroSub}</p>
+                ) : (
+                  <input
+                    className="port-about-sub-input"
+                    placeholder="Title or role — e.g. Full-Stack Developer · UBC"
+                    value={heroSub}
+                    onChange={ev => { setHeroSub(ev.target.value); localStorage.setItem("portfolio_hero_sub", ev.target.value); saveAbout("about_subtitle", ev.target.value); }}
+                    maxLength={80}
+                  />
+                )}
               </div>
-            </div>
-
-            {/* Identity fields */}
-            <div className="port-about-identity">
-              <input
-                className="port-about-name-input"
-                placeholder="Your name"
-                value={heroTitle}
-                onChange={ev => { setHeroTitle(ev.target.value); localStorage.setItem("portfolio_hero_title", ev.target.value); saveAbout("about_name", ev.target.value); }}
-                maxLength={60}
-                readOnly={isPublic}
-              />
-              <input
-                className="port-about-sub-input"
-                placeholder="Title or role — e.g. Full-Stack Developer · UBC"
-                value={heroSub}
-                onChange={ev => { setHeroSub(ev.target.value); localStorage.setItem("portfolio_hero_sub", ev.target.value); saveAbout("about_subtitle", ev.target.value); }}
-                maxLength={80}
-                readOnly={isPublic}
-              />
             </div>
 
             <div className="port-about-divider" />
 
-            {/* Bio */}
-            <div className="port-about-bio-section">
-              <span className="port-about-bio-label">About Me</span>
-              <textarea
-                className="port-about-bio-input"
-                placeholder="Write a short bio — your background, what you're building, and what drives you…"
-                value={aboutBio}
-                onChange={ev => { setAboutBio(ev.target.value); saveAbout("about_bio", ev.target.value); }}
-                rows={6}
-                maxLength={800}
-                readOnly={isPublic}
-              />
-            </div>
+            {/* Bio — hidden in public mode if empty */}
+            {(!isPublic || aboutBio) && (
+              <div className="port-about-bio-section">
+                <span className="port-about-bio-label">About Me</span>
+                {isPublic ? (
+                  <p className="port-about-bio-text">{aboutBio}</p>
+                ) : (
+                  <div className="port-about-bio-wrap">
+                    <textarea
+                      className="port-about-bio-input"
+                      placeholder="Write a short bio — your background, what you're building, and what drives you…"
+                      value={aboutBio}
+                      onChange={ev => { setAboutBio(ev.target.value); saveAbout("about_bio", ev.target.value); }}
+                      rows={6}
+                      maxLength={800}
+                    />
+                    <span className="port-about-char-count">{aboutBio.length} / 800</span>
+                  </div>
+                )}
+                <span className="port-about-saved" style={{ opacity: saveStatus === "saved" ? undefined : 0, animation: saveStatus === "saved" ? undefined : "none" }}>Saved ✓</span>
+              </div>
+            )}
 
-            <Link
-              to="/showcase"
-              className="btn-primary port-about-showcase-btn"
-              style={{ textDecoration: "none", color: "#fff" }}
-            >
-              Web Showcase
-            </Link>
+            <div className="port-about-bottom-row">
+              <Link to="/showcase" className="btn-primary port-about-showcase-btn" style={{ textDecoration: "none", color: "#fff" }}>
+                Web Showcase
+              </Link>
+            </div>
           </div>
         )}
 

@@ -103,18 +103,6 @@ def get_portfolio_showcase(user_id: int = Depends(require_auth)):
     return {"projects": result, "total": len(projects)}
 
 
-@router.get("/{project_id}")
-def get_portfolio_project_endpoint(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    """Return a single project card by ID. Only accessible by the project owner."""
-    result = get_portfolio_project(user_id=user_id, project_id=project_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-    return result
-
-
 @router.get("/about")
 def get_about(user_id: int = Depends(require_auth)):
     """Return the user's About Me fields."""
@@ -163,6 +151,18 @@ def set_portfolio_visibility(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return {"portfolio_public": bool(getattr(user, "portfolio_public", False))}
+
+
+@router.get("/{project_id}")
+def get_portfolio_project_endpoint(
+    project_id: int,
+    user_id: int = Depends(require_auth)
+):
+    """Return a single project card by ID. Only accessible by the project owner."""
+    result = get_portfolio_project(user_id=user_id, project_id=project_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return result
 
 
 @router.post("/{project_id}/edit")
