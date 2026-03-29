@@ -232,28 +232,22 @@ export default function Resumes() {
   }, [runWalkthrough]);
   const walkthroughSteps = [
     {
-      target: 'body',
-      placement: 'center',
-      title: 'Resume Builder',
-      content: 'This page lets you build, edit, and export your resume. Let’s take a quick tour!'
+      target: '.resume-list-title',
+      placement: 'bottom',
+      title: 'My Resumes',
+      content: 'This is where all your resumes will appear. You can create, edit, duplicate, or delete resumes from this page.'
     },
     {
-      target: '.resume-sidebar',
-      placement: 'right',
-      title: 'Resume Controls',
-      content: 'Once you have projects, click Generate Resume and we will make one for you. In this panel, you can also add and remove elements.'
+      target: '.resume-list-empty',
+      placement: 'bottom',
+      title: 'No Resumes Yet',
+      content: 'You have not created any resumes yet. This area will show your resumes once you create them.'
     },
     {
-      target: '.resume-main',
-      placement: 'left',
-      title: 'Resume Preview',
-      content: 'Once created, you can view and directly edit your resume here.'
-    },
-    {
-      target: 'body',
-      placement: 'center',
-      title: 'Other Tools',
-      content: 'Once generated, you can also track your completeness and word count as you go.'
+      target: '.resume-btn-primary',
+      placement: 'bottom',
+      title: 'Create Resume',
+      content: 'Click here to create your first resume and get started!'
     }
   ];
   // ── auth state — null = still checking, false = not authed, true = authed
@@ -2060,9 +2054,41 @@ export default function Resumes() {
   // ── List view ──────────────────────────────────────────────────────────────
   if (view === "list") {
     return (
-      <div className="page-wrap">
-        {renderList()}
-      </div>
+      <>
+        <Joyride
+          steps={walkthroughSteps}
+          run={runWalkthrough}
+          continuous
+          showSkipButton
+          showProgress
+          styles={{
+            options: {
+              zIndex: 10000,
+              primaryColor: 'var(--accent, #6366f1)',
+              backgroundColor: 'var(--card-bg, #181a2a)',
+              textColor: 'var(--text, #e0e7ff)',
+              arrowColor: 'var(--card-bg, #181a2a)',
+              overlayColor: 'rgba(30, 34, 54, 0.7)',
+              spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            },
+            close: {
+              color: 'var(--text-muted, #a5b4fc)',
+              top: 10,
+              right: 10,
+            },
+          }}
+          disableScrolling={true}
+          callback={(data) => {
+            if (data.status === 'finished' || data.status === 'skipped') {
+              localStorage.setItem('resumes_walkthrough_seen', '1');
+              setRunWalkthrough(false);
+            }
+          }}
+        />
+        <div className="page-wrap">
+          {renderList()}
+        </div>
+      </>
     );
   }
 
