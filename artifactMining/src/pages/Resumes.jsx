@@ -646,14 +646,10 @@ export default function Resumes() {
         if (r && r.name?.trim()) {
           localStorage.setItem("resume_saved", "1");
           window.dispatchEvent(new Event("resume-updated"));
-          // Prefer education/work stored in the resume blob (per-resume);
-          // only fall back to global DB records if the blob has none yet.
-          const resumeEdu = r.education?.length > 0
-            ? r.education.map(e => ({ ...e, _id: e._id || String(e.id || ""), _isNew: false, _endPresent: !e.end_date || e.end_date === "Present" }))
-            : taggedEdu;
-          const resumeWork = r.work_history?.length > 0
-            ? r.work_history.map(w => ({ ...w, _id: w._id || String(w.id || ""), _isNew: false, _endPresent: !w.end_date || w.end_date === "Present" }))
-            : taggedWork;
+          // Use only what's stored in the resume blob — never pre-populate
+          // from the global DB (which spans all resumes and would bleed data).
+          const resumeEdu = (r.education || []).map(e => ({ ...e, _id: e._id || String(e.id || ""), _isNew: false, _endPresent: !e.end_date || e.end_date === "Present" }));
+          const resumeWork = (r.work_history || []).map(w => ({ ...w, _id: w._id || String(w.id || ""), _isNew: false, _endPresent: !w.end_date || w.end_date === "Present" }));
           applyResume({ ...r, education: resumeEdu, work_history: resumeWork });
           if (r.section_order) setSectionOrder(r.section_order);
           if (r.section_labels) setSectionLabels(prev => ({ ...prev, ...r.section_labels }));
@@ -720,12 +716,8 @@ export default function Resumes() {
 
       setOriginalEdu(taggedEdu);
       setOriginalWork(taggedWork);
-      const resumeEdu = r.education?.length > 0
-        ? r.education.map(e => ({ ...e, _id: e._id || String(e.id || ""), _isNew: false, _endPresent: !e.end_date || e.end_date === "Present" }))
-        : taggedEdu;
-      const resumeWork = r.work_history?.length > 0
-        ? r.work_history.map(w => ({ ...w, _id: w._id || String(w.id || ""), _isNew: false, _endPresent: !w.end_date || w.end_date === "Present" }))
-        : taggedWork;
+      const resumeEdu = (r.education || []).map(e => ({ ...e, _id: e._id || String(e.id || ""), _isNew: false, _endPresent: !e.end_date || e.end_date === "Present" }));
+      const resumeWork = (r.work_history || []).map(w => ({ ...w, _id: w._id || String(w.id || ""), _isNew: false, _endPresent: !w.end_date || w.end_date === "Present" }));
       applyResume({ ...r, education: resumeEdu, work_history: resumeWork });
 
       // Reset section visibility to match refreshed data
