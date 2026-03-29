@@ -45,6 +45,29 @@ const NAV_ITEMS = [
 
 const DEFAULT_HERO_TITLE = "Master Portfolio";
 const DEFAULT_HERO_SUB   = "All projects · evidences · ranked";
+const DEFAULT_CONTACT = {
+  email: "",
+  phone: "",
+  location: "",
+  website: "",
+  linkedin: "",
+  github: "",
+  availability: "",
+  intro: "",
+  customPresences: [],
+};
+
+function normalizeContactInfo(raw) {
+  const contact = { ...DEFAULT_CONTACT, ...(raw || {}) };
+  contact.customPresences = Array.isArray(contact.customPresences)
+    ? contact.customPresences.map((item, idx) => ({
+        id: item?.id || `presence-${Date.now()}-${idx}`,
+        label: item?.label || "",
+        url: item?.url || "",
+      }))
+    : [];
+  return contact;
+}
 
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState(null);
@@ -91,6 +114,13 @@ export default function Portfolio() {
   const [expTitle, setExpTitle] = useState(() => localStorage.getItem("exp_title") || "Experience");
   const [expSubtitle, setExpSubtitle] = useState(() => localStorage.getItem("exp_subtitle") || "Work & Volunteering");
   const [expDesc, setExpDesc] = useState(() => localStorage.getItem("exp_desc") || "");
+  const [contactInfo, setContactInfo] = useState(() => {
+    try {
+      return normalizeContactInfo(JSON.parse(localStorage.getItem("portfolio_contact") || "{}"));
+    } catch {
+      return DEFAULT_CONTACT;
+    }
+  });
   const nav = useNavigate();
 
   useEffect(() => {
@@ -98,6 +128,36 @@ export default function Portfolio() {
     window.addEventListener("dash-emojis-updated", sync);
     return () => window.removeEventListener("dash-emojis-updated", sync);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("portfolio_contact", JSON.stringify(contactInfo));
+  }, [contactInfo]);
+
+  function addCustomPresence() {
+    setContactInfo(info => ({
+      ...info,
+      customPresences: [
+        ...(info.customPresences || []),
+        { id: `presence-${Date.now()}`, label: "Social Media", url: "" },
+      ],
+    }));
+  }
+
+  function updateCustomPresence(id, field, value) {
+    setContactInfo(info => ({
+      ...info,
+      customPresences: (info.customPresences || []).map(item =>
+        item.id === id ? { ...item, [field]: value } : item
+      ),
+    }));
+  }
+
+  function removeCustomPresence(id) {
+    setContactInfo(info => ({
+      ...info,
+      customPresences: (info.customPresences || []).filter(item => item.id !== id),
+    }));
+  }
 
   function switchMode(mode) {
     setViewMode(mode);
@@ -1290,9 +1350,136 @@ export default function Portfolio() {
         {/* Contact */}
         {activeSection === "contact" && (
           <div className="port-section-page">
-            <div className="port-placeholder">
-              <h2>Contact</h2>
-              <p className="text-muted">Coming soon — add your contact details here.</p>
+            <div className="port-contact-shell">
+              <div className="port-contact-hero card">
+                <div className="port-contact-copy">
+                  <span className="port-contact-kicker">Contact</span>
+                  <h2 className="port-contact-title">Contact Information</h2>
+                  {!isPublic && (
+                    <p className="port-contact-subtitle">
+                      Display your contact details and online profiles in one place.
+                    </p>
+                  )}
+                  {isPublic ? (
+                    contactInfo.intro ? (
+                      <p className="port-contact-intro">{contactInfo.intro}</p>
+                    ) : (
+                      <p className="port-contact-empty">No contact summary has been added yet.</p>
+                    )
+                  ) : (
+                    <textarea
+                      className="port-contact-intro-input"
+                      placeholder="Add a short summary about who you are, what you do, and what these contact details are for..."
+                      value={contactInfo.intro}
+                      onChange={e => setContactInfo(info => ({ ...info, intro: e.target.value }))}
+                      rows={4}
+                      maxLength={320}
+                    />
+                  )}
+                </div>
+                <div className="port-contact-status">
+                  <span className="port-contact-status-label">Job Search Status</span>
+                  {isPublic ? (
+                    <p className="port-contact-status-text">
+                      {contactInfo.availability || "No job search status added"}
+                    </p>
+                  ) : (
+                    <input
+                      className="port-contact-input"
+                      type="text"
+                      placeholder="e.g. Open to Work"
+                      value={contactInfo.availability}
+                      onChange={e => setContactInfo(info => ({ ...info, availability: e.target.value }))}
+                      maxLength={120}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="port-contact-grid">
+                <div className="port-contact-card card">
+                  <div className="port-section-header">
+                    <span>Personal Details</span>
+                  </div>
+                  <div className="port-contact-fields">
+                    <ContactField
+                      label="Email"
+                      value={contactInfo.email}
+                      isPublic={isPublic}
+                      type="email"
+                      placeholder="name@example.com"
+                      href={contactInfo.email ? `mailto:${contactInfo.email}` : ""}
+                      onChange={value => setContactInfo(info => ({ ...info, email: value }))}
+                    />
+                    <ContactField
+                      label="Phone"
+                      value={contactInfo.phone}
+                      isPublic={isPublic}
+                      type="text"
+                      placeholder="(555) 123-4567"
+                      href={contactInfo.phone ? `tel:${contactInfo.phone.replace(/\s+/g, "")}` : ""}
+                      onChange={value => setContactInfo(info => ({ ...info, phone: value }))}
+                    />
+                    <ContactField
+                      label="Location"
+                      value={contactInfo.location}
+                      isPublic={isPublic}
+                      type="text"
+                      placeholder="Vancouver, BC"
+                      onChange={value => setContactInfo(info => ({ ...info, location: value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="port-contact-card card">
+                  <div className="port-section-header port-contact-card-header">
+                    <span>Online Presence</span>
+                    {!isPublic && (
+                      <button className="port-contact-add-btn" type="button" onClick={addCustomPresence} title="Add another online presence">
+                        +
+                      </button>
+                    )}
+                  </div>
+                  <div className="port-contact-fields">
+                    <ContactField
+                      label="Website"
+                      value={contactInfo.website}
+                      isPublic={isPublic}
+                      type="url"
+                      placeholder="https://your-site.com"
+                      href={contactInfo.website}
+                      onChange={value => setContactInfo(info => ({ ...info, website: value }))}
+                    />
+                    <ContactField
+                      label="LinkedIn"
+                      value={contactInfo.linkedin}
+                      isPublic={isPublic}
+                      type="url"
+                      placeholder="https://linkedin.com/in/username"
+                      href={contactInfo.linkedin}
+                      onChange={value => setContactInfo(info => ({ ...info, linkedin: value }))}
+                    />
+                    <ContactField
+                      label="GitHub"
+                      value={contactInfo.github}
+                      isPublic={isPublic}
+                      type="url"
+                      placeholder="https://github.com/username"
+                      href={contactInfo.github}
+                      onChange={value => setContactInfo(info => ({ ...info, github: value }))}
+                    />
+                    {(contactInfo.customPresences || []).map(item => (
+                      <CustomPresenceField
+                        key={item.id}
+                        item={item}
+                        isPublic={isPublic}
+                        onChange={(field, value) => updateCustomPresence(item.id, field, value)}
+                        onRemove={() => removeCustomPresence(item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1366,6 +1553,86 @@ function EvidenceSection({ p }) {
     <div className="port-evidence">
       <span className="port-evidence-label">Evidence:</span>
       <span>{ev}</span>
+    </div>
+  );
+}
+
+function ContactField({ label, value, isPublic, type = "text", placeholder, href, onChange }) {
+  if (isPublic) {
+    if (!value) return null;
+    return (
+      <div className="port-contact-field">
+        <span className="port-contact-field-label">{label}</span>
+        {href ? (
+          <a
+            className="port-contact-link"
+            href={href}
+            target={href.startsWith("mailto:") || href.startsWith("tel:") ? undefined : "_blank"}
+            rel={href.startsWith("mailto:") || href.startsWith("tel:") ? undefined : "noreferrer"}
+          >
+            {value}
+          </a>
+        ) : (
+          <p className="port-contact-value">{value}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <label className="port-contact-field">
+      <span className="port-contact-field-label">{label}</span>
+      <input
+        className="port-contact-input"
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+function CustomPresenceField({ item, isPublic, onChange, onRemove }) {
+  if (isPublic) {
+    if (!item.url) return null;
+    return (
+      <div className="port-contact-field">
+        <span className="port-contact-field-label">{item.label || "Online Presence"}</span>
+        <a className="port-contact-link" href={item.url} target="_blank" rel="noreferrer">
+          {item.url}
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="port-contact-custom-row">
+      <div className="port-contact-custom-inputs">
+        <label className="port-contact-field">
+          <span className="port-contact-field-label">Title</span>
+          <input
+            className="port-contact-input"
+            type="text"
+            placeholder="e.g. Behance"
+            value={item.label}
+            onChange={e => onChange("label", e.target.value)}
+          />
+        </label>
+        <label className="port-contact-field">
+          <span className="port-contact-field-label">Link</span>
+          <input
+            className="port-contact-input"
+            type="url"
+            placeholder="https://example.com/profile"
+            value={item.url}
+            onChange={e => onChange("url", e.target.value)}
+          />
+        </label>
+      </div>
+      <button className="port-contact-remove-btn" type="button" onClick={onRemove} title="Remove online presence">
+        Remove
+      </button>
     </div>
   );
 }

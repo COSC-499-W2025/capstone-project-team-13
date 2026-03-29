@@ -755,5 +755,205 @@ body[data-theme="light"] .port-row-score-wrap { background: rgba(79,70,229,0.12)
 }
 
 /* ── Responsive ── */
-@media (max-width: 900px) { .port-top-grid { grid-template-columns: 1fr 1fr; } .port-stat-row { grid-template-columns: repeat(2,1fr); } }
-@media (max-width: 600px) { .port-top-grid { grid-template-columns: 1fr; } .port-edit-grid { grid-template-columns: 1fr; } }
+/* Contact */
+.port-contact-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.port-contact-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.9fr);
+  gap: 18px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(99,102,241,0.22), transparent 38%),
+    linear-gradient(135deg, rgba(15,20,46,0.94), rgba(24,30,66,0.98));
+  border: 1px solid rgba(99,102,241,0.24);
+}
+.port-contact-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.port-contact-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #9ea8db;
+}
+.port-contact-title {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #f3f5ff;
+}
+.port-contact-subtitle {
+  margin: 0;
+  color: #9ea8db;
+  max-width: 52ch;
+  line-height: 1.7;
+}
+.port-contact-intro,
+.port-contact-empty {
+  margin: 2px 0 0;
+  line-height: 1.8;
+  color: #d7ddff;
+  white-space: pre-wrap;
+}
+.port-contact-empty {
+  color: #8f9bcb;
+}
+.port-contact-intro-input {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 14px;
+  background: rgba(9, 13, 35, 0.58);
+  border: 1px solid rgba(147, 158, 255, 0.18);
+  color: #eef1ff;
+  padding: 14px 16px;
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+.port-contact-intro-input:focus,
+.port-contact-input:focus {
+  border-color: rgba(99,102,241,0.55);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+}
+.port-contact-status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(99,102,241,0.16), rgba(56,189,248,0.10));
+  border: 1px solid rgba(129,140,248,0.22);
+  align-self: stretch;
+  justify-content: center;
+}
+.port-contact-status-label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #aeb7ea;
+  font-weight: 700;
+}
+.port-contact-status-text {
+  margin: 0;
+  color: #f3f5ff;
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+.port-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.port-contact-card {
+  padding: 20px;
+}
+.port-contact-card-header {
+  justify-content: space-between;
+}
+.port-contact-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.port-contact-add-btn,
+.port-contact-remove-btn {
+  border: 1px solid rgba(147, 158, 255, 0.24);
+  background: rgba(99,102,241,0.12);
+  color: #e8ebff;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.port-contact-add-btn:hover,
+.port-contact-remove-btn:hover {
+  border-color: rgba(129,140,248,0.45);
+  background: rgba(99,102,241,0.2);
+  transform: translateY(-1px);
+}
+.port-contact-add-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.port-contact-custom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(147, 158, 255, 0.14);
+}
+.port-contact-custom-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 12px;
+}
+.port-contact-remove-btn {
+  align-self: flex-start;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.port-contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.port-contact-field-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ea8db;
+}
+.port-contact-input {
+  width: 100%;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(167,178,255,0.18);
+  color: #eef1ff;
+  padding: 11px 13px;
+  font: inherit;
+  outline: none;
+}
+.port-contact-input::placeholder,
+.port-contact-intro-input::placeholder {
+  color: rgba(196,203,245,0.42);
+}
+.port-contact-link,
+.port-contact-value {
+  margin: 0;
+  color: #e8ebff;
+  line-height: 1.65;
+  word-break: break-word;
+}
+.port-contact-link {
+  text-decoration: none;
+}
+.port-contact-link:hover {
+  color: #a5b4fc;
+}
+
+@media (max-width: 900px) {
+  .port-top-grid { grid-template-columns: 1fr 1fr; }
+  .port-stat-row { grid-template-columns: repeat(2,1fr); }
+  .port-contact-hero,
+  .port-contact-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .port-top-grid { grid-template-columns: 1fr; }
+  .port-edit-grid { grid-template-columns: 1fr; }
+  .port-contact-title { font-size: 1.6rem; }
+  .port-contact-custom-inputs { grid-template-columns: 1fr; }
+}
