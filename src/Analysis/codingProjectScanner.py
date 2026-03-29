@@ -389,7 +389,8 @@ class CodingProjectScanner:
                     ".java", ".cpp", ".cc", ".cxx", ".c",
                     ".cs", ".rs", ".go", ".rb", ".php",
                     ".swift", ".kt", ".scala", ".r", ".sql",
-                    ".html", ".css", ".scss", ".sass"
+                    ".html", ".css", ".scss", ".sass",
+                    ".gd", ".gdshader"
                 }
             )
         except Exception as e:

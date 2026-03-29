@@ -204,10 +204,35 @@ SKILL_KEYWORDS = {
 
     # --- Game and Graphics ---
     "Game Development": [
-        "unity", "unreal", "godot", "shader", "collision detection",
-        "physics", "rigidbody", "collider", "prefab", "scene",
-        "gameobject", "component", "sprite", "animation", "tilemap",
-        "raycast", "navmesh", "pathfinding", "particle", "monobehaviour"
+        # Engines
+        "unity", "unreal", "godot", "pygame", "phaser", "libgdx",
+        "monogame", "raylib", "sdl", "sfml", "love2d", "cocos2d",
+        "defold", "gdevelop", "construct",
+        # Unity-specific
+        "monobehaviour", "gameobject", "prefab", "transform", "rigidbody",
+        "collider", "animator", "audiosource", "scriptableobject", "coroutine",
+        "fixedupdate", "lateupdate", "instantiate", "awake", "onenable",
+        "oncollisionenter", "ontriggerenter", "oncollisionexit", "ontriggerexit",
+        "vector2", "vector3", "quaternion", "lerp", "slerp",
+        # Unreal-specific
+        "blueprint", "uobject", "uproperty", "ufunction", "acharacter",
+        "apawn", "gamemode", "playercontroller", "tarray", "tmap",
+        "uscene", "ustaticmesh", "skeletal", "blackboard", "behavior tree",
+        # Godot-specific
+        "gdscript", "node2d", "node3d", "characterbody", "kinematicbody",
+        "area2d", "rigidbody2d", "animationplayer", "viewport", "autoload",
+        # General game systems
+        "shader", "sprite", "tilemap", "tileset", "scene", "animation",
+        "physics", "collision detection", "navmesh", "pathfinding", "raycast",
+        "particle", "hitbox", "hurtbox", "spawnpoint", "checkpoint",
+        "inventory", "health", "respawn", "gameloop", "deltatime",
+        "inputsystem", "keybinding", "gamepad", "controller", "joystick",
+        "level design", "cutscene", "dialogue", "save system", "leaderboard",
+        "multiplayer", "lobby", "matchmaking", "photon", "mirror", "netcode",
+        # Audio
+        "audioclip", "audiomixer", "sfx", "soundtrack",
+        # 2D
+        "platformer", "tilebased", "pixelart", "spritesheet", "parallax",
     ],
     "3D Rendering": [
         "webgl", "opengl", "three.js", "blender", "ray tracing", "lighting",
@@ -339,6 +364,20 @@ SUBSKILL_KEYWORDS = {
         "tools": ["aws", "azure", "gcp", "terraform", "serverless",
                   "lambda", "ec2", "s3", "rds", "fargate"]
     },
+    "Game Development": {
+        "engines": [
+            "unity", "unreal", "godot", "pygame", "phaser", "libgdx",
+            "monogame", "raylib", "sdl", "sfml", "love2d", "cocos2d"
+        ],
+        "libraries": [
+            "monobehaviour", "rigidbody", "animator", "audiosource",
+            "scriptableobject", "transform", "collider", "photon", "mirror"
+        ],
+        "tools": [
+            "blueprint", "gdscript", "prefab", "navmesh", "tilemap",
+            "behavior tree", "blackboard", "shader"
+        ],
+    },
 }
 
 # Maps file extensions to skills — used for reliable extension-based detection
@@ -362,6 +401,8 @@ EXT_SKILL_MAP = {
     ".swift": "Mobile Development",
     ".kt":    "Mobile Development",
     ".sql":   "SQL",
+    ".gd":    "Game Development",   # Godot GDScript
+    ".gdshader": "Game Development",  # Godot shaders
 }
 # Score added per file with a matching extension (counts toward raw_skill_hits too)
 _EXT_BONUS_PER_FILE = 5
