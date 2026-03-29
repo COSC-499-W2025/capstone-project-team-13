@@ -4,120 +4,367 @@ import re
 
 # --- Top-level skill keywords ---
 SKILL_KEYWORDS = {
-    "Python": ["python", "pandas", "numpy", "scipy", "async", "await"],
+    # --- Languages (extension-boosted; keywords are import/library names specific to that language) ---
+    "Python": [
+        "python", "pandas", "numpy", "scipy", "matplotlib", "flask", "django",
+        "fastapi", "pytest", "pydantic", "sqlalchemy", "celery", "asyncio",
+        "requests", "uvicorn", "gunicorn", "pip", "virtualenv", "poetry",
+        "aiohttp", "httpx", "mypy", "typing", "dataclass", "pathlib",
+        "beautifulsoup", "scrapy", "pillow", "paramiko", "boto3"
+    ],
+    "JavaScript": [
+        "javascript", "nodejs", "npm", "webpack", "babel", "eslint",
+        "axios", "lodash", "jquery", "require", "exports", "promise",
+        "callback", "prototype", "yarn", "vite", "parcel", "rollup",
+        "esbuild", "nodemon", "pnpm", "commonjs", "module"
+    ],
+    "TypeScript": [
+        "typescript", "tsc", "tsconfig", "interface", "readonly",
+        "generics", "enum", "namespace", "typings", "strict",
+        "infer", "keyof", "satisfies", "utility types"
+    ],
+    "Java": [
+        "java", "maven", "gradle", "springframework", "spring", "hibernate",
+        "junit", "mockito", "lombok", "servlet", "tomcat", "jetty",
+        "classpath", "bytecode", "jvm", "jdk", "annotation",
+        "extends", "implements", "override", "stream", "optional",
+        "pom", "mvn", "intellij"
+    ],
+    "C/C++": [
+        "iostream", "nullptr", "malloc", "cmake", "makefile", "gcc",
+        "clang", "sizeof", "typedef", "struct", "printf",
+        "scanf", "stdlib", "stdint", "vector", "template",
+        "namespace", "stl", "header", "linker", "pointer",
+        "cpp", "compile", "executable", "preprocessor"
+    ],
+    "Rust": [
+        "rust", "cargo", "rustc", "crate", "lifetime", "borrow",
+        "ownership", "rustup", "tokio", "actix", "serde", "clippy",
+        "unwrap", "trait", "impl", "match", "enum", "derive",
+        "println", "hashmap", "option", "result"
+    ],
+    "Go": [
+        "golang", "goroutine", "channel", "defer", "panic", "recover",
+        "gofmt", "gomod", "gosum", "gopath", "gin", "fiber",
+        "cobra", "viper", "grpc", "protobuf", "gorm", "mux"
+    ],
+    "C#": [
+        "csharp", "dotnet", "nuget", "linq", "xamarin", "wpf",
+        "blazor", "maui", "aspnet", "nullable", "delegate",
+        "event", "lambda", "extension", "attribute", "namespace",
+        "interface", "abstract", "sealed", "partial", "async"
+    ],
+    "Ruby": [
+        "ruby", "rails", "gem", "bundler", "rake", "rspec",
+        "activerecord", "erb", "sinatra", "gemfile", "rubocop"
+    ],
+    "PHP": [
+        "php", "composer", "laravel", "symfony", "wordpress",
+        "artisan", "eloquent", "blade", "phpunit", "namespace"
+    ],
+
     # --- Web and App Development ---
     "Web Development": [
         "html", "css", "javascript", "typescript", "flask", "django",
-        "express", "node", "php", "ruby on rails", "nextjs", "nuxt", "react"
+        "express", "node", "php", "nextjs", "nuxt", "react", "vue",
+        "angular", "webpack", "vite", "spa", "ssr", "pwa", "cors",
+        "dom", "browser", "frontend", "backend", "fullstack",
+        "rest", "graphql", "fetch", "ajax", "websocket"
     ],
     "Frontend Development": [
         "react", "vue", "angular", "svelte", "bootstrap", "tailwind",
-        "html", "css", "dom", "ui", "ux"
+        "html", "css", "dom", "jsx", "tsx", "sass", "scss",
+        "webpack", "vite", "responsive", "accessibility", "component",
+        "props", "state", "hook", "context", "redux", "zustand",
+        "emotion", "styled", "animation", "transition"
     ],
     "Backend Development": [
         "flask", "django", "express", "fastapi", "spring", "node",
-        "api", "server", "microservices", "rest", "graphql"
+        "api", "server", "microservices", "rest", "graphql", "grpc",
+        "middleware", "endpoint", "route", "controller", "service",
+        "repository", "orm", "cache", "queue", "worker"
     ],
     "API Development": [
-        "rest", "graphql", "endpoint", "swagger", "postman", "jwt", "oauth"
+        "rest", "graphql", "endpoint", "swagger", "postman", "jwt", "oauth",
+        "openapi", "webhook", "http", "request", "response",
+        "status", "header", "payload", "serialization", "pagination",
+        "rate limiting", "api key", "bearer", "token"
     ],
     "Mobile Development": [
-        "android", "ios", "flutter", "swift", "kotlin", "react native"
+        "android", "ios", "flutter", "swift", "kotlin", "react native",
+        "expo", "xcode", "apk", "cocoapods", "firebase",
+        "push notification", "deep linking", "gesture", "navigation",
+        "fragment", "activity", "viewmodel", "jetpack", "compose"
     ],
 
     # --- Databases ---
     "SQL": [
-        "sql", "select", "join", "create", "insert", "delete", "update"
+        "sql", "mysql", "postgresql", "sqlite", "mariadb", "oracle",
+        "schema", "foreign key", "primary key", "transaction",
+        "stored procedure", "trigger", "view", "aggregate",
+        "constraint", "normalization", "acid", "join", "subquery",
+        "group by", "order by", "having"
     ],
     "Relational Databases": [
         "sql", "mysql", "postgresql", "sqlite", "oracle", "mariadb",
-        "schema", "foreign key", "join", "table"
+        "schema", "foreign key", "normalization", "acid", "transaction",
+        "constraint", "relation", "primary key", "index"
     ],
     "Non-Relational Databases": [
         "nosql", "mongodb", "redis", "cassandra", "dynamodb",
-        "couchdb", "neo4j", "graphdb", "document store"
+        "couchdb", "neo4j", "graphdb", "document store", "elasticsearch",
+        "firebase", "firestore", "hbase", "memcached", "leveldb",
+        "collection", "document", "key value"
     ],
     "Database Management": [
-        "orm", "query", "database", "migration", "index", "data model"
+        "orm", "query", "database", "migration", "data model",
+        "connection pool", "replication", "backup", "sharding",
+        "partitioning", "indexing", "optimization", "alembic",
+        "sequelize", "prisma", "mongoose", "typeorm"
     ],
 
     # --- Data & AI ---
     "Data Science": [
-        "numpy", "pandas", "matplotlib", "scipy", "jupyter"
+        "numpy", "pandas", "matplotlib", "scipy", "jupyter",
+        "notebook", "seaborn", "statsmodels", "sklearn",
+        "correlation", "regression", "classification", "clustering",
+        "feature", "dataframe", "csv", "eda", "statistics",
+        "hypothesis", "distribution", "variance", "covariance"
     ],
     "Machine Learning": [
-        "tensorflow", "keras", "pytorch", "sklearn", "xgboost"
+        "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
+        "scikit", "lightgbm", "catboost", "model", "training",
+        "prediction", "accuracy", "loss", "gradient", "backpropagation",
+        "neural network", "deep learning", "overfitting", "validation",
+        "hyperparameter", "epoch", "batch", "optimizer", "learning rate",
+        "feature engineering", "cross validation", "confusion matrix"
     ],
     "Data Visualization": [
-        "matplotlib", "seaborn", "plotly", "tableau", "dash", "ggplot"
+        "matplotlib", "seaborn", "plotly", "tableau", "dash", "ggplot",
+        "bokeh", "altair", "d3", "chart", "plot", "histogram",
+        "heatmap", "scatter", "visualization", "dashboard", "figure"
     ],
     "Data Engineering": [
-        "airflow", "spark", "hadoop", "etl", "kafka"
+        "airflow", "spark", "hadoop", "etl", "kafka", "pipeline",
+        "databricks", "dbt", "snowflake", "bigquery", "redshift",
+        "hive", "flink", "beam", "dataflow", "glue", "pyspark",
+        "data lake", "data warehouse", "batch processing", "streaming"
     ],
 
     # --- DevOps / Cloud ---
     "DevOps": [
-        "docker", "kubernetes", "jenkins", "ci/cd", "github actions"
+        "docker", "kubernetes", "jenkins", "ci/cd", "github actions",
+        "dockerfile", "compose", "container", "pod", "deployment",
+        "terraform", "ansible", "helm", "prometheus", "grafana",
+        "nginx", "pipeline", "artifact", "registry", "k8s",
+        "gitlab ci", "travis", "circleci", "argocd"
     ],
     "Cloud Computing": [
-        "aws", "azure", "gcp", "google cloud", "lambda", "s3", "cloud functions"
+        "aws", "azure", "gcp", "google cloud", "lambda", "s3", "cloud functions",
+        "ec2", "rds", "ecs", "eks", "cloudformation", "iam", "vpc",
+        "blob", "cosmos", "app engine", "cloud run", "fargate",
+        "serverless", "cdn", "cloudfront", "route53", "elasticbeanstalk"
     ],
 
     # --- Software Engineering Practices ---
     "Testing & QA": [
-        "pytest", "unittest", "selenium", "cypress", "mocha", "jest"
+        "pytest", "unittest", "selenium", "cypress", "mocha", "jest",
+        "test", "mock", "stub", "fixture", "assertion", "coverage",
+        "integration test", "unit test", "e2e", "tdd", "bdd",
+        "playwright", "vitest", "hypothesis", "faker", "factory",
+        "describe", "expect", "beforeeach", "aftereach"
     ],
     "Version Control": [
-        "git", "github", "gitlab", "bitbucket"
+        "git", "github", "gitlab", "bitbucket", "commit", "branch",
+        "merge", "rebase", "pull request", "fork", "clone", "stash",
+        "diff", "tag", "release", "workflow", "gitignore"
     ],
     "Security & Cybersecurity": [
         "encryption", "hashing", "vulnerability", "penetration testing",
-        "firewall", "jwt", "oauth", "authentication", "authorization"
+        "firewall", "jwt", "oauth", "authentication", "authorization",
+        "ssl", "tls", "xss", "csrf", "injection", "bcrypt",
+        "salt", "sanitize", "rbac", "acl", "owasp", "cve",
+        "password", "secret", "vault", "certificate"
+    ],
+
+    # --- Algorithms & Systems ---
+    "Algorithms & Data Structures": [
+        "algorithm", "complexity", "sorting", "searching", "binary search",
+        "linked list", "stack", "queue", "heap", "hash table",
+        "dynamic programming", "recursion", "traversal", "greedy",
+        "backtracking", "memoization", "bfs", "dfs", "dijkstra",
+        "quicksort", "mergesort", "trie", "segment tree", "big o"
+    ],
+    "System Programming": [
+        "thread", "process", "mutex", "semaphore", "socket", "syscall",
+        "buffer", "kernel", "filesystem", "ipc", "signal",
+        "interrupt", "concurrent", "parallel", "deadlock", "race condition",
+        "memory management", "garbage collection", "bitwise", "endian"
     ],
 
     # --- Game and Graphics ---
     "Game Development": [
-        "unity", "unreal", "godot", "shader", "collision detection"
+        "unity", "unreal", "godot", "shader", "collision detection",
+        "physics", "rigidbody", "collider", "prefab", "scene",
+        "gameobject", "component", "sprite", "animation", "tilemap",
+        "raycast", "navmesh", "pathfinding", "particle", "monobehaviour"
     ],
     "3D Rendering": [
-        "webgl", "opengl", "three.js", "blender", "ray tracing", "lighting", "vertex", "fragment", "camera"
+        "webgl", "opengl", "three.js", "blender", "ray tracing", "lighting",
+        "vertex", "fragment", "camera", "texture", "mesh", "shader",
+        "vulkan", "directx", "metal", "glsl", "hlsl", "pbr",
+        "normal map", "rasterization"
     ],
     "Computer Vision": [
-        "opencv", "image processing", "object detection", "segmentation"
+        "opencv", "image processing", "object detection", "segmentation",
+        "yolo", "resnet", "cnn", "convolution", "pooling", "feature map",
+        "bounding box", "annotation", "augmentation", "torchvision",
+        "pillow", "depth", "stereo", "tracking"
     ],
 
     # --- AI & NLP ---
     "AI & Natural Language Processing": [
-        "nlp", "transformer", "bert", "gpt", "tokenization", "embedding", "language model", "GEMINI"
+        "nlp", "transformer", "bert", "gpt", "tokenization", "embedding",
+        "language model", "gemini", "llm", "attention", "huggingface",
+        "spacy", "nltk", "sentiment", "ner", "summarization",
+        "translation", "generation", "fine tuning", "prompt", "rag",
+        "vector store", "langchain", "openai", "anthropic", "llamaindex",
+        "semantic search", "text classification"
     ],
 }
 
 # --- Subskills: only include libraries/technologies ---
 SUBSKILL_KEYWORDS = {
     "Python": {
-        "libraries": ["numpy", "pandas", "scipy", "matplotlib", "seaborn",
-                      "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
-                      "transformers", "randomforestclassifier"],
-        "language_features": ["async", "await", "decorator", "context manager", "generator"]
+        "libraries": [
+            "numpy", "pandas", "scipy", "matplotlib", "seaborn",
+            "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
+            "transformers", "requests", "fastapi", "flask", "django",
+            "sqlalchemy", "pydantic", "celery", "asyncio", "aiohttp",
+            "pytest", "mypy", "poetry", "uvicorn", "httpx", "pillow",
+            "boto3", "scrapy", "beautifulsoup", "paramiko"
+        ],
+        "language_features": [
+            "async", "await", "decorator", "context manager",
+            "generator", "comprehension", "dataclass", "typing"
+        ]
+    },
+    "JavaScript": {
+        "libraries": [
+            "react", "vue", "angular", "express", "axios", "lodash",
+            "jquery", "webpack", "vite", "babel", "eslint", "jest",
+            "mocha", "nodemon", "socket.io", "nextjs", "nuxt"
+        ],
+        "tools": ["npm", "yarn", "pnpm", "vite", "webpack", "babel"]
+    },
+    "TypeScript": {
+        "tools": ["tsc", "tsconfig"],
+        "language_features": [
+            "interface", "enum", "readonly", "generics",
+            "decorator", "namespace", "infer", "keyof"
+        ]
+    },
+    "Java": {
+        "libraries": [
+            "springframework", "spring", "hibernate", "junit",
+            "mockito", "lombok", "jackson", "guava"
+        ],
+        "tools": ["maven", "gradle", "tomcat", "jetty"]
+    },
+    "Rust": {
+        "libraries": ["tokio", "actix", "serde", "reqwest", "diesel"],
+        "language_features": ["trait", "impl", "lifetime", "borrow", "ownership"]
+    },
+    "Go": {
+        "libraries": ["gin", "fiber", "cobra", "viper", "gorm"],
+        "tools": ["gomod", "gofmt", "gopath"]
     },
     "Machine Learning": {
-        "libraries": ["tensorflow", "keras", "pytorch", "sklearn"],
-        "algorithms": ["xgboost", "random forest", "RandomForestClassifier"]
+        "libraries": [
+            "tensorflow", "keras", "pytorch", "sklearn", "xgboost",
+            "lightgbm", "catboost", "scikit"
+        ],
+        "algorithms": [
+            "random forest", "gradient boosting", "neural network",
+            "xgboost", "svm", "knn", "linear regression", "logistic regression",
+            "decision tree", "naive bayes"
+        ]
     },
     "Data Science": {
-        "tools": ["pandas", "numpy", "matplotlib", "seaborn", "jupyter"]
+        "tools": ["pandas", "numpy", "matplotlib", "seaborn", "jupyter",
+                  "statsmodels", "scipy", "plotly"]
     },
     "Web Development": {
-        "libraries": ["react", "vue", "angular", "bootstrap", "tailwind", "nextjs", "nuxt"],
-        "multi_word": ["rest api", "ruby on rails", "google cloud"]
+        "libraries": [
+            "react", "vue", "angular", "bootstrap", "tailwind",
+            "nextjs", "nuxt", "svelte", "express", "fastapi"
+        ],
+        "tools": ["webpack", "vite", "babel", "npm", "yarn"]
     },
     "SQL": {
-        "commands": ["select", "join", "create", "insert", "delete", "update", "where"]
+        "commands": [
+            "select", "join", "create table", "insert into",
+            "delete from", "update set", "where", "group by",
+            "order by", "having", "union"
+        ]
     },
     "Relational Databases": {
-        "commands": ["select", "join", "create", "insert", "delete", "update", "where"]
-    }
+        "tools": ["mysql", "postgresql", "sqlite", "mariadb", "oracle"],
+        "commands": ["select", "join", "where", "group by", "order by"]
+    },
+    "DevOps": {
+        "tools": [
+            "docker", "kubernetes", "jenkins", "terraform", "ansible",
+            "helm", "prometheus", "grafana", "nginx", "argocd"
+        ]
+    },
+    "Testing & QA": {
+        "tools": [
+            "pytest", "jest", "mocha", "cypress", "selenium",
+            "playwright", "vitest", "unittest", "hypothesis"
+        ]
+    },
+    "AI & Natural Language Processing": {
+        "libraries": [
+            "transformers", "spacy", "nltk", "langchain",
+            "openai", "anthropic", "sentence transformers", "llamaindex"
+        ],
+        "tools": ["huggingface", "bert", "gpt", "llm", "rag"]
+    },
+    "Computer Vision": {
+        "libraries": ["opencv", "pillow", "torchvision", "albumentations"],
+        "algorithms": ["yolo", "resnet", "cnn", "object detection", "segmentation"]
+    },
+    "Cloud Computing": {
+        "tools": ["aws", "azure", "gcp", "terraform", "serverless",
+                  "lambda", "ec2", "s3", "rds", "fargate"]
+    },
 }
+
+# Maps file extensions to skills — used for reliable extension-based detection
+# (a .py file is definitively Python regardless of keyword frequency)
+EXT_SKILL_MAP = {
+    ".py":    "Python",
+    ".js":    "JavaScript",
+    ".jsx":   "JavaScript",
+    ".ts":    "TypeScript",
+    ".tsx":   "TypeScript",
+    ".java":  "Java",
+    ".cpp":   "C/C++",
+    ".cc":    "C/C++",
+    ".cxx":   "C/C++",
+    ".c":     "C/C++",
+    ".cs":    "C#",
+    ".rs":    "Rust",
+    ".go":    "Go",
+    ".rb":    "Ruby",
+    ".php":   "PHP",
+    ".swift": "Mobile Development",
+    ".kt":    "Mobile Development",
+    ".sql":   "SQL",
+}
+# Score added per file with a matching extension (counts toward raw_skill_hits too)
+_EXT_BONUS_PER_FILE = 5
 
 GENERIC_SKILLS = {
     "Backend Development", "Frontend Development",
@@ -220,6 +467,13 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
         word_counter = Counter(_TOKENIZE_RE.findall(text))
 
         detected_skills = set()
+
+        # --- 0: Extension-based detection (strong authoritative signal) ---
+        ext_skill = EXT_SKILL_MAP.get(file.suffix.lower())
+        if ext_skill:
+            raw_skill_hits[ext_skill] += _EXT_BONUS_PER_FILE
+            skill_scores[ext_skill] += _EXT_BONUS_PER_FILE * folder_weight
+            detected_skills.add(ext_skill)
 
         # --- 1: Top-level skills ---
         for skill, (singles, multis) in _SKILL_LOOKUPS.items():

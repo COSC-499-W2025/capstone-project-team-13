@@ -384,7 +384,13 @@ class CodingProjectScanner:
 
             result = analyze_coding_skills_refined(
                 folder_path=str(analysis_root),
-                file_extensions={".py", ".js", ".ts", ".java", ".cpp", ".c", ".html", ".css"}
+                file_extensions={
+                    ".py", ".js", ".jsx", ".ts", ".tsx",
+                    ".java", ".cpp", ".cc", ".cxx", ".c",
+                    ".cs", ".rs", ".go", ".rb", ".php",
+                    ".swift", ".kt", ".scala", ".r", ".sql",
+                    ".html", ".css", ".scss", ".sass"
+                }
             )
         except Exception as e:
             print(f"  ⚠️ Skill analysis failed: {e}")
