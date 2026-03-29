@@ -397,6 +397,11 @@ class User(Base):
     github_username = Column(String(255), nullable=True, unique=False)
     portfolio_public = Column(Boolean, default=False, nullable=False)
 
+    # About Me
+    about_name = Column(Text, nullable=True)
+    about_subtitle = Column(Text, nullable=True)
+    about_bio = Column(Text, nullable=True)
+
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')

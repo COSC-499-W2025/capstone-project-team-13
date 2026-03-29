@@ -115,6 +115,34 @@ def get_portfolio_project_endpoint(
     return result
 
 
+@router.get("/about")
+def get_about(user_id: int = Depends(require_auth)):
+    """Return the user's About Me fields."""
+    user = db_manager.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "about_name":     getattr(user, "about_name", None) or "",
+        "about_subtitle": getattr(user, "about_subtitle", None) or "",
+        "about_bio":      getattr(user, "about_bio", None) or "",
+    }
+
+
+@router.post("/about")
+def save_about(body: dict = Body(...), user_id: int = Depends(require_auth)):
+    """Save the user's About Me fields."""
+    allowed = {"about_name", "about_subtitle", "about_bio"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    user = db_manager.update_user(user_id, updates)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "about_name":     getattr(user, "about_name", None) or "",
+        "about_subtitle": getattr(user, "about_subtitle", None) or "",
+        "about_bio":      getattr(user, "about_bio", None) or "",
+    }
+
+
 @router.get("/visibility")
 def get_portfolio_visibility(user_id: int = Depends(require_auth)):
     """Return whether the authenticated user's portfolio is public."""
