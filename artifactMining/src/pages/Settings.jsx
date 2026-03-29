@@ -772,6 +772,7 @@ export default function Settings({ onLogout }) {
         'interview_walkthrough_seen',
         'settings_walkthrough_seen',
         'skills_walkthrough_seen',
+        'projects_walkthrough_seen',
         'portfolio_walkthrough_seen',
       ].forEach(key => localStorage.removeItem(key));
       window.alert('All walkthroughs have been reset. Reload a page to see its tour again.');

@@ -26,7 +26,7 @@ export default function Projects() {
       target: '.proj-grid, .empty-state',
       placement: 'top',
       title: 'Your Projects',
-      content: 'Here you can find all of your uploaded projects. When populated, you will be able to see a project\'s stats.'
+      content: 'Here you can find all of your uploaded projects. When populated, you will be able to view a project\'s in more detail.'
     },
     {
       target: '.btn-primary',
@@ -38,7 +38,7 @@ export default function Projects() {
       target: '.deletion-tab',
       placement: 'bottom',
       title: 'Deletion Manager & Insights',
-      content: 'Here is a deletion manager for your project as well as generated insights.'
+      content: 'Here you can find deletion manager for your project as well as generated insights.'
     }
   ];
 
