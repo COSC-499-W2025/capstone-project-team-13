@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body, Query
 from pathlib import Path
 from typing import Optional, List
 from pydantic import BaseModel
@@ -269,6 +269,51 @@ def cache_stats():
     except Exception:
         return {"total_cache_files": 0, "total_cache_size_bytes": 0}
 
+# Dependency to coerce size_bytes or filesize to int, accepting either param
+
+def parse_size_bytes(
+    size_bytes: str = Query(None, description="File size in bytes"),
+    filesize: str = Query(None, description="File size in bytes (alt param)")
+):
+    val = size_bytes if size_bytes is not None else filesize
+    if val is None:
+        raise HTTPException(status_code=400, detail="Missing required query parameter: size_bytes or filesize")
+    try:
+        return int(val)
+    except Exception:
+        raise HTTPException(status_code=400, detail="size_bytes/filesize must be an integer")
+
+@router.get("/estimate-upload-time")
+def estimate_upload_time(size_bytes: int = Depends(parse_size_bytes)):
+    """Estimate upload time for a given file size based on historical stats."""
+    stats = db_manager.get_upload_stats(limit=200)
+    if not stats:
+        # Fallback: assume 5 MB/s
+        est = size_bytes / (5 * 1024 * 1024)
+        return {"estimated_seconds": round(est, 2), "method": "fallback", "used_stats": 0}
+
+    # Dynamic average speed (filter out outliers)
+    valid_speeds = []
+    for s in stats:
+        if s.size_bytes > 0 and s.duration_seconds > 0:
+            speed = s.size_bytes / s.duration_seconds
+            # Ignore outliers: speeds > 100 MB/s or durations < 0.5s
+            if speed < 100 * 1024 * 1024 and s.duration_seconds >= 0.5:
+                valid_speeds.append(speed)
+
+    if not valid_speeds:
+        # Fallback: assume 5 MB/s
+        est = size_bytes / (5 * 1024 * 1024)
+        return {"estimated_seconds": round(est, 2), "method": "fallback", "used_stats": 0}
+
+    dynamic_avg_speed = sum(valid_speeds) / len(valid_speeds)
+    est = size_bytes / dynamic_avg_speed
+    return {
+        "estimated_seconds": round(est, 2),
+        "method": "dynamic_avg_speed",
+        "used_stats": len(valid_speeds),
+        "dynamic_avg_speed_bps": int(dynamic_avg_speed)
+    }
 
 @router.get("/{project_id}")
 def get_project(
@@ -779,3 +824,5 @@ def get_project_contributors(project_id: int):
         }
         for c in contributors
     ]
+
+

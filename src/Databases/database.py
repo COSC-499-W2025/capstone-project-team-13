@@ -5,9 +5,11 @@ import json
 import os
 from typing import List, Optional, Dict, Any
 
+
 # ============================================
 # DATABASE MODELS
 # ============================================
+
 
 Base = declarative_base()
 
@@ -210,6 +212,22 @@ class Project(Base):
                 pass
         
         return result
+    
+class UploadStat(Base):
+    """Store upload size and duration"""
+    __tablename__ = 'upload_stats'
+    id = Column(Integer, primary_key=True)
+    size_bytes = Column(Integer, nullable=False)
+    duration_seconds = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'size_bytes': self.size_bytes,
+            'duration_seconds': self.duration_seconds,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
 
 class File(Base):
     """Store detailed file information"""
@@ -569,6 +587,25 @@ class ContactInfo(Base):
 # ============================================
 
 class DatabaseManager:
+
+    # ============ UPLOAD STAT OPERATIONS ============
+    def add_upload_stat(self, size_bytes: int, duration_seconds: float) -> 'UploadStat':
+        session = self.get_session()
+        try:
+            stat = UploadStat(size_bytes=size_bytes, duration_seconds=duration_seconds)
+            session.add(stat)
+            session.commit()
+            session.refresh(stat)
+            return stat
+        finally:
+            session.close()
+
+    def get_upload_stats(self, limit: int = 100):
+        session = self.get_session()
+        try:
+            return session.query(UploadStat).order_by(UploadStat.created_at.desc()).limit(limit).all()
+        finally:
+            session.close()
     """Manages database operations with proper connection handling"""
     
     def __init__(self, db_path: str = 'data/projects.db'):
@@ -1432,3 +1469,4 @@ class DatabaseManager:
 # Global database manager instance
 db_manager = DatabaseManager()
 db_manager.User = User
+db_manager.UploadStat = UploadStat
