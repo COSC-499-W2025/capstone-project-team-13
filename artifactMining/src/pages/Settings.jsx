@@ -1,3 +1,4 @@
+import { Joyride } from 'react-joyride';
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import "./Settings.css";
@@ -5,6 +6,72 @@ import "./Settings.css";
 const API_BASE = "http://127.0.0.1:8000";
 
 export default function Settings({ onLogout }) {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('settings_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('settings_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Settings',
+      content: 'This page lets you manage your account, privacy, dashboard, and more. Let’s take a quick tour!'
+    },
+    {
+      target: '.settings-nav-item:nth-child(1)',
+      placement: 'right',
+      title: 'Account Settings',
+      content: 'Manage your profile, avatar, and account details here.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(2)',
+      placement: 'right',
+      title: 'Consent',
+      content: 'Grant or revoke file and AI consent for your data.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(3)',
+      placement: 'right',
+      title: 'Privacy',
+      content: 'Configure excluded folders and file types for privacy.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(4)',
+      placement: 'right',
+      title: 'Dashboard Settings',
+      content: 'Customize dashboard display options like emojis, streak, and tips.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(5)',
+      placement: 'right',
+      title: 'Current Configuration',
+      content: 'View a live summary of your current system and privacy settings.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(6)',
+      placement: 'right',
+      title: 'Community Portfolios',
+      content: 'Explore and share public portfolios from the community.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(7)',
+      placement: 'right',
+      title: 'How to Use the App',
+      content: 'Find keyboard shortcuts and feature guides for the app.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(8)',
+      placement: 'right',
+      title: 'About',
+      content: 'Learn more about this app, its creators, and version info.'
+    }
+  ];
   const [searchParams] = useSearchParams();
   const [signupForm, setSignupForm] = useState({ first_name: "", last_name: "", email: "", password: "" });
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -1097,7 +1164,38 @@ export default function Settings({ onLogout }) {
   }
 
   return (
-    <div className="settings-page">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('settings_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="settings-page">
       <div className="settings-layout">
         <aside className="settings-sidebar">
           <div className="settings-sidebar-header">
@@ -1140,5 +1238,5 @@ export default function Settings({ onLogout }) {
         <main className="settings-main">{renderSectionContent()}</main>
       </div>
     </div>
-  );
+  </>);
 }
