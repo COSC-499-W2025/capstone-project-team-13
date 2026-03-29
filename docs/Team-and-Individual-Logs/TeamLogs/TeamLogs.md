@@ -732,14 +732,14 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 
 ## Term 2 Week 11-12 Team Log
 **Date Range:** Mar 16 - March 29, 2026
-| Team Member | Work Completed / Focus This Week | Related Issue # |
+| Team Member | Work Completed / Focus This Week | PR # |
 |--------------|----------------------------------|-----------------|
-| **Illina Islam** | Updating and expanding auth endpoints. | 475, 452, 453, 454, 455, 456 |
-| **Sana Shah** | Improve skills analysis, implemented private/public mode for portfolio, added thumbnails to portfolio page, updated system architecture diagram | 497, 498 |
-| **Maya Knutsvig** | Fleshed out the settings page | 439 |
-| **Prina Mehta** | Integrated AI analysis into system (endpoints and UI inclusive) to generate, display, and download content | 434 |
-| **Jackson Wilson** | Created projects endpoints, created styling for full app, created styling for specific sections (Charts, projects, settings)| 426, 423, 424|
-| **T’Olu Akinwande** | Building skills timeline feature for the web portfolio | 385 |
+| **Illina Islam** | Updated resume UI, updated documentation, implemented multiple resume features, implemented AI resume bullets, implemented resume export, made multiple updates to portfolio page | 571, 550, 549, 538, 527, 488, 487, 485 |
+| **Sana Shah** | Improved skills analysis efficiency, implemented private/public mode for portfolio, added thumbnails to portfolio page, updated system architecture diagram, made multiple updates to portfolio page, implemented public portfolio browsing, UI updates | 555, 542, 541, 539, 528, 494 |
+| **Maya Knutsvig** | made multiple updates to portfolio page, updated projects page, updated dashbaord customization, updates settings page, fixed AI token limit bug, project type routing, and evidence extraction, implemented AI interview prep feature, fixed light mode and dark mode inconsistencies, implemented avatar upload, implemented resume completeness scores, implemented dashboard onboarding, implemented search bar | 544, 523, 522, 521, 520, 513, 514, 512, 511, 510, 509, 508, 493, 507 |
+| **Prina Mehta** | Added 404 page, updated settings page, implemented dashboard columns, improves zip extraction, coding projects importance score, implemented portfolio showcase, impelmented skills timeline and heatmap, made many updates to frontend  | 517, 518, 519, 489, 490 |
+| **Jackson Wilson** | Updated navigation bar, added charts to dashboard, updated file type detection, implemented github usernames, fixed frontend bugs, implemented time estimation for project upload | 495, 500, 505, 516, 537, 554, 572 |
+| **T’Olu Akinwande** | Updated Tests | 558 |
 
 Backlog:
 ![alt text](teamLogImages/BacklogT2W11.png)
@@ -760,9 +760,9 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 ### Reflection Points
 
 **What went well:** 
-- We've gotten lots of progress on the frontend that should help us be on track for a solid finish.
+- Majorty of the team was able to collectively make finishing touches to the frontend, as well as make a script for the milestone 3 demo. 
   
 **What didn’t go as planned:**
-- Our tests still need to be fixed, but everyone is working on different elements and haven't found the time.
+- There were minor bugs in the UI, ex. styling inconsistencies that needed to be fixed and were time consuming.
 
 
