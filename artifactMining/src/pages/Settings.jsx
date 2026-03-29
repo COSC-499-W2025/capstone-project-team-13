@@ -762,64 +762,91 @@ export default function Settings({ onLogout }) {
       { icon: "🎤", name: "Interview Prep", desc: "Generate personalised STAR-format interview answers from your projects." },
       { icon: "🌐", name: "Web Showcase", desc: "A public-facing showcase page you can share with employers." },
     ];
+    
+    function resetWalkthroughs() {
+      [
+        'dashboard_walkthrough_seen',
+        'upload_walkthrough_seen',
+        'resumes_walkthrough_seen',
+        'analysis_walkthrough_seen',
+        'interview_walkthrough_seen',
+        'settings_walkthrough_seen',
+        'skills_walkthrough_seen',
+        'portfolio_walkthrough_seen',
+      ].forEach(key => localStorage.removeItem(key));
+      window.alert('All walkthroughs have been reset. Reload a page to see its tour again.');
+    }
+    
+    // ...existing code...
+    // Render the original guide section, then add the reset button below it
     return (
-      <div className="settings-section-panel">
-        <h2>How to Use the App</h2>
-        <p className="settings-section-description">A quick guide to getting the most out of Digital Artifact Mining.</p>
+      <>
+        <div className="settings-section-panel">
+          <h2>How to Use the App</h2>
+          <p className="settings-section-description">A quick guide to getting the most out of Digital Artifact Mining.</p>
 
-        <div className="settings-card" style={{ marginBottom: 24 }}>
-          <div className="settings-card-header"><div><h3>Getting Started</h3></div></div>
-          <div className="settings-card-body">
-            <ol style={{ paddingLeft: 20, lineHeight: 2, margin: 0 }}>
-              <li>Upload a project from the <strong>Projects</strong> page (zip file, text doc, or media).</li>
-              <li>Go to <strong>Analysis</strong> and run AI Analysis to generate a description and extract skills.</li>
-              <li>Visit <strong>Portfolio</strong> and click <strong>↻ Regenerate</strong> to build your ranked portfolio.</li>
-              <li>Head to <strong>Resume</strong> to auto-generate a resume from your data.</li>
-              <li>Use <strong>Interview Prep</strong> to get STAR-format answers tailored to your target role.</li>
-            </ol>
+          <div className="settings-card" style={{ marginBottom: 24 }}>
+            <div className="settings-card-header"><div><h3>Getting Started</h3></div></div>
+            <div className="settings-card-body">
+              <ol style={{ paddingLeft: 20, lineHeight: 2, margin: 0 }}>
+                <li>Upload a project from the <strong>Projects</strong> page (zip file, text doc, or media).</li>
+                <li>Go to <strong>Analysis</strong> and run AI Analysis to generate a description and extract skills.</li>
+                <li>Visit <strong>Portfolio</strong> and click <strong>↻ Regenerate</strong> to build your ranked portfolio.</li>
+                <li>Head to <strong>Resume</strong> to auto-generate a resume from your data.</li>
+                <li>Use <strong>Interview Prep</strong> to get STAR-format answers tailored to your target role.</li>
+              </ol>
+            </div>
           </div>
-        </div>
 
-        <div className="settings-card" style={{ marginBottom: 24 }}>
-          <div className="settings-card-header"><div><h3>Pages Overview</h3></div></div>
-          <div className="settings-card-body">
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {pages.map(p => (
-                <div key={p.name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{p.icon}</span>
-                  <div>
-                    <strong>{p.name}</strong>
-                    <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>{p.desc}</p>
+          <div className="settings-card" style={{ marginBottom: 24 }}>
+            <div className="settings-card-header"><div><h3>Pages Overview</h3></div></div>
+            <div className="settings-card-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {pages.map(p => (
+                  <div key={p.name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{p.icon}</span>
+                    <div>
+                      <strong>{p.name}</strong>
+                      <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>{p.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>Keyboard Shortcuts</h3></div></div>
+            <div className="settings-card-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                {shortcutGroups.map(group => (
+                  <div key={group.title}>
+                    <p style={{ fontWeight: 700, marginBottom: 10, fontSize: "0.88rem" }}>{group.title}</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {group.shortcuts.map(s => (
+                        <div key={s.keys} style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                          <kbd style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", color: "#a5b4fc", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
+                          <span style={{ fontSize: "0.88rem" }}>{s.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="settings-card">
-          <div className="settings-card-header"><div><h3>Keyboard Shortcuts</h3></div></div>
-          <div className="settings-card-body">
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {shortcutGroups.map(group => (
-                <div key={group.title}>
-                  <p style={{ fontWeight: 700, marginBottom: 10, fontSize: "0.88rem" }}>{group.title}</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {group.shortcuts.map(s => (
-                      <div key={s.keys} style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <kbd style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", color: "#a5b4fc", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
-                        <span style={{ fontSize: "0.88rem" }}>{s.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+        <button
+          className="settings-button settings-button-secondary"
+          style={{ margin: '24px 0 0 0' }}
+          onClick={resetWalkthroughs}
+        >
+          Reset All Walkthroughs
+        </button>
+      </>
     );
   }
+    // The guide section is rendered via guideContent, so remove this duplicate return.
 
   function renderDashboardSection() {
     function dispatchDashSettings() {
