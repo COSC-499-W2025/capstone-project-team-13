@@ -730,7 +730,6 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 - Our tests still need to be fixed, but everyone is working on different elements and haven't found the time.
 
 
-
 ## Term 2 Week 11-12 Team Log
 **Date Range:** Mar 16 - March 29, 2026
 | Team Member | Work Completed / Focus This Week | Related Issue # |
@@ -743,16 +742,16 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 | **T’Olu Akinwande** | Building skills timeline feature for the web portfolio | 385 |
 
 Backlog:
-![alt text](teamLogImages/BacklogT2W10.png)
+![alt text](teamLogImages/BacklogT2W11.png)
 
 Burnup Chart:
-![alt text](teamLogImages/BurnupT2W10.png)
+![alt text](teamLogImages/BurnupT2W11.png)
 
 In-Progress Tasks:
-![alt text](teamLogImages/InProgressT2W10.png)
+![alt text](teamLogImages/InProgressT2W11.png)
 
 Completed Tasks:
-![alt text](teamLogImages/CompletedT2W10.png)
+![alt text](teamLogImages/completedT2W11.png)
 
 ### Test Report
 ![alt text](teamLogImages/TestsT2W10.png)
