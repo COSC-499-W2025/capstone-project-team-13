@@ -232,8 +232,8 @@ export default function Resumes() {
   }, [runWalkthrough]);
   const walkthroughSteps = [
     {
-      target: '.resume-list-title',
-      placement: 'bottom',
+      target: 'body',
+      placement: 'center',
       title: 'My Resumes',
       content: 'This is where all your resumes will appear. You can create, edit, duplicate, or delete resumes from this page.'
     },
@@ -242,6 +242,24 @@ export default function Resumes() {
       placement: 'bottom',
       title: 'No Resumes Yet',
       content: 'You have not created any resumes yet. This area will show your resumes once you create them.'
+    },
+    {
+      target: '.resume-list-grid',
+      placement: 'bottom',
+      title: 'Resume List',
+      content: 'Here you can see all your resumes. Click a card to open and edit, or use the icons to rename, duplicate, or delete.'
+    },
+    {
+      target: '.resume-new-card',
+      placement: 'bottom',
+      title: 'New Resume',
+      content: 'Click here to create a new resume at any time.'
+    },
+    {
+      target: '.resume-list-card',
+      placement: 'bottom',
+      title: 'Resume Card',
+      content: 'Each card represents a resume. Click to open, or use the icons to rename, duplicate, or delete.'
     },
     {
       target: '.resume-btn-primary',
