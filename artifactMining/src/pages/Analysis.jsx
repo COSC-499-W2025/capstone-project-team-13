@@ -1,9 +1,52 @@
+import { Joyride } from 'react-joyride';
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./Analysis.css";
 
 export default function Analysis() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('analysis_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('analysis_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Project Analysis',
+      content: 'This page lets you score, rank, analyze, and manage your projects. Let’s take a quick tour!'
+    },
+    {
+      target: '.an-tab:nth-child(1)',
+      placement: 'bottom',
+      title: 'Score & Rank Tab',
+      content: 'Compute importance scores for all your projects and use AI to rank them based on your chosen skills.'
+    },
+    {
+      target: '.an-tab:nth-child(2)',
+      placement: 'bottom',
+      title: 'AI Analysis Tab',
+      content: 'Use AI to analyze a single project or batch analyze all projects for overviews, technical depth, and skills.'
+    },
+    {
+      target: '.an-tab:nth-child(3)',
+      placement: 'bottom',
+      title: 'Timeline Tab',
+      content: 'View your projects in chronological order to see your progress over time.'
+    },
+    {
+      target: '.an-tab:nth-child(4)',
+      placement: 'bottom',
+      title: 'Roles Tab',
+      content: 'Assign and manage your role for each project, such as Lead Developer, Designer, or PM.'
+    }
+  ];
   const [projects, setProjects] = useState([]);
   const [tab, setTab] = useState("score");
   const [msg, setMsg] = useState(null);
@@ -174,7 +217,38 @@ export default function Analysis() {
   }
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('analysis_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
       <h1 style={{ marginBottom: 8 }}>Analysis</h1>
       <p className="text-muted" style={{ marginBottom: 24 }}>Score, rank, analyze, and manage project roles</p>
       {msg && <div className={"alert " + msg.type}>{msg.text}</div>}
@@ -361,5 +435,6 @@ export default function Analysis() {
         </div>
       )}
     </div>
-  );
+      
+  </>);
 }
