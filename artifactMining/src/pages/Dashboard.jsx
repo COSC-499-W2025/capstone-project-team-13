@@ -64,7 +64,55 @@ export default function Dashboard() {
       target: 'body',
       placement: 'center',
       title: 'Welcome to your Dashboard',
-      content: 'This dashboard is your launch point for the rest of the app. Let’s take a quick tour!'
+      content: 'This dashboard is your launch point for the rest of the app. If you ever want to view it again, go to "How to use the app" in profile settings. Let’s take a quick tour!'
+    },
+    {
+      target: '.navbar',
+      placement: 'bottom',
+      title: 'Navigation Bar',
+      content: 'Use the navigation bar at the top to access all main pages.'
+    },
+    {
+      target: 'nav a[href="/dashboard"], nav a[href="/"], .navbar a[href="/dashboard"]',
+      placement: 'bottom',
+      title: 'Dashboard (Home)',
+      content: 'Return to your dashboard overview from anywhere in the app.'
+    },
+    {
+      target: 'nav a[href="/projects"]',
+      placement: 'bottom',
+      title: 'Projects',
+      content: 'View, filter, and manage all your uploaded projects.'
+    },
+    {
+      target: 'nav a[href="/skills"]',
+      placement: 'bottom',
+      title: 'Skills',
+      content: 'See all skills extracted from your projects over time.'
+    },
+    {
+      target: 'nav a[href="/portfolio"]',
+      placement: 'bottom',
+      title: 'Portfolio',
+      content: 'Access your ranked master portfolio with stats and visualizations.'
+    },
+    {
+      target: 'nav a[href="/resumes"]',
+      placement: 'bottom',
+      title: 'Resume',
+      content: 'Auto-generate a resume from your projects and skills.'
+    },
+    {
+      target: 'nav .nav-dropdown, nav .navbar-tools, nav button[aria-haspopup="menu"]',
+      placement: 'bottom',
+      title: 'Tools',
+      content: 'Access various other tools to enhance your projects and workflow from this dropdown.'
+    },
+    {
+      target: 'nav a[href="/settings"]',
+      placement: 'bottom',
+      title: 'Settings',
+      content: 'Manage your account, privacy, dashboard, and more.'
     },
     {
       target: '#upload-project-btn',
@@ -82,13 +130,13 @@ export default function Dashboard() {
       target: '.dash-grid',
       placement: 'top',
       title: 'Top Projects, Skills, Portfolio',
-      content: 'Here you’ll find your top projects, top skills, and portfolio generation tools.'
+      content: 'Here we provide top insights for your projects and skills as well as offering portfolio generation.'
     },
     {
       target: '.dash-charts-row',
       placement: 'top',
       title: 'Charts & Insights',
-      content: 'This section contains charts for your projects and skills.'
+      content: 'Once you\'ve provided projects, this section contains charts for your projects and skills.'
     }
   ];
   const [projects, setProjects] = useState([]);
