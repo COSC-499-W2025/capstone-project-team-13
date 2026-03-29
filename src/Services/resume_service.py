@@ -59,16 +59,64 @@ def _check_project_ownership(project_id: int, user_id: int):
     return project
 
 
+def _check_resume_ownership(resume_id: int, user_id: int) -> dict:
+    """Fetch resume and verify it belongs to the authenticated user."""
+    r = db_manager.get_resume_by_id(resume_id)
+    if not r:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Resume {resume_id} not found")
+    if r["user_id"] != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resume")
+    return r
+
+
+# ── resume management operations ──────────────────────────────────────────────
+
+def list_user_resumes(user_id: int) -> dict:
+    user = db_manager.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    resumes = db_manager.list_resumes(user_id)
+    return {"resumes": resumes}
+
+
+def create_user_resume(user_id: int, name: str) -> dict:
+    user = db_manager.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    r = db_manager.create_resume(user_id, name or "New Resume")
+    return {"success": True, "resume": r}
+
+
+def rename_user_resume(resume_id: int, user_id: int, name: str) -> dict:
+    _check_resume_ownership(resume_id, user_id)
+    db_manager.update_resume(resume_id, name=name)
+    return {"success": True}
+
+
+def delete_user_resume(resume_id: int, user_id: int) -> dict:
+    _check_resume_ownership(resume_id, user_id)
+    db_manager.delete_resume_by_id(resume_id)
+    return {"success": True}
+
+
+def duplicate_user_resume(resume_id: int, user_id: int, new_name: str) -> dict:
+    r = _check_resume_ownership(resume_id, user_id)
+    new_r = db_manager.create_resume(user_id, new_name or f"{r['name']} (Copy)", r.get("resume_data"))
+    db_manager.copy_resume_bullets(resume_id, new_r["id"])
+    return {"success": True, "resume": new_r}
+
+
 # ── per-project bullet operations ─────────────────────────────────────────────
 
-def get_project_bullets(project_id: int, user_id: int) -> dict:
+def get_project_bullets(project_id: int, user_id: int, resume_id: int) -> dict:
     """
     Return stored resume bullets for a project.
     Raises 404/403 if project not found or not owned by user.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
-    bullets_data = db_manager.get_resume_bullets(project_id)
+    bullets_data = db_manager.get_resume_bullets_for(resume_id, project_id)
     if not bullets_data:
         return {
             "project_id": project_id,
@@ -88,12 +136,13 @@ def get_project_bullets(project_id: int, user_id: int) -> dict:
     }
 
 
-def generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3) -> dict:
+def generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3, resume_id: int = None) -> dict:
     """
     Generate and store resume bullets for a single project.
     Raises 404/403 if project not found or not owned by user.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
     try:
         generator = _get_generator(project)
@@ -101,7 +150,8 @@ def generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3
         header = generator.generate_project_header(project)
         scoring = score_all_bullets(bullets, project.project_type)
 
-        db_manager.save_resume_bullets(
+        db_manager.save_resume_bullets_for(
+            resume_id=resume_id,
             project_id=project_id,
             bullets=bullets,
             header=header,
@@ -125,15 +175,16 @@ def generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3
         )
 
 
-def regenerate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3) -> dict:
+def regenerate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3, resume_id: int = None) -> dict:
     """
     Regenerate all bullets for a project, replacing existing ones.
     Preserves the existing bullet count if num_bullets not specified.
     Raises 404/403 if project not found or not owned by user.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
-    existing = db_manager.get_resume_bullets(project_id)
+    existing = db_manager.get_resume_bullets_for(resume_id, project_id)
     if existing and existing.get("num_bullets"):
         num_bullets = existing["num_bullets"]
 
@@ -143,7 +194,8 @@ def regenerate_project_bullets(project_id: int, user_id: int, num_bullets: int =
         header = generator.generate_project_header(project)
         scoring = score_all_bullets(bullets, project.project_type)
 
-        db_manager.save_resume_bullets(
+        db_manager.save_resume_bullets_for(
+            resume_id=resume_id,
             project_id=project_id,
             bullets=bullets,
             header=header,
@@ -168,7 +220,7 @@ def regenerate_project_bullets(project_id: int, user_id: int, num_bullets: int =
 
 
 def ai_enhance_project_bullets(
-    project_id: int, user_id: int, num_bullets: int = 3, current_bullets: list = None
+    project_id: int, user_id: int, num_bullets: int = 3, current_bullets: list = None, resume_id: int = None
 ) -> dict:
     """
     Enhance existing resume bullets for a project using AI.
@@ -176,11 +228,12 @@ def ai_enhance_project_bullets(
     Falls back to AI generation from scratch if no bullets exist anywhere.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
     try:
         from src.AI.ai_enhanced_summarizer import enhance_resume_bullets, generate_resume_bullets
 
-        existing = db_manager.get_resume_bullets(project_id)
+        existing = db_manager.get_resume_bullets_for(resume_id, project_id)
         # Prefer bullets passed from the frontend (reflects unsaved edits)
         existing_bullets = current_bullets or (existing.get("bullets") if existing else None)
         header = existing.get("header", project.name) if existing else project.name
@@ -206,7 +259,8 @@ def ai_enhance_project_bullets(
             raise ValueError("AI returned no bullets")
 
         scoring = score_all_bullets(bullets, project.project_type)
-        db_manager.save_resume_bullets(
+        db_manager.save_resume_bullets_for(
+            resume_id=resume_id,
             project_id=project_id,
             bullets=bullets,
             header=header,
@@ -230,12 +284,13 @@ def ai_enhance_project_bullets(
         )
 
 
-def ai_generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3) -> dict:
+def ai_generate_project_bullets(project_id: int, user_id: int, num_bullets: int = 3, resume_id: int = None) -> dict:
     """
     Generate resume bullets for a project using Gemini AI.
     Replaces any existing bullets. Raises 404/403 if project not found or not owned.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
     try:
         from src.AI.ai_enhanced_summarizer import generate_resume_bullets
@@ -255,11 +310,12 @@ def ai_generate_project_bullets(project_id: int, user_id: int, num_bullets: int 
         if not bullets:
             raise ValueError("AI returned no bullets")
 
-        existing = db_manager.get_resume_bullets(project_id)
+        existing = db_manager.get_resume_bullets_for(resume_id, project_id)
         header = existing.get("header", project.name) if existing else project.name
         scoring = score_all_bullets(bullets, project.project_type)
 
-        db_manager.save_resume_bullets(
+        db_manager.save_resume_bullets_for(
+            resume_id=resume_id,
             project_id=project_id,
             bullets=bullets,
             header=header,
@@ -287,7 +343,8 @@ def edit_project_bullets(
     project_id: int,
     user_id: int,
     bullets: list,
-    header: Optional[str] = None
+    header: Optional[str] = None,
+    resume_id: int = None
 ) -> dict:
     """
     Update stored resume bullets for a project.
@@ -295,14 +352,16 @@ def edit_project_bullets(
     Raises 404/403 if project not found or not owned by user.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
     if header is None:
-        existing = db_manager.get_resume_bullets(project_id)
+        existing = db_manager.get_resume_bullets_for(resume_id, project_id)
         header = existing.get("header", project.name) if existing else project.name
 
     scoring = score_all_bullets(bullets, project.project_type)
 
-    success = db_manager.save_resume_bullets(
+    success = db_manager.save_resume_bullets_for(
+        resume_id=resume_id,
         project_id=project_id,
         bullets=bullets,
         header=header,
@@ -325,14 +384,15 @@ def edit_project_bullets(
     }
 
 
-def get_project_ats(project_id: int, user_id: int) -> dict:
+def get_project_ats(project_id: int, user_id: int, resume_id: int = None) -> dict:
     """
     Return detailed ATS scores for a project's stored bullets.
     Raises 404/403 if project not found or not owned by user.
     """
     project = _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
-    bullets_data = db_manager.get_resume_bullets(project_id)
+    bullets_data = db_manager.get_resume_bullets_for(resume_id, project_id)
     if not bullets_data or not bullets_data.get("bullets"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -363,21 +423,22 @@ def get_project_ats(project_id: int, user_id: int) -> dict:
     }
 
 
-def delete_project_bullets(project_id: int, user_id: int) -> dict:
+def delete_project_bullets(project_id: int, user_id: int, resume_id: int = None) -> dict:
     """
     Delete stored resume bullets for a project.
     Raises 404/403 if project not found or not owned by user.
     """
     _check_project_ownership(project_id, user_id)
+    _check_resume_ownership(resume_id, user_id)
 
-    existing = db_manager.get_resume_bullets(project_id)
+    existing = db_manager.get_resume_bullets_for(resume_id, project_id)
     if not existing:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No bullets found for this project."
         )
 
-    success = db_manager.delete_resume_bullets(project_id)
+    success = db_manager.delete_resume_bullets_for(resume_id, project_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -389,19 +450,24 @@ def delete_project_bullets(project_id: int, user_id: int) -> dict:
 
 # ── full resume operations ─────────────────────────────────────────────────────
 
-def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
+def generate_full_resume(user_id: int, num_bullets: int = 3, resume_id: int = None) -> dict:
     """
     Smart full-resume generate:
     1. Fetch all projects for the user
     2. For any project missing bullets, generate and store them
     3. Assemble resume in resumeGenerator format: name header + projects section
-    4. Persist to user.resume and return
+    4. Persist to Resume row and return
 
     Returns the resume JSON.
     """
     user = db_manager.get_user(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if resume_id is None:
+        resume_id = db_manager.get_or_create_default_resume(user_id)
+    else:
+        _check_resume_ownership(resume_id, user_id)
 
     all_projects = db_manager.get_all_projects(user_id=user_id)
     if not all_projects:
@@ -418,7 +484,8 @@ def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
             bullets = generator.generate_resume_bullets(project, num_bullets)
             header = generator.generate_project_header(project)
             scoring = score_all_bullets(bullets, project.project_type)
-            db_manager.save_resume_bullets(
+            db_manager.save_resume_bullets_for(
+                resume_id=resume_id,
                 project_id=project.id,
                 bullets=bullets,
                 header=header,
@@ -431,7 +498,7 @@ def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
     # Assemble projects — use display name, store project_id for stats lookup
     resume_projects = []
     for project in all_projects:
-        bd = db_manager.get_resume_bullets(project.id) or {}
+        bd = db_manager.get_resume_bullets_for(resume_id, project.id) or {}
         display = _display_name(project)
         resume_projects.append({
             "project_id": project.id,
@@ -447,7 +514,7 @@ def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
         "generated_at": datetime.utcnow().isoformat(),
     }
 
-    db_manager.update_user(user_id, {"resume": resume_data})
+    db_manager.update_resume(resume_id, resume_data=resume_data)
 
     # Enrich response with project stats (not saved to DB)
     stats_by_id = {p.id: {
@@ -463,28 +530,35 @@ def generate_full_resume(user_id: int, num_bullets: int = 3) -> dict:
 
     return {
         "message": "Resume generated",
+        "resume_id": resume_id,
         "bullets_generated_for": generated_count,
         "resume": {**resume_data, "projects": response_projects},
     }
 
 
-def get_full_resume(user_id: int) -> dict:
+def get_full_resume(user_id: int, resume_id: int = None) -> dict:
     """
-    Return the stored resume JSON from user.resume.
+    Return the stored resume JSON from the Resume row.
     Raises 404 if no resume has been generated yet.
     """
     user = db_manager.get_user(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if not user.resume:
+    if resume_id is None:
+        resume_id = db_manager.get_or_create_default_resume(user_id)
+    else:
+        _check_resume_ownership(resume_id, user_id)
+
+    resume_row = db_manager.get_resume_by_id(resume_id)
+    if not resume_row or not resume_row.get("resume_data"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No resume found. Call POST /resume/generate first."
         )
 
-    # Enrich projects with live stats (not stored in user.resume)
-    stored = user.resume
+    # Enrich projects with live stats (not stored in resume_data)
+    stored = resume_row["resume_data"]
     all_projects = db_manager.get_all_projects(user_id=user_id)
     stats_by_id = {p.id: {
         "lines_of_code": p.lines_of_code or 0,
@@ -500,14 +574,19 @@ def get_full_resume(user_id: int) -> dict:
     return {"resume": {**stored, "projects": enriched_projects}}
 
 
-def save_full_resume(user_id: int, resume_data: dict) -> dict:
+def save_full_resume(user_id: int, resume_data: dict, resume_id: int = None) -> dict:
     """
     Save the enriched resume (with frontend-added education, work history,
-    skills, etc.) back to user.resume in the database.
+    skills, etc.) back to the Resume row in the database.
     """
     user = db_manager.get_user(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    db_manager.update_user(user_id, {"resume": resume_data})
+    if resume_id is None:
+        resume_id = db_manager.get_or_create_default_resume(user_id)
+    else:
+        _check_resume_ownership(resume_id, user_id)
+
+    db_manager.update_resume(resume_id, resume_data=resume_data)
     return {"success": True, "message": "Resume saved"}
