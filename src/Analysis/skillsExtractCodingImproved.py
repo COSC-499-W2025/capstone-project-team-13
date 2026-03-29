@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 from pathlib import Path
 import re
 
@@ -133,6 +133,54 @@ PERIPHERAL_FOLDERS = ["tests", "docs", "scripts"]
 
 VALID_SUBSKILL_GROUPS = {"libraries", "tools", "multi_word", "algorithms", "language_features", "commands"}
 
+# --- Precomputed lookup structures (built once at import time) ---
+# Keywords that are purely alphanumeric (e.g. "python", "neo4j") can be matched
+# via a single Counter tokenization pass instead of per-keyword regex.
+# Everything else (spaces, dots, slashes like "react native", "three.js", "ci/cd")
+# falls back to a pre-compiled regex pattern.
+_SIMPLE_KW_RE = re.compile(r'^[a-z][a-z0-9]*$')
+_TOKENIZE_RE = re.compile(r'\b[a-z][a-z0-9]*\b')
+_ADVANCED_KEYWORDS_SET = frozenset(kw.lower() for kw in ADVANCED_KEYWORDS)
+# Max file size to read (skip huge minified/generated files)
+_MAX_FILE_BYTES = 512 * 1024  # 512 KB
+
+
+def _build_skill_lookups(keyword_dict):
+    """Split each skill's keywords into a fast single-word set and precompiled patterns."""
+    result = {}
+    for key, keywords in keyword_dict.items():
+        singles = set()
+        multis = []
+        for kw in keywords:
+            kw_l = kw.lower()
+            if _SIMPLE_KW_RE.match(kw_l):
+                singles.add(kw_l)
+            else:
+                multis.append((kw_l, re.compile(r'\b' + re.escape(kw_l) + r'\b')))
+        result[key] = (singles, multis)
+    return result
+
+
+def _build_subskill_lookups(subskill_dict):
+    result = {}
+    for skill, groups in subskill_dict.items():
+        result[skill] = {}
+        for group, keywords in groups.items():
+            singles = set()
+            multis = []
+            for kw in keywords:
+                kw_l = kw.lower()
+                if _SIMPLE_KW_RE.match(kw_l):
+                    singles.add(kw_l)
+                else:
+                    multis.append((kw_l, re.compile(r'\b' + re.escape(kw_l) + r'\b')))
+            result[skill][group] = (singles, multis)
+    return result
+
+
+_SKILL_LOOKUPS = _build_skill_lookups(SKILL_KEYWORDS)
+_SUBSKILL_LOOKUPS = _build_subskill_lookups(SUBSKILL_KEYWORDS)
+
 # --- Skill analyzer function ---
 def analyze_coding_skills_refined(folder_path, file_extensions=None):
     folder = Path(folder_path)
@@ -149,10 +197,15 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
             continue
         if file_extensions and file.suffix not in file_extensions:
             continue
+        try:
+            if file.stat().st_size > _MAX_FILE_BYTES:
+                continue
+        except OSError:
+            continue
 
         try:
             text = file.read_text(encoding="utf-8").lower()
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, OSError):
             continue
 
         parts = [p.lower() for p in file.parts]
@@ -163,34 +216,41 @@ def analyze_coding_skills_refined(folder_path, file_extensions=None):
         else:
             folder_weight = 1.0
 
+        # Tokenize once — single-word keywords are looked up in O(1) via Counter
+        word_counter = Counter(_TOKENIZE_RE.findall(text))
+
         detected_skills = set()
 
-        # --- 1️⃣ Top-level skills ---
-        for skill, keywords in SKILL_KEYWORDS.items():
-            for kw in keywords:
-                pattern = r'\b' + re.escape(kw.lower()) + r'\b'
-                matches = re.findall(pattern, text)
-                if matches:
-                    count = len(matches)
-                    detected_skills.add(skill)
-                    raw_skill_hits[skill] += count
-                    skill_scores[skill] += count * folder_weight
-                    skill_subskills[skill]["keywords"][kw] += count
+        # --- 1: Top-level skills ---
+        for skill, (singles, multis) in _SKILL_LOOKUPS.items():
+            count = 0
+            for kw in singles:
+                count += word_counter.get(kw, 0)
+            for kw, pattern in multis:
+                count += len(pattern.findall(text))
+            if count:
+                detected_skills.add(skill)
+                raw_skill_hits[skill] += count
+                skill_scores[skill] += count * folder_weight
 
-        # --- 2️⃣ Subskills (only if parent skill detected) ---
-        for skill, groups in SUBSKILL_KEYWORDS.items():
+        # --- 2: Subskills (only if parent skill detected) ---
+        for skill, groups in _SUBSKILL_LOOKUPS.items():
             if skill not in detected_skills:
                 continue
-            for group, keywords in groups.items():
-                for kw in keywords:
-                    pattern = r'\b' + re.escape(kw.lower()) + r'\b'
-                    matches = re.findall(pattern, text)
-                    if matches:
-                        count = len(matches)
+            for group, (singles, multis) in groups.items():
+                for kw in singles:
+                    count = word_counter.get(kw, 0)
+                    if count:
                         raw_skill_hits[skill] += count
                         skill_subskills[skill][group][kw] += count
-
-                        boost = 0.5 if kw.lower() in ADVANCED_KEYWORDS else 0.3
+                        boost = 0.5 if kw in _ADVANCED_KEYWORDS_SET else 0.3
+                        skill_scores[skill] += count * boost * folder_weight
+                for kw, pattern in multis:
+                    count = len(pattern.findall(text))
+                    if count:
+                        raw_skill_hits[skill] += count
+                        skill_subskills[skill][group][kw] += count
+                        boost = 0.5 if kw in _ADVANCED_KEYWORDS_SET else 0.3
                         skill_scores[skill] += count * boost * folder_weight
 
         project_detected_skills.update(detected_skills)
