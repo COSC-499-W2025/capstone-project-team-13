@@ -882,7 +882,7 @@ export default function ProjectPage() {
             </table>
           </div>
         )}
-)
+
 
         {!isText && (
         <div className="card">
