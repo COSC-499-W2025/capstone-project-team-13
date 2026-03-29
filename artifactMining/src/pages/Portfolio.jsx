@@ -75,11 +75,19 @@ export default function Portfolio() {
   const [educationEntries, setEducationEntries] = useState([]);
   const [showEduForm, setShowEduForm] = useState(false);
   const [eduFormType, setEduFormType] = useState("postsecondary"); // "postsecondary" | "graduate" | "secondary"
-  const [eduForm, setEduForm] = useState({ institution: "", degree_type: "", topic: "", start_date: "", end_date: "", location: "", gpa: "" });
+  const [eduForm, setEduForm] = useState({ institution: "", degree_type: "", topic: "", start_date: "", end_date: "", location: "", gpa: "", awards: "" });
   const [eduError, setEduError] = useState(null);
   const [eduTitle, setEduTitle] = useState(() => localStorage.getItem("edu_title") || "Education");
   const [eduSubtitle, setEduSubtitle] = useState(() => localStorage.getItem("edu_subtitle") || "Academic Background");
   const [eduDesc, setEduDesc] = useState(() => localStorage.getItem("edu_desc") || "");
+  const [expEntries, setExpEntries] = useState([]);
+  const [showExpForm, setShowExpForm] = useState(false);
+  const [expFormType, setExpFormType] = useState("work");
+  const [expForm, setExpForm] = useState({ company: "", role: "", start_date: "", end_date: "", location: "" });
+  const [expError, setExpError] = useState(null);
+  const [expTitle, setExpTitle] = useState(() => localStorage.getItem("exp_title") || "Experience");
+  const [expSubtitle, setExpSubtitle] = useState(() => localStorage.getItem("exp_subtitle") || "Work & Volunteering");
+  const [expDesc, setExpDesc] = useState(() => localStorage.getItem("exp_desc") || "");
   const nav = useNavigate();
 
   useEffect(() => {
@@ -143,6 +151,9 @@ export default function Portfolio() {
       apiFetch("/education")
         .then(d => setEducationEntries(sortEdu(d.education || [])))
         .catch(() => {});
+      apiFetch("/work-history")
+        .then(d => setExpEntries(sortExp(d.work_history || [])))
+        .catch(() => {});
     }
   }, [authed, includeHidden]);
 
@@ -194,8 +205,10 @@ export default function Portfolio() {
     // Validation per type
     if (eduFormType === "secondary") {
       if (!f.institution || !f.end_date) { setEduError("School name and graduation year are required."); return; }
-    } else if (eduFormType === "volunteering" || eduFormType === "extracurricular") {
-      if (!f.institution || !f.topic || !f.start_date) { setEduError("Organization, role and start date are required."); return; }
+    } else if (eduFormType === "certifications") {
+      if (!f.institution || !f.topic || !f.start_date) { setEduError("Issuing organization, certification name and issue date are required."); return; }
+    } else if (eduFormType === "extracurricular") {
+      if (!f.institution || !f.topic || !f.start_date) { setEduError("Club/team, role and start date are required."); return; }
     } else {
       if (!f.institution || !f.degree_type || !f.topic || !f.start_date) {
         setEduError("Institution, degree type, field of study and start date are required."); return;
@@ -203,14 +216,15 @@ export default function Portfolio() {
     }
     // Build payload
     let degree_type, topic, start_date, end_date;
+    const details = f.awards ? f.awards.split("\n").map(s => s.trim()).filter(Boolean) : [];
     if (eduFormType === "secondary") {
       degree_type = f.degree_type || "Secondary School Diploma";
       topic       = "General Studies";
       const gradYear = parseInt(f.end_date);
       end_date   = `${f.end_date}-06-01`;
       start_date = `${gradYear - 3}-09-01`;
-    } else if (eduFormType === "volunteering") {
-      degree_type = "Volunteering";
+    } else if (eduFormType === "certifications") {
+      degree_type = "Certification";
       topic       = f.topic;
       start_date  = f.start_date ? `${f.start_date}-01` : f.start_date;
       end_date    = f.end_date   ? `${f.end_date}-01`   : null;
@@ -237,10 +251,11 @@ export default function Portfolio() {
           end_date,
           location: f.location || null,
           gpa: f.gpa || null,
+          details: details.length ? details : null,
         }),
       });
       setEducationEntries(prev => sortEdu([...prev, d.education]));
-      setEduForm({ institution: "", degree_type: "", topic: "", start_date: "", end_date: "", location: "", gpa: "" });
+      setEduForm({ institution: "", degree_type: "", topic: "", start_date: "", end_date: "", location: "", gpa: "", awards: "" });
       setShowEduForm(false);
     } catch (e) { setEduError(e.message); }
   }
@@ -250,6 +265,43 @@ export default function Portfolio() {
       await apiFetch(`/education/${id}`, { method: "DELETE" });
       setEducationEntries(prev => prev.filter(e => e.id !== id));
     } catch (e) { setEduError(e.message); }
+  }
+
+  function sortExp(entries) {
+    return [...entries].sort((a, b) => {
+      const da = a.start_date ? new Date(a.start_date) : new Date(0);
+      const db = b.start_date ? new Date(b.start_date) : new Date(0);
+      return db - da;
+    });
+  }
+
+  async function addExperience() {
+    setExpError(null);
+    const f = expForm;
+    const orgLabel = expFormType === "volunteering" ? "Organization" : "Company";
+    const roleLabel = expFormType === "volunteering" ? "role" : "job title";
+    if (!f.company || !f.role || !f.start_date) {
+      setExpError(`${orgLabel}, ${roleLabel} and start date are required.`); return;
+    }
+    const start_date = `${f.start_date}-01`;
+    const end_date   = f.end_date ? `${f.end_date}-01` : null;
+    try {
+      const d = await apiFetch("/work-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company: f.company, role: f.role, start_date, end_date, location: f.location || null }),
+      });
+      setExpEntries(prev => sortExp([...prev, d.work_history]));
+      setExpForm({ company: "", role: "", start_date: "", end_date: "", location: "" });
+      setShowExpForm(false);
+    } catch (e) { setExpError(e.message); }
+  }
+
+  async function deleteExperience(id) {
+    try {
+      await apiFetch(`/work-history/${id}`, { method: "DELETE" });
+      setExpEntries(prev => prev.filter(e => e.id !== id));
+    } catch (e) { setExpError(e.message); }
   }
 
   if (authed === null) return <div className="page-wrap" style={{ paddingTop: 80, textAlign: "center", color: "#818cf8" }}>Checking authentication...</div>;
@@ -633,10 +685,145 @@ export default function Portfolio() {
 
         {/* Experience */}
         {activeSection === "experience" && (
-          <div className="port-section-page">
-            <div className="port-placeholder">
-              <h2>Experience</h2>
-              <p className="text-muted">Coming soon — add your work experience here.</p>
+          <div className="port-section-page edu-page">
+            {/* Top bar */}
+            <div className="edu-top-bar">
+              <div className="edu-top-stat">
+                {expEntries.length > 0 && (() => {
+                  const dates = expEntries.map(e => e.start_date ? new Date(e.start_date).getFullYear() : null).filter(Boolean);
+                  const earliest = Math.min(...dates);
+                  const latest = expEntries.some(e => !e.end_date || e.end_date === "Present") ? "Present" : Math.max(...expEntries.map(e => e.end_date ? new Date(e.end_date).getFullYear() : 0));
+                  return <span className="edu-top-years">{earliest} — {latest}</span>;
+                })()}
+                <span className="edu-top-stat-num">{expEntries.length}</span>
+                <span className="edu-top-stat-label">{expEntries.length === 1 ? "Position" : "Positions"}</span>
+              </div>
+              <div className="edu-top-titles">
+                {isPublic
+                  ? <h1 className="edu-split-title">{expTitle || "Experience"}</h1>
+                  : <input className="edu-split-title-input" value={expTitle} onChange={e => { setExpTitle(e.target.value); localStorage.setItem("exp_title", e.target.value); }} placeholder="Section Title" />}
+                {isPublic
+                  ? expSubtitle && <p className="edu-split-subtitle">{expSubtitle}</p>
+                  : <input className="edu-split-subtitle-input" value={expSubtitle} onChange={e => { setExpSubtitle(e.target.value); localStorage.setItem("exp_subtitle", e.target.value); }} placeholder="Subtitle" />}
+              </div>
+            </div>
+
+            {/* Split body */}
+            <div className="edu-body">
+              {/* Left: description + form */}
+              <div className="edu-body-left">
+                {(!isPublic || expDesc) && (
+                  isPublic
+                    ? <p className="edu-split-desc">{expDesc}</p>
+                    : <div className="port-about-bio-wrap">
+                        <textarea
+                          className="port-about-bio-input"
+                          placeholder="Describe your work history, volunteering, or anything you'd like visitors to know…"
+                          value={expDesc}
+                          onChange={e => { setExpDesc(e.target.value); localStorage.setItem("exp_desc", e.target.value); }}
+                          rows={6}
+                          maxLength={600}
+                        />
+                        <span className="port-about-char-count">{expDesc.length} / 600</span>
+                      </div>
+                )}
+                {!isPublic && (
+                  <div style={{ marginTop: 20 }}>
+                    {!showExpForm ? (
+                      <button className="btn-primary edu-add-btn" onClick={() => setShowExpForm(true)}>+ Add to Timeline</button>
+                    ) : (
+                      <div className="edu-form card">
+                        {/* Type tabs */}
+                        <div className="edu-form-tabs">
+                          {[["work","Work"],["internship","Internship"],["volunteering","Volunteering"],["freelance","Freelance / Contract"]].map(([val, label]) => (
+                            <button key={val} className={`edu-form-tab ${expFormType === val ? "active" : ""}`}
+                              onClick={() => { setExpFormType(val); setExpForm({ company: "", role: "", start_date: "", end_date: "", location: "" }); setExpError(null); }}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {expError && <div className="alert error" style={{ marginBottom: 12 }}>{expError}</div>}
+
+                        <div className="edu-form-grid">
+                          <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                            {expFormType === "volunteering" ? "Organization *" : expFormType === "freelance" ? "Client / Company" : "Company *"}
+                            <input className="edu-form-input"
+                              placeholder={
+                                expFormType === "volunteering" ? "e.g. Red Cross, Local Food Bank"
+                                : expFormType === "freelance" ? "e.g. Self-employed, Acme Corp"
+                                : "e.g. Google, Startup Inc."}
+                              value={expForm.company} onChange={e => setExpForm(f => ({ ...f, company: e.target.value }))} />
+                          </label>
+                          <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                            {expFormType === "volunteering" ? "Role / Position *" : expFormType === "freelance" ? "Project / Role *" : "Job Title *"}
+                            <input className="edu-form-input"
+                              placeholder={
+                                expFormType === "volunteering" ? "e.g. Event Coordinator"
+                                : expFormType === "freelance" ? "e.g. Full-stack Developer"
+                                : expFormType === "internship" ? "e.g. Software Engineering Intern"
+                                : "e.g. Software Engineer"}
+                              value={expForm.role} onChange={e => setExpForm(f => ({ ...f, role: e.target.value }))} />
+                          </label>
+                          <label className="edu-form-label">
+                            Start Date *
+                            <input className="edu-form-input" type="month" value={expForm.start_date} onChange={e => setExpForm(f => ({ ...f, start_date: e.target.value }))} />
+                          </label>
+                          <label className="edu-form-label">
+                            End Date <span className="text-muted">(blank = Present)</span>
+                            <input className="edu-form-input" type="month" value={expForm.end_date} onChange={e => setExpForm(f => ({ ...f, end_date: e.target.value }))} />
+                          </label>
+                          <label className="edu-form-label">
+                            Location
+                            <input className="edu-form-input" placeholder="e.g. Vancouver, BC"
+                              value={expForm.location} onChange={e => setExpForm(f => ({ ...f, location: e.target.value }))} />
+                          </label>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                          <button className="btn-primary" onClick={addExperience}>Add Entry</button>
+                          <button className="btn-secondary" onClick={() => { setShowExpForm(false); setExpError(null); }}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: timeline */}
+              <div className="edu-body-right">
+                {expEntries.length === 0 ? (
+                  <p className="text-muted" style={{ fontSize: "0.9rem" }}>No entries yet.</p>
+                ) : (
+                  <div className="edu-timeline-list">
+                    <div className="edu-timeline-line" />
+                    {expEntries.map((entry, i) => {
+                      const start = entry.start_date ? new Date(entry.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "?";
+                      const end = entry.end_date && entry.end_date !== "Present" ? new Date(entry.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Present";
+                      return (
+                        <div key={entry.id} className="edu-timeline-item">
+                          <div className={`edu-timeline-dot ${i === 0 ? "first" : ""}`} />
+                          <div className="edu-timeline-content card">
+                            <div className="edu-timeline-top">
+                              <div>
+                                <p className="edu-institution">{entry.company}</p>
+                                <p className="edu-degree">{entry.role}</p>
+                              </div>
+                              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                <p className="edu-dates">{start} — {end}</p>
+                                {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
+                              </div>
+                              {!isPublic && (
+                                <button className="edu-delete-btn" onClick={() => deleteExperience(entry.id)} title="Remove entry">✕</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -693,9 +880,9 @@ export default function Portfolio() {
                       <div className="edu-form card">
                         {/* Type tabs */}
                         <div className="edu-form-tabs">
-                          {[["postsecondary","Post Secondary"],["secondary","Secondary"],["volunteering","Volunteering"],["extracurricular","Extra Curricular"]].map(([val, label]) => (
+                          {[["postsecondary","Post Secondary"],["secondary","Secondary"],["certifications","Certifications"],["extracurricular","Extra Curricular"]].map(([val, label]) => (
                             <button key={val} className={`edu-form-tab ${eduFormType === val ? "active" : ""}`}
-                              onClick={() => { setEduFormType(val); setEduForm({ institution: "", degree_type: "", topic: "", start_date: "", end_date: "", location: "", gpa: "" }); setEduError(null); }}>
+                              onClick={() => { setEduFormType(val); setEduForm({ institution: "", degree_type: "", topic: "", start_date: "", end_date: "", location: "", gpa: "", awards: "" }); setEduError(null); }}>
                               {label}
                             </button>
                           ))}
@@ -707,14 +894,14 @@ export default function Portfolio() {
                           {/* Row 1: institution / org label varies */}
                           <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
                             { eduFormType === "secondary" ? "School Name *"
-                            : eduFormType === "volunteering" ? "Organization *"
                             : eduFormType === "extracurricular" ? "Club / Team / Organization *"
+                            : eduFormType === "certifications" ? "Issuing Organization *"
                             : "Institution *" }
                             <input className="edu-form-input"
                               placeholder={
                                 eduFormType === "secondary" ? "e.g. Kelowna Secondary School"
-                                : eduFormType === "volunteering" ? "e.g. Red Cross, Local Food Bank"
                                 : eduFormType === "extracurricular" ? "e.g. Debate Club, Student Union"
+                                : eduFormType === "certifications" ? "e.g. AWS, Google, Microsoft, Coursera"
                                 : "e.g. University of British Columbia"}
                               value={eduForm.institution} onChange={e => setEduForm(f => ({ ...f, institution: e.target.value }))} />
                           </label>
@@ -749,6 +936,12 @@ export default function Portfolio() {
                               <input className="edu-form-input" placeholder="e.g. 3.8/4.0"
                                 value={eduForm.gpa} onChange={e => setEduForm(f => ({ ...f, gpa: e.target.value }))} />
                             </label>
+                            <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                              Awards &amp; Scholarships <span className="text-muted">(one per line)</span>
+                              <textarea className="edu-form-input" rows={3}
+                                placeholder={"Dean's List\nEntrance Scholarship — $2,000\nPresidential Award"}
+                                value={eduForm.awards} onChange={e => setEduForm(f => ({ ...f, awards: e.target.value }))} />
+                            </label>
                           </>)}
 
                           {/* Secondary School */}
@@ -773,27 +966,33 @@ export default function Portfolio() {
                               <input className="edu-form-input" placeholder="e.g. 92%"
                                 value={eduForm.gpa} onChange={e => setEduForm(f => ({ ...f, gpa: e.target.value }))} />
                             </label>
+                            <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                              Awards &amp; Scholarships <span className="text-muted">(one per line)</span>
+                              <textarea className="edu-form-input" rows={3}
+                                placeholder={"Honour Roll\nPrincipal's Award\nBC Excellence Scholarship"}
+                                value={eduForm.awards} onChange={e => setEduForm(f => ({ ...f, awards: e.target.value }))} />
+                            </label>
                           </>)}
 
-                          {/* Volunteering */}
-                          {eduFormType === "volunteering" && (<>
-                            <label className="edu-form-label">
-                              Role / Position *
-                              <input className="edu-form-input" placeholder="e.g. Event Coordinator"
+                          {/* Certifications */}
+                          {eduFormType === "certifications" && (<>
+                            <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                              Certification Name *
+                              <input className="edu-form-input" placeholder="e.g. AWS Solutions Architect, PMP, Google Analytics"
                                 value={eduForm.topic} onChange={e => setEduForm(f => ({ ...f, topic: e.target.value }))} />
                             </label>
                             <label className="edu-form-label">
-                              Start Date *
+                              Issue Date *
                               <input className="edu-form-input" type="month" value={eduForm.start_date} onChange={e => setEduForm(f => ({ ...f, start_date: e.target.value }))} />
                             </label>
                             <label className="edu-form-label">
-                              End Date <span className="text-muted">(blank = Present)</span>
+                              Expiry Date <span className="text-muted">(blank = No Expiry)</span>
                               <input className="edu-form-input" type="month" value={eduForm.end_date} onChange={e => setEduForm(f => ({ ...f, end_date: e.target.value }))} />
                             </label>
-                            <label className="edu-form-label">
-                              Location
-                              <input className="edu-form-input" placeholder="e.g. Vancouver, BC"
-                                value={eduForm.location} onChange={e => setEduForm(f => ({ ...f, location: e.target.value }))} />
+                            <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                              Credential ID <span className="text-muted">(optional)</span>
+                              <input className="edu-form-input" placeholder="e.g. ABC-12345"
+                                value={eduForm.gpa} onChange={e => setEduForm(f => ({ ...f, gpa: e.target.value }))} />
                             </label>
                           </>)}
 
@@ -834,36 +1033,61 @@ export default function Portfolio() {
               <div className="edu-body-right">
                 {educationEntries.length === 0 ? (
                   <p className="text-muted" style={{ fontSize: "0.9rem" }}>No entries yet.</p>
-                ) : (
+                ) : (<>
+                  <div className="edu-legend">
+                    <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-degree" />Degree</span>
+                    <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-secondary" />Secondary</span>
+                    <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-cert" />Certification</span>
+                    <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-extra" />Extra Curricular</span>
+                  </div>
                   <div className="edu-timeline-list">
                     <div className="edu-timeline-line" />
                     {educationEntries.map((entry, i) => {
                       const start = entry.start_date ? new Date(entry.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "?";
                       const end = entry.end_date && entry.end_date !== "Present" ? new Date(entry.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Present";
+                      const entryTypeClass = entry.degree_type === "Certification" ? "cert"
+                        : entry.degree_type === "Extra Curricular" ? "extra"
+                        : entry.degree_type === "Secondary School Diploma" ? "secondary"
+                        : "degree";
                       return (
                         <div key={entry.id} className="edu-timeline-item">
-                          <div className={`edu-timeline-dot ${i === 0 ? "first" : ""}`} />
-                          <div className="edu-timeline-content card">
+                          <div className={`edu-timeline-dot ${i === 0 ? "first" : ""} edu-dot-${entryTypeClass}`} />
+                          <div className={`edu-timeline-content card${entryTypeClass === "cert" ? " edu-entry-cert" : ""}`}>
                             <div className="edu-timeline-top">
                               <div>
                                 <p className="edu-institution">{entry.institution}</p>
-                                <p className="edu-degree">{entry.degree_type} · {entry.topic}</p>
+                                <p className="edu-degree">
+                                  {entry.degree_type === "Certification" ? entry.topic : `${entry.degree_type} · ${entry.topic}`}
+                                </p>
                               </div>
                               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <p className="edu-dates">{start} — {end}</p>
+                                <p className="edu-dates">
+                                  {entry.degree_type === "Certification"
+                                    ? `Issued ${start}${entry.end_date ? ` · Expires ${end}` : " · No Expiry"}`
+                                    : `${start} — ${end}`}
+                                </p>
                                 {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
-                                {entry.gpa && <p className="edu-gpa">GPA: {entry.gpa}</p>}
+                                {entry.gpa && (
+                                  <p className="edu-gpa">
+                                    {entry.degree_type === "Certification" ? `ID: ${entry.gpa}` : `GPA: ${entry.gpa}`}
+                                  </p>
+                                )}
                               </div>
                               {!isPublic && (
                                 <button className="edu-delete-btn" onClick={() => deleteEducation(entry.id)} title="Remove entry">✕</button>
                               )}
                             </div>
+                            {entry.details && entry.details.length > 0 && (
+                              <ul className="edu-awards-list">
+                                {entry.details.map((award, idx) => <li key={idx}>{award}</li>)}
+                              </ul>
+                            )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
+                </>)}
               </div>
             </div>
           </div>

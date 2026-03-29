@@ -487,6 +487,42 @@ body[data-theme="light"] .edu-top-stat { background: linear-gradient(135deg, rgb
   background: var(--border); border: 2px solid var(--accent);
 }
 .edu-timeline-dot.first { background: var(--accent); }
+
+/* Per-type dot colours */
+.edu-dot-degree              { border-color: var(--accent); }
+.edu-dot-degree.first        { background: var(--accent); }
+.edu-dot-secondary           { border-color: #60a5fa; }
+.edu-dot-secondary.first     { background: #60a5fa; }
+.edu-dot-cert                { border-color: #c084fc; }
+.edu-dot-cert.first          { background: #c084fc; }
+.edu-dot-extra               { border-color: #34d399; }
+.edu-dot-extra.first         { background: #34d399; }
+
+/* Certification card tint */
+.edu-entry-cert {
+  background: rgba(192, 132, 252, 0.07) !important;
+  border-color: rgba(192, 132, 252, 0.28) !important;
+}
+
+/* Legend */
+.edu-legend {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  margin-bottom: 16px; padding: 10px 14px;
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 8px; width: fit-content;
+}
+.edu-legend-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 0.75rem; color: var(--text-muted); font-weight: 500;
+}
+.edu-legend-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.edu-legend-degree   { background: var(--accent); }
+.edu-legend-secondary{ background: #60a5fa; }
+.edu-legend-cert     { background: #c084fc; }
+.edu-legend-extra    { background: #34d399; }
+
 .edu-timeline-content { padding: 16px 20px; }
 .edu-timeline-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
 .edu-institution { font-size: 1rem; font-weight: 700; color: var(--text); margin: 0 0 4px; }
