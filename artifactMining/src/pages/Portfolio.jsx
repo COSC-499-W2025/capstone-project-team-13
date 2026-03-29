@@ -1,3 +1,38 @@
+import { Joyride } from 'react-joyride';
+// Joyride walkthrough steps for Portfolio page
+const walkthroughSteps = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: 'Welcome to Your Portfolio!',
+    content: 'This page showcases all your projects, skills, and evidence. Let’s take a quick tour!',
+    disableBeacon: true,
+  },
+  {
+    target: '.port-hero',
+    title: 'Portfolio Header',
+    content: 'Edit your portfolio title, tagline, and switch between private/public views here.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-stat-row',
+    title: 'Portfolio Stats',
+    content: 'See a summary of your projects, code, files, and skills.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-sort-row',
+    title: 'Sort & Layout',
+    content: 'Sort your projects and switch between list or grid layouts.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-viz-card-sec',
+    title: 'Skills Timeline & Activity Heatmap',
+    content: 'See when you used different skills and view your project activity over time.',
+    spotlightPadding: 6,
+  },
+];
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
@@ -37,6 +72,7 @@ const SORT_OPTIONS = [
 const DEFAULT_HERO_TITLE = "Master Portfolio";
 const DEFAULT_HERO_SUB   = "All projects · evidences · ranked";
 
+
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +98,15 @@ export default function Portfolio() {
   const [portfolioPublic, setPortfolioPublic] = useState(false);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
   const nav = useNavigate();
+
+  // Joyride walkthrough state
+  const [runWalkthrough, setRunWalkthrough] = useState(() => localStorage.getItem('portfolio_walkthrough_seen') !== '1');
+
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('portfolio_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
 
   useEffect(() => {
     const sync = () => setShowEmojis(localStorage.getItem("dash_show_emojis") !== "false");
@@ -239,7 +284,77 @@ export default function Portfolio() {
   const summaryText = portfolio?.summary_text || portfolio?.summary?.text || "";
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            spotlightPadding: 0,
+          },
+          tooltipContainer: {
+            borderRadius: 10,
+            boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
+            padding: '8px 14px',
+            fontSize: '0.97rem',
+            minWidth: 200,
+            maxWidth: 300,
+          },
+          tooltip: {
+            margin: 0,
+          },
+          buttonNext: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+            borderRadius: 7,
+            fontWeight: 600,
+            boxShadow: '0 1px 4px 0 rgba(99,102,241,0.08)',
+            padding: '6px 18px',
+            fontSize: '0.98rem',
+          },
+          buttonBack: {
+            color: 'var(--accent, #6366f1)',
+            background: 'transparent',
+            fontWeight: 500,
+            fontSize: '0.98rem',
+          },
+          buttonSkip: {
+            color: 'var(--text-muted, #a5b4fc)',
+            background: 'transparent',
+            fontSize: '0.98rem',
+          },
+          dot: {
+            background: 'var(--accent, #6366f1)',
+          },
+          badge: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('portfolio_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
 
       {/* ── Hero header ── */}
       <div className="port-hero card">
@@ -468,26 +583,29 @@ export default function Portfolio() {
           </>
         )}
 
-        {/* ── Skills Timeline ── */}
-        <div className="port-viz-card card">
-          <div className="port-section-header port-section-header-btn" onClick={() => setShowTimeline(v => !v)} style={{ cursor: "pointer", userSelect: "none" }}>
-            <span>📈 Skills Timeline</span>
-            <span className="port-viz-chevron" style={{ transform: showTimeline ? "rotate(0deg)" : "rotate(-90deg)" }}>▾</span>
+        <div className="port-viz-card-sec">
+          {/* ── Skills Timeline ── */}
+          <div className="port-viz-card card">
+            <div className="port-section-header port-section-header-btn" onClick={() => setShowTimeline(v => !v)} style={{ cursor: "pointer", userSelect: "none" }}>
+              <span>📈 Skills Timeline</span>
+              <span className="port-viz-chevron" style={{ transform: showTimeline ? "rotate(0deg)" : "rotate(-90deg)" }}>▾</span>
+            </div>
+            {showTimeline && <SkillsTimeline />}
           </div>
-          {showTimeline && <SkillsTimeline />}
-        </div>
 
-        {/* ── Activity Heatmap ── */}
-        <div className="port-viz-card card" style={{ marginTop: 16 }}>
-          <div className="port-section-header port-section-header-btn" onClick={() => setShowHeatmap(v => !v)} style={{ cursor: "pointer", userSelect: "none" }}>
-            <span>🗓️ Project Activity</span>
-            <span className="port-viz-chevron" style={{ transform: showHeatmap ? "rotate(0deg)" : "rotate(-90deg)" }}>▾</span>
+          {/* ── Activity Heatmap ── */}
+          <div className="port-viz-card card" style={{ marginTop: 16 }}>
+            <div className="port-section-header port-section-header-btn" onClick={() => setShowHeatmap(v => !v)} style={{ cursor: "pointer", userSelect: "none" }}>
+              <span>🗓️ Project Activity</span>
+              <span className="port-viz-chevron" style={{ transform: showHeatmap ? "rotate(0deg)" : "rotate(-90deg)" }}>▾</span>
+            </div>
+            {showHeatmap && <ActivityHeatmap />}
           </div>
-          {showHeatmap && <ActivityHeatmap />}
         </div>
 
       </>}
     </div>
+    </>
   );
 }
 
