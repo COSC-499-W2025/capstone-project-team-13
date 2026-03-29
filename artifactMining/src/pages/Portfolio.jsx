@@ -1246,7 +1246,13 @@ export default function Portfolio() {
                       return (
                         <div key={entry.id} className="edu-timeline-item">
                           <div className={`edu-timeline-dot ${i === 0 ? "first" : ""} edu-dot-${entryTypeClass}`} />
-                          <div className={`edu-timeline-content card${entryTypeClass === "cert" ? " edu-entry-cert" : ""}`}>
+                          <div className={`edu-timeline-content card${entryTypeClass === "cert" ? " edu-entry-cert" : ""} edu-card-wrap`}>
+                            {!isPublic && editEduId !== entry.id && (
+                              <div className="edu-card-actions">
+                                <button className="edu-edit-btn" onClick={() => startEditEdu(entry)} title="Edit entry">✎</button>
+                                <button className="edu-delete-btn" onClick={() => deleteEducation(entry.id)} title="Remove entry">✕</button>
+                              </div>
+                            )}
                             {editEduId === entry.id ? (
                               <div className="edu-inline-edit">
                                 <div className="edu-inline-edit-grid">
@@ -1321,12 +1327,6 @@ export default function Portfolio() {
                                     </p>
                                   )}
                                 </div>
-                                {!isPublic && (
-                                  <div style={{ display: "flex", gap: 4, flexShrink: 0, alignSelf: "flex-start" }}>
-                                    <button className="edu-edit-btn" onClick={() => startEditEdu(entry)} title="Edit entry">✎</button>
-                                    <button className="edu-delete-btn" onClick={() => deleteEducation(entry.id)} title="Remove entry">✕</button>
-                                  </div>
-                                )}
                               </div>
                               {entry.details && entry.details.length > 0 && (
                                 <div className="edu-awards-list">
