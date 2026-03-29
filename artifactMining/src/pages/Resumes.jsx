@@ -1337,7 +1337,7 @@ export default function Resumes() {
     return (
       <aside className="resume-sidebar">
         {/* Back button */}
-        <button className="resume-back-btn" onClick={() => { setView("list"); setResume(null); setDirty(false); setEditing(false); }}>
+        <button className="resume-back-btn" onClick={() => { setView("list"); setResume(null); setDirty(false); setEditing(false); loadResumeList(); }}>
           ← Back to Resumes
         </button>
 
