@@ -191,15 +191,23 @@ body[data-theme="light"] .port-about-saved { color: #059669; }
 .port-top-card:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(115,67,255,0.3); }
 .port-rank { position: absolute; top: 14px; right: 14px; font-size: 1.4rem; font-weight: 800; color: #a5b4fc; opacity: 0.55; }
 .port-card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.port-card-thumb-wrapper {
+  position: relative; border-radius: 8px; overflow: hidden; margin-top: 4px;
+}
 .port-card-thumb {
-  width: 100%; height: 120px; object-fit: cover; border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.08); margin-top: 4px;
+  width: 100%; height: 160px; object-fit: cover; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08); display: block;
 }
 .port-card-thumb-placeholder {
-  width: 100%; height: 80px; border-radius: 8px; margin-top: 4px;
+  width: 100%; height: 160px; border-radius: 8px;
   background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.25);
   align-items: center; justify-content: center;
-  font-size: 1.8rem; font-weight: 800; color: #e0e7ff;
+  font-size: 2.4rem; font-weight: 800; color: #e0e7ff;
+}
+.port-card-thumb-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 56px;
+  background: linear-gradient(to top, rgba(13,16,51,0.75) 0%, transparent 100%);
+  pointer-events: none;
 }
 .port-proj-name { font-size: 1rem; font-weight: 600; color: #eef1ff; padding-right: 32px; }
 .port-proj-desc { font-size: 0.82rem; color: #c4cbf5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; }
@@ -219,9 +227,10 @@ body[data-theme="light"] .port-about-saved { color: #059669; }
 }
 .port-list-row:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(115,67,255,0.25); }
 .port-score-bar {
-  position: absolute; left: 0; bottom: 0; width: 3px;
-  background: #6366f1; border-radius: 0 2px 2px 0;
+  position: absolute; left: 0; bottom: 0; width: 5px;
+  border-radius: 0 3px 3px 0;
   transition: height 0.4s ease;
+  filter: drop-shadow(2px 0 6px rgba(99,102,241,0.55));
 }
 .port-row-thumb {
   width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex-shrink: 0;
@@ -520,6 +529,125 @@ body[data-theme="light"] .edu-top-stat { background: linear-gradient(135deg, rgb
 
 body[data-theme="light"] .edu-institution { color: #1a1d3a; }
 body[data-theme="light"] .edu-gpa { color: #059669; }
+
+/* ── Featured card ── */
+.port-featured-card {
+  border-top: 2px solid rgba(251,191,36,0.55);
+}
+.port-featured-card:hover {
+  box-shadow: 0 12px 26px rgba(251,191,36,0.15), 0 0 0 1px rgba(251,191,36,0.12);
+}
+.port-featured-badge {
+  background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.35);
+  color: #fbbf24; font-size: 0.68rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em;
+}
+
+/* ── Featured section header ── */
+.port-section-header-featured {
+  border-image: linear-gradient(90deg, rgba(251,191,36,0.65), rgba(251,191,36,0.2), transparent) 1 !important;
+  color: #fde68a;
+}
+
+/* ── Score progress bar (card) ── */
+.port-score-track { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.port-score-track-inner {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: rgba(99,102,241,0.15); overflow: hidden;
+}
+.port-score-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+.port-score-label {
+  font-size: 0.72rem; color: #a5b4fc; font-weight: 600;
+  flex-shrink: 0; min-width: 28px; text-align: right;
+}
+
+/* ── Score mini-bar (list row) ── */
+.port-row-score-wrap {
+  width: 52px; height: 4px; border-radius: 2px;
+  background: rgba(99,102,241,0.15); overflow: hidden; align-self: center; flex-shrink: 0;
+}
+.port-row-score-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+/* ── Description fade + expand on hover ── */
+.port-list-desc-fade {
+  position: relative; max-height: 2.8em; overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.port-list-desc-fade::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1.4em;
+  background: linear-gradient(transparent, #141830);
+  pointer-events: none; transition: opacity 0.3s;
+}
+.port-list-row:hover .port-list-desc-fade { max-height: 10em; }
+.port-list-row:hover .port-list-desc-fade::after { opacity: 0; }
+
+/* ── Sort segmented control ── */
+.port-sort-group {
+  display: flex; border: 1.5px solid rgba(99,102,241,0.3);
+  border-radius: 10px; overflow: hidden; gap: 0;
+}
+.port-sort-group .port-sort-pill {
+  border-radius: 0; border: none;
+  border-right: 1px solid rgba(99,102,241,0.2);
+  padding: 5px 13px;
+}
+.port-sort-group .port-sort-pill:last-child { border-right: none; }
+.port-sort-group .port-sort-pill.active {
+  background: rgba(99,102,241,0.2); color: #a5b4fc;
+  box-shadow: inset 0 0 0 1px rgba(99,102,241,0.3);
+}
+
+/* ── Type filter chips ── */
+.port-type-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.port-type-chip {
+  padding: 6px 13px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+  background: rgba(255,255,255,0.04); color: #9aa6de;
+  border: 1.5px solid rgba(99,102,241,0.25); cursor: pointer;
+  transition: all 0.15s; font-family: inherit;
+}
+.port-type-chip:hover { border-color: rgba(99,102,241,0.55); color: #c4cbf5; background: rgba(99,102,241,0.08); }
+.port-type-chip.active { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.6); color: #a5b4fc; }
+
+/* ── Hide / Unhide button ── */
+.port-hide-btn { color: #9aa6de; }
+.port-hide-btn:hover { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+.port-hide-btn.hidden-active { border-color: rgba(16,185,129,0.4); color: #6ee7b7; background: rgba(16,185,129,0.08); }
+.port-hide-btn.hidden-active:hover { border-color: rgba(16,185,129,0.65); }
+
+/* ── Illustrated empty state ── */
+.port-empty-illustrated {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 72px 20px;
+}
+
+/* ── Light mode overrides for new elements ── */
+body[data-theme="light"] .port-list-desc-fade::after { background: linear-gradient(transparent, #f5f6ff); }
+body[data-theme="light"] .port-card-thumb-overlay { background: linear-gradient(to top, rgba(240,241,255,0.6) 0%, transparent 100%); }
+body[data-theme="light"] .port-featured-badge { background: rgba(251,191,36,0.08); }
+body[data-theme="light"] .port-type-chip { background: rgba(0,0,0,0.03); color: #5a6080; border-color: rgba(100,108,200,0.3); }
+body[data-theme="light"] .port-type-chip:hover { border-color: rgba(79,70,229,0.5); color: #3730a3; }
+body[data-theme="light"] .port-type-chip.active { background: rgba(79,70,229,0.1); border-color: rgba(79,70,229,0.55); color: #4f46e5; }
+body[data-theme="light"] .port-sort-group { border-color: rgba(99,102,241,0.25); }
+body[data-theme="light"] .port-sort-group .port-sort-pill { border-right-color: rgba(99,102,241,0.2); }
+body[data-theme="light"] .port-score-label { color: #4f46e5; }
+body[data-theme="light"] .port-score-track-inner { background: rgba(79,70,229,0.12); }
+body[data-theme="light"] .port-row-score-wrap { background: rgba(79,70,229,0.12); }
+
+/* ── Skills cloud ── */
+.port-skills-cloud {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 8px;
+}
+.port-skill-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+  border: 1.5px solid; cursor: default; white-space: nowrap;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.port-skill-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.2); }
+.port-skill-chip-count {
+  font-size: 0.68rem; font-weight: 700; padding: 1px 5px;
+  border-radius: 10px; line-height: 1.4;
+}
 
 /* ── Responsive ── */
 @media (max-width: 900px) { .port-top-grid { grid-template-columns: 1fr 1fr; } .port-stat-row { grid-template-columns: repeat(2,1fr); } }
