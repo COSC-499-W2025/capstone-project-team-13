@@ -133,3 +133,29 @@ h3 { font-size: 1rem;   font-weight: 600; color: #d8dfff; }
 .chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
 .mt-12 { margin-top: 12px; }
 @media (max-width: 768px) { .page-wrap { padding: 16px; } }
+
+.joyride-tooltip, .react-joyride__tooltip, .react-joyride__tooltip * {
+  color: #fff !important;
+}
+
+/* Joyride walkthrough persistent styles */
+.react-joyride__tooltip-content {
+  color: #fff !important;
+}
+
+.react-joyride__tooltip-title,
+#joyride-tooltip-title {
+  color: #818cf8 !important;
+}
+
+.react-joyride__tooltip button[data-testid="button-back"],
+.react-joyride__tooltip [data-testid="button-back"],
+.react-joyride__tooltip [aria-label="Back"],
+.react-joyride__tooltip button[title="Back"],
+.react-joyride__tooltip button[data-action="back"],
+.react-joyride__tooltip button[role="button"][title="Back"],
+.react-joyride__tooltip button[role="button"][aria-label="Back"] {
+  color: #818cf8 !important;
+  background: transparent !important;
+  border: none !important;
+}
