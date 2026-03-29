@@ -11,7 +11,7 @@ const walkthroughSteps = [
   {
     target: '.port-hero',
     title: 'Portfolio Header',
-    content: 'Edit your portfolio title, tagline, and switch between private/public views here.',
+    content: 'Here you can edit your portfolio\s title, change portfolio visibility, and access your web showcase. To generate a portfolio, simply upload projects and click "Regenerate".',
     spotlightPadding: 6,
   },
   {
