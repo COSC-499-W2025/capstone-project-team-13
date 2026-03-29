@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import SkillsTimeline from "./SkillsTimeline";
@@ -1234,30 +1234,61 @@ export default function Portfolio() {
   );
 }
 
-function MonthPicker({ value, onChange }) {
-  const MONTHS = [
-    ["01","January"],["02","February"],["03","March"],["04","April"],
-    ["05","May"],["06","June"],["07","July"],["08","August"],
-    ["09","September"],["10","October"],["11","November"],["12","December"],
-  ];
-  const now = new Date().getFullYear();
-  const years = Array.from({ length: 60 }, (_, i) => now + 5 - i);
-  const [yr, mo] = value ? value.split("-") : ["", ""];
-  function update(newYr, newMo) {
-    if (newYr && newMo) onChange(`${newYr}-${newMo}`);
-    else onChange("");
+const _MP_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function MonthPicker({ value, onChange, placeholder = "Select date" }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 60 }, (_, i) => currentYear - i);
+  const parsed = value ? value.slice(0, 7).split("-") : [];
+  const selYear  = parsed[0] ? parseInt(parsed[0]) : null;
+  const selMonth = parsed[1] ? parseInt(parsed[1]) : null;
+  const [viewYear, setViewYear] = useState(selYear || currentYear);
+
+  useEffect(() => {
+    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  function selectMonth(month) {
+    onChange(`${viewYear}-${String(month).padStart(2, "0")}`);
+    setOpen(false);
   }
+
+  const displayVal = value
+    ? (() => { const [y, m] = value.slice(0,7).split("-").map(Number); return `${_MP_MONTHS[m-1] || ""} ${y}`; })()
+    : placeholder;
+
   return (
-    <div className="month-picker">
-      <select className="edu-form-input month-picker-sel" value={mo || ""} onChange={e => update(yr, e.target.value)}>
-        <option value="">Month</option>
-        {MONTHS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
-      <select className="edu-form-input month-picker-sel" value={yr || ""} onChange={e => update(e.target.value, mo)}>
-        <option value="">Year</option>
-        {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
-      </select>
-    </div>
+    <span className="port-mp-wrap" ref={ref}>
+      <button type="button" className="edu-form-input port-mp-trigger"
+        onClick={() => { setViewYear(selYear || currentYear); setOpen(o => !o); }}>
+        {displayVal}
+        <span className="port-mp-caret">▾</span>
+      </button>
+      {open && (
+        <div className="port-mp-popup">
+          <div className="port-mp-year-row">
+            <button type="button" className="port-mp-nav" onClick={() => setViewYear(y => y - 1)}>‹</button>
+            <select className="port-mp-year-sel" value={viewYear} onChange={e => setViewYear(parseInt(e.target.value))}>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <button type="button" className="port-mp-nav" onClick={() => setViewYear(y => y + 1)}>›</button>
+          </div>
+          <div className="port-mp-grid">
+            {_MP_MONTHS.map((m, i) => (
+              <button key={m} type="button"
+                className={`port-mp-month${selYear === viewYear && selMonth === i + 1 ? " selected" : ""}`}
+                onClick={() => selectMonth(i + 1)}>
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </span>
   );
 }
 

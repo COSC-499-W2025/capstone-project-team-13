@@ -544,15 +544,47 @@ body[data-theme="light"] .edu-top-stat { background: linear-gradient(135deg, rgb
   line-height: 1.4;
 }
 
-/* Month / Year picker */
-.month-picker { display: flex; gap: 6px; }
-.month-picker-sel {
-  flex: 1; cursor: pointer;
-  appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23818cf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 8px center;
-  padding-right: 26px;
+/* Portfolio Month Picker popup */
+.port-mp-wrap { position: relative; display: block; }
+.port-mp-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; width: 100%; text-align: left;
+  font-size: 0.88rem; gap: 6px;
 }
+.port-mp-caret { font-size: 8pt; color: var(--text-muted); margin-left: 2px; flex-shrink: 0; }
+.port-mp-popup {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  z-index: 300; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  padding: 12px; width: 210px;
+}
+.port-mp-year-row {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 10px; gap: 4px;
+}
+.port-mp-nav {
+  background: none; border: 1px solid var(--border);
+  border-radius: 5px; width: 28px; height: 28px;
+  cursor: pointer; font-size: 1rem; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; flex-shrink: 0; transition: all 0.12s;
+}
+.port-mp-nav:hover { border-color: var(--accent); color: var(--accent); }
+.port-mp-year-sel {
+  flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: 5px; padding: 4px 6px; font-size: 0.82rem;
+  color: var(--text); text-align: center; cursor: pointer; outline: none;
+}
+.port-mp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.port-mp-month {
+  background: none; border: 1px solid transparent;
+  border-radius: 5px; padding: 6px 2px;
+  font-size: 0.78rem; color: var(--text-muted);
+  cursor: pointer; text-align: center; transition: all 0.12s;
+}
+.port-mp-month:hover    { background: rgba(99,102,241,0.12); color: var(--text); border-color: var(--border); }
+.port-mp-month.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
 .edu-delete-btn {
   background: none; border: none; color: var(--text-muted); cursor: pointer;
   font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; opacity: 0.5;
