@@ -80,6 +80,9 @@ export default function Portfolio() {
   const [eduTitle, setEduTitle] = useState(() => localStorage.getItem("edu_title") || "Education");
   const [eduSubtitle, setEduSubtitle] = useState(() => localStorage.getItem("edu_subtitle") || "Academic Background");
   const [eduDesc, setEduDesc] = useState(() => localStorage.getItem("edu_desc") || "");
+  const [editEduId, setEditEduId] = useState(null);
+  const [editEduForm, setEditEduForm] = useState({});
+  const [editEduError, setEditEduError] = useState(null);
   const [expEntries, setExpEntries] = useState([]);
   const [showExpForm, setShowExpForm] = useState(false);
   const [expFormType, setExpFormType] = useState("work");
@@ -265,6 +268,70 @@ export default function Portfolio() {
       await apiFetch(`/education/${id}`, { method: "DELETE" });
       setEducationEntries(prev => prev.filter(e => e.id !== id));
     } catch (e) { setEduError(e.message); }
+  }
+
+  function startEditEdu(entry) {
+    const toYM = (s) => s ? s.substring(0, 7) : "";
+    const entryType = entry.degree_type === "Certification" ? "certifications"
+      : entry.degree_type === "Extra Curricular" ? "extracurricular"
+      : entry.degree_type === "Secondary School Diploma" ? "secondary"
+      : "postsecondary";
+    setEditEduId(entry.id);
+    setEditEduError(null);
+    setEditEduForm({
+      entryType,
+      institution: entry.institution || "",
+      degree_type: entry.degree_type || "",
+      topic: entry.topic || "",
+      start_date: toYM(entry.start_date),
+      end_date: toYM(entry.end_date),
+      location: entry.location || "",
+      gpa: entry.gpa || "",
+      awards: (entry.details || []).join("\n"),
+    });
+  }
+
+  async function saveEditEdu(id) {
+    setEditEduError(null);
+    const f = editEduForm;
+    const details = f.awards ? f.awards.split("\n").map(s => s.trim()).filter(Boolean) : [];
+    let degree_type, topic, start_date, end_date;
+    if (f.entryType === "secondary") {
+      degree_type = f.degree_type || "Secondary School Diploma";
+      topic = "General Studies";
+      const gradYear = parseInt(f.end_date);
+      end_date = `${f.end_date}-01`;
+      start_date = `${gradYear - 3}-09-01`;
+    } else if (f.entryType === "certifications") {
+      degree_type = "Certification";
+      topic = f.topic;
+      start_date = f.start_date ? `${f.start_date}-01` : f.start_date;
+      end_date = f.end_date ? `${f.end_date}-01` : null;
+    } else if (f.entryType === "extracurricular") {
+      degree_type = "Extra Curricular";
+      topic = f.topic;
+      start_date = f.start_date ? `${f.start_date}-01` : f.start_date;
+      end_date = f.end_date ? `${f.end_date}-01` : null;
+    } else {
+      degree_type = f.degree_type;
+      topic = f.topic;
+      start_date = f.start_date ? `${f.start_date}-01` : f.start_date;
+      end_date = f.end_date ? `${f.end_date}-01` : null;
+    }
+    try {
+      await apiFetch(`/education/${id}`, { method: "DELETE" });
+      const d = await apiFetch("/education", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          institution: f.institution, degree_type, topic, start_date, end_date,
+          location: f.location || null, gpa: f.gpa || null,
+          details: details.length ? details : null,
+        }),
+      });
+      setEducationEntries(prev => sortEdu([...prev.filter(e => e.id !== id), d.education]));
+      setEditEduId(null);
+    } catch (e) { setEditEduError(e.message); }
   }
 
   function sortExp(entries) {
@@ -767,11 +834,11 @@ export default function Portfolio() {
                           </label>
                           <label className="edu-form-label">
                             Start Date *
-                            <input className="edu-form-input" type="month" value={expForm.start_date} onChange={e => setExpForm(f => ({ ...f, start_date: e.target.value }))} />
+                            <MonthPicker value={expForm.start_date} onChange={v => setExpForm(f => ({ ...f, start_date: v }))} />
                           </label>
                           <label className="edu-form-label">
                             End Date <span className="text-muted">(blank = Present)</span>
-                            <input className="edu-form-input" type="month" value={expForm.end_date} onChange={e => setExpForm(f => ({ ...f, end_date: e.target.value }))} />
+                            <MonthPicker value={expForm.end_date} onChange={v => setExpForm(f => ({ ...f, end_date: v }))} />
                           </label>
                           <label className="edu-form-label">
                             Location
@@ -920,11 +987,11 @@ export default function Portfolio() {
                             </label>
                             <label className="edu-form-label">
                               Start Date *
-                              <input className="edu-form-input" type="month" value={eduForm.start_date} onChange={e => setEduForm(f => ({ ...f, start_date: e.target.value }))} />
+                              <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
                             </label>
                             <label className="edu-form-label">
                               End Date <span className="text-muted">(blank = Present)</span>
-                              <input className="edu-form-input" type="month" value={eduForm.end_date} onChange={e => setEduForm(f => ({ ...f, end_date: e.target.value }))} />
+                              <MonthPicker value={eduForm.end_date} onChange={v => setEduForm(f => ({ ...f, end_date: v }))} />
                             </label>
                             <label className="edu-form-label">
                               Location
@@ -983,11 +1050,11 @@ export default function Portfolio() {
                             </label>
                             <label className="edu-form-label">
                               Issue Date *
-                              <input className="edu-form-input" type="month" value={eduForm.start_date} onChange={e => setEduForm(f => ({ ...f, start_date: e.target.value }))} />
+                              <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
                             </label>
                             <label className="edu-form-label">
                               Expiry Date <span className="text-muted">(blank = No Expiry)</span>
-                              <input className="edu-form-input" type="month" value={eduForm.end_date} onChange={e => setEduForm(f => ({ ...f, end_date: e.target.value }))} />
+                              <MonthPicker value={eduForm.end_date} onChange={v => setEduForm(f => ({ ...f, end_date: v }))} />
                             </label>
                             <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
                               Credential ID <span className="text-muted">(optional)</span>
@@ -1005,11 +1072,11 @@ export default function Portfolio() {
                             </label>
                             <label className="edu-form-label">
                               Start Date *
-                              <input className="edu-form-input" type="month" value={eduForm.start_date} onChange={e => setEduForm(f => ({ ...f, start_date: e.target.value }))} />
+                              <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
                             </label>
                             <label className="edu-form-label">
                               End Date <span className="text-muted">(blank = Present)</span>
-                              <input className="edu-form-input" type="month" value={eduForm.end_date} onChange={e => setEduForm(f => ({ ...f, end_date: e.target.value }))} />
+                              <MonthPicker value={eduForm.end_date} onChange={v => setEduForm(f => ({ ...f, end_date: v }))} />
                             </label>
                             <label className="edu-form-label">
                               Location
@@ -1053,35 +1120,95 @@ export default function Portfolio() {
                         <div key={entry.id} className="edu-timeline-item">
                           <div className={`edu-timeline-dot ${i === 0 ? "first" : ""} edu-dot-${entryTypeClass}`} />
                           <div className={`edu-timeline-content card${entryTypeClass === "cert" ? " edu-entry-cert" : ""}`}>
-                            <div className="edu-timeline-top">
-                              <div>
-                                <p className="edu-institution">{entry.institution}</p>
-                                <p className="edu-degree">
-                                  {entry.degree_type === "Certification" ? entry.topic : `${entry.degree_type} · ${entry.topic}`}
-                                </p>
+                            {editEduId === entry.id ? (
+                              <div className="edu-inline-edit">
+                                <div className="edu-inline-edit-grid">
+                                  <label className="edu-form-label">
+                                    {entryTypeClass === "cert" ? "Issuing Organization *" : entryTypeClass === "extra" ? "Club / Team *" : "Institution *"}
+                                    <input className="edu-form-input" value={editEduForm.institution} onChange={e => setEditEduForm(f => ({ ...f, institution: e.target.value }))} />
+                                  </label>
+                                  {(entryTypeClass === "postsecondary") && (
+                                    <label className="edu-form-label">Degree Type *
+                                      <input className="edu-form-input" value={editEduForm.degree_type} onChange={e => setEditEduForm(f => ({ ...f, degree_type: e.target.value }))} />
+                                    </label>
+                                  )}
+                                  {(entryTypeClass !== "secondary") && (
+                                    <label className="edu-form-label">
+                                      {entryTypeClass === "cert" ? "Certification Name *" : entryTypeClass === "extra" ? "Role / Activity *" : "Field of Study *"}
+                                      <input className="edu-form-input" value={editEduForm.topic} onChange={e => setEditEduForm(f => ({ ...f, topic: e.target.value }))} />
+                                    </label>
+                                  )}
+                                  {entryTypeClass === "secondary" ? (
+                                    <label className="edu-form-label">Graduation Year *
+                                      <input className="edu-form-input" type="number" placeholder="e.g. 2022" value={editEduForm.end_date ? editEduForm.end_date.substring(0, 4) : ""} onChange={e => setEditEduForm(f => ({ ...f, end_date: e.target.value }))} />
+                                    </label>
+                                  ) : (
+                                    <>
+                                      <label className="edu-form-label">{entryTypeClass === "cert" ? "Issue Date *" : "Start Date *"}
+                                        <MonthPicker value={editEduForm.start_date} onChange={v => setEditEduForm(f => ({ ...f, start_date: v }))} />
+                                      </label>
+                                      <label className="edu-form-label">{entryTypeClass === "cert" ? "Expiry Date" : "End Date"}
+                                        <MonthPicker value={editEduForm.end_date} onChange={v => setEditEduForm(f => ({ ...f, end_date: v }))} />
+                                      </label>
+                                    </>
+                                  )}
+                                  {entryTypeClass !== "cert" && (
+                                    <label className="edu-form-label">Location
+                                      <input className="edu-form-input" value={editEduForm.location} onChange={e => setEditEduForm(f => ({ ...f, location: e.target.value }))} />
+                                    </label>
+                                  )}
+                                  <label className="edu-form-label">
+                                    {entryTypeClass === "cert" ? "Credential ID" : "GPA"}
+                                    <input className="edu-form-input" value={editEduForm.gpa} onChange={e => setEditEduForm(f => ({ ...f, gpa: e.target.value }))} />
+                                  </label>
+                                  {(entryTypeClass === "postsecondary" || entryTypeClass === "secondary") && (
+                                    <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>Awards & Scholarships
+                                      <textarea className="edu-form-input" rows={2} placeholder="One per line" value={editEduForm.awards} onChange={e => setEditEduForm(f => ({ ...f, awards: e.target.value }))} />
+                                    </label>
+                                  )}
+                                </div>
+                                {editEduError && <p style={{ color: "#f87171", fontSize: "0.8rem", marginTop: 8 }}>{editEduError}</p>}
+                                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                                  <button className="btn-primary" style={{ fontSize: "0.8rem", padding: "6px 16px" }} onClick={() => saveEditEdu(entry.id)}>Save</button>
+                                  <button className="btn-secondary" style={{ fontSize: "0.8rem", padding: "6px 16px" }} onClick={() => { setEditEduId(null); setEditEduError(null); }}>Cancel</button>
+                                </div>
                               </div>
-                              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <p className="edu-dates">
-                                  {entry.degree_type === "Certification"
-                                    ? `Issued ${start}${entry.end_date ? ` · Expires ${end}` : " · No Expiry"}`
-                                    : `${start} — ${end}`}
-                                </p>
-                                {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
-                                {entry.gpa && (
-                                  <p className="edu-gpa">
-                                    {entry.degree_type === "Certification" ? `ID: ${entry.gpa}` : `GPA: ${entry.gpa}`}
+                            ) : (<>
+                              <div className="edu-timeline-top">
+                                <div>
+                                  <p className="edu-institution">{entry.institution}</p>
+                                  <p className="edu-degree">
+                                    {entry.degree_type === "Certification" ? entry.topic : `${entry.degree_type} · ${entry.topic}`}
                                   </p>
+                                </div>
+                                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                  <p className="edu-dates">
+                                    {entry.degree_type === "Certification"
+                                      ? `Issued ${start}${entry.end_date ? ` · Expires ${end}` : " · No Expiry"}`
+                                      : `${start} — ${end}`}
+                                  </p>
+                                  {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
+                                  {entry.gpa && (
+                                    <p className="edu-gpa">
+                                      {entry.degree_type === "Certification" ? `ID: ${entry.gpa}` : `GPA: ${entry.gpa}`}
+                                    </p>
+                                  )}
+                                </div>
+                                {!isPublic && (
+                                  <div style={{ display: "flex", gap: 4, flexShrink: 0, alignSelf: "flex-start" }}>
+                                    <button className="edu-edit-btn" onClick={() => startEditEdu(entry)} title="Edit entry">✎</button>
+                                    <button className="edu-delete-btn" onClick={() => deleteEducation(entry.id)} title="Remove entry">✕</button>
+                                  </div>
                                 )}
                               </div>
-                              {!isPublic && (
-                                <button className="edu-delete-btn" onClick={() => deleteEducation(entry.id)} title="Remove entry">✕</button>
+                              {entry.details && entry.details.length > 0 && (
+                                <div className="edu-awards-list">
+                                  {entry.details.map((award, idx) => (
+                                    <div key={idx} className="edu-award-card">{award}</div>
+                                  ))}
+                                </div>
                               )}
-                            </div>
-                            {entry.details && entry.details.length > 0 && (
-                              <ul className="edu-awards-list">
-                                {entry.details.map((award, idx) => <li key={idx}>{award}</li>)}
-                              </ul>
-                            )}
+                            </>)}
                           </div>
                         </div>
                       );
@@ -1103,6 +1230,33 @@ export default function Portfolio() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function MonthPicker({ value, onChange }) {
+  const MONTHS = [
+    ["01","January"],["02","February"],["03","March"],["04","April"],
+    ["05","May"],["06","June"],["07","July"],["08","August"],
+    ["09","September"],["10","October"],["11","November"],["12","December"],
+  ];
+  const now = new Date().getFullYear();
+  const years = Array.from({ length: 60 }, (_, i) => now + 5 - i);
+  const [yr, mo] = value ? value.split("-") : ["", ""];
+  function update(newYr, newMo) {
+    if (newYr && newMo) onChange(`${newYr}-${newMo}`);
+    else onChange("");
+  }
+  return (
+    <div className="month-picker">
+      <select className="edu-form-input month-picker-sel" value={mo || ""} onChange={e => update(yr, e.target.value)}>
+        <option value="">Month</option>
+        {MONTHS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+      <select className="edu-form-input month-picker-sel" value={yr || ""} onChange={e => update(e.target.value, mo)}>
+        <option value="">Year</option>
+        {years.map(y => <option key={y} value={String(y)}>{y}</option>)}
+      </select>
     </div>
   );
 }
