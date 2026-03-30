@@ -48,7 +48,7 @@ export default function Navbar({ onLogout, user }) {
 
   return (
     <nav className="navbar" onClick={() => setToolsOpen(false)}>
-      <Link to="/" className={`navbar-brand nav-link${isDashboard ? " active" : ""}`}>Digital Artifact Mining</Link>
+      <Link to="/" className={`navbar-brand nav-link${isDashboard ? " active" : ""}`}>NovaHire</Link>
       <div className="navbar-links">
         {mainLinks.map(({ to, label }) => {
           const isProjects = to === "/projects" && (pathname === "/projects" || pathname === "/upload");
