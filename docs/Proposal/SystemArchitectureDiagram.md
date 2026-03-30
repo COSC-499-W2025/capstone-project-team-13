@@ -1,10 +1,13 @@
 # System Architecture Diagram
-![System Architecture Diagram](Diagram-Images/SystemArchitectureRevised.png)
+![System Architecture Diagram](Diagram-Images/SystemArchitectureDiagramFinal)
 
 Our system architecture diagram outlines a three-layer architecture including Front End, Back End, and a Database Layer, for a data analysis and visualization system.
 
 Front End:
 Handles user interaction, configuration, and permissions. The User Interface connects components like Program Init, and retrieving Data Summaries. It manages data filters, consent forms, and permission requests, ensuring privacy and ethical use.
+
+FASTAPI Layer:
+Enables communication between the frontend UI and backend logic.
 
 Back End:
 Performs the main data processing and analysis in three stages: 
