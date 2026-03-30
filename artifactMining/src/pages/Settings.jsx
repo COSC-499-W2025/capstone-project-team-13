@@ -931,7 +931,10 @@ export default function Settings({ onLogout }) {
     return (
       <div className="settings-section-panel">
         <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
-          <h2 style={{ marginBottom: 8 }}>NovaHire</h2>
+          <h2 style={{ marginBottom: 4 }}>NovaHire</h2>
+          <p className="settings-section-description" style={{ maxWidth: 520, margin: "0 auto 6px", fontSize: "0.8rem", opacity: 0.7, fontStyle: "italic" }}>
+            "Nova" means new in Italian — as in a new hire.
+          </p>
           <p className="settings-section-description" style={{ maxWidth: 520, margin: "0 auto 16px" }}>
             A local-first tool for analyzing your projects, discovering your skills,
             and building professional portfolios and resumes, powered by AI.
