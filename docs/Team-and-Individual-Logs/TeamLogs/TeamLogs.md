@@ -739,7 +739,7 @@ All tests are passing except 9. These are non-breaking changes to the system so 
 | **Maya Knutsvig** | made multiple updates to portfolio page, updated projects page, updated dashbaord customization, updates settings page, fixed AI token limit bug, project type routing, and evidence extraction, implemented AI interview prep feature, fixed light mode and dark mode inconsistencies, implemented avatar upload, implemented resume completeness scores, implemented dashboard onboarding, implemented search bar | 544, 523, 522, 521, 520, 513, 514, 512, 511, 510, 509, 508, 493, 507 |
 | **Prina Mehta** | Added 404 page, updated settings page, implemented dashboard columns, improves zip extraction, coding projects importance score, implemented portfolio showcase, impelmented skills timeline and heatmap, made many updates to frontend  | 517, 518, 519, 489, 490 |
 | **Jackson Wilson** | Updated navigation bar, added charts to dashboard, updated file type detection, implemented github usernames, fixed frontend bugs, implemented time estimation for project upload | 495, 500, 505, 516, 537, 554, 572 |
-| **T’Olu Akinwande** | Updated Tests | 558 |
+| **T’Olu Akinwande** | Implemented all front end testing files and updated all failing back end tests. Created DFD Level 0 and Level 1 Diagrams and Completed Test Report and updated read me with these files |506, 532, 545, 551, 552, 556, 557, 560 - 568|
 
 Backlog:
 ![alt text](teamLogImages/BacklogT2W11.png)
