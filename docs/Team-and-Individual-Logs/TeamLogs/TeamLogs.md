@@ -9,6 +9,7 @@
 - [T2 Week 8](#term-2-week-8-team-log)
 - [T2 Week 9](#term-2-week-9-team-log)
 - [T2 Week 10](#term-2-week-10-team-log)
+- [T2 Week 11+12](#term-2-week-11-12-team-log)
 
 ## Weeks 3 - Sept 15-21, 2025
 The features included in this milestone were to work together as a group, setting up necessary documentation such as google drive folder, setting up our capstone repository to work on our individual and team logs, working on our project requirements, and creating a project backlog within our repository. Due to the early stages of the project, the rest is unable to be done at the moment. 
@@ -693,8 +694,6 @@ All tests are passing except 4. This is due to a PR that made changes to an exis
 - We need to finalize our decisions regarding aeathetics (frontend styling) as we are currently being held back because of this.
 
 
-
-
 ## Term 2 Week 10 Team Log
 **Date Range:** Mar 9 - March 15, 2026
 | Team Member | Work Completed / Focus This Week | Related Issue # |
@@ -729,4 +728,42 @@ All tests are passing except 9. These are non-breaking changes to the system so 
   
 **What didn’t go as planned:**
 - Our tests still need to be fixed, but everyone is working on different elements and haven't found the time.
+
+
+## Term 2 Week 11-12 Team Log
+**Date Range:** Mar 16 - March 29, 2026
+| Team Member | Work Completed / Focus This Week | PR # |
+|--------------|----------------------------------|-----------------|
+| **Illina Islam** | Updated resume UI, updated documentation, implemented multiple resume features, implemented AI resume bullets, implemented resume export, made multiple updates to portfolio page, updated public mode for portfolio | 571, 550, 549, 538, 527, 488, 487, 485 |
+| **Sana Shah** | Improved skills analysis efficiency, implemented private/public mode for portfolio, added thumbnails to portfolio page, updated system architecture diagram, made multiple updates to portfolio page, implemented public portfolio browsing, UI updates | 555, 542, 541, 539, 528, 494 |
+| **Maya Knutsvig** | made multiple updates to portfolio page, updated projects page, updated dashbaord customization, updates settings page, fixed AI token limit bug, project type routing, and evidence extraction, implemented AI interview prep feature, fixed light mode and dark mode inconsistencies, implemented avatar upload, implemented resume completeness scores, implemented dashboard onboarding, implemented search bar | 544, 523, 522, 521, 520, 513, 514, 512, 511, 510, 509, 508, 493, 507 |
+| **Prina Mehta** | Added 404 page, updated settings page, implemented dashboard columns, improves zip extraction, coding projects importance score, implemented portfolio showcase, impelmented skills timeline and heatmap, made many updates to frontend  | 517, 518, 519, 489, 490 |
+| **Jackson Wilson** | Updated navigation bar, added charts to dashboard, updated file type detection, implemented github usernames, fixed frontend bugs, implemented time estimation for project upload | 495, 500, 505, 516, 537, 554, 572 |
+| **T’Olu Akinwande** | Implemented all front end testing files and updated all failing back end tests. Created DFD Level 0 and Level 1 Diagrams and Completed Test Report and updated read me with these files |506, 532, 545, 551, 552, 556, 557, 560 - 568|
+
+Backlog:
+![alt text](teamLogImages/BacklogT2W11.png)
+
+Burnup Chart:
+![alt text](teamLogImages/BurnupT2W11.png)
+
+In-Progress Tasks:
+![alt text](teamLogImages/InProgressT2W11.png)
+
+Completed Tasks:
+![alt text](teamLogImages/completedT2W11.png)
+
+### Test Report
+![alt text](teamLogImages/TestsT2W11.png)
+All tests are passing!
+
+### Reflection Points
+
+**What went well:** 
+- Majorty of the team was able to collectively make finishing touches to the frontend, as well as make a script for the milestone 3 demo. 
+- Our team members made significant progress in updating the frontend for submission in these weeks.
+  
+**What didn’t go as planned:**
+- There were minor bugs in the UI, (ex. styling inconsistencies) that needed to be fixed and were time consuming.
+
 
