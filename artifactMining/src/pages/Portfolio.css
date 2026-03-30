@@ -100,7 +100,7 @@
 }
 .port-about-bio-section { width: 100%; display: flex; flex-direction: column; gap: 10px; }
 .port-about-bio-label {
-  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.12em;
   color: #6b7a99; font-weight: 700;
 }
 .port-about-bio-wrap { position: relative; width: 100%; }
@@ -136,7 +136,7 @@ body[data-theme="light"] .port-about-saved { color: #059669; }
   color: rgba(236,238,255,0.7); margin: 0; word-break: break-word; overflow-wrap: anywhere;
 }
 .port-about-bio-text {
-  font-size: 1rem; line-height: 1.85; color: #eceeff;
+  font-size: 1.08rem; line-height: 1.85; color: #eceeff;
   margin: 0; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;
 }
 
