@@ -698,7 +698,7 @@ export default function Settings({ onLogout }) {
     return (
       <div className="settings-section-panel">
         <h2>How to Use the App</h2>
-        <p className="settings-section-description">A quick guide to getting the most out of Digital Artifact Mining.</p>
+        <p className="settings-section-description">A quick guide to getting the most out of  NovaHire.</p>
 
         <div className="settings-card" style={{ marginBottom: 24 }}>
           <div className="settings-card-header"><div><h3>Getting Started</h3></div></div>
@@ -836,7 +836,7 @@ export default function Settings({ onLogout }) {
       <div className="settings-section-panel">
         <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
           <div style={{ fontSize: "2.8rem", marginBottom: 12 }}>⛏</div>
-          <h2 style={{ marginBottom: 8 }}>Digital Artifact Mining</h2>
+          <h2 style={{ marginBottom: 8 }}>NovaHire</h2>
           <p className="settings-section-description" style={{ maxWidth: 520, margin: "0 auto 16px" }}>
             A local-first tool for analyzing your projects, discovering your skills,
             and building professional portfolios and resumes, powered by AI.
@@ -853,7 +853,7 @@ export default function Settings({ onLogout }) {
             <div className="settings-card-header"><div><h3>What it does</h3></div></div>
             <div className="settings-card-body">
               <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: "0 0 10px" }}>
-                Digital Artifact Mining helps students and developers turn their collection of
+                NovaHire helps students and developers turn their collection of
                 project files into a structured portfolio. Upload any project - code, documents,
                 images, or media - and the system automatically extracts metadata, detects
                 languages and frameworks, and uses AI to generate descriptions and surface
