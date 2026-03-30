@@ -420,6 +420,9 @@ class User(Base):
     about_subtitle = Column(Text, nullable=True)
     about_bio = Column(Text, nullable=True)
 
+    # Contact info (stored as JSON blob)
+    _contact_info_data = Column('contact_info_json', Text, nullable=True)
+
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')
@@ -456,6 +459,19 @@ class User(Base):
     @resume.setter
     def resume(self, value: Optional[Dict[str, Any]]):
         self._resume = json.dumps(value) if value else None
+
+    @property
+    def contact_info_data(self) -> Optional[Dict[str, Any]]:
+        if not self._contact_info_data:
+            return None
+        try:
+            return json.loads(self._contact_info_data)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return None
+
+    @contact_info_data.setter
+    def contact_info_data(self, value: Optional[Dict[str, Any]]):
+        self._contact_info_data = json.dumps(value) if value is not None else None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
