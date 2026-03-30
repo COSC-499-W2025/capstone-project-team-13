@@ -1,3 +1,38 @@
+import { Joyride } from 'react-joyride';
+// Joyride walkthrough steps for Portfolio page
+const walkthroughSteps = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: 'Welcome to Your Portfolio!',
+    content: 'This page showcases all your projects, skills, and evidence. Let’s take a quick tour!',
+    disableBeacon: true,
+  },
+  {
+    target: '.port-hero',
+    title: 'Portfolio Header',
+    content: 'Here you can edit your portfolio\s title, change portfolio visibility, and access your web showcase. To generate a portfolio, simply upload projects and click "Regenerate".',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-stat-row',
+    title: 'Portfolio Stats',
+    content: 'See a summary of your projects, code, files, and skills.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-sort-row',
+    title: 'Sort & Layout',
+    content: 'Sort your projects and switch between list or grid layouts.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-viz-card-sec',
+    title: 'Skills Timeline & Activity Heatmap',
+    content: 'See when you used different skills and view your project activity over time.',
+    spotlightPadding: 6,
+  },
+];
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { apiFetch } from "../apiClient";
@@ -56,6 +91,7 @@ function normalizeContactInfo(raw) {
   return contact;
 }
 
+
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,6 +143,15 @@ export default function Portfolio() {
   const [expDesc, setExpDesc] = useState(() => localStorage.getItem("exp_desc") || "");
   const [contactInfo, setContactInfo] = useState(DEFAULT_CONTACT);
   const nav = useNavigate();
+
+  // Joyride walkthrough state
+  const [runWalkthrough, setRunWalkthrough] = useState(() => localStorage.getItem('portfolio_walkthrough_seen') !== '1');
+
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('portfolio_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
 
   useEffect(() => {
     const sync = () => setShowEmojis(localStorage.getItem("dash_show_emojis") !== "false");
