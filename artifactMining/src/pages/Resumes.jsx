@@ -1458,26 +1458,6 @@ export default function Resumes() {
               </button>
             </div>
 
-            {/* ── Edit group ── */}
-            <div className="resume-ctrl-group">
-              <span className="resume-ctrl-label">Edit</span>
-              <div className="resume-ctrl-row">
-                <button
-                  className={`resume-btn ${editing ? "resume-btn-active" : "resume-btn-secondary"}`}
-                  onClick={() => setEditing(e => !e)}
-                >
-                  {editing ? "Exit Edit" : "Edit Mode"}
-                </button>
-                <button
-                  className="resume-btn resume-btn-save"
-                  onClick={saveChanges}
-                  disabled={!dirty || loading || (pageCount !== null && pageCount > 1)}
-                >
-                  {loading ? "Saving…" : "Save Changes"}
-                </button>
-              </div>
-            </div>
-
             {/* ── Generate group ── */}
             <div className="resume-ctrl-group">
               <span className="resume-ctrl-label">Generate</span>
@@ -1562,6 +1542,26 @@ export default function Resumes() {
             </div>
 
             <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.08)", margin: "4px 0 10px" }} />
+
+            {/* ── Edit group ── */}
+            <div className="resume-ctrl-group">
+              <span className="resume-ctrl-label">Edit</span>
+              <div className="resume-ctrl-row">
+                <button
+                  className={`resume-btn ${editing ? "resume-btn-active" : "resume-btn-secondary"}`}
+                  onClick={() => setEditing(e => !e)}
+                >
+                  {editing ? "Exit Edit" : "Edit Mode"}
+                </button>
+                <button
+                  className="resume-btn resume-btn-save"
+                  onClick={saveChanges}
+                  disabled={!dirty || loading || (pageCount !== null && pageCount > 1)}
+                >
+                  {loading ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </div>
 
             {/* ── Delete ── */}
             <div className="resume-ctrl-group">

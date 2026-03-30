@@ -83,6 +83,24 @@ def extract_text(file_path):
         return ""
 
 
+# --- Precompiled patterns (built once at import time) ---
+_COMPILED_SKILL_PATTERNS = {
+    skill: [
+        (kw.lower(), re.compile(r'\b' + re.escape(kw.lower()) + r'\b'))
+        for kw in keywords
+    ]
+    for skill, keywords in SKILL_KEYWORDS.items()
+}
+
+# For the word-tokenization path in analyze_folder_for_skills:
+# keep only single-word keywords (multi-word phrases aren't found by the word
+# tokenizer anyway) as frozensets for O(1) membership tests.
+_SKILL_SINGLE_WORD_SETS = {
+    skill: frozenset(kw.lower() for kw in keywords if ' ' not in kw.lower())
+    for skill, keywords in SKILL_KEYWORDS.items()
+}
+
+
 def count_keyword_matches(text: str, keywords: list[str]) -> int:
     """
     Counts both single-word and multi-word keyword occurrences in text.
@@ -110,38 +128,31 @@ def normalize_text(text: str) -> str:
 def analyze_document_for_skills(file_path):
     """
     Analyze a single document and return ranked skill list.
-    
+
     Args:
         file_path: Path to a single document file
-    
+
     Returns:
         List of tuples: [(skill, count), ...] sorted by count descending
     """
-    skill_counts = defaultdict(int)
-    
-    # Extract text from the document
     text = extract_text(file_path)
-    
     if not text:
         return []
-    
-    words = re.findall(r"\b[a-z]+\b", text.lower())
-    
-    # Count matches for each skill
-    for skill, keywords in SKILL_KEYWORDS.items():
-        lower_keywords = [k.lower() for k in keywords]
-        matches = count_keyword_matches(text, keywords)
-        if matches > 0:
-            skill_counts[skill] = matches
-    
-    # Filter zero-count skills and sort
-    final_skills = sorted(
+
+    text_lower = text.lower()
+    skill_counts = defaultdict(int)
+
+    # Use precompiled patterns — no re-compilation per call
+    for skill, patterns in _COMPILED_SKILL_PATTERNS.items():
+        count = sum(len(pat.findall(text_lower)) for _, pat in patterns)
+        if count > 0:
+            skill_counts[skill] = count
+
+    return sorted(
         [(s, c) for s, c in skill_counts.items() if c > 0],
         key=lambda x: x[1],
         reverse=True
     )
-    
-    return final_skills
 
 
 # Skill Analysis - Folder
@@ -161,18 +172,26 @@ def analyze_folder_for_skills(folder_path):
         file_path = os.path.join(folder_path, filename)
         if not os.path.isfile(file_path):
             continue
-        if file_path.endswith((".txt", ".pdf", ".docx")):
-            text = extract_text(file_path)
-            words = re.findall(r"\b[a-z]+\b", text.lower())
+        if not file_path.endswith((".txt", ".pdf", ".docx")):
+            continue
 
-            # Count matches for each skill
-            for skill, keywords in SKILL_KEYWORDS.items():
-                lower_keywords = [k.lower() for k in keywords]
-                matches = sum(word in lower_keywords for word in words)
-                if matches > 0:
-                    skill_counts[skill] += matches
-                    for word in set(words) & set(lower_keywords):
-                        word_to_skills[word].append(skill)
+        text = extract_text(file_path)
+        if not text:
+            continue
+
+        text_lower = text.lower()
+        # Tokenize once; use Counter for O(1) per-word frequency lookups
+        word_counter = Counter(re.findall(r"\b[a-z]+\b", text_lower))
+        words_set = set(word_counter)
+
+        for skill, kw_set in _SKILL_SINGLE_WORD_SETS.items():
+            matching = kw_set & words_set  # set intersection — O(min(|kw_set|, |words_set|))
+            if not matching:
+                continue
+            matches = sum(word_counter[w] for w in matching)
+            skill_counts[skill] += matches
+            for word in matching:
+                word_to_skills[word].append(skill)
 
     # Handle overlapping skills: only keep the highest count in overlapping groups
     overlapping_groups = []
@@ -189,11 +208,8 @@ def analyze_folder_for_skills(folder_path):
             if s != max_skill:
                 skill_counts[s] = 0
 
-    # Filter zero-count skills and sort
-    final_skills = sorted(
+    return sorted(
         [(s, c) for s, c in skill_counts.items() if c > 0],
         key=lambda x: x[1],
         reverse=True
     )
-
-    return final_skills
