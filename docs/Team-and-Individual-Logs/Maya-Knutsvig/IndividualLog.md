@@ -1,7 +1,8 @@
 ## Weekly Navigation
 
 ### Term 2 (Semester 2)
-- [Log 17 – Semester 2 Week 10 (March 09–15, 2026)](#log-12)
+- [Log 18 – Semester 2 Week 11 & Week 12 (March 16-29, 2026)](#log-18)
+- [Log 17 – Semester 2 Week 10 (March 09–15, 2026)](#log-17)
 - [Log 16 – Semester 2 Week 9 (March 02-08, 2026)](#log-16)
 - [Log 15 – Semester 2 Week 5 (Feb 02-08, 2026)](#log-15)
 - [Log 14 – Semester 2 Week 3 (Jan 19–25, 2026)](#log-14)
@@ -487,3 +488,48 @@ None
 ### Plan for Next Week
 
 390 in progress + work on APIs if needed and if APIs are done then add the frontend portion of it
+
+
+
+
+
+
+## Log 18
+
+## Date Range: Semester 2 Week 11 – Week 12, March 16-29, 2026
+
+## ![week 18 features](weeklyfeaturesimages/week19features.png)
+
+### Tasks Worked On
+
+### Coding
+
+Week 11:
+made multiple updates to portfolio page, updated projects page, updated dashbaord customization, updates settings page, fixed AI token limit bug, project type routing, and evidence extraction, implemented AI interview prep feature, fixed light mode and dark mode inconsistencies, implemented avatar upload, implemented resume completeness scores, implemented dashboard onboarding, implemented search bar
+
+Week 12:
+Going through entire project, making an onboarding, improving UI, ensuring UI is consistent, fixing/making the portfolio page, fixing AI analyses, fixing auto extract analyses, documentation
+
+### Testing / Debugging
+
+- Manual debugging this week ensuring everything was working + visually appealing
+
+### Review / Collaboration
+
+Some of us were active throughout the week
+
+### Recap of Weekly Goals
+
+Fully functional project ready for video demo and submission
+### Project Plan Ownership
+
+- **Assigned Features:** Portfolio, Projects, Settings, Interview prep, all pages really
+- **Project Board Tasks:** 544, 523, 522, 521, 520, 513, 514, 512, 511, 510, 509, 508, 493, 507
+- **Status:** Done
+
+### Blockers or Issues
+
+Stated in Team Formation
+### Plan for Next Week
+
+None
