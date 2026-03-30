@@ -1,53 +1,53 @@
+import { Joyride } from 'react-joyride';
+// Joyride walkthrough steps for Portfolio page
+const walkthroughSteps = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: 'Welcome to Your Portfolio!',
+    content: 'This page showcases all your projects, skills, and evidence. Let’s take a quick tour!',
+    disableBeacon: true,
+  },
+  {
+    target: '.port-hero',
+    title: 'Portfolio Header',
+    content: 'Here you can edit your portfolio\s title, change portfolio visibility, and access your web showcase. To generate a portfolio, simply upload projects and click "Regenerate".',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-stat-row',
+    title: 'Portfolio Stats',
+    content: 'See a summary of your projects, code, files, and skills.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-sort-row',
+    title: 'Sort & Layout',
+    content: 'Sort your projects and switch between list or grid layouts.',
+    spotlightPadding: 6,
+  },
+  {
+    target: '.port-viz-card-sec',
+    title: 'Skills Timeline & Activity Heatmap',
+    content: 'See when you used different skills and view your project activity over time.',
+    spotlightPadding: 6,
+  },
+];
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { apiFetch, projectName } from "../apiClient";
+import { apiFetch } from "../apiClient";
 import SkillsTimeline from "./SkillsTimeline";
 import ActivityHeatmap from "./ActivityHeatmap";
+import {
+  typeColor, educationEntryTypeOf, experienceTypeOf,
+  ContactField, CustomPresenceField,
+  ProjectCard, ProjectRow,
+} from "./PortfolioShared";
 import "./Portfolio.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
 const STAT_ICONS = { Projects: "📁", "Lines of Code": "💻", Files: "🗂️", "Word Count": "📝", Skills: "⚡" };
-
-const TYPE_COLORS = {
-  python:     "#3b82f6", javascript: "#f59e0b", typescript: "#6366f1",
-  java:       "#ef4444", web:        "#10b981", mobile:     "#8b5cf6",
-  ml:         "#ec4899", data:       "#14b8a6", default:    "#6366f1",
-};
-function typeColor(type) {
-  const t = (type || "").toLowerCase();
-  for (const [key, col] of Object.entries(TYPE_COLORS)) if (t.includes(key)) return col;
-  return TYPE_COLORS.default;
-}
-
-function thumbUrl(path) {
-  if (!path) return null;
-  if (path.startsWith("http")) return path;
-  const filename = path.split(/[/\\]/).pop();
-  return `${API_BASE}/uploads/${filename}`;
-}
-
-function educationEntryTypeOf(entry) {
-  const degreeType = (entry?.degree_type || "").trim();
-  const topic = (entry?.topic || "").trim();
-  if (degreeType === "Certification") return "certifications";
-  if (degreeType === "Extra Curricular") return "extracurricular";
-  if (degreeType === "Secondary School Diploma" || topic === "General Studies") return "secondary";
-  return "postsecondary";
-}
-
-function experienceTypeOf(entry) {
-  const explicit = (entry?.experience_type || "").toLowerCase().trim();
-  if (["work", "internship", "volunteering", "freelance"].includes(explicit)) return explicit;
-
-  const company = (entry?.company || "").toLowerCase();
-  const role = (entry?.role || "").toLowerCase();
-  const combined = `${company} ${role}`;
-  if (combined.includes("intern")) return "internship";
-  if (combined.includes("volunteer")) return "volunteering";
-  if (combined.includes("freelance") || combined.includes("contract") || combined.includes("self-employed")) return "freelance";
-  return "work";
-}
 
 const SORT_OPTIONS = [
   { value: "importance", label: "Importance" },
@@ -90,6 +90,7 @@ function normalizeContactInfo(raw) {
     : [];
   return contact;
 }
+
 
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState(null);
@@ -140,14 +141,17 @@ export default function Portfolio() {
   const [expTitle, setExpTitle] = useState(() => localStorage.getItem("exp_title") || "Experience");
   const [expSubtitle, setExpSubtitle] = useState(() => localStorage.getItem("exp_subtitle") || "Work & Volunteering");
   const [expDesc, setExpDesc] = useState(() => localStorage.getItem("exp_desc") || "");
-  const [contactInfo, setContactInfo] = useState(() => {
-    try {
-      return normalizeContactInfo(JSON.parse(localStorage.getItem("portfolio_contact") || "{}"));
-    } catch {
-      return DEFAULT_CONTACT;
-    }
-  });
+  const [contactInfo, setContactInfo] = useState(DEFAULT_CONTACT);
   const nav = useNavigate();
+
+  // Joyride walkthrough state
+  const [runWalkthrough, setRunWalkthrough] = useState(() => localStorage.getItem('portfolio_walkthrough_seen') !== '1');
+
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('portfolio_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
 
   useEffect(() => {
     const sync = () => setShowEmojis(localStorage.getItem("dash_show_emojis") !== "false");
@@ -155,12 +159,28 @@ export default function Portfolio() {
     return () => window.removeEventListener("dash-emojis-updated", sync);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("portfolio_contact", JSON.stringify(contactInfo));
-  }, [contactInfo]);
+  const contactSaveTimer = React.useRef(null);
+  function saveContact(info) {
+    clearTimeout(contactSaveTimer.current);
+    contactSaveTimer.current = setTimeout(() => {
+      apiFetch("/portfolio/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(info),
+      }).catch(() => {});
+    }, 800);
+  }
+
+  function setContactInfoAndSave(updater) {
+    setContactInfo(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      saveContact(next);
+      return next;
+    });
+  }
 
   function addCustomPresence() {
-    setContactInfo(info => ({
+    setContactInfoAndSave(info => ({
       ...info,
       customPresences: [
         ...(info.customPresences || []),
@@ -170,7 +190,7 @@ export default function Portfolio() {
   }
 
   function updateCustomPresence(id, field, value) {
-    setContactInfo(info => ({
+    setContactInfoAndSave(info => ({
       ...info,
       customPresences: (info.customPresences || []).map(item =>
         item.id === id ? { ...item, [field]: value } : item
@@ -179,7 +199,7 @@ export default function Portfolio() {
   }
 
   function removeCustomPresence(id) {
-    setContactInfo(info => ({
+    setContactInfoAndSave(info => ({
       ...info,
       customPresences: (info.customPresences || []).filter(item => item.id !== id),
     }));
@@ -242,6 +262,9 @@ export default function Portfolio() {
         .catch(() => {});
       apiFetch("/work-history")
         .then(d => setExpEntries(sortExp(d.work_history || [])))
+        .catch(() => {});
+      apiFetch("/portfolio/contact")
+        .then(d => setContactInfo(normalizeContactInfo(d.contact_info || {})))
         .catch(() => {});
     }
   }, [authed, includeHidden]);
@@ -1644,7 +1667,7 @@ export default function Portfolio() {
                       className="port-contact-intro-input"
                       placeholder="Add a short summary about who you are, what you do, and what these contact details are for..."
                       value={contactInfo.intro}
-                      onChange={e => setContactInfo(info => ({ ...info, intro: e.target.value }))}
+                      onChange={e => setContactInfoAndSave(info => ({ ...info, intro: e.target.value }))}
                       rows={4}
                       maxLength={320}
                     />
@@ -1662,7 +1685,7 @@ export default function Portfolio() {
                       type="text"
                       placeholder="e.g. Open to Work"
                       value={contactInfo.availability}
-                      onChange={e => setContactInfo(info => ({ ...info, availability: e.target.value }))}
+                      onChange={e => setContactInfoAndSave(info => ({ ...info, availability: e.target.value }))}
                       maxLength={120}
                     />
                   )}
@@ -1682,7 +1705,7 @@ export default function Portfolio() {
                       type="email"
                       placeholder="name@example.com"
                       href={contactInfo.email ? `mailto:${contactInfo.email}` : ""}
-                      onChange={value => setContactInfo(info => ({ ...info, email: value }))}
+                      onChange={value => setContactInfoAndSave(info => ({ ...info, email: value }))}
                     />
                     <ContactField
                       label="Phone"
@@ -1691,7 +1714,7 @@ export default function Portfolio() {
                       type="text"
                       placeholder="(555) 123-4567"
                       href={contactInfo.phone ? `tel:${contactInfo.phone.replace(/\s+/g, "")}` : ""}
-                      onChange={value => setContactInfo(info => ({ ...info, phone: value }))}
+                      onChange={value => setContactInfoAndSave(info => ({ ...info, phone: value }))}
                     />
                     <ContactField
                       label="Location"
@@ -1699,7 +1722,7 @@ export default function Portfolio() {
                       isPublic={isPublic}
                       type="text"
                       placeholder="Vancouver, BC"
-                      onChange={value => setContactInfo(info => ({ ...info, location: value }))}
+                      onChange={value => setContactInfoAndSave(info => ({ ...info, location: value }))}
                     />
                   </div>
                 </div>
@@ -1721,7 +1744,7 @@ export default function Portfolio() {
                       type="url"
                       placeholder="https://your-site.com"
                       href={contactInfo.website}
-                      onChange={value => setContactInfo(info => ({ ...info, website: value }))}
+                      onChange={value => setContactInfoAndSave(info => ({ ...info, website: value }))}
                     />
                     <ContactField
                       label="LinkedIn"
@@ -1730,7 +1753,7 @@ export default function Portfolio() {
                       type="url"
                       placeholder="https://linkedin.com/in/username"
                       href={contactInfo.linkedin}
-                      onChange={value => setContactInfo(info => ({ ...info, linkedin: value }))}
+                      onChange={value => setContactInfoAndSave(info => ({ ...info, linkedin: value }))}
                     />
                     <ContactField
                       label="GitHub"
@@ -1739,7 +1762,7 @@ export default function Portfolio() {
                       type="url"
                       placeholder="https://github.com/username"
                       href={contactInfo.github}
-                      onChange={value => setContactInfo(info => ({ ...info, github: value }))}
+                      onChange={value => setContactInfoAndSave(info => ({ ...info, github: value }))}
                     />
                     {(contactInfo.customPresences || []).map(item => (
                       <CustomPresenceField

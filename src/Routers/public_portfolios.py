@@ -26,6 +26,7 @@ def list_public_portfolios():
                 "project_count": len(visible),
                 "top_skills": unique_skills,
                 "summary": portfolio.get("summary_text", ""),
+                "about_subtitle": getattr(u, "about_subtitle", None) or "",
             })
         return {"portfolios": result, "total": len(result)}
     finally:
@@ -41,10 +42,20 @@ def get_public_portfolio(user_id: int):
     portfolio = user.portfolio or {}
     projects = portfolio.get("projects", [])
     visible = [p for p in projects if not p.get("is_hidden", False)]
+
+    education = db_manager.get_education_for_user(user_id)
+    work_history = db_manager.get_work_history_for_user(user_id)
+
     return {
         "user_id": user.id,
         "display_name": f"{user.first_name} {user.last_name}",
+        "about_name": getattr(user, "about_name", None) or "",
+        "about_subtitle": getattr(user, "about_subtitle", None) or "",
+        "about_bio": getattr(user, "about_bio", None) or "",
         "projects": visible,
         "stats": portfolio.get("stats", {}),
         "summary_text": portfolio.get("summary_text", ""),
+        "education": [e.to_dict() for e in education],
+        "work_history": [w.to_dict() for w in work_history],
+        "contact_info": user.contact_info_data or {},
     }

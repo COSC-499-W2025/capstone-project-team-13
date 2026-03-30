@@ -1,3 +1,4 @@
+import { Joyride } from 'react-joyride';
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import "./Settings.css";
@@ -5,6 +6,72 @@ import "./Settings.css";
 const API_BASE = "http://127.0.0.1:8000";
 
 export default function Settings({ onLogout }) {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('settings_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('settings_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Settings',
+      content: 'This page lets you manage your account, privacy, dashboard, and more. Let’s take a quick tour!'
+    },
+    {
+      target: '.settings-nav-item:nth-child(1)',
+      placement: 'right',
+      title: 'Account Settings',
+      content: 'Manage your profile, avatar, and account details here.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(2)',
+      placement: 'right',
+      title: 'Consent',
+      content: 'Grant or revoke file and AI consent for your data.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(3)',
+      placement: 'right',
+      title: 'Privacy',
+      content: 'Configure excluded folders and file types for privacy.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(4)',
+      placement: 'right',
+      title: 'Dashboard Settings',
+      content: 'Customize dashboard display options like emojis, streak, and tips.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(5)',
+      placement: 'right',
+      title: 'Current Configuration',
+      content: 'View a live summary of your current system and privacy settings.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(6)',
+      placement: 'right',
+      title: 'Community Portfolios',
+      content: 'Explore and share public portfolios from the community.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(7)',
+      placement: 'right',
+      title: 'How to Use the App',
+      content: 'Find keyboard shortcuts and feature guides for the app.'
+    },
+    {
+      target: '.settings-nav-item:nth-child(8)',
+      placement: 'right',
+      title: 'About',
+      content: 'Learn more about this app, its creators, and version info.'
+    }
+  ];
   const [searchParams] = useSearchParams();
   const [signupForm, setSignupForm] = useState({ first_name: "", last_name: "", email: "", password: "" });
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -695,64 +762,93 @@ export default function Settings({ onLogout }) {
       { icon: "🎤", name: "Interview Prep", desc: "Generate personalised STAR-format interview answers from your projects." },
       { icon: "🌐", name: "Web Showcase", desc: "A public-facing showcase page you can share with employers." },
     ];
+    
+    function resetWalkthroughs() {
+      [
+        'dashboard_walkthrough_seen',
+        'upload_walkthrough_seen',
+        'resumes_walkthrough_seen',
+        'analysis_walkthrough_seen',
+        'interview_walkthrough_seen',
+        'settings_walkthrough_seen',
+        'skills_walkthrough_seen',
+        'projects_walkthrough_seen',
+        'portfolio_walkthrough_seen',
+        'projects_page_walkthrough_seen',
+      ].forEach(key => localStorage.removeItem(key));
+      window.alert('All walkthroughs have been reset. Reload a page to see its tour again.');
+    }
+    
+    // ...existing code...
+    // Render the original guide section, then add the reset button below it
     return (
-      <div className="settings-section-panel">
-        <h2>How to Use</h2>
-        <p className="settings-section-description">A quick guide to getting the most out of  NovaHire.</p>
+      <>
+        <div className="settings-section-panel">
+          <h2>How to Use the App</h2>
+          <p className="settings-section-description">A quick guide to getting the most out of NovaHire.</p>
 
-        <div className="settings-card" style={{ marginBottom: 24 }}>
-          <div className="settings-card-header"><div><h3>Getting Started</h3></div></div>
-          <div className="settings-card-body">
-            <ol style={{ paddingLeft: 20, lineHeight: 2, margin: 0 }}>
-              <li>Upload a project from the <strong>Projects</strong> page (zip file, text doc, or media).</li>
-              <li>Go to <strong>Analysis</strong> and run AI Analysis to generate a description and extract skills.</li>
-              <li>Visit <strong>Portfolio</strong> and click <strong>↻ Regenerate</strong> to build your ranked portfolio.</li>
-              <li>Head to <strong>Resume</strong> to auto-generate a resume from your data.</li>
-              <li>Use <strong>Interview Prep</strong> to get STAR-format answers tailored to your target role.</li>
-            </ol>
+          <div className="settings-card" style={{ marginBottom: 24 }}>
+            <div className="settings-card-header"><div><h3>Getting Started</h3></div></div>
+            <div className="settings-card-body">
+              <ol style={{ paddingLeft: 20, lineHeight: 2, margin: 0 }}>
+                <li>Upload a project from the <strong>Projects</strong> page (zip file, text doc, or media).</li>
+                <li>Go to <strong>Analysis</strong> and run AI Analysis to generate a description and extract skills.</li>
+                <li>Visit <strong>Portfolio</strong> and click <strong>↻ Regenerate</strong> to build your ranked portfolio.</li>
+                <li>Head to <strong>Resume</strong> to auto-generate a resume from your data.</li>
+                <li>Use <strong>Interview Prep</strong> to get STAR-format answers tailored to your target role.</li>
+              </ol>
+            </div>
           </div>
-        </div>
 
-        <div className="settings-card" style={{ marginBottom: 24 }}>
-          <div className="settings-card-header"><div><h3>Pages Overview</h3></div></div>
-          <div className="settings-card-body">
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {pages.map(p => (
-                <div key={p.name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{p.icon}</span>
-                  <div>
-                    <strong>{p.name}</strong>
-                    <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>{p.desc}</p>
+          <div className="settings-card" style={{ marginBottom: 24 }}>
+            <div className="settings-card-header"><div><h3>Pages Overview</h3></div></div>
+            <div className="settings-card-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {pages.map(p => (
+                  <div key={p.name} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>{p.icon}</span>
+                    <div>
+                      <strong>{p.name}</strong>
+                      <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>{p.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-card">
+            <div className="settings-card-header"><div><h3>Keyboard Shortcuts</h3></div></div>
+            <div className="settings-card-body">
+              <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                {shortcutGroups.map(group => (
+                  <div key={group.title}>
+                    <p style={{ fontWeight: 700, marginBottom: 10, fontSize: "0.88rem" }}>{group.title}</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {group.shortcuts.map(s => (
+                        <div key={s.keys} style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                          <kbd style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", color: "#a5b4fc", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
+                          <span style={{ fontSize: "0.88rem" }}>{s.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="settings-card">
-          <div className="settings-card-header"><div><h3>Keyboard Shortcuts</h3></div></div>
-          <div className="settings-card-body">
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {shortcutGroups.map(group => (
-                <div key={group.title}>
-                  <p style={{ fontWeight: 700, marginBottom: 10, fontSize: "0.88rem" }}>{group.title}</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {group.shortcuts.map(s => (
-                      <div key={s.keys} style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <kbd className="about-tech-name" style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
-                        <span style={{ fontSize: "0.88rem" }}>{s.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+        <button
+          className="settings-button settings-button-secondary"
+          style={{ margin: '24px 0 0 0' }}
+          onClick={resetWalkthroughs}
+        >
+          Reset All Walkthroughs
+        </button>
+      </>
     );
   }
+    // The guide section is rendered via guideContent, so remove this duplicate return.
 
   function renderDashboardSection() {
     function dispatchDashSettings() {
@@ -1096,7 +1192,38 @@ export default function Settings({ onLogout }) {
   }
 
   return (
-    <div className="settings-page">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('settings_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="settings-page">
       <div className="settings-layout">
         <aside className="settings-sidebar">
           <div className="settings-sidebar-header">
@@ -1139,5 +1266,5 @@ export default function Settings({ onLogout }) {
         <main className="settings-main">{renderSectionContent()}</main>
       </div>
     </div>
-  );
+  </>);
 }

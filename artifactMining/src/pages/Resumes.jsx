@@ -1,3 +1,4 @@
+import { Joyride } from 'react-joyride';
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import confetti from "canvas-confetti";
 import { toast } from "../components/Toast";
@@ -219,6 +220,54 @@ function AtsTooltip() {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Resumes() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('resumes_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('resumes_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'My Resumes',
+      content: 'This is where all your resumes will appear. You can create, edit, duplicate, or delete resumes from this page.'
+    },
+    {
+      target: '.resume-list-empty',
+      placement: 'bottom',
+      title: 'No Resumes Yet',
+      content: 'You have not created any resumes yet. This area will show your resumes once you create them.'
+    },
+    {
+      target: '.resume-list-grid',
+      placement: 'bottom',
+      title: 'Resume List',
+      content: 'Here you can see all your resumes. Click a card to open and edit, or use the icons to rename, duplicate, or delete.'
+    },
+    {
+      target: '.resume-new-card',
+      placement: 'bottom',
+      title: 'New Resume',
+      content: 'Click here to create a new resume at any time.'
+    },
+    {
+      target: '.resume-list-card',
+      placement: 'bottom',
+      title: 'Resume Card',
+      content: 'Each card represents a resume. Click to open, or use the icons to rename, duplicate, or delete.'
+    },
+    {
+      target: '.resume-btn-primary',
+      placement: 'bottom',
+      title: 'Create Resume',
+      content: 'Click here to create your first resume and get started!'
+    }
+  ];
   // ── auth state — null = still checking, false = not authed, true = authed
   const [authed, setAuthed] = useState(null);
 
@@ -1657,7 +1706,7 @@ export default function Resumes() {
             {!previewMode && (p.lines_of_code > 0 || p.file_count > 0 || p.importance_score > 0) && (
               <div className="proj-stats">
                 {p.lines_of_code > 0 && (
-                  <span className="proj-stat-badge">{p.lines_of_code.toLocaleString()} LOC</span>
+                  <span className="proj-stat-badge">{p.lines_of_code.toLocaleString()} lines of code</span>
                 )}
                 {p.file_count > 0 && (
                   <span className="proj-stat-badge">{p.file_count} files</span>
@@ -2023,15 +2072,78 @@ export default function Resumes() {
   // ── List view ──────────────────────────────────────────────────────────────
   if (view === "list") {
     return (
-      <div className="page-wrap">
-        {renderList()}
-      </div>
+      <>
+        <Joyride
+          steps={walkthroughSteps}
+          run={runWalkthrough}
+          continuous
+          showSkipButton
+          showProgress
+          styles={{
+            options: {
+              zIndex: 10000,
+              primaryColor: 'var(--accent, #6366f1)',
+              backgroundColor: 'var(--card-bg, #181a2a)',
+              textColor: 'var(--text, #e0e7ff)',
+              arrowColor: 'var(--card-bg, #181a2a)',
+              overlayColor: 'rgba(30, 34, 54, 0.7)',
+              spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            },
+            close: {
+              color: 'var(--text-muted, #a5b4fc)',
+              top: 10,
+              right: 10,
+            },
+          }}
+          disableScrolling={true}
+          callback={(data) => {
+            if (data.status === 'finished' || data.status === 'skipped') {
+              localStorage.setItem('resumes_walkthrough_seen', '1');
+              setRunWalkthrough(false);
+            }
+          }}
+        />
+        <div className="page-wrap">
+          {renderList()}
+        </div>
+      </>
     );
   }
 
   // ── Editor view ─────────────────────────────────────────────────────────────
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('resumes_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
       <div className="resume-shell">
         {renderSidebar()}
 
@@ -2088,5 +2200,6 @@ export default function Resumes() {
         </main>
       </div>
     </div>
+  </>
   );
 }

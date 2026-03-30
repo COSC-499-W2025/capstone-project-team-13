@@ -1,10 +1,47 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Joyride } from 'react-joyride';
 import { apiUpload, apiFetch } from "../apiClient";
 import "./Upload.css";
 
 const ACCEPTED = ".zip,.py,.js,.ts,.jsx,.tsx,.java,.cpp,.c,.cs,.go,.rs,.rb,.php,.swift,.kt,.r,.m,.txt,.md,.pdf,.docx,.csv,.json,.xml,.html,.css,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.avi,.mp3,.wav";
 
 export default function Upload() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('upload_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('upload_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Upload Projects',
+      content: 'This page lets you upload new projects or add files to existing ones. Let’s take a quick tour!'
+    },
+    {
+      target: '.upload-tabs',
+      placement: 'bottom',
+      title: 'Choose Upload Type',
+      content: 'Switch between uploading a new project or adding to an existing one.'
+    },
+    {
+      target: '.upload-main',
+      placement: 'top',
+      title: 'Upload Area',
+      content: 'Drag and drop files here, or click to browse. Supported file types are shown on the right.'
+    },
+    {
+      target: '.upload-sidebar',
+      placement: 'left',
+      title: 'Consent & File Types',
+      content: 'Manage your consent and see accepted file types here.'
+    }
+  ];
   const [tab, setTab] = useState("new"); // "new" | "incremental"
   const [file, setFile] = useState(null);
   const [dragging, setDragging] = useState(false);
@@ -131,7 +168,38 @@ export default function Upload() {
   }
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('upload_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
       <h1 style={{ marginBottom: 24 }}>Upload Project</h1>
 
       <div className="upload-tabs">
@@ -255,5 +323,7 @@ export default function Upload() {
         </div>
       </div>
     </div>
+      
+  </>
   );
 }
