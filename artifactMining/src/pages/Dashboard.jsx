@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { Joyride } from 'react-joyride';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
@@ -16,6 +17,15 @@ const TIPS = [
   "Action verbs like 'built', 'led', 'reduced' score higher in ATS systems.",
   "Skills section tip: list Expert skills first — recruiters scan top-down.",
 ];
+
+function formatProjectTypeLabel(type) {
+  if (!type || type === "Unknown") return "Unknown";
+  if (String(type).toLowerCase() === "visual_media") return "Media";
+  return String(type)
+    .split("_")
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 function useCountUp(target, duration = 900) {
   const [value, setValue] = useState(0);
@@ -48,6 +58,96 @@ function getStreak() {
 }
 
 export default function Dashboard() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('dashboard_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('dashboard_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Welcome to your Dashboard',
+      content: 'This dashboard is your launch point for the rest of the app. If you ever want to view it again, go to "How to use the app" in profile settings. Let’s take a quick tour!'
+    },
+    {
+      target: '.navbar',
+      placement: 'bottom',
+      title: 'Navigation Bar',
+      content: 'Use the navigation bar at the top to access all main pages.'
+    },
+    {
+      target: 'nav a[href="/dashboard"], nav a[href="/"], .navbar a[href="/dashboard"]',
+      placement: 'bottom',
+      title: 'Dashboard (Home)',
+      content: 'Return to your dashboard overview from anywhere in the app.'
+    },
+    {
+      target: 'nav a[href="/projects"]',
+      placement: 'bottom',
+      title: 'Projects',
+      content: 'View, filter, and manage all your uploaded projects.'
+    },
+    {
+      target: 'nav a[href="/skills"]',
+      placement: 'bottom',
+      title: 'Skills',
+      content: 'See all skills extracted from your projects over time.'
+    },
+    {
+      target: 'nav a[href="/portfolio"]',
+      placement: 'bottom',
+      title: 'Portfolio',
+      content: 'Access your ranked master portfolio with stats and visualizations.'
+    },
+    {
+      target: 'nav a[href="/resumes"]',
+      placement: 'bottom',
+      title: 'Resume',
+      content: 'Auto-generate a resume from your projects and skills.'
+    },
+    {
+      target: 'nav .nav-dropdown, nav .navbar-tools, nav button[aria-haspopup="menu"]',
+      placement: 'bottom',
+      title: 'Tools',
+      content: 'Access various other tools to enhance your projects and workflow from this dropdown.'
+    },
+    {
+      target: 'nav a[href="/settings"]',
+      placement: 'bottom',
+      title: 'Settings',
+      content: 'Manage your account, privacy, dashboard, and more.'
+    },
+    {
+      target: '#upload-project-btn',
+      placement: 'bottom',
+      title: 'Upload Project',
+      content: 'Click here to add new projects into the system.'
+    },
+    {
+      target: '.stat-row',
+      placement: 'bottom',
+      title: 'Portfolio Snap Judgements',
+      content: 'This row gives you quick stats and snap judgements about your portfolio.'
+    },
+    {
+      target: '.dash-grid',
+      placement: 'top',
+      title: 'Top Projects, Skills, Portfolio',
+      content: 'Here we provide top insights for your projects and skills as well as offering portfolio generation.'
+    },
+    {
+      target: '.dash-charts-row',
+      placement: 'top',
+      title: 'Charts & Insights',
+      content: 'Once you\'ve provided projects, this section contains charts for your projects and skills.'
+    }
+  ];
   const [projects, setProjects] = useState([]);
   const [skills, setSkills] = useState([]);
   const [portfolio, setPortfolio] = useState(null);
@@ -169,7 +269,77 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            spotlightPadding: 0,
+          },
+          tooltipContainer: {
+            borderRadius: 10,
+            boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
+            padding: '8px 14px',
+            fontSize: '0.97rem',
+            minWidth: 200,
+            maxWidth: 300,
+          },
+          tooltip: {
+            margin: 0,
+          },
+          buttonNext: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+            borderRadius: 7,
+            fontWeight: 600,
+            boxShadow: '0 1px 4px 0 rgba(99,102,241,0.08)',
+            padding: '6px 18px',
+            fontSize: '0.98rem',
+          },
+          buttonBack: {
+            color: 'var(--accent, #6366f1)',
+            background: 'transparent',
+            fontWeight: 500,
+            fontSize: '0.98rem',
+          },
+          buttonSkip: {
+            color: 'var(--text-muted, #a5b4fc)',
+            background: 'transparent',
+            fontSize: '0.98rem',
+          },
+          dot: {
+            background: 'var(--accent, #6366f1)',
+          },
+          badge: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('dashboard_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
       <div className="dash-header">
         <h1 style={{ display: "flex", alignItems: "center", gap: 8 }}>
           Dashboard
@@ -181,7 +351,7 @@ export default function Dashboard() {
           </button>
         </h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="btn-primary" onClick={() => nav("/upload")}>+ Upload Project</button>
+          <button id="upload-project-btn" className="btn-primary" onClick={() => nav("/upload")}>+ Upload Project</button>
         </div>
       </div>
 
@@ -341,7 +511,7 @@ export default function Dashboard() {
                       const type = p.project_type || "Unknown";
                       acc[type] = (acc[type] || 0) + 1;
                       return acc;
-                    }, {})).map(([type, value]) => ({ name: type, value }))}
+                    }, {})).map(([type, value]) => ({ name: formatProjectTypeLabel(type), value }))}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
@@ -423,5 +593,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

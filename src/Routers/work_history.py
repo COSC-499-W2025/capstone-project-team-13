@@ -26,6 +26,7 @@ router = APIRouter(prefix="/work-history", tags=["Work History"])
 class WorkHistoryRequest(BaseModel):
     company: str
     role: str
+    experience_type: Optional[str] = "work"
     start_date: str                   # ISO format: "2024-05-01"
     end_date: Optional[str] = None    # None means "present"
     location: Optional[str] = None
@@ -62,6 +63,7 @@ def add_work_history(body: WorkHistoryRequest, user_id: int = Depends(require_au
         "user_id":    user_id,
         "company":    body.company,
         "role":       body.role,
+        "experience_type": body.experience_type or "work",
         "start_date": start,
         "end_date":   end,
         "location":   body.location,

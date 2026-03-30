@@ -1,3 +1,4 @@
+import { Joyride } from 'react-joyride';
 import React, { useEffect, useState } from "react";
 import { apiFetch, projectName } from "../apiClient";
 import "./Interview.css";
@@ -13,6 +14,42 @@ const ROLES = [
 const THEME_ICONS = ["💡", "🏆", "🚀", "📚"];
 
 export default function Interview() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('interview_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('interview_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Interview Prep',
+      content: 'This page helps you generate STAR-format interview answers from your real projects. Let’s take a quick tour!'
+    },
+    {
+      target: '.iv-role-pills',
+      placement: 'bottom',
+      title: 'Target Role',
+      content: 'Select a target role or type your own to tailor your answers.'
+    },
+    {
+      target: '.iv-project-list',
+      placement: 'bottom',
+      title: 'Projects to Include',
+      content: 'Choose which projects to use for generating your interview answers.'
+    },
+    {
+      target: '.iv-generate-btn',
+      placement: 'top',
+      title: 'Generate Answers',
+      content: 'Click here to generate personalized STAR-format answers for your selected role and projects.'
+    }
+  ];
   const [projects, setProjects]     = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [role, setRole]             = useState("Software Engineer");
@@ -92,7 +129,38 @@ export default function Interview() {
   );
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('interview_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
 
       {/* Hero */}
       <div className="iv-hero card">
@@ -203,6 +271,6 @@ export default function Interview() {
           ))}
         </div>
       )}
-    </div>
-  );
+    </div>   
+  </>);
 }

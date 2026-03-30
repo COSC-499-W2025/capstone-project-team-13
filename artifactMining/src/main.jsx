@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./theme.css";
 import "./index.css";
+import { Joyride } from 'react-joyride';
 import App from "./App";
 
 // Set theme before anything renders so there's no flash

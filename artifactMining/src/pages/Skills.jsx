@@ -1,9 +1,52 @@
 import React, { useEffect, useState } from "react";
+import { Joyride } from 'react-joyride';
 import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
 import "./Skills.css";
 
 export default function Skills() {
+  // Only run walkthrough if not seen
+  const [runWalkthrough, setRunWalkthrough] = useState(() => {
+    return localStorage.getItem('skills_walkthrough_seen') !== '1';
+  });
+  // Set flag as soon as walkthrough starts
+  useEffect(() => {
+    if (runWalkthrough) {
+      localStorage.setItem('skills_walkthrough_seen', '1');
+    }
+  }, [runWalkthrough]);
+  const walkthroughSteps = [
+    {
+      target: 'body',
+      placement: 'center',
+      title: 'Skills Overview',
+      content: 'This page shows all the skills detected across your projects, with analytics and details. Let’s take a quick tour!'
+    },
+    {
+      target: '.skills-stats-row',
+      placement: 'bottom',
+      title: 'Skill Stats',
+      content: 'See your total skills, project count, and diversity score.'
+    },
+    {
+      target: '.skills-top-section',
+      placement: 'bottom',
+      title: 'Top Skills',
+      content: 'Your most frequently detected skills are highlighted here.'
+    },
+    {
+      target: '.skills-list-panel',
+      placement: 'right',
+      title: 'All Skills List',
+      content: 'Browse and filter all detected skills. Click a skill for more details.'
+    },
+    {
+      target: '.skills-detail-panel',
+      placement: 'left',
+      title: 'Skill Details & Co-occurrence',
+      content: 'See which projects use a skill, and view skill co-occurrence analytics.'
+    }
+  ];
   const [skills, setSkills] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +94,77 @@ export default function Skills() {
     : null;
 
   return (
-    <div className="page-wrap">
+    <>
+      <Joyride
+        steps={walkthroughSteps}
+        run={runWalkthrough}
+        continuous
+        showSkipButton
+        showProgress
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: 'var(--accent, #6366f1)',
+            backgroundColor: 'var(--card-bg, #181a2a)',
+            textColor: 'var(--text, #e0e7ff)',
+            arrowColor: 'var(--card-bg, #181a2a)',
+            overlayColor: 'rgba(30, 34, 54, 0.7)',
+            spotlightShadow: '0 0 0 2px var(--accent, #6366f1), 0 1px 8px 0 rgba(99,102,241,0.10)',
+            spotlightPadding: 0,
+          },
+          tooltipContainer: {
+            borderRadius: 10,
+            boxShadow: '0 2px 12px 0 rgba(30,34,54,0.13)',
+            padding: '8px 14px',
+            fontSize: '0.97rem',
+            minWidth: 200,
+            maxWidth: 300,
+          },
+          tooltip: {
+            margin: 0,
+          },
+          buttonNext: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+            borderRadius: 7,
+            fontWeight: 600,
+            boxShadow: '0 1px 4px 0 rgba(99,102,241,0.08)',
+            padding: '6px 18px',
+            fontSize: '0.98rem',
+          },
+          buttonBack: {
+            color: 'var(--accent, #6366f1)',
+            background: 'transparent',
+            fontWeight: 500,
+            fontSize: '0.98rem',
+          },
+          buttonSkip: {
+            color: 'var(--text-muted, #a5b4fc)',
+            background: 'transparent',
+            fontSize: '0.98rem',
+          },
+          dot: {
+            background: 'var(--accent, #6366f1)',
+          },
+          badge: {
+            background: 'var(--accent, #6366f1)',
+            color: '#fff',
+          },
+          close: {
+            color: 'var(--text-muted, #a5b4fc)',
+            top: 10,
+            right: 10,
+          },
+        }}
+        disableScrolling={true}
+        callback={(data) => {
+          if (data.status === 'finished' || data.status === 'skipped') {
+            localStorage.setItem('skills_walkthrough_seen', '1');
+            setRunWalkthrough(false);
+          }
+        }}
+      />
+      <div className="page-wrap">
       <h1 style={{ marginBottom: 8 }}>Skills</h1>
       <p className="text-muted" style={{ marginBottom: 24 }}>All skills detected across your projects</p>
 
@@ -177,5 +290,6 @@ export default function Skills() {
         </div>
       </div>
     </div>
+    </>
   );
 }

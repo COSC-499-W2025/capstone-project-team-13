@@ -103,16 +103,50 @@ def get_portfolio_showcase(user_id: int = Depends(require_auth)):
     return {"projects": result, "total": len(projects)}
 
 
-@router.get("/{project_id}")
-def get_portfolio_project_endpoint(
-    project_id: int,
-    user_id: int = Depends(require_auth)
-):
-    """Return a single project card by ID. Only accessible by the project owner."""
-    result = get_portfolio_project(user_id=user_id, project_id=project_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
-    return result
+@router.get("/about")
+def get_about(user_id: int = Depends(require_auth)):
+    """Return the user's About Me fields."""
+    user = db_manager.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "about_name":     getattr(user, "about_name", None) or "",
+        "about_subtitle": getattr(user, "about_subtitle", None) or "",
+        "about_bio":      getattr(user, "about_bio", None) or "",
+    }
+
+
+@router.post("/about")
+def save_about(body: dict = Body(...), user_id: int = Depends(require_auth)):
+    """Save the user's About Me fields."""
+    allowed = {"about_name", "about_subtitle", "about_bio"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    user = db_manager.update_user(user_id, updates)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "about_name":     getattr(user, "about_name", None) or "",
+        "about_subtitle": getattr(user, "about_subtitle", None) or "",
+        "about_bio":      getattr(user, "about_bio", None) or "",
+    }
+
+
+@router.get("/contact")
+def get_contact(user_id: int = Depends(require_auth)):
+    """Return the user's contact info."""
+    user = db_manager.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"contact_info": user.contact_info_data or {}}
+
+
+@router.post("/contact")
+def save_contact(body: dict = Body(...), user_id: int = Depends(require_auth)):
+    """Save the user's contact info."""
+    user = db_manager.update_user(user_id, {"contact_info_data": body})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"contact_info": user.contact_info_data or {}}
 
 
 @router.get("/visibility")
@@ -135,6 +169,18 @@ def set_portfolio_visibility(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return {"portfolio_public": bool(getattr(user, "portfolio_public", False))}
+
+
+@router.get("/{project_id}")
+def get_portfolio_project_endpoint(
+    project_id: int,
+    user_id: int = Depends(require_auth)
+):
+    """Return a single project card by ID. Only accessible by the project owner."""
+    result = get_portfolio_project(user_id=user_id, project_id=project_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return result
 
 
 @router.post("/{project_id}/edit")

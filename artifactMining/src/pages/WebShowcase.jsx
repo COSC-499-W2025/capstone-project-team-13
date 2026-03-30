@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch, projectName } from "../apiClient";
+import "./Portfolio.css";
 
 export default function WebShowcase() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const nav = useNavigate();
 
   useEffect(() => {
     apiFetch("/portfolio/showcase")
@@ -21,7 +24,19 @@ export default function WebShowcase() {
   return (
     <div className="page-wrap">
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ marginBottom: 6 }}>Web Portfolio Showcase</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
+          <button
+            onClick={() => nav(-1)}
+            className="showcase-back-btn"
+            title="Go back"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+            </svg>
+            Back
+          </button>
+          <h1 style={{ margin: 0 }}>Web Portfolio Showcase</h1>
+        </div>
         <p className="text-muted">Top 3 projects ranked by importance, illustrating your process and evolution.</p>
       </div>
 
@@ -78,7 +93,7 @@ function ShowcaseCard({ project: p, rank }) {
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            {[["Files", p.file_count], ["LOC", p.lines_of_code?.toLocaleString()]].filter(([, v]) => v).map(([label, val]) => (
+            {[["Files", p.file_count], ["Lines of Code", p.lines_of_code?.toLocaleString()]].filter(([, v]) => v).map(([label, val]) => (
               <div key={label} className="card" style={{ padding: "10px 14px", textAlign: "center" }}>
                 <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>{val}</div>
                 <div className="text-muted" style={{ fontSize: "0.75rem" }}>{label}</div>
