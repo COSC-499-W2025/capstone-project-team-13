@@ -754,8 +754,8 @@ Completed Tasks:
 ![alt text](teamLogImages/completedT2W11.png)
 
 ### Test Report
-![alt text](teamLogImages/TestsT2W10.png)
-All tests are passing except 9. These are non-breaking changes to the system so we haven't prioritized repair yet. Some seem to by pypdf is out of date so we need to update to the newest version.
+![alt text](teamLogImages/TestsT2W11.png)
+All tests are passing!
 
 ### Reflection Points
 
