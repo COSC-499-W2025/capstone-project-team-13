@@ -40,8 +40,6 @@ import SkillsTimeline from "./SkillsTimeline";
 import ActivityHeatmap from "./ActivityHeatmap";
 import {
   typeColor, educationEntryTypeOf, experienceTypeOf,
-  ContactField, CustomPresenceField,
-  ProjectCard, ProjectRow,
 } from "./PortfolioShared";
 import "./Portfolio.css";
 
