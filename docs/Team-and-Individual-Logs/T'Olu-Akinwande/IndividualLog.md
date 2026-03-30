@@ -438,6 +438,30 @@ Planned Work for Next Week: Continue working on #385 by building additional port
 
 ![Sprint Tasks](https://github.com/user-attachments/assets/60f55d29-edf6-44de-9c66-1b891fb85437)
 
+# Log 9 and 10
+Date Range: March 15 - 29
+Issues worked on: #566, #564, #532, #568, #567, #563, #506, #545, #551, #562, #561, #560, #557, #556, #559, #552
+
+Issues Worked On: Testing, debugging, and documentation across the Digital Artifact Mining System, including resolving failing tests, expanding test coverage, creating system diagrams (DFD Level 0 and Level 1), and preparing final project deliverables.
+
+Tasks Completed: Over this period, I completed a significant amount of work focused on improving the reliability, stability, and completeness of the system. A major portion of my contribution involved testing and debugging. I created over 20 new test files to expand coverage across backend functionality, including API endpoints, data processing modules, skill and keyword extraction, and portfolio generation features. I ran and debugged the full test suite multiple times, resolving failing tests and inconsistencies until achieving 943 passing tests, ensuring the backend was stable and functioning as expected.
+
+In addition to backend testing, I also verified that frontend features were working correctly alongside the backend. This included ensuring proper integration between the frontend and API endpoints, validating that user flows such as file uploads and portfolio generation behaved as intended, and confirming that UI components displayed accurate data.
+
+I also played a key role in development. While formal PR reviews were limited,  actively worked on the web portfolio/ skills time line component and presented on those topics during the milestone 3 presentation 
+
+Beyond testing and debugging, I contributed to documentation and system design. I created DFD Level 0 and Level 1 diagrams to clearly represent the system’s data flow and architecture, helping to communicate how different components interact. I also wrote a comprehensive test report detailing the testing setup, strategies, tools used for both frontend and backend, and instructions for running tests and generating coverage reports.
+
+Additionally, I worked on cleaning and organizing the repository to prepare for final submission. This included resolving Git issues, consolidating branches, removing unnecessary generated files (such as cache and usage data), updating the .gitignore, and ensuring that the final pull request contained only relevant and functional code. I also verified that all tests could be run successfully by others without setup issues.
+
+Connection to Previous Week: In the previous week, my focus was more on planning and communication, including preparing the project presentation script and participating in team meetings to coordinate progress. This provided a clear direction for the final phase of development. Building on that, this week I shifted heavily into technical execution, completing extensive testing, debugging, and documentation work to finalize the system and ensure it was fully functional and submission-ready.
+
+Issues/Blockers: There were several challenges encountered during this period, primarily related to debugging failing tests and resolving inconsistencies between different branches. Merge conflicts, particularly involving generated files such as package-lock.json and cached data, required careful handling to avoid breaking the system. Additionally, some tests initially failed due to missing data, configuration mismatches, or integration issues between components. These issues were resolved through iterative debugging, restructuring test setups, and cleaning the repository. Despite the number of issues encountered, they were all addressed successfully and did not prevent completion of the work.
+
+
+<img width="868" height="519" alt="image" src="https://github.com/user-attachments/assets/f3708fba-41bd-4f60-b540-a010c83b3888" />
+
+
 
 
 
