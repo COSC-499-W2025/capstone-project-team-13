@@ -1,4 +1,5 @@
 # Log navigation
+- [Term 2, week 11/12](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-11/12---mar-16-mar-29-2026)
 - [Term 2, week 10](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-10---mar-9-mar-15-2026)
 - [Term 2, week 9](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-9---mar-2-mar-8-2026)
 - [Term 2, week 6/7/8](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/logs/docs/Team-and-Individual-Logs/Illina-Islam/Individual-Logs.md#week-6/7/8---feb-9-mar-1-2026)
@@ -266,7 +267,34 @@
   * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/456
 
 * for next week: hold a team meeting, complete peer testing, complete resume feature
-  
+
+
+## Week 11/12 - Mar 16-Mar 29, 2026
+<img width="2138" height="1042" alt="image" src="https://github.com/user-attachments/assets/4ff5d566-1d6c-42de-929d-46efffae6c4f" />
+
+* These past 2 weeks my team and I worked on fixing bugs, updating documentation, preparing and giving our milestone 3 presentation, making our video, and just overall project closing
+  * I worked on a major redesign frontend of the resume page (Resume.jsx, Resume.css) as well as a backend redesign (database.py, resume.py, resume_service.py resume_export_service.py)
+    * Our system now supports multiple resumes (editing, deleting, duplicating, creating)
+    * The resumes are all restricted to one page
+    * the resumes have fields for adding education, awards, experience, and skills (organized by expertise)
+    * users are able to select the number of bullets they want
+    * basically every single field in the resume is customizable for the user
+  * I also collaborated with Maya and Sana to redesign the portfolio page (Portfolio.jsx, Portfolio.css)
+    * The portfolio page is now much more user friendly and is better for a showcase
+  * I also helped with fixing bugs with the public portfolio view
+    
+  * My contributions close:
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/548
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/526
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/499
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/498
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/497
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/486
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/484
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/475
+    * https://github.com/COSC-499-W2025/capstone-project-team-13/issues/465
+
+  * for next week: project voting
 
 
 
