@@ -7,6 +7,8 @@
 - [T2 Week 7](#log-17)
 - [T2 Week 8](#log-18)
 - [T2 Week 9](#log-19)
+- [T2 Week 10 + 11](#log-20-and-21)
+
 
 
 ## Log 1:
@@ -288,3 +290,18 @@ Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project
 
 ### Upcoming Cycle
 For the upcoming cycle, I plan to continue updating the dashboard page, to include shortcuts and subsets of our other pages such as portfolio (top projects), reusmes (recently generated resumes), as well as charts and insights for some metrics, which has yet to be determined this week before peer testing. I am also going to continue updating the project page of our frontend to ensure all of the systems requirements/functions are accessible.
+
+
+## Log 20 and 21:
+## Date Range: T2 Week 10 - Mar 16 - Mar 29, 2026
+
+## ![week 10 and 11 features](499-week10-11-t2.png)
+
+### Which features were yours in the project plan for this milestone?
+During these two weeks, my group and I prepared and presented our milestone 3 presentation, as well as finished the final touches for our overall system for submission. In terms of non-coding contributions, I updated the system architecture diagram, made the script for the milestone 3 demo, as well as contributed to the milestone 3 presentation slides, and script.
+
+For coding contributions, I implemented public and private mode for portfolios, as well as implemented browsing of other users public portfolios that were made with our website. I also worked collbarotively with a few of my other group members to complete the portfolio page, and dashboard page for our frontend. Addtionally, I improved our skills analysis to be more efficient/faster, especially for larger projects. 
+
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/497)
+Project Board Link to Issue: (https://github.com/COSC-499-W2025/capstone-project-team-13/issues/498)
+
