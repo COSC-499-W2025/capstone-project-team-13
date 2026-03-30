@@ -131,6 +131,24 @@ def save_about(body: dict = Body(...), user_id: int = Depends(require_auth)):
     }
 
 
+@router.get("/contact")
+def get_contact(user_id: int = Depends(require_auth)):
+    """Return the user's contact info."""
+    user = db_manager.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"contact_info": user.contact_info_data or {}}
+
+
+@router.post("/contact")
+def save_contact(body: dict = Body(...), user_id: int = Depends(require_auth)):
+    """Save the user's contact info."""
+    user = db_manager.update_user(user_id, {"contact_info_data": body})
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"contact_info": user.contact_info_data or {}}
+
+
 @router.get("/visibility")
 def get_portfolio_visibility(user_id: int = Depends(require_auth)):
     """Return whether the authenticated user's portfolio is public."""
