@@ -103,7 +103,7 @@ This report shows:
 
 After running the full backend test suite:
 
-- 943 tests passed  
+- 895 tests passed  
 - 5 tests skipped  
 - 115 warnings (non-critical)  
 
@@ -120,7 +120,8 @@ All tests were executed successfully using pytest, confirming that:
 
 A screenshot of the successful test run (showing all tests passing) is included below:
 
-<img width="704" height="40" alt="Screenshot 2026-03-29 204929" src="https://github.com/user-attachments/assets/76522ae0-336a-49bc-b871-b147005e4cb6" />
+<img width="2096" height="88" alt="image" src="https://github.com/user-attachments/assets/ce5b58cb-141f-4ffd-9ee1-5fe4ff847005" />
+
 
 ---
 
