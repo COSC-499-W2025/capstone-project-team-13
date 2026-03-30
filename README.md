@@ -105,6 +105,8 @@ The system uses a single **SQLite database** (`projects.db`) with interconnected
 
 ## 🚀 Running the Project
 
+### [Installation Guide](docs/Proposal/Install-Guide.md)
+
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
