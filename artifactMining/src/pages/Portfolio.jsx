@@ -27,6 +27,28 @@ function thumbUrl(path) {
   return `${API_BASE}/uploads/${filename}`;
 }
 
+function educationEntryTypeOf(entry) {
+  const degreeType = (entry?.degree_type || "").trim();
+  const topic = (entry?.topic || "").trim();
+  if (degreeType === "Certification") return "certifications";
+  if (degreeType === "Extra Curricular") return "extracurricular";
+  if (degreeType === "Secondary School Diploma" || topic === "General Studies") return "secondary";
+  return "postsecondary";
+}
+
+function experienceTypeOf(entry) {
+  const explicit = (entry?.experience_type || "").toLowerCase().trim();
+  if (["work", "internship", "volunteering", "freelance"].includes(explicit)) return explicit;
+
+  const company = (entry?.company || "").toLowerCase();
+  const role = (entry?.role || "").toLowerCase();
+  const combined = `${company} ${role}`;
+  if (combined.includes("intern")) return "internship";
+  if (combined.includes("volunteer")) return "volunteering";
+  if (combined.includes("freelance") || combined.includes("contract") || combined.includes("self-employed")) return "freelance";
+  return "work";
+}
+
 const SORT_OPTIONS = [
   { value: "importance", label: "Importance" },
   { value: "rank",       label: "User Rank" },
@@ -94,6 +116,7 @@ export default function Portfolio() {
   const [portfolioPublic, setPortfolioPublic] = useState(false);
   const [activeSection, setActiveSection] = useState("about");
   const [aboutBio, setAboutBio] = useState("");
+  const [profileAvatar, setProfileAvatar] = useState(() => localStorage.getItem("profile_avatar") || null);
   const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [educationEntries, setEducationEntries] = useState([]);
   const [showEduForm, setShowEduForm] = useState(false);
@@ -111,6 +134,9 @@ export default function Portfolio() {
   const [expFormType, setExpFormType] = useState("work");
   const [expForm, setExpForm] = useState({ company: "", role: "", start_date: "", end_date: "", location: "" });
   const [expError, setExpError] = useState(null);
+  const [editExpId, setEditExpId] = useState(null);
+  const [editExpForm, setEditExpForm] = useState({});
+  const [editExpError, setEditExpError] = useState(null);
   const [expTitle, setExpTitle] = useState(() => localStorage.getItem("exp_title") || "Experience");
   const [expSubtitle, setExpSubtitle] = useState(() => localStorage.getItem("exp_subtitle") || "Work & Volunteering");
   const [expDesc, setExpDesc] = useState(() => localStorage.getItem("exp_desc") || "");
@@ -332,10 +358,7 @@ export default function Portfolio() {
 
   function startEditEdu(entry) {
     const toYM = (s) => s ? s.substring(0, 7) : "";
-    const entryType = entry.degree_type === "Certification" ? "certifications"
-      : entry.degree_type === "Extra Curricular" ? "extracurricular"
-      : entry.degree_type === "Secondary School Diploma" ? "secondary"
-      : "postsecondary";
+    const entryType = educationEntryTypeOf(entry);
     setEditEduId(entry.id);
     setEditEduError(null);
     setEditEduForm({
@@ -355,31 +378,32 @@ export default function Portfolio() {
     setEditEduError(null);
     const f = editEduForm;
     const details = f.awards ? f.awards.split("\n").map(s => s.trim()).filter(Boolean) : [];
+    const cleanStart = (f.start_date || "").trim();
+    const cleanEnd = (f.end_date || "").trim();
     let degree_type, topic, start_date, end_date;
     if (f.entryType === "secondary") {
       degree_type = f.degree_type || "Secondary School Diploma";
       topic = "General Studies";
-      const gradYear = parseInt(f.end_date);
-      end_date = `${f.end_date}-01`;
+      const gradYear = parseInt(cleanEnd);
+      end_date = cleanEnd ? `${cleanEnd}-01-01` : null;
       start_date = `${gradYear - 3}-09-01`;
     } else if (f.entryType === "certifications") {
       degree_type = "Certification";
       topic = f.topic;
-      start_date = f.start_date ? `${f.start_date}-01` : f.start_date;
-      end_date = f.end_date ? `${f.end_date}-01` : null;
+      start_date = cleanStart ? `${cleanStart}-01` : null;
+      end_date = cleanEnd ? `${cleanEnd}-01` : null;
     } else if (f.entryType === "extracurricular") {
       degree_type = "Extra Curricular";
       topic = f.topic;
-      start_date = f.start_date ? `${f.start_date}-01` : f.start_date;
-      end_date = f.end_date ? `${f.end_date}-01` : null;
+      start_date = cleanStart ? `${cleanStart}-01` : null;
+      end_date = cleanEnd ? `${cleanEnd}-01` : null;
     } else {
       degree_type = f.degree_type;
       topic = f.topic;
-      start_date = f.start_date ? `${f.start_date}-01` : f.start_date;
-      end_date = f.end_date ? `${f.end_date}-01` : null;
+      start_date = cleanStart ? `${cleanStart}-01` : null;
+      end_date = cleanEnd ? `${cleanEnd}-01` : null;
     }
     try {
-      await apiFetch(`/education/${id}`, { method: "DELETE" });
       const d = await apiFetch("/education", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -389,6 +413,7 @@ export default function Portfolio() {
           details: details.length ? details : null,
         }),
       });
+      await apiFetch(`/education/${id}`, { method: "DELETE" });
       setEducationEntries(prev => sortEdu([...prev.filter(e => e.id !== id), d.education]));
       setEditEduId(null);
     } catch (e) { setEditEduError(e.message); }
@@ -416,7 +441,7 @@ export default function Portfolio() {
       const d = await apiFetch("/work-history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ company: f.company, role: f.role, start_date, end_date, location: f.location || null }),
+        body: JSON.stringify({ company: f.company, role: f.role, experience_type: expFormType, start_date, end_date, location: f.location || null }),
       });
       setExpEntries(prev => sortExp([...prev, d.work_history]));
       setExpForm({ company: "", role: "", start_date: "", end_date: "", location: "" });
@@ -429,6 +454,49 @@ export default function Portfolio() {
       await apiFetch(`/work-history/${id}`, { method: "DELETE" });
       setExpEntries(prev => prev.filter(e => e.id !== id));
     } catch (e) { setExpError(e.message); }
+  }
+
+  function startEditExp(entry) {
+    const toYM = (s) => s ? s.substring(0, 7) : "";
+    const expType = experienceTypeOf(entry);
+    setEditExpId(entry.id);
+    setEditExpError(null);
+    setEditExpForm({
+      experience_type: expType,
+      company: entry.company || "",
+      role: entry.role || "",
+      start_date: toYM(entry.start_date),
+      end_date: entry.end_date === "Present" ? "" : toYM(entry.end_date),
+      location: entry.location || "",
+    });
+  }
+
+  async function saveEditExp(id) {
+    setEditExpError(null);
+    const f = editExpForm;
+    if (!f.company || !f.role || !f.start_date) {
+      setEditExpError("Company/organization, role/title, and start date are required.");
+      return;
+    }
+    const start_date = `${(f.start_date || "").trim()}-01`;
+    const end_date = (f.end_date || "").trim() ? `${f.end_date.trim()}-01` : null;
+    try {
+      const d = await apiFetch("/work-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company: f.company,
+          role: f.role,
+          experience_type: f.experience_type || "work",
+          start_date,
+          end_date,
+          location: f.location || null,
+        }),
+      });
+      await apiFetch(`/work-history/${id}`, { method: "DELETE" });
+      setExpEntries(prev => sortExp([...prev.filter(e => e.id !== id), d.work_history]));
+      setEditExpId(null);
+    } catch (e) { setEditExpError(e.message); }
   }
 
   if (authed === null) return <div className="page-wrap" style={{ paddingTop: 80, textAlign: "center", color: "#818cf8" }}>Checking authentication...</div>;
@@ -536,6 +604,12 @@ export default function Portfolio() {
 
   const isPublic = viewMode === "public";
   const projects = portfolio?.projects || [];
+  const expLegendItems = [
+    ["work", "Work"],
+    ["internship", "Internship"],
+    ["volunteering", "Volunteering"],
+    ["freelance", "Freelance / Contract"],
+  ];
 
   const projectTypes = ["all", ...Array.from(new Set(projects.map(p => p.type || p.project_type).filter(Boolean)))];
 
@@ -623,10 +697,6 @@ export default function Portfolio() {
           )}
           {!isPublic && (
             <>
-              <label className="toggle-label">
-                <input type="checkbox" checked={includeHidden} onChange={e => setIncludeHidden(e.target.checked)} />
-                Show hidden
-              </label>
               <button className="btn-primary port-sidebar-link-btn" onClick={generate} disabled={generating}>
                 {generating ? "Generating…" : "↻ Regenerate"}
               </button>
@@ -642,63 +712,67 @@ export default function Portfolio() {
         {/* About Me */}
         {activeSection === "about" && (
           <div className="port-about-wrapper">
-            {/* Banner — contains identity */}
-            <div className="port-about-banner">
-              <div className="port-about-identity">
-                {isPublic ? (
-                  <p className="port-about-name-text">{heroTitle || "—"}</p>
-                ) : (
-                  <input
-                    className="port-about-name-input"
-                    placeholder="Your name"
-                    value={heroTitle}
-                    onChange={ev => { setHeroTitle(ev.target.value); localStorage.setItem("portfolio_hero_title", ev.target.value); saveAbout("about_name", ev.target.value); }}
-                    maxLength={60}
-                  />
-                )}
-                {isPublic ? (
-                  heroSub && <p className="port-about-sub-text">{heroSub}</p>
-                ) : (
-                  <input
-                    className="port-about-sub-input"
-                    placeholder="Title or role — e.g. Full-Stack Developer · UBC"
-                    value={heroSub}
-                    onChange={ev => { setHeroSub(ev.target.value); localStorage.setItem("portfolio_hero_sub", ev.target.value); saveAbout("about_subtitle", ev.target.value); }}
-                    maxLength={80}
-                  />
-                )}
-              </div>
-            </div>
+            <div className="port-about-hero">
 
-            <div className="port-about-divider" />
-
-            {/* Bio — hidden in public mode if empty */}
-            {(!isPublic || aboutBio) && (
-              <div className="port-about-bio-section">
-                <span className="port-about-bio-label">About Me</span>
-                {isPublic ? (
-                  <p className="port-about-bio-text">{aboutBio}</p>
-                ) : (
-                  <div className="port-about-bio-wrap">
-                    <textarea
-                      className="port-about-bio-input"
-                      placeholder="Write a short bio — your background, what you're building, and what drives you…"
-                      value={aboutBio}
-                      onChange={ev => { setAboutBio(ev.target.value); saveAbout("about_bio", ev.target.value); }}
-                      rows={6}
-                      maxLength={800}
+              {/* Left: avatar + identity + cta */}
+              <div className="port-about-left">
+                <div className="port-about-avatar" style={profileAvatar ? { backgroundImage: `url(${profileAvatar})`, backgroundSize: "cover", backgroundPosition: "center", fontSize: 0 } : {}}>
+                  {!profileAvatar && (heroTitle || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="port-about-identity">
+                  {isPublic ? (
+                    <p className="port-about-name-text">{heroTitle || "—"}</p>
+                  ) : (
+                    <input
+                      className="port-about-name-input"
+                      placeholder="Your name"
+                      value={heroTitle}
+                      onChange={ev => { setHeroTitle(ev.target.value); localStorage.setItem("portfolio_hero_title", ev.target.value); saveAbout("about_name", ev.target.value); }}
+                      maxLength={60}
                     />
-                    <span className="port-about-char-count">{aboutBio.length} / 800</span>
-                  </div>
-                )}
-                <span className="port-about-saved" style={{ opacity: saveStatus === "saved" ? undefined : 0, animation: saveStatus === "saved" ? undefined : "none" }}>Saved ✓</span>
+                  )}
+                  {isPublic ? (
+                    heroSub && <p className="port-about-sub-text">{heroSub}</p>
+                  ) : (
+                    <input
+                      className="port-about-sub-input"
+                      placeholder="Title or role"
+                      value={heroSub}
+                      onChange={ev => { setHeroSub(ev.target.value); localStorage.setItem("portfolio_hero_sub", ev.target.value); saveAbout("about_subtitle", ev.target.value); }}
+                      maxLength={80}
+                    />
+                  )}
+                </div>
+                <Link to="/showcase" className="btn-primary port-about-showcase-btn" style={{ textDecoration: "none", color: "#fff" }}>
+                  Web Showcase →
+                </Link>
               </div>
-            )}
 
-            <div className="port-about-bottom-row">
-              <Link to="/showcase" className="btn-primary port-about-showcase-btn" style={{ textDecoration: "none", color: "#fff" }}>
-                Web Showcase
-              </Link>
+              {/* Right: bio */}
+              {(!isPublic || aboutBio) && (
+                <div className="port-about-right">
+                  <div className="port-about-bio-section">
+                    <span className="port-about-bio-label">About</span>
+                    {isPublic ? (
+                      <p className="port-about-bio-text">{aboutBio}</p>
+                    ) : (
+                      <div className="port-about-bio-wrap">
+                        <textarea
+                          className="port-about-bio-input"
+                          placeholder="Write a short bio — your background, what you're building, and what drives you…"
+                          value={aboutBio}
+                          onChange={ev => { setAboutBio(ev.target.value); saveAbout("about_bio", ev.target.value); }}
+                          rows={7}
+                          maxLength={800}
+                        />
+                        <span className="port-about-char-count">{aboutBio.length} / 800</span>
+                      </div>
+                    )}
+                    <span className="port-about-saved" style={{ opacity: saveStatus === "saved" ? undefined : 0, animation: saveStatus === "saved" ? undefined : "none" }}>Saved ✓</span>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         )}
@@ -757,6 +831,12 @@ export default function Portfolio() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                     </button>
                   </div>
+                  {!isPublic && (
+                    <label className="toggle-label" style={{ marginLeft: 8 }}>
+                      <input type="checkbox" checked={includeHidden} onChange={e => setIncludeHidden(e.target.checked)} />
+                      Show hidden
+                    </label>
+                  )}
                 </div>
               )}
 
@@ -881,26 +961,31 @@ export default function Portfolio() {
         {activeSection === "experience" && (
           <div className="port-section-page edu-page">
             {/* Top bar */}
-            <div className="edu-top-bar">
-              <div className="edu-top-stat">
-                {expEntries.length > 0 && (() => {
-                  const dates = expEntries.map(e => e.start_date ? new Date(e.start_date).getFullYear() : null).filter(Boolean);
-                  const earliest = Math.min(...dates);
-                  const latest = expEntries.some(e => !e.end_date || e.end_date === "Present") ? "Present" : Math.max(...expEntries.map(e => e.end_date ? new Date(e.end_date).getFullYear() : 0));
-                  return <span className="edu-top-years">{earliest} — {latest}</span>;
-                })()}
-                <span className="edu-top-stat-num">{expEntries.length}</span>
-                <span className="edu-top-stat-label">{expEntries.length === 1 ? "Position" : "Positions"}</span>
-              </div>
-              <div className="edu-top-titles">
-                {isPublic
-                  ? <h1 className="edu-split-title">{expTitle || "Experience"}</h1>
-                  : <input className="edu-split-title-input" value={expTitle} onChange={e => { setExpTitle(e.target.value); localStorage.setItem("exp_title", e.target.value); }} placeholder="Section Title" />}
-                {isPublic
-                  ? expSubtitle && <p className="edu-split-subtitle">{expSubtitle}</p>
-                  : <input className="edu-split-subtitle-input" value={expSubtitle} onChange={e => { setExpSubtitle(e.target.value); localStorage.setItem("exp_subtitle", e.target.value); }} placeholder="Subtitle" />}
-              </div>
-            </div>
+            {(() => {
+              const activeRoles = expEntries.filter(entry => !entry.end_date || entry.end_date === "Present").length;
+              return (
+                <div className="edu-top-bar">
+                  <div className="edu-top-titles">
+                    {isPublic
+                      ? <h1 className="edu-split-title">{expTitle || "Experience"}</h1>
+                      : <input className="edu-split-title-input" value={expTitle} onChange={e => { setExpTitle(e.target.value); localStorage.setItem("exp_title", e.target.value); }} placeholder="Section Title" />}
+                    {isPublic
+                      ? expSubtitle && <p className="edu-split-subtitle">{expSubtitle}</p>
+                      : <input className="edu-split-subtitle-input" value={expSubtitle} onChange={e => { setExpSubtitle(e.target.value); localStorage.setItem("exp_subtitle", e.target.value); }} placeholder="Subtitle" />}
+                    <div className="edu-top-stats">
+                      <div className="edu-top-stat">
+                        <span className="edu-top-stat-num">{expEntries.length}</span>
+                        <span className="edu-top-stat-label">{expEntries.length === 1 ? "Position" : "Positions"}</span>
+                      </div>
+                      <div className="edu-top-stat">
+                        <span className="edu-top-stat-num">{activeRoles}</span>
+                        <span className="edu-top-stat-label">{activeRoles === 1 ? "Current Role" : "Current Roles"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Split body */}
             <div className="edu-body">
@@ -960,13 +1045,17 @@ export default function Portfolio() {
                               value={expForm.role} onChange={e => setExpForm(f => ({ ...f, role: e.target.value }))} />
                           </label>
                           <label className="edu-form-label">
-                            Start Date *
+                            <span className="edu-date-field-head">
+                              <span>Start Date *</span>
+                            </span>
                             <MonthPicker value={expForm.start_date} onChange={v => setExpForm(f => ({ ...f, start_date: v }))} />
                           </label>
-                          <label className="edu-form-label">
-                            End Date <span className="text-muted">(blank = Present)</span>
-                            <MonthPicker value={expForm.end_date} onChange={v => setExpForm(f => ({ ...f, end_date: v }))} />
-                          </label>
+                          <DateToggleField
+                            label="End Date"
+                            value={expForm.end_date}
+                            onChange={v => setExpForm(f => ({ ...f, end_date: v }))}
+                            toggleLabel="Present"
+                          />
                           <label className="edu-form-label">
                             Location
                             <input className="edu-form-input" placeholder="e.g. Vancouver, BC"
@@ -987,35 +1076,96 @@ export default function Portfolio() {
               {/* Right: timeline */}
               <div className="edu-body-right">
                 {expEntries.length === 0 ? (
-                  <p className="text-muted" style={{ fontSize: "0.9rem" }}>No entries yet.</p>
+                  <div className="edu-empty-state">
+                    <span className="edu-empty-icon">💼</span>
+                    <p className="edu-empty-title">No experience yet</p>
+                    <p className="edu-empty-sub">Add your work history, internships, or volunteering to get started.</p>
+                  </div>
                 ) : (
-                  <div className="edu-timeline-list">
-                    <div className="edu-timeline-line" />
-                    {expEntries.map((entry, i) => {
-                      const start = entry.start_date ? new Date(entry.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "?";
-                      const end = entry.end_date && entry.end_date !== "Present" ? new Date(entry.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Present";
-                      return (
-                        <div key={entry.id} className="edu-timeline-item">
-                          <div className={`edu-timeline-dot ${i === 0 ? "first" : ""}`} />
-                          <div className="edu-timeline-content card">
-                            <div className="edu-timeline-top">
-                              <div>
-                                <p className="edu-institution">{entry.company}</p>
-                                <p className="edu-degree">{entry.role}</p>
-                              </div>
-                              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                <p className="edu-dates">{start} — {end}</p>
-                                {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
-                              </div>
-                              {!isPublic && (
-                                <button className="edu-delete-btn" onClick={() => deleteExperience(entry.id)} title="Remove entry">✕</button>
+                  <>
+                    <div className="edu-legend edu-legend-inline">
+                      {expLegendItems.map(([value, label]) => (
+                        <span key={value} className="edu-legend-item">
+                          <span className={`edu-legend-dot exp-legend-${value}`} />
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="edu-timeline-list">
+                      <div className="edu-timeline-line" />
+                      {expEntries.map((entry, i) => {
+                        const startDate = entry.start_date ? new Date(entry.start_date) : null;
+                        const endDate = entry.end_date && entry.end_date !== "Present" ? new Date(entry.end_date) : null;
+                        const isPresent = !entry.end_date || entry.end_date === "Present";
+                        const start = startDate ? startDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "?";
+                        const end = endDate ? endDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Present";
+                        const expType = experienceTypeOf(entry);
+                        const companyLabel = expType === "volunteering" ? "Organization *" : expType === "freelance" ? "Client / Company" : "Company *";
+                        const roleLabel = expType === "volunteering" ? "Role / Position *" : expType === "freelance" ? "Project / Role *" : "Job Title *";
+                        return (
+                          <div key={entry.id} className="edu-timeline-item">
+                            <div className={`edu-timeline-dot exp-dot-${expType}`} />
+                            <div className={`edu-timeline-content card edu-card-wrap exp-card-${expType}`}>
+                              {!isPublic && editExpId !== entry.id && (
+                                <div className="edu-card-actions">
+                                  <button className="edu-edit-btn" onClick={() => startEditExp(entry)} title="Edit entry">✎</button>
+                                  <button className="edu-delete-btn" onClick={() => deleteExperience(entry.id)} title="Remove entry">✕</button>
+                                </div>
+                              )}
+                              {editExpId === entry.id ? (
+                                <div className="edu-inline-edit">
+                                  <div className="edu-inline-edit-grid">
+                                    <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                      {companyLabel}
+                                      <input className="edu-form-input" value={editExpForm.company || ""} onChange={e => setEditExpForm(f => ({ ...f, company: e.target.value }))} />
+                                    </label>
+                                    <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                      {roleLabel}
+                                      <input className="edu-form-input" value={editExpForm.role || ""} onChange={e => setEditExpForm(f => ({ ...f, role: e.target.value }))} />
+                                    </label>
+                                    <label className="edu-form-label">
+                                      <span className="edu-date-field-head">
+                                        <span>Start Date *</span>
+                                      </span>
+                                      <MonthPicker value={editExpForm.start_date || ""} onChange={v => setEditExpForm(f => ({ ...f, start_date: v }))} />
+                                    </label>
+                                    <DateToggleField
+                                      label="End Date"
+                                      value={editExpForm.end_date || ""}
+                                      onChange={v => setEditExpForm(f => ({ ...f, end_date: v }))}
+                                      toggleLabel="Present"
+                                    />
+                                    <label className="edu-form-label">
+                                      Location
+                                      <input className="edu-form-input" value={editExpForm.location || ""} onChange={e => setEditExpForm(f => ({ ...f, location: e.target.value }))} />
+                                    </label>
+                                  </div>
+                                  {editExpError && <p style={{ color: "#f87171", fontSize: "0.8rem", marginTop: 8 }}>{editExpError}</p>}
+                                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                                    <button className="btn-primary" style={{ fontSize: "0.8rem", padding: "6px 16px" }} onClick={() => saveEditExp(entry.id)}>Save</button>
+                                    <button className="btn-secondary" style={{ fontSize: "0.8rem", padding: "6px 16px" }} onClick={() => { setEditExpId(null); setEditExpError(null); }}>Cancel</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="edu-timeline-top">
+                                  <div>
+                                    <p className="edu-institution">{entry.company}</p>
+                                    <p className="edu-degree">{entry.role}</p>
+                                  </div>
+                                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                    <p className="edu-dates">
+                                      {start} — {isPresent ? <span className="edu-present-pill"><span className="edu-present-dot" />Present</span> : end}
+                                    </p>
+                                    {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1026,17 +1176,14 @@ export default function Portfolio() {
         {activeSection === "education" && (
           <div className="port-section-page edu-page">
             {/* Top bar: stat card + title + subtitle */}
+            {(() => {
+              const degreeCount = educationEntries.filter(entry => (
+                entry.degree_type !== "Certification" && entry.degree_type !== "Extra Curricular"
+              )).length;
+              const certificationCount = educationEntries.filter(entry => entry.degree_type === "Certification").length;
+              const extracurricularCount = educationEntries.filter(entry => entry.degree_type === "Extra Curricular").length;
+              return (
             <div className="edu-top-bar">
-              <div className="edu-top-stat">
-                {educationEntries.length > 0 && (() => {
-                  const dates = educationEntries.map(e => e.start_date ? new Date(e.start_date).getFullYear() : null).filter(Boolean);
-                  const earliest = Math.min(...dates);
-                  const latest = educationEntries.some(e => !e.end_date || e.end_date === "Present") ? "Present" : Math.max(...educationEntries.map(e => e.end_date ? new Date(e.end_date).getFullYear() : 0));
-                  return <span className="edu-top-years">{earliest} — {latest}</span>;
-                })()}
-                <span className="edu-top-stat-num">{educationEntries.length}</span>
-                <span className="edu-top-stat-label">{educationEntries.length === 1 ? "Degree" : "Degrees"}</span>
-              </div>
               <div className="edu-top-titles">
                 {isPublic
                   ? <h1 className="edu-split-title">{eduTitle || "Education"}</h1>
@@ -1044,8 +1191,24 @@ export default function Portfolio() {
                 {isPublic
                   ? eduSubtitle && <p className="edu-split-subtitle">{eduSubtitle}</p>
                   : <input className="edu-split-subtitle-input" value={eduSubtitle} onChange={e => { setEduSubtitle(e.target.value); localStorage.setItem("edu_subtitle", e.target.value); }} placeholder="Subtitle" />}
+                  <div className="edu-top-stats">
+                  <div className="edu-top-stat">
+                    <span className="edu-top-stat-num">{degreeCount}</span>
+                    <span className="edu-top-stat-label">{degreeCount === 1 ? "Degree" : "Degrees"}</span>
+                  </div>
+                  <div className="edu-top-stat">
+                    <span className="edu-top-stat-num">{certificationCount}</span>
+                    <span className="edu-top-stat-label">{certificationCount === 1 ? "Certification" : "Certifications"}</span>
+                  </div>
+                  <div className="edu-top-stat">
+                    <span className="edu-top-stat-num">{extracurricularCount}</span>
+                    <span className="edu-top-stat-label">Extra Curricular</span>
+                  </div>
+                </div>
               </div>
             </div>
+              );
+            })()}
 
             {/* Split body */}
             <div className="edu-body">
@@ -1113,13 +1276,17 @@ export default function Portfolio() {
                                 value={eduForm.topic} onChange={e => setEduForm(f => ({ ...f, topic: e.target.value }))} />
                             </label>
                             <label className="edu-form-label">
-                              Start Date *
+                              <span className="edu-date-field-head">
+                                <span>Start Date *</span>
+                              </span>
                               <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
                             </label>
-                            <label className="edu-form-label">
-                              End Date <span className="text-muted">(blank = Present)</span>
-                              <MonthPicker value={eduForm.end_date} onChange={v => setEduForm(f => ({ ...f, end_date: v }))} />
-                            </label>
+                            <DateToggleField
+                              label="End Date"
+                              value={eduForm.end_date}
+                              onChange={v => setEduForm(f => ({ ...f, end_date: v }))}
+                              toggleLabel="Present"
+                            />
                             <label className="edu-form-label">
                               Location
                               <input className="edu-form-input" placeholder="e.g. Vancouver, BC"
@@ -1131,9 +1298,9 @@ export default function Portfolio() {
                                 value={eduForm.gpa} onChange={e => setEduForm(f => ({ ...f, gpa: e.target.value }))} />
                             </label>
                             <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
-                              Awards &amp; Scholarships <span className="text-muted">(one per line)</span>
+                              <span className="edu-label-inline">Awards &amp; Scholarships <span className="text-muted">(one per line)</span></span>
                               <textarea className="edu-form-input" rows={3}
-                                placeholder={"Dean's List\nEntrance Scholarship — $2,000\nPresidential Award"}
+                                placeholder={"Dean's List\nEntrance Scholarship\nPresidential Award"}
                                 value={eduForm.awards} onChange={e => setEduForm(f => ({ ...f, awards: e.target.value }))} />
                             </label>
                           </>)}
@@ -1142,7 +1309,7 @@ export default function Portfolio() {
                           {eduFormType === "secondary" && (<>
                             <label className="edu-form-label">
                               Diploma / Certificate
-                              <input className="edu-form-input" placeholder="e.g. BC Dogwood, IB Diploma (optional)"
+                              <input className="edu-form-input" placeholder="e.g. IB Diploma (optional)"
                                 value={eduForm.degree_type} onChange={e => setEduForm(f => ({ ...f, degree_type: e.target.value }))} />
                             </label>
                             <label className="edu-form-label">
@@ -1161,9 +1328,9 @@ export default function Portfolio() {
                                 value={eduForm.gpa} onChange={e => setEduForm(f => ({ ...f, gpa: e.target.value }))} />
                             </label>
                             <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
-                              Awards &amp; Scholarships <span className="text-muted">(one per line)</span>
-                              <textarea className="edu-form-input" rows={3}
-                                placeholder={"Honour Roll\nPrincipal's Award\nBC Excellence Scholarship"}
+                              <span className="edu-label-inline">Awards &amp; Scholarships <span className="text-muted">(one per line)</span></span>
+                              <textarea className="edu-form-input" rows={2}
+                                placeholder={"Honour Roll\nPrincipal's Award"}
                                 value={eduForm.awards} onChange={e => setEduForm(f => ({ ...f, awards: e.target.value }))} />
                             </label>
                           </>)}
@@ -1176,15 +1343,19 @@ export default function Portfolio() {
                                 value={eduForm.topic} onChange={e => setEduForm(f => ({ ...f, topic: e.target.value }))} />
                             </label>
                             <label className="edu-form-label">
-                              Issue Date *
+                              <span className="edu-date-field-head">
+                                <span>Issue Date *</span>
+                              </span>
                               <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
                             </label>
-                            <label className="edu-form-label">
-                              Expiry Date <span className="text-muted">(blank = No Expiry)</span>
-                              <MonthPicker value={eduForm.end_date} onChange={v => setEduForm(f => ({ ...f, end_date: v }))} />
-                            </label>
+                            <DateToggleField
+                              label="Expiry Date"
+                              value={eduForm.end_date}
+                              onChange={v => setEduForm(f => ({ ...f, end_date: v }))}
+                              toggleLabel="No Expiry"
+                            />
                             <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
-                              Credential ID <span className="text-muted">(optional)</span>
+                              <span className="edu-label-inline">Credential ID <span className="text-muted">(optional)</span></span>
                               <input className="edu-form-input" placeholder="e.g. ABC-12345"
                                 value={eduForm.gpa} onChange={e => setEduForm(f => ({ ...f, gpa: e.target.value }))} />
                             </label>
@@ -1198,18 +1369,22 @@ export default function Portfolio() {
                                 value={eduForm.topic} onChange={e => setEduForm(f => ({ ...f, topic: e.target.value }))} />
                             </label>
                             <label className="edu-form-label">
-                              Start Date *
-                              <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
-                            </label>
-                            <label className="edu-form-label">
-                              End Date <span className="text-muted">(blank = Present)</span>
-                              <MonthPicker value={eduForm.end_date} onChange={v => setEduForm(f => ({ ...f, end_date: v }))} />
-                            </label>
-                            <label className="edu-form-label">
                               Location
                               <input className="edu-form-input" placeholder="e.g. Vancouver, BC"
                                 value={eduForm.location} onChange={e => setEduForm(f => ({ ...f, location: e.target.value }))} />
                             </label>
+                            <label className="edu-form-label">
+                              <span className="edu-date-field-head">
+                                <span>Start Date *</span>
+                              </span>
+                              <MonthPicker value={eduForm.start_date} onChange={v => setEduForm(f => ({ ...f, start_date: v }))} />
+                            </label>
+                            <DateToggleField
+                              label="End Date"
+                              value={eduForm.end_date}
+                              onChange={v => setEduForm(f => ({ ...f, end_date: v }))}
+                              toggleLabel="Present"
+                            />
                           </>)}
                         </div>
 
@@ -1226,10 +1401,14 @@ export default function Portfolio() {
               {/* Right: timeline */}
               <div className="edu-body-right">
                 {educationEntries.length === 0 ? (
-                  <p className="text-muted" style={{ fontSize: "0.9rem" }}>No entries yet.</p>
+                  <div className="edu-empty-state">
+                    <span className="edu-empty-icon">🎓</span>
+                    <p className="edu-empty-title">No education yet</p>
+                    <p className="edu-empty-sub">Add degrees, certifications, or extracurriculars to get started.</p>
+                  </div>
                 ) : (<>
-                  <div className="edu-legend">
-                    <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-degree" />Degree</span>
+                  <div className="edu-legend edu-legend-inline">
+                    <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-degree" />Post Secondary</span>
                     <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-secondary" />Secondary</span>
                     <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-cert" />Certification</span>
                     <span className="edu-legend-item"><span className="edu-legend-dot edu-legend-extra" />Extra Curricular</span>
@@ -1237,16 +1416,21 @@ export default function Portfolio() {
                   <div className="edu-timeline-list">
                     <div className="edu-timeline-line" />
                     {educationEntries.map((entry, i) => {
-                      const start = entry.start_date ? new Date(entry.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "?";
-                      const end = entry.end_date && entry.end_date !== "Present" ? new Date(entry.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Present";
-                      const entryTypeClass = entry.degree_type === "Certification" ? "cert"
-                        : entry.degree_type === "Extra Curricular" ? "extra"
-                        : entry.degree_type === "Secondary School Diploma" ? "secondary"
+                      const startDate = entry.start_date ? new Date(entry.start_date) : null;
+                      const endDate = entry.end_date && entry.end_date !== "Present" ? new Date(entry.end_date) : null;
+                      const isPresent = !entry.end_date || entry.end_date === "Present";
+                      const start = startDate ? startDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "?";
+                      const end = endDate ? endDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Present";
+                      const certHasExpiry = entry.degree_type === "Certification" && endDate;
+                      const entryType = educationEntryTypeOf(entry);
+                      const entryTypeClass = entryType === "certifications" ? "cert"
+                        : entryType === "extracurricular" ? "extra"
+                        : entryType === "secondary" ? "secondary"
                         : "degree";
                       return (
                         <div key={entry.id} className="edu-timeline-item">
                           <div className={`edu-timeline-dot ${i === 0 ? "first" : ""} edu-dot-${entryTypeClass}`} />
-                          <div className={`edu-timeline-content card${entryTypeClass === "cert" ? " edu-entry-cert" : ""} edu-card-wrap`}>
+                          <div className={`edu-timeline-content card edu-card-wrap edu-card-${entryTypeClass}`}>
                             {!isPublic && editEduId !== entry.id && (
                               <div className="edu-card-actions">
                                 <button className="edu-edit-btn" onClick={() => startEditEdu(entry)} title="Edit entry">✎</button>
@@ -1255,51 +1439,140 @@ export default function Portfolio() {
                             )}
                             {editEduId === entry.id ? (
                               <div className="edu-inline-edit">
-                                <div className="edu-inline-edit-grid">
-                                  <label className="edu-form-label">
-                                    {entryTypeClass === "cert" ? "Issuing Organization *" : entryTypeClass === "extra" ? "Club / Team *" : "Institution *"}
-                                    <input className="edu-form-input" value={editEduForm.institution} onChange={e => setEditEduForm(f => ({ ...f, institution: e.target.value }))} />
-                                  </label>
-                                  {(entryTypeClass === "postsecondary") && (
-                                    <label className="edu-form-label">Degree Type *
-                                      <input className="edu-form-input" value={editEduForm.degree_type} onChange={e => setEditEduForm(f => ({ ...f, degree_type: e.target.value }))} />
-                                    </label>
-                                  )}
-                                  {(entryTypeClass !== "secondary") && (
-                                    <label className="edu-form-label">
-                                      {entryTypeClass === "cert" ? "Certification Name *" : entryTypeClass === "extra" ? "Role / Activity *" : "Field of Study *"}
-                                      <input className="edu-form-input" value={editEduForm.topic} onChange={e => setEditEduForm(f => ({ ...f, topic: e.target.value }))} />
-                                    </label>
-                                  )}
-                                  {entryTypeClass === "secondary" ? (
-                                    <label className="edu-form-label">Graduation Year *
-                                      <input className="edu-form-input" type="number" placeholder="e.g. 2022" value={editEduForm.end_date ? editEduForm.end_date.substring(0, 4) : ""} onChange={e => setEditEduForm(f => ({ ...f, end_date: e.target.value }))} />
-                                    </label>
-                                  ) : (
-                                    <>
-                                      <label className="edu-form-label">{entryTypeClass === "cert" ? "Issue Date *" : "Start Date *"}
-                                        <MonthPicker value={editEduForm.start_date} onChange={v => setEditEduForm(f => ({ ...f, start_date: v }))} />
+                                {(() => {
+                                  const editType = editEduForm.entryType || "postsecondary";
+                                  return (
+                                    <div className="edu-inline-edit-grid">
+                                      <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                        {editType === "secondary" ? "School Name *"
+                                          : editType === "extracurricular" ? "Club / Team / Organization *"
+                                          : editType === "certifications" ? "Issuing Organization *"
+                                          : "Institution *"}
+                                        <input
+                                          className="edu-form-input"
+                                          placeholder={
+                                            editType === "secondary" ? "e.g. Kelowna Secondary School"
+                                            : editType === "extracurricular" ? "e.g. Debate Club, Student Union"
+                                            : editType === "certifications" ? "e.g. AWS, Google, Microsoft, Coursera"
+                                            : "e.g. University of British Columbia"
+                                          }
+                                          value={editEduForm.institution}
+                                          onChange={e => setEditEduForm(f => ({ ...f, institution: e.target.value }))}
+                                        />
                                       </label>
-                                      <label className="edu-form-label">{entryTypeClass === "cert" ? "Expiry Date" : "End Date"}
-                                        <MonthPicker value={editEduForm.end_date} onChange={v => setEditEduForm(f => ({ ...f, end_date: v }))} />
-                                      </label>
-                                    </>
-                                  )}
-                                  {entryTypeClass !== "cert" && (
-                                    <label className="edu-form-label">Location
-                                      <input className="edu-form-input" value={editEduForm.location} onChange={e => setEditEduForm(f => ({ ...f, location: e.target.value }))} />
-                                    </label>
-                                  )}
-                                  <label className="edu-form-label">
-                                    {entryTypeClass === "cert" ? "Credential ID" : "GPA"}
-                                    <input className="edu-form-input" value={editEduForm.gpa} onChange={e => setEditEduForm(f => ({ ...f, gpa: e.target.value }))} />
-                                  </label>
-                                  {(entryTypeClass === "postsecondary" || entryTypeClass === "secondary") && (
-                                    <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>Awards & Scholarships
-                                      <textarea className="edu-form-input" rows={2} placeholder="One per line" value={editEduForm.awards} onChange={e => setEditEduForm(f => ({ ...f, awards: e.target.value }))} />
-                                    </label>
-                                  )}
-                                </div>
+
+                                      {editType === "postsecondary" && (
+                                        <>
+                                          <label className="edu-form-label">Degree Type *
+                                            <input className="edu-form-input" placeholder="e.g. Bachelor of Science" value={editEduForm.degree_type} onChange={e => setEditEduForm(f => ({ ...f, degree_type: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            Field of Study *
+                                            <input className="edu-form-input" placeholder="e.g. Computer Science" value={editEduForm.topic} onChange={e => setEditEduForm(f => ({ ...f, topic: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            <span className="edu-date-field-head">
+                                              <span>Start Date *</span>
+                                            </span>
+                                            <MonthPicker value={editEduForm.start_date} onChange={v => setEditEduForm(f => ({ ...f, start_date: v }))} />
+                                          </label>
+                                          <DateToggleField
+                                            label="End Date"
+                                            value={editEduForm.end_date}
+                                            onChange={v => setEditEduForm(f => ({ ...f, end_date: v }))}
+                                            toggleLabel="Present"
+                                          />
+                                          <label className="edu-form-label">
+                                            Location
+                                            <input className="edu-form-input" placeholder="e.g. Vancouver, BC" value={editEduForm.location} onChange={e => setEditEduForm(f => ({ ...f, location: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            GPA
+                                            <input className="edu-form-input" placeholder="e.g. 3.8/4.0" value={editEduForm.gpa} onChange={e => setEditEduForm(f => ({ ...f, gpa: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                            <span className="edu-label-inline">Awards &amp; Scholarships <span className="text-muted">(one per line)</span></span>
+                                            <textarea className="edu-form-input" rows={3} placeholder={"Dean's List\nEntrance Scholarship\nPresidential Award"} value={editEduForm.awards} onChange={e => setEditEduForm(f => ({ ...f, awards: e.target.value }))} />
+                                          </label>
+                                        </>
+                                      )}
+
+                                      {editType === "secondary" && (
+                                        <>
+                                          <label className="edu-form-label">
+                                            Diploma / Certificate
+                                            <input className="edu-form-input" placeholder="e.g. IB Diploma (optional)" value={editEduForm.degree_type} onChange={e => setEditEduForm(f => ({ ...f, degree_type: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">Graduation Year *
+                                            <input className="edu-form-input" type="number" placeholder="e.g. 2022" value={editEduForm.end_date ? editEduForm.end_date.substring(0, 4) : ""} onChange={e => setEditEduForm(f => ({ ...f, end_date: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            Location
+                                            <input className="edu-form-input" placeholder="e.g. Kelowna, BC" value={editEduForm.location} onChange={e => setEditEduForm(f => ({ ...f, location: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            Grade Average
+                                            <input className="edu-form-input" placeholder="e.g. 92%" value={editEduForm.gpa} onChange={e => setEditEduForm(f => ({ ...f, gpa: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                            <span className="edu-label-inline">Awards &amp; Scholarships <span className="text-muted">(one per line)</span></span>
+                                            <textarea className="edu-form-input" rows={2} placeholder={"Honour Roll\nPrincipal's Award"} value={editEduForm.awards} onChange={e => setEditEduForm(f => ({ ...f, awards: e.target.value }))} />
+                                          </label>
+                                        </>
+                                      )}
+
+                                      {editType === "certifications" && (
+                                        <>
+                                          <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                            Certification Name *
+                                            <input className="edu-form-input" placeholder="e.g. AWS Solutions Architect, PMP, Google Analytics" value={editEduForm.topic} onChange={e => setEditEduForm(f => ({ ...f, topic: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            <span className="edu-date-field-head">
+                                              <span>Issue Date *</span>
+                                            </span>
+                                            <MonthPicker value={editEduForm.start_date} onChange={v => setEditEduForm(f => ({ ...f, start_date: v }))} />
+                                          </label>
+                                          <DateToggleField
+                                            label="Expiry Date"
+                                            value={editEduForm.end_date}
+                                            onChange={v => setEditEduForm(f => ({ ...f, end_date: v }))}
+                                            toggleLabel="No Expiry"
+                                          />
+                                          <label className="edu-form-label" style={{ gridColumn: "1 / -1" }}>
+                                            <span className="edu-label-inline">Credential ID <span className="text-muted">(optional)</span></span>
+                                            <input className="edu-form-input" placeholder="e.g. ABC-12345" value={editEduForm.gpa} onChange={e => setEditEduForm(f => ({ ...f, gpa: e.target.value }))} />
+                                          </label>
+                                        </>
+                                      )}
+
+                                      {editType === "extracurricular" && (
+                                        <>
+                                          <label className="edu-form-label">
+                                            Role / Title *
+                                            <input className="edu-form-input" placeholder="e.g. Student Body President, Team Captain" value={editEduForm.topic} onChange={e => setEditEduForm(f => ({ ...f, topic: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            Location
+                                            <input className="edu-form-input" placeholder="e.g. Vancouver, BC" value={editEduForm.location} onChange={e => setEditEduForm(f => ({ ...f, location: e.target.value }))} />
+                                          </label>
+                                          <label className="edu-form-label">
+                                            <span className="edu-date-field-head">
+                                              <span>Start Date *</span>
+                                            </span>
+                                            <MonthPicker value={editEduForm.start_date} onChange={v => setEditEduForm(f => ({ ...f, start_date: v }))} />
+                                          </label>
+                                          <DateToggleField
+                                            label="End Date"
+                                            value={editEduForm.end_date}
+                                            onChange={v => setEditEduForm(f => ({ ...f, end_date: v }))}
+                                            toggleLabel="Present"
+                                          />
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                                 {editEduError && <p style={{ color: "#f87171", fontSize: "0.8rem", marginTop: 8 }}>{editEduError}</p>}
                                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                                   <button className="btn-primary" style={{ fontSize: "0.8rem", padding: "6px 16px" }} onClick={() => saveEditEdu(entry.id)}>Save</button>
@@ -1317,8 +1590,8 @@ export default function Portfolio() {
                                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                                   <p className="edu-dates">
                                     {entry.degree_type === "Certification"
-                                      ? `Issued ${start}${entry.end_date ? ` · Expires ${end}` : " · No Expiry"}`
-                                      : `${start} — ${end}`}
+                                      ? `Issued ${start}${certHasExpiry ? ` · Expires ${end}` : ""}`
+                                      : <>{start} — {isPresent ? <span className="edu-present-pill"><span className="edu-present-dot" />Present</span> : end}</>}
                                   </p>
                                   {entry.location && <p className="text-muted" style={{ fontSize: "0.78rem" }}>{entry.location}</p>}
                                   {entry.gpa && (
@@ -1331,7 +1604,7 @@ export default function Portfolio() {
                               {entry.details && entry.details.length > 0 && (
                                 <div className="edu-awards-list">
                                   {entry.details.map((award, idx) => (
-                                    <div key={idx} className="edu-award-card">{award}</div>
+                                    <div key={idx} className={`edu-award-card edu-award-${entryTypeClass}`}>{award}</div>
                                   ))}
                                 </div>
                               )}
@@ -1546,13 +1819,77 @@ function MonthPicker({ value, onChange, placeholder = "Select date" }) {
   );
 }
 
+function currentMonthValue() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function DateToggleField({ label, value, onChange, toggleLabel }) {
+  const toggledOn = !value;
+
+  return (
+    <div className="edu-form-label">
+      <div className="edu-date-field-head">
+        <span>{label}</span>
+        <label className="edu-date-checkbox">
+          <input
+            type="checkbox"
+            checked={toggledOn}
+            onChange={e => onChange(e.target.checked ? "" : currentMonthValue())}
+          />
+          <span>{toggleLabel}</span>
+        </label>
+      </div>
+      {toggledOn ? (
+        <div className="edu-date-toggle-empty text-muted">{toggleLabel} selected</div>
+      ) : (
+        <MonthPicker value={value} onChange={onChange} />
+      )}
+    </div>
+  );
+}
+
 function EvidenceSection({ p }) {
   const ev = p.success_evidence;
   if (!ev) return null;
+
+  let data = null;
+  try { data = JSON.parse(ev); } catch (_) {}
+
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return <p className="port-evidence">{ev}</p>;
+  }
+
+  const chips = [];
+  if (data.manual_metrics && typeof data.manual_metrics === "object") {
+    Object.entries(data.manual_metrics).forEach(([k, v]) =>
+      chips.push({ label: k.replace(/_/g, " "), value: v.value ?? v })
+    );
+  }
+  if (data.test_coverage != null) chips.push({ label: "coverage", value: `${data.test_coverage}%` });
+  if (Array.isArray(data.achievements) && data.achievements.length > 0)
+    chips.push({ label: "achievements", value: data.achievements.length });
+  if (Array.isArray(data.feedback) && data.feedback.length > 0)
+    chips.push({ label: "feedback", value: data.feedback.length });
+  if (Array.isArray(data.readme_badges) && data.readme_badges.length > 0)
+    chips.push({ label: "badges", value: data.readme_badges.length });
+
+  const skip = new Set(["manual_metrics", "test_coverage", "achievements", "feedback", "readme_badges"]);
+  Object.entries(data).forEach(([k, v]) => {
+    if (skip.has(k) || typeof v === "object") return;
+    chips.push({ label: k.replace(/_/g, " "), value: v });
+  });
+
+  if (chips.length === 0) return null;
+
   return (
-    <div className="port-evidence">
-      <span className="port-evidence-label">Evidence:</span>
-      <span>{ev}</span>
+    <div className="port-evidence-chips">
+      {chips.map((c, i) => (
+        <span key={i} className="port-evidence-chip">
+          <span className="port-evidence-chip-label">{c.label}</span>
+          <span className="port-evidence-chip-val">{c.value}</span>
+        </span>
+      ))}
     </div>
   );
 }

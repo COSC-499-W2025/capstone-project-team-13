@@ -508,6 +508,7 @@ class WorkHistory(Base):
     # Work info
     company = Column(String(255), nullable=False)
     role = Column(String(255), nullable=False)
+    experience_type = Column(String(50), nullable=False, default='work')
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)  # NULL means "present"
     location = Column(String(255), nullable=True) # e.g. "Vancouver, BC"
@@ -535,6 +536,7 @@ class WorkHistory(Base):
             'user_id': self.user_id,
             'company': self.company,
             'role': self.role,
+            'experience_type': self.experience_type or 'work',
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else 'Present',
             'location': self.location,
@@ -719,6 +721,18 @@ class DatabaseManager:
                         print("✅ Added file_hash column")
                     except Exception as e:
                         print(f"⚠️  Could not add file_hash: {e}")
+
+        if 'work_history' in inspector.get_table_names():
+            existing_work_columns = [col['name'] for col in inspector.get_columns('work_history')]
+            with self.engine.connect() as conn:
+                if 'experience_type' not in existing_work_columns:
+                    try:
+                        conn.execute(text("ALTER TABLE work_history ADD COLUMN experience_type VARCHAR(50) DEFAULT 'work';"))
+                        conn.execute(text("UPDATE work_history SET experience_type = 'work' WHERE experience_type IS NULL;"))
+                        conn.commit()
+                        print("✅ Added experience_type column to work_history")
+                    except Exception as e:
+                        print(f"⚠️  Could not add experience_type: {e}")
     
     def get_session(self):
         return self.Session()

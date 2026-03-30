@@ -17,6 +17,15 @@ const TIPS = [
   "Skills section tip: list Expert skills first — recruiters scan top-down.",
 ];
 
+function formatProjectTypeLabel(type) {
+  if (!type || type === "Unknown") return "Unknown";
+  if (String(type).toLowerCase() === "visual_media") return "Media";
+  return String(type)
+    .split("_")
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function useCountUp(target, duration = 900) {
   const [value, setValue] = useState(0);
   const frame = useRef(null);
@@ -341,7 +350,7 @@ export default function Dashboard() {
                       const type = p.project_type || "Unknown";
                       acc[type] = (acc[type] || 0) + 1;
                       return acc;
-                    }, {})).map(([type, value]) => ({ name: type, value }))}
+                    }, {})).map(([type, value]) => ({ name: formatProjectTypeLabel(type), value }))}
                     dataKey="value"
                     nameKey="name"
                     cx="50%"
