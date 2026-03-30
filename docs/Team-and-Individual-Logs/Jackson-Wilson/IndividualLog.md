@@ -26,6 +26,8 @@ Hyperlinks for Term 2:
 
 [Term 2 Week 10](#log-20)
 
+[Term 2 Week 11-12](#log-21)
+
 
 ## Log 1:
 ## Date Range: Weeks 3 - Sept 15-21, 2025
@@ -390,4 +392,37 @@ https://github.com/COSC-499-W2025/capstone-project-team-13/pull/431
 ### Plans for next week
 
 There's a couple spots that don't seem to be fully working I want to double check on. Specifically, the skills extractor seemed to be having issues? On the frontend at least it seemed like it was only recognizing skills as belonging to visual projects. Aside from that, I'm keeping an eye on when frontent elements are finished so I can continue getting the styling cohesive across the board.
+
+
+
+
+
+
+## Log 21
+## Date Range: Term 2 Week 11/12 - March 16 - 29, 2026
+
+## ![T2 final week](weeklyfeaturesimages/T2FinalWeek.jpg)
+
+## Recap on your week's goals 
+
+### Which features were yours in the project plan for this milestone?
+
+To keep things simple, here is the list of what I did with PR #:
+
+Reworked the navbar. Gave it a more sleek look and changed alignments to work a little nicer. 494 + 505
+
+Added charts to dashboard - 500
+
+Reworked project type identification logic - 516
+
+Added github contributions to frontend - 525
+
+Added a system walkthrough for new users - 547
+
+Added an upload time estimation - 572
+
+### Plans for next week
+
+I dunno. Relax? 
+
 
