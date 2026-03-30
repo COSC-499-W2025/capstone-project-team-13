@@ -473,6 +473,68 @@ body[data-theme="light"] .settings-config-list-label       { color: #2c3060; }
 body[data-theme="light"] .settings-config-list             { color: #2c3060; }
 body[data-theme="light"] .settings-config-subrows          { border-left-color: rgba(100,108,200,0.25); }
 
+/* About section – dark-mode baseline (inline color replaced by class) */
+.about-body-text     { color: #9aa6de; }
+.about-feature-title { color: #eef1ff; font-weight: 600; }
+.about-tech-name     { color: #a5b4fc; }
+.about-tech-role     { color: #6b7a99; }
+
+/* About section – light mode overrides */
+body[data-theme="light"] .about-body-text     { color: #3a4275; }
+body[data-theme="light"] .about-feature-title { color: #1a1d3a; }
+body[data-theme="light"] .about-tech-name     { color: #3730a3; }
+body[data-theme="light"] .about-tech-role     { color: #3a4060; }
+
+/* Analysis page – dark-mode baselines for inline-replaced classes */
+.an-result-text  { color: #c4cbf5; }
+.an-field-label  { color: #9aa6de; }
+
+/* Analysis page – light mode overrides */
+body[data-theme="light"] .an-result-text  { color: #2c3060; }
+body[data-theme="light"] .an-field-label  { color: #5a6080; }
+
+/* Portfolio page – dark-mode baselines for inline-replaced classes */
+.port-loading-text  { color: #818cf8; }
+.port-empty-heading { color: #c4cbf5; }
+.port-empty-body    { color: #6b7a99; }
+.port-accent-text   { color: #a5b4fc; }
+.port-role-badge    { color: #a5b4fc; }
+
+/* Portfolio page – light mode overrides */
+body[data-theme="light"] .port-loading-text  { color: #4338ca; }
+body[data-theme="light"] .port-empty-heading { color: #1a1d3a; }
+body[data-theme="light"] .port-empty-body    { color: #5a6080; }
+body[data-theme="light"] .port-accent-text   { color: #3730a3; }
+body[data-theme="light"] .port-role-badge    { color: #3730a3; }
+
+/* Portfolio – bio label still too light in light mode */
+body[data-theme="light"] .port-about-bio-label { color: #5a6080; }
+
+/* Portfolio – sort label missing light override */
+body[data-theme="light"] .port-sort-label { color: #5a6080; }
+
+/* Interview page – light mode overrides (no overrides existed) */
+body[data-theme="light"] .iv-hero-sub    { color: #5a6080; }
+body[data-theme="light"] .iv-label       { color: #5a6080; }
+body[data-theme="light"] .iv-role-pill   { background: rgba(0,0,0,0.03); color: #5a6080; border-color: rgba(100,108,200,0.3); }
+body[data-theme="light"] .iv-role-pill:hover  { border-color: rgba(79,70,229,0.5); color: #3730a3; }
+body[data-theme="light"] .iv-role-pill.active { background: rgba(79,70,229,0.1); border-color: rgba(79,70,229,0.55); color: #4f46e5; }
+body[data-theme="light"] .iv-chevron     { color: #7278a8; }
+body[data-theme="light"] .iv-star-text   { color: #2c3060; }
+body[data-theme="light"] .iv-shortcut    { color: #4f46e5; }
+
+/* Community page – View Public Portfolios button in light mode */
+body[data-theme="light"] .settings-button-primary {
+  background: linear-gradient(135deg, #2977ff 0%, #a349ff 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+  border: 1px solid rgba(79,70,229,0.2);
+}
+body[data-theme="light"] .settings-button-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(79,70,229,0.45);
+  transform: translateY(-1px);
+}
+
 
 /* ═══════════════════════════════════════════════════════
    Toggle button (theme-agnostic, always visible)

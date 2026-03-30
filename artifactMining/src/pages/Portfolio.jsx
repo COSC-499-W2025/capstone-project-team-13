@@ -499,7 +499,7 @@ export default function Portfolio() {
     } catch (e) { setEditExpError(e.message); }
   }
 
-  if (authed === null) return <div className="page-wrap" style={{ paddingTop: 80, textAlign: "center", color: "#818cf8" }}>Checking authentication...</div>;
+  if (authed === null) return <div className="page-wrap port-loading-text" style={{ paddingTop: 80, textAlign: "center" }}>Checking authentication...</div>;
 
   if (authed === false) return (
     <div className="page-wrap">
@@ -845,15 +845,15 @@ export default function Portfolio() {
                   <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#6366f1", opacity: 0.6, marginBottom: 16 }}>
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
-                  <p style={{ fontWeight: 700, fontSize: "1.05rem", color: "#c4cbf5", margin: 0 }}>No portfolio data yet</p>
-                  <p style={{ marginTop: 8, fontSize: "0.88rem", color: "#6b7a99", maxWidth: 280, margin: "8px auto 0" }}>Hit <strong style={{ color: "#a5b4fc" }}>Regenerate</strong> to mine your projects and build your portfolio automatically.</p>
+                  <p className="port-empty-heading" style={{ fontWeight: 700, fontSize: "1.05rem", margin: 0 }}>No portfolio data yet</p>
+                  <p className="port-empty-body" style={{ marginTop: 8, fontSize: "0.88rem", maxWidth: 280, margin: "8px auto 0" }}>Hit <strong className="port-accent-text">Regenerate</strong> to mine your projects and build your portfolio automatically.</p>
                 </div>
               ) : sorted.length === 0 && isPublic ? (
                 <div className="port-no-results">
                   <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#6b7a99", marginBottom: 12 }}>
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
-                  <p>No projects match <strong style={{ color: "#a5b4fc" }}>{search || typeFilter}</strong></p>
+                  <p>No projects match <strong className="port-accent-text">{search || typeFilter}</strong></p>
                   <button className="btn-secondary" style={{ marginTop: 12, fontSize: "0.82rem" }} onClick={() => { setSearch(""); setTypeFilter("all"); }}>Clear filters</button>
                 </div>
               ) : (
@@ -2025,7 +2025,7 @@ function ProjectCard({ p, rank, editId, editForm, setEditForm, startEdit, saveEd
       </div>
       <h3 className="port-proj-name">{projectName(p)}</h3>
       <p className="port-proj-desc text-muted">{p.description || "No description"}</p>
-      {p.user_role && <p style={{ fontSize: "0.8rem", color: "#a5b4fc", marginTop: 4 }}>Role: {p.user_role}</p>}
+      {p.user_role && <p className="port-role-badge" style={{ fontSize: "0.8rem", marginTop: 4 }}>Role: {p.user_role}</p>}
       <EvidenceSection p={p} />
       <div className="chip-group" style={{ marginTop: 8 }}>
         {[...new Set([...(p.skills || []), ...(p.tech_stack || p.languages || [])])].slice(0, 6).map((t, i) => {
@@ -2102,7 +2102,7 @@ function ProjectRow({ p, editId, editForm, setEditForm, startEdit, saveEdit, set
         <div className="port-list-desc-fade">
           <p className="port-list-desc text-muted">{p.description || "No description"}</p>
         </div>
-        {p.user_role && <p style={{ fontSize: "0.78rem", color: "#a5b4fc", marginTop: 2 }}>Role: {p.user_role}</p>}
+        {p.user_role && <p className="port-role-badge" style={{ fontSize: "0.78rem", marginTop: 2 }}>Role: {p.user_role}</p>}
         <EvidenceSection p={p} />
         <div className="chip-group" style={{ marginTop: 6 }}>
           {[...new Set([...(p.skills || []), ...(p.languages || p.tech_stack || [])])].slice(0, 8).map((t, i) => {

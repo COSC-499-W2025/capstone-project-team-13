@@ -697,7 +697,7 @@ export default function Settings({ onLogout }) {
     ];
     return (
       <div className="settings-section-panel">
-        <h2>How to Use the App</h2>
+        <h2>How to Use</h2>
         <p className="settings-section-description">A quick guide to getting the most out of  NovaHire.</p>
 
         <div className="settings-card" style={{ marginBottom: 24 }}>
@@ -740,7 +740,7 @@ export default function Settings({ onLogout }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {group.shortcuts.map(s => (
                       <div key={s.keys} style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <kbd style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", color: "#a5b4fc", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
+                        <kbd className="about-tech-name" style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 6, padding: "3px 10px", fontSize: "0.82rem", fontFamily: "monospace", whiteSpace: "nowrap", flexShrink: 0 }}>{s.keys}</kbd>
                         <span style={{ fontSize: "0.88rem" }}>{s.desc}</span>
                       </div>
                     ))}
@@ -835,7 +835,6 @@ export default function Settings({ onLogout }) {
     return (
       <div className="settings-section-panel">
         <div style={{ textAlign: "center", padding: "8px 0 24px" }}>
-          <div style={{ fontSize: "2.8rem", marginBottom: 12 }}>⛏</div>
           <h2 style={{ marginBottom: 8 }}>NovaHire</h2>
           <p className="settings-section-description" style={{ maxWidth: 520, margin: "0 auto 16px" }}>
             A local-first tool for analyzing your projects, discovering your skills,
@@ -852,14 +851,14 @@ export default function Settings({ onLogout }) {
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>What it does</h3></div></div>
             <div className="settings-card-body">
-              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: "0 0 10px" }}>
+              <p className="about-body-text" style={{ lineHeight: 1.7, margin: "0 0 10px" }}>
                 NovaHire helps students and developers turn their collection of
                 project files into a structured portfolio. Upload any project - code, documents,
                 images, or media - and the system automatically extracts metadata, detects
                 languages and frameworks, and uses AI to generate descriptions and surface
                 demonstrable skills.
               </p>
-              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: 0 }}>
+              <p className="about-body-text" style={{ lineHeight: 1.7, margin: 0 }}>
                 The result is a living record of your work that you can draw on to build
                 targeted resumes, curate portfolio showcases, and track how your skills
                 have grown across projects.
@@ -875,8 +874,8 @@ export default function Settings({ onLogout }) {
                   <div key={f.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     <span style={{ fontSize: "1.1rem", flexShrink: 0 }}>{f.icon}</span>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: "0.88rem", color: "#eef1ff", marginBottom: 2 }}>{f.title}</div>
-                      <div style={{ fontSize: "0.8rem", color: "#9aa6de", lineHeight: 1.55 }}>{f.desc}</div>
+                      <div className="about-feature-title" style={{ fontWeight: 600, fontSize: "0.88rem", marginBottom: 2 }}>{f.title}</div>
+                      <div className="about-body-text" style={{ fontSize: "0.8rem", lineHeight: 1.55 }}>{f.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -890,8 +889,8 @@ export default function Settings({ onLogout }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 8 }}>
                 {TECH.map(t => (
                   <div key={t.name} style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(107,114,244,0.2)", borderRadius: 8, padding: "8px 10px" }}>
-                    <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "#a5b4fc", marginBottom: 2 }}>{t.name}</div>
-                    <div style={{ fontSize: "0.72rem", color: "#6b7a99" }}>{t.role}</div>
+                    <div className="about-tech-name" style={{ fontWeight: 600, fontSize: "0.85rem", marginBottom: 2 }}>{t.name}</div>
+                    <div className="about-tech-role" style={{ fontSize: "0.72rem" }}>{t.role}</div>
                   </div>
                 ))}
               </div>
@@ -901,13 +900,13 @@ export default function Settings({ onLogout }) {
           <div className="settings-card">
             <div className="settings-card-header"><div><h3>Privacy and Data</h3></div></div>
             <div className="settings-card-body">
-              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: "0 0 10px" }}>
+              <p className="about-body-text" style={{ lineHeight: 1.7, margin: "0 0 10px" }}>
                 All project files and analysis results are stored in a local SQLite database
                 on your machine. No data is uploaded to external servers without your explicit
                 consent. AI features require a separately configured AI service and will only
                 activate after you grant AI consent in Settings.
               </p>
-              <p style={{ color: "#9aa6de", lineHeight: 1.7, margin: 0 }}>
+              <p className="about-body-text" style={{ lineHeight: 1.7, margin: 0 }}>
                 You can revoke consent, exclude specific folders or file types, and permanently
                 delete any project at any time from the Consent, Privacy, and Deletion Manager sections.
               </p>
@@ -1130,7 +1129,7 @@ export default function Settings({ onLogout }) {
               ["dashboard", "Dashboard Settings"],
               ["currentConfig", "Current Configuration"],
               ["community", "Community Portfolios"],
-              ["guide", "How to Use the App"],
+              ["guide", "How to Use"],
               ["about", "About"],
             ].map(([key, label]) => (
               <button key={key} className={`settings-nav-item ${activeSection === key ? "active" : ""}`} onClick={() => setActiveSection(key)}>{label}</button>

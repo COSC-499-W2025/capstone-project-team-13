@@ -122,7 +122,7 @@ export default function Analysis() {
       sections.push(
         <div key="ov" className="card an-result-card">
           <h3>Overview</h3>
-          {ovText && <p style={{ color: "#c4cbf5", lineHeight: 1.65, marginTop: 8 }}>{ovText}</p>}
+          {ovText && <p className="an-result-text" style={{ lineHeight: 1.65, marginTop: 8 }}>{ovText}</p>}
           {ovType && <p className="text-muted" style={{ marginTop: 6 }}>Type: {ovType}</p>}
         </div>
       );
@@ -133,8 +133,8 @@ export default function Analysis() {
         <div key="td" className="card an-result-card">
           <h3>Technical Depth</h3>
           {typeof r.technical_depth === "string"
-            ? <p style={{ color: "#c4cbf5", lineHeight: 1.65, marginTop: 8 }}>{r.technical_depth}</p>
-            : <ul style={{ color: "#c4cbf5", paddingLeft: 18, marginTop: 8 }}>
+            ? <p className="an-result-text" style={{ lineHeight: 1.65, marginTop: 8 }}>{r.technical_depth}</p>
+            : <ul className="an-result-text" style={{ paddingLeft: 18, marginTop: 8 }}>
                 {Object.entries(r.technical_depth).filter(([,v]) => v && typeof v === "string").map(([k,v]) => (
                   <li key={k} style={{ marginBottom: 6 }}><strong>{k.replace(/_/g," ")}:</strong> {v}</li>
                 ))}
@@ -165,7 +165,7 @@ export default function Analysis() {
         .map(([k,v]) => (
           <div key={k} className="card an-result-card">
             <h3>{k.replace(/_/g," ")}</h3>
-            <p style={{ color: "#c4cbf5", lineHeight: 1.65, marginTop: 8 }}>{v}</p>
+            <p className="an-result-text" style={{ lineHeight: 1.65, marginTop: 8 }}>{v}</p>
           </div>
         ));
       return textParts.length > 0 ? <>{textParts}</> : <p className="text-muted">Analysis returned no readable output for this type.</p>;
@@ -195,7 +195,7 @@ export default function Analysis() {
               <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 4 }}>
                 {(scores.scores || []).map((s, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(107,114,244,0.12)" }}>
-                    <span style={{ color: "#c4cbf5", fontSize: "0.88rem" }}>{s.name}</span>
+                    <span className="an-result-text" style={{ fontSize: "0.88rem" }}>{s.name}</span>
                     <span className="tag accent">{s.importance_score}</span>
                   </div>
                 ))}
@@ -206,11 +206,11 @@ export default function Analysis() {
           <div className="card">
             <h3 style={{ marginBottom: 10 }}>AI Project Ranking</h3>
             <p className="text-muted" style={{ marginBottom: 12, fontSize: "0.88rem" }}>Rank your top projects using AI with optional skill prioritization.</p>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 10 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 10 }}>
               Skills to prioritize (comma-separated, optional)
               <input value={rankSkills} onChange={e => setRankSkills(e.target.value)} placeholder="Python, React, ML…" />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 14 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 14 }}>
               Top N
               <input type="number" min="1" max="20" value={topK} onChange={e => setTopK(e.target.value)} style={{ width: 80 }} />
             </label>
@@ -245,14 +245,14 @@ export default function Analysis() {
         <div className="an-grid">
           <div className="card">
             <h3 style={{ marginBottom: 10 }}>Analyze Single Project</h3>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 10 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 10 }}>
               Project
               <select value={aiProjectId} onChange={e => setAiProjectId(e.target.value)}>
                 <option value="">-- Select project --</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{pName(p)}</option>)}
               </select>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 14 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 14 }}>
               Analysis type
               <select value={aiType} onChange={e => setAiType(e.target.value)}>
                 <option value="overview">Overview — summary and description</option>
@@ -268,7 +268,7 @@ export default function Analysis() {
           <div className="card">
             <h3 style={{ marginBottom: 10 }}>Batch Analyze All Projects</h3>
             <p className="text-muted" style={{ marginBottom: 12, fontSize: "0.88rem" }}>Runs AI analysis across all {projects.length} project{projects.length !== 1 ? "s" : ""}. Saves descriptions back to each project.</p>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 14 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 14 }}>
               Analysis type
               <select value={aiType} onChange={e => setAiType(e.target.value)}>
                 <option value="overview">Overview</option>
@@ -329,14 +329,14 @@ export default function Analysis() {
         <div className="an-grid">
           <div className="card">
             <h3 style={{ marginBottom: 12 }}>Assign Role to Project</h3>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 10 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 10 }}>
               Project
               <select value={roleProjectId} onChange={e => setRoleProjectId(e.target.value)}>
                 <option value="">-- Select --</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{pName(p)}</option>)}
               </select>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", color: "#9aa6de", marginBottom: 14 }}>
+            <label className="an-field-label" style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: "0.82rem", marginBottom: 14 }}>
               Role
               <input value={roleValue} onChange={e => setRoleValue(e.target.value)} placeholder="Lead Developer, Designer, PM…"
                 onKeyDown={e => e.key === "Enter" && assignRole()} />
