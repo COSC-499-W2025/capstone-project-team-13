@@ -10,6 +10,7 @@ Tests for:
 - Prompt templates
 """
 
+import json
 import shutil
 import sys
 import os
@@ -25,7 +26,6 @@ sys.path.insert(0, project_root)
 class TestAITextProjectAnalyzer(unittest.TestCase):
     """Test the AI Text Project Analyzer"""
 
-        
     def setUp(self):
         """Set up mock text project without caching"""
         self.mock_project = {
@@ -35,51 +35,64 @@ class TestAITextProjectAnalyzer(unittest.TestCase):
             "file_type": "pdf"
         }
         shutil.rmtree("data/ai_text_project_cache", ignore_errors=True)
-        
+
+    def _make_json_response(self, skills=None, description="A thoughtful essay.", score=5.0):
+        return json.dumps({
+            "ai_description": description,
+            "extracted_skills": skills or ["Critical thinking", "Research", "Analysis"],
+            "contribution_score": score,
+        })
+
     @patch("src.AI.ai_text_project_analyzer.get_ai_service")
     def test_skills_extraction(self, mock_ai_service):
-        """Test extraction of writing skills"""
+        """Test extraction of writing skills via analyze_project_complete"""
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 
         mock_ai = Mock()
-        mock_ai.generate_text.return_value = "Critical thinking, Emotional analysis, Research"
+        mock_ai.generate_text.return_value = self._make_json_response(
+            skills=["Critical thinking", "Emotional analysis", "Research"]
+        )
         mock_ai_service.return_value = mock_ai
         analyzer = AITextProjectAnalyzer()
-        skills = analyzer.extract_skills(self.mock_project)
+        output = analyzer.analyze_project_complete(self.mock_project)
 
-        self.assertEqual(len(skills), 3)
-        self.assertIn("Critical thinking", skills)
+        self.assertIn("extracted_skills", output)
+        self.assertEqual(len(output["extracted_skills"]), 3)
+        self.assertIn("Critical thinking", output["extracted_skills"])
         mock_ai.generate_text.assert_called_once()
 
     @patch("src.AI.ai_text_project_analyzer.get_ai_service")
     def test_description_generation(self, mock_ai_service):
-        """Test AI-generated project description"""
+        """Test AI-generated project description via analyze_project_complete"""
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 
         mock_ai = Mock()
-        mock_ai.generate_text.return_value = "A thoughtful essay exploring mental health topics."
+        mock_ai.generate_text.return_value = self._make_json_response(
+            description="A thoughtful essay exploring mental health topics."
+        )
         mock_ai_service.return_value = mock_ai
 
         analyzer = AITextProjectAnalyzer()
-        desc = analyzer.generate_description(self.mock_project, ["Critical thinking", "Emotional analysis", "Research" ])
+        output = analyzer.analyze_project_complete(self.mock_project)
 
-        self.assertIsNotNone(desc)
-        self.assertIn("essay", desc.lower())
+        self.assertIn("ai_description", output)
+        self.assertIsNotNone(output["ai_description"])
+        self.assertIn("essay", output["ai_description"].lower())
         mock_ai.generate_text.assert_called_once()
 
     @patch("src.AI.ai_text_project_analyzer.get_ai_service")
     def test_contribution_score(self, mock_ai_service):
-        """Test numeric contribution scoring"""
+        """Test numeric contribution scoring via analyze_project_complete"""
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 
         mock_ai = Mock()
-        mock_ai.generate_text.return_value = "Score: 8"
+        mock_ai.generate_text.return_value = self._make_json_response(score=8)
         mock_ai_service.return_value = mock_ai
 
         analyzer = AITextProjectAnalyzer()
-        score = analyzer.estimate_contribution(self.mock_project, ["analysis"])
+        output = analyzer.analyze_project_complete(self.mock_project)
 
-        self.assertEqual(score, 8.0)
+        self.assertEqual(output["contribution_score"], 8.0)
         mock_ai.generate_text.assert_called_once()
 
     @patch("src.AI.ai_text_project_analyzer.get_ai_service")
@@ -88,12 +101,11 @@ class TestAITextProjectAnalyzer(unittest.TestCase):
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 
         mock_ai = Mock()
-        # Use side_effect so each call returns the right string
-        mock_ai.generate_text.side_effect = [
-            "Critical thinking, Emotional analysis, Research",   # skills
-            "A thoughtful essay exploring mental health topics.",  # description
-            "8"  # score
-        ]
+        mock_ai.generate_text.return_value = self._make_json_response(
+            skills=["Critical thinking", "Emotional analysis", "Research"],
+            description="A thoughtful essay exploring mental health topics.",
+            score=8,
+        )
         mock_ai_service.return_value = mock_ai
         analyzer = AITextProjectAnalyzer()
         output = analyzer.analyze_project_complete(self.mock_project)
@@ -106,34 +118,38 @@ class TestAITextProjectAnalyzer(unittest.TestCase):
         self.assertIn("essay", output["ai_description"].lower())
         self.assertEqual(output["contribution_score"], 8.0)
 
-    @patch("src.AI.ai_text_project_analyzer.get_ai_service") 
-    def test_cache_usage(self, mock_ai_service): 
-        """Test caching reduces repeated API calls""" 
+    @patch("src.AI.ai_text_project_analyzer.get_ai_service")
+    def test_cache_usage(self, mock_ai_service):
+        """Test caching reduces repeated API calls"""
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
-        mock_ai = Mock() 
-        mock_ai.generate_text.return_value = "Skill A, Skill B" 
+        mock_ai = Mock()
+        mock_ai.generate_text.return_value = self._make_json_response(
+            skills=["Skill A", "Skill B"]
+        )
         mock_ai_service.return_value = mock_ai
-        analyzer = AITextProjectAnalyzer() # First call → hits API 
-        skills1 = analyzer.extract_skills(self.mock_project) 
+        analyzer = AITextProjectAnalyzer()
+        # First call → hits API
+        output1 = analyzer.analyze_project_complete(self.mock_project)
         call_count_1 = mock_ai.generate_text.call_count
-        # Second call → should load from cache 
-        skills2 = analyzer.extract_skills(self.mock_project) 
+        # Second call → should load from cache
+        output2 = analyzer.analyze_project_complete(self.mock_project)
         call_count_2 = mock_ai.generate_text.call_count
-        self.assertEqual(skills1, skills2) 
-        self.assertEqual(call_count_1, call_count_2) # no extra calls 
-        self.assertGreaterEqual(analyzer.cache_hits, 1)
-    
-    @patch("src.AI.ai_service.get_ai_service") 
-    def test_batch_analysis(self, mock_ai_service): 
-        """Test processing multiple text projects""" 
+        self.assertEqual(output1["extracted_skills"], output2["extracted_skills"])
+        self.assertEqual(call_count_1, call_count_2)  # no extra calls
+
+    @patch("src.AI.ai_service.get_ai_service")
+    def test_batch_analysis(self, mock_ai_service):
+        """Test processing multiple text projects"""
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
-        mock_ai = Mock() 
-        mock_ai.generate_text.return_value = "Skill A, Skill B" 
+        mock_ai = Mock()
+        mock_ai.generate_text.return_value = self._make_json_response(
+            skills=["Skill A", "Skill B"]
+        )
         mock_ai_service.return_value = mock_ai
-        project_list = [self.mock_project, self.mock_project] 
-        analyzer = AITextProjectAnalyzer() 
+        project_list = [self.mock_project, self.mock_project]
+        analyzer = AITextProjectAnalyzer()
         results = analyzer.analyze_batch(project_list)
-        self.assertEqual(len(results), 2) 
+        self.assertEqual(len(results), 2)
         self.assertIn("extracted_skills", results[0])
 
     @patch("src.Databases.database.db_manager.update_project")
@@ -144,11 +160,11 @@ class TestAITextProjectAnalyzer(unittest.TestCase):
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 
         mock_ai = Mock()
-        mock_ai.generate_text.side_effect = [
-            "Writing, Analysis",
-            "This is a description",
-            "8"
-        ]
+        mock_ai.generate_text.return_value = self._make_json_response(
+            skills=["Writing", "Analysis"],
+            description="This is a description",
+            score=8,
+        )
         mock_ai_service.return_value = mock_ai
 
         mock_db_project = Mock()
@@ -166,18 +182,12 @@ class TestAITextProjectAnalyzer(unittest.TestCase):
 
     @patch("src.AI.ai_text_project_analyzer.get_ai_service")
     def test_prompt_templates_exist(self, mock_ai_service):
-        """Test prompts exist and contain expected length"""
+        """Test ANALYSIS_PROMPT exists and has expected length"""
         from src.AI.ai_text_project_analyzer import AITextProjectAnalyzer
 
         analyzer = AITextProjectAnalyzer()
 
-        templates = [
-            analyzer.DESCRIPTION_PROMPT,
-            analyzer.SKILLS_PROMPT,
-            analyzer.CONTRIBUTION_PROMPT
-        ]
-
-        for t in templates:
-            self.assertIsInstance(t, str)
-            self.assertGreater(len(t), 50)
-
+        # The analyzer uses a single unified ANALYSIS_PROMPT
+        t = analyzer.ANALYSIS_PROMPT
+        self.assertIsInstance(t, str)
+        self.assertGreater(len(t), 50)

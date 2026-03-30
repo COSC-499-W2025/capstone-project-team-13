@@ -21,6 +21,7 @@ def make_project(pid=1, name="Capstone", ptype="code", has_bullets=True):
     p.languages = ["Python"]
     p.frameworks = ["FastAPI"]
     p.bullets   = {"header": "Capstone | Python"} if has_bullets else None
+    p.custom_description = None
     return p
 
 
@@ -121,9 +122,10 @@ class TestGetResumePreviewData:
         for key in ("name", "email", "education", "awards", "skills_by_level", "projects"):
             assert key in data
 
+    @patch(f"{_P}.has_ai_consent", return_value=False)
     @patch(f"{_P}.PortfolioFormatter")
     @patch(f"{_P}.db_manager")
-    def test_all_projects_included_not_just_bullet_ones(self, mock_db, mock_pf):
+    def test_all_projects_included_not_just_bullet_ones(self, mock_db, mock_pf, _consent):
         from src.Services.resume_export_service import get_resume_preview_data
         pw  = make_project(pid=1, name="Has Bullets",  has_bullets=True)
         pwo = make_project(pid=2, name="No Bullets",   has_bullets=False)
@@ -176,85 +178,81 @@ class TestGetResumePreviewData:
 
 class TestBuildPdf:
 
-    def test_minimal_resume_produces_valid_pdf(self):
+    def _pdf_bytes(self, data):
         from src.Services.resume_export_service import _build_pdf
-        b = _build_pdf(minimal_resume_data())
+        b, _ = _build_pdf(data)
+        return b
+
+    def test_minimal_resume_produces_valid_pdf(self):
+        b = self._pdf_bytes(minimal_resume_data())
         assert isinstance(b, bytes) and b[:4] == b"%PDF"
 
     def test_enriched_resume_produces_valid_pdf(self):
-        from src.Services.resume_export_service import _build_pdf
-        b = _build_pdf(enriched_resume_data())
+        b = self._pdf_bytes(enriched_resume_data())
         assert isinstance(b, bytes) and b[:4] == b"%PDF"
 
     def test_empty_optional_sections_no_crash(self):
-        from src.Services.resume_export_service import _build_pdf
         d = minimal_resume_data()
         d.update(education=[], awards=[], work_history=[],
                  skills_by_level={"Expert": [], "Proficient": [], "Familiar": []})
-        assert _build_pdf(d)[:4] == b"%PDF"
+        assert self._pdf_bytes(d)[:4] == b"%PDF"
 
     def test_no_ats_score_in_pdf(self):
-        from src.Services.resume_export_service import _build_pdf
-        from pypdf import PdfReader
+        from PyPDF2 import PdfReader
         text = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(enriched_resume_data()))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(enriched_resume_data()))).pages
         )
         assert "ATS" not in text and "ats_score" not in text
 
     def test_name_appears_in_pdf(self):
-        from src.Services.resume_export_service import _build_pdf
-        from pypdf import PdfReader
+        from PyPDF2 import PdfReader
         text = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(enriched_resume_data()))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(enriched_resume_data()))).pages
         )
         assert "Jane Doe" in text
 
     def test_education_section_only_when_present(self):
-        from src.Services.resume_export_service import _build_pdf
-        from pypdf import PdfReader
+        from PyPDF2 import PdfReader
         # Without education
         d = minimal_resume_data()
         text_no_edu = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(d))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(d))).pages
         )
         assert "EDUCATION" not in text_no_edu
         # With education
         text_with_edu = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(enriched_resume_data()))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(enriched_resume_data()))).pages
         )
         assert "EDUCATION" in text_with_edu
 
     def test_awards_appear_in_pdf(self):
-        from src.Services.resume_export_service import _build_pdf
-        from pypdf import PdfReader
+        from PyPDF2 import PdfReader
         d = enriched_resume_data()
         d["awards"] = ["Dean's List", "Best Capstone Award"]
         text = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(d))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(d))).pages
         )
         assert "Dean" in text and "Best Capstone" in text
 
     def test_skills_section_only_when_present(self):
-        from src.Services.resume_export_service import _build_pdf
-        from pypdf import PdfReader
+        from PyPDF2 import PdfReader
         d = minimal_resume_data()
         text_no_skills = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(d))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(d))).pages
         )
         assert "TECHNICAL SKILLS" not in text_no_skills
 
     def test_project_bullets_appear_in_pdf(self):
-        from src.Services.resume_export_service import _build_pdf
-        from pypdf import PdfReader
+        from PyPDF2 import PdfReader
         text = "\n".join(
             p.extract_text() or ""
-            for p in PdfReader(io.BytesIO(_build_pdf(minimal_resume_data()))).pages
+            for p in PdfReader(io.BytesIO(self._pdf_bytes(minimal_resume_data()))).pages
         )
         assert "Built REST API" in text
 
@@ -323,35 +321,35 @@ class TestPublicExportApi:
     @patch(f"{_P}.db_manager")
     def test_pdf_raises_if_no_resume(self, mock_db):
         from src.Services.resume_export_service import generate_resume_pdf
-        mock_db.get_user.return_value = make_user(resume=None)
+        mock_db.get_resume_by_id.return_value = None
         with pytest.raises(ValueError, match="No resume found"):
-            generate_resume_pdf(1)
+            generate_resume_pdf(1, 1)
 
     @patch(f"{_P}.db_manager")
     def test_docx_raises_if_no_resume(self, mock_db):
         from src.Services.resume_export_service import generate_resume_docx
-        mock_db.get_user.return_value = make_user(resume=None)
+        mock_db.get_resume_by_id.return_value = None
         with pytest.raises(ValueError, match="No resume found"):
-            generate_resume_docx(1)
+            generate_resume_docx(1, 1)
 
     @patch(f"{_P}.db_manager")
     def test_pdf_raises_if_user_not_found(self, mock_db):
         from src.Services.resume_export_service import generate_resume_pdf
-        mock_db.get_user.return_value = None
+        mock_db.get_resume_by_id.return_value = None
         with pytest.raises(ValueError, match="No resume found"):
-            generate_resume_pdf(99)
+            generate_resume_pdf(99, 99)
 
     @patch(f"{_P}.db_manager")
     def test_pdf_uses_stored_resume_not_preview_data(self, mock_db):
-        """generate_resume_pdf must read user.resume, not call get_resume_preview_data."""
+        """generate_resume_pdf reads from get_resume_by_id, not user.resume."""
         from src.Services.resume_export_service import generate_resume_pdf
-        mock_db.get_user.return_value = make_user(resume=minimal_resume_data())
-        b = generate_resume_pdf(1)
+        mock_db.get_resume_by_id.return_value = {"resume_data": minimal_resume_data()}
+        b = generate_resume_pdf(1, 1)
         assert b[:4] == b"%PDF"
 
     @patch(f"{_P}.db_manager")
     def test_docx_uses_stored_resume_not_preview_data(self, mock_db):
         from src.Services.resume_export_service import generate_resume_docx
-        mock_db.get_user.return_value = make_user(resume=minimal_resume_data())
-        b = generate_resume_docx(1)
+        mock_db.get_resume_by_id.return_value = {"resume_data": minimal_resume_data()}
+        b = generate_resume_docx(1, 1)
         assert b[:2] == b"PK"

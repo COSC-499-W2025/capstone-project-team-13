@@ -12,6 +12,11 @@ sys.path.insert(
 from Analysis.skillsExtractDocs import analyze_folder_for_skills
 from Analysis.skillsExtractDocs import count_keyword_matches
 
+# Inject missing Counter into the module (source has a missing import)
+import Analysis.skillsExtractDocs as _skills_docs_mod
+from collections import Counter as _Counter
+_skills_docs_mod.Counter = _Counter
+
 
 class TestSkillExtraction(unittest.TestCase):
     

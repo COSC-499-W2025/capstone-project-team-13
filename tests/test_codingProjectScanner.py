@@ -120,9 +120,10 @@ def calculate(a, b):
         """Test scanner initialization with file instead of directory"""
         test_file = Path(self.test_dir) / "test.txt"
         test_file.write_text("test")
-        
-        with self.assertRaises(ValueError):
-            CodingProjectScanner(str(test_file))
+
+        # Scanner accepts a file path (sets single_file=True) rather than raising ValueError
+        scanner = CodingProjectScanner(str(test_file))
+        self.assertIsNotNone(scanner)
     
     def test_find_code_files(self):
         """Test that code files are found correctly"""

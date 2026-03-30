@@ -14,6 +14,7 @@ def make_project(id, name, skills, project_type="code"):
     project.name = name
     project.skills = skills
     project.project_type = project_type
+    project.custom_description = None
     return project
 
 

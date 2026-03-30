@@ -1,9 +1,9 @@
 {
-  "total_requests": 28,
+  "total_requests": 64,
   "successful_requests": 15,
-  "failed_requests": 13,
+  "failed_requests": 49,
   "cached_responses": 4,
-  "total_input_tokens": 3636,
+  "total_input_tokens": 3792,
   "total_output_tokens": 1277,
   "total_cost_usd": 0.0006180749999999999,
   "last_reset": "2026-03-28T12:18:11.834425"
