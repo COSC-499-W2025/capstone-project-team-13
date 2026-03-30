@@ -1706,7 +1706,7 @@ export default function Resumes() {
             {!previewMode && (p.lines_of_code > 0 || p.file_count > 0 || p.importance_score > 0) && (
               <div className="proj-stats">
                 {p.lines_of_code > 0 && (
-                  <span className="proj-stat-badge">{p.lines_of_code.toLocaleString()} LOC</span>
+                  <span className="proj-stat-badge">{p.lines_of_code.toLocaleString()} lines of code</span>
                 )}
                 {p.file_count > 0 && (
                   <span className="proj-stat-badge">{p.file_count} files</span>

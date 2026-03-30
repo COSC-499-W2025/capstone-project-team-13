@@ -93,7 +93,7 @@ function ShowcaseCard({ project: p, rank }) {
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            {[["Files", p.file_count], ["LOC", p.lines_of_code?.toLocaleString()]].filter(([, v]) => v).map(([label, val]) => (
+            {[["Files", p.file_count], ["Lines of Code", p.lines_of_code?.toLocaleString()]].filter(([, v]) => v).map(([label, val]) => (
               <div key={label} className="card" style={{ padding: "10px 14px", textAlign: "center" }}>
                 <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>{val}</div>
                 <div className="text-muted" style={{ fontSize: "0.75rem" }}>{label}</div>

@@ -396,7 +396,7 @@ class PortfolioFormatter:
         # Activity metrics
         metrics_bits = []
         if total_loc:
-            metrics_bits.append(f"{total_loc:,} LOC")
+            metrics_bits.append(f"{total_loc:,} lines of code")
         if total_words:
             metrics_bits.append(f"{total_words:,} words")
         if total_files:
