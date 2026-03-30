@@ -1,8 +1,8 @@
-# Digital Artifact Mining Software
+# NovaHire
 
 **Team 13 - COSC 499 Capstone Project**
 
-A versatile platform that intelligently processes digital artifacts including code, documents, and media files to create polished summaries and portfolio highlights for students and new graduates.
+A full-stack web application that intelligently processes digital artifacts — code, documents, and media files — to help students and new graduates build polished portfolios, generate tailored resumes, and prepare for job interviews.
 
 ---
 
@@ -16,59 +16,38 @@ A versatile platform that intelligently processes digital artifacts including co
 - **T'Olu Akinwande** - 69892271
 
 ---
-## Testing Guidelines for Milestone 2
-
-- clone this repository to your local machine
-- find test_data.zip and test_data2.zip within the root directory
-- download both into your local machine and unzip  both files
-- test_data.zip:
-  - this folder contains a collaborative coding project and an individual coding project
-  - the collaborative coding project is an earlier snapshot of repository
-- test_data2.zip:
-  - this folder contains a collaborative coding project, an individual coding project, a text project, and a visual project (and their respective zip folders)
-  - the collaborative project in this folder is the same as test_data.zip, but a later snapshot of the same repository
-- to mannually test out all of our system through the terminal:
-  - change directory to the repository's directory
-  - run: python src/main.py
-- to test out our endpoints:
-  - change directory to the repository's directory
-  - run this comand in the terminal: uvicorn src.mainAPI:app --reload
-  - paste and go to this link: http://127.0.0.1:8000/docs
-- to test out our mock frontend
-  - change directory to the repository's directory
-  - run this comand in the terminal: uvicorn src.mainAPI:app --reload
-  - open index.html with a web browser (located in ./frontend/index.html)
-  - the mock UI is not fully functional and was created for testing purposes
-
----
-
-## Team Contract
-https://docs.google.com/document/d/16xSLlqSOmJyfw9b78a8Gc61JJh8cMKzb9KAB2M3JHEg/edit?usp=sharing
 
 ## 🎯 Project Overview
 
-Our digital artifact mining software serves as a tool for new graduates and students to efficiently display their projects, skills, and highlights. The system supports three different user groups:
+NovaHire serves as a career tool for new graduates and students to efficiently showcase their projects, skills, and experience. Users upload their work artifacts and the system automatically analyzes them, extracts skills and metrics, and generates portfolio summaries, resume bullet points, and interview preparation content.
 
-1. **Programming/Technology** - Analyzes code files, detects languages and frameworks
-2. **Digital Art/Graphics** - Processes media files, identifies design software and skills
-3. **Writing/Research** - Extracts keywords and insights from documents
+The system supports three project types:
+
+1. **Code / Technology** — detects languages, frameworks, contributors, and metrics
+2. **Digital Art / Media** — processes images, video, and audio files
+3. **Writing / Research** — extracts keywords and themes from documents
 
 ---
 
 ## ✨ Key Features
 
-- **User Consent Management**
-- **File Format Validation**
-- **ZIP File Handling**
-- **Multi-Format Parsing**
-- **Language & Framework Detection**
-- **Keyword Extraction**
-- **Visual Media Analysis**
-- **Contribution Metrics**
-- **JWT Authentication & User Isolation**
-- **Resume Bullet Generation** with ATS scoring
-- **Portfolio Generation**
-- **React Frontend**
+- **Project Upload & Analysis** — upload files or ZIP archives; auto-detected as code, text, or media
+- **Duplicate Detection** — prevents re-uploading via path matching and content hashing
+- **Guest Mode** — analyze a file without creating an account (results not saved)
+- **JWT Authentication** — secure login, signup, and user isolation
+- **Portfolio Generation** — auto-generated portfolio with stats, rankings, and summary text
+- **Public Portfolio Sharing** — opt-in public portfolio pages browseable by anyone
+- **Resume Builder** — create and manage multiple named resumes with drag-and-drop section reordering
+- **Resume Bullet Generation** — rule-based and AI-powered (Gemini) bullet generation with ATS scoring
+- **PDF & DOCX Export** — download resumes with user-defined section order and labels
+- **Skills Dashboard** — skill frequency, co-occurrence, diversity score, and timeline
+- **Activity Heatmap** — GitHub-style heatmap of project activity by date
+- **Web Showcase** — top 3 projects displayed with evolution timelines
+- **Evidence Manager** — add metrics, feedback, and achievements to projects
+- **Interview Prep** — AI-generated STAR-format behavioral interview answers from your projects
+- **Privacy & Consent Controls** — granular file access and AI consent management
+- **Dark / Light Theme** — system-wide theme toggle persisted in localStorage
+- **Command Palette** — Ctrl+K search across pages and projects
 
 ---
 
@@ -79,46 +58,106 @@ Our digital artifact mining software serves as a tool for new graduates and stud
 - **Web Framework:** FastAPI
 - **Database:** SQLite with SQLAlchemy ORM
 - **Authentication:** JWT via `python-jose`, password hashing via `bcrypt`
-- **Testing:** pytest
+- **Testing:** pytest with FastAPI `TestClient`
 
 ### Frontend
-- **Framework:** React
+- **Framework:** React 19
 - **Build Tool:** Vite
-- **Testing:** Vitest
-
+- **Routing:** `react-router-dom` v7
+- **Testing:** Vitest + `@testing-library/react`
 
 ### Key Libraries
-- `rake-nltk` - Keyword extraction
-- `nltk` - Natural language processing
-- `Pillow` - Image/media analysis
-- `sqlalchemy` - Database ORM
-- `GitPython` - Git repository analysis
-- `python-docx` / `PyPDF2` - Document parsing
-- `google-generativeai` - AI-powered analysis
-- `fastapi` / `uvicorn` - API server
-- `python-jose[cryptography]` - JWT tokens
-- `passlib[bcrypt]` / `bcrypt==4.0.1` - Password hashing
-- `pandas` - Data processing
-- `tqdm` - Progress display
+- `rake-nltk` / `nltk` — keyword extraction and NLP
+- `Pillow` — image and media analysis
+- `sqlalchemy` — database ORM
+- `GitPython==3.1.43` — Git repository analysis and contributor extraction
+- `python-docx` — DOCX resume export
+- `PyPDF2` — PDF parsing
+- `google-generativeai` — Gemini AI for bullet generation, descriptions, and interview prep
+- `fastapi` / `uvicorn` — API server
+- `python-jose[cryptography]` — JWT tokens
+- `passlib[bcrypt]` / `bcrypt==4.0.1` — password hashing
+- `pandas` — data processing
+- `tqdm` — progress display
+- `python-multipart` — file upload handling
+- `httpx` — async HTTP client
 
 ---
 
 ## 🗄️ Database Architecture
- 
-The system uses a single **SQLite database** (`projects.db`) with eight interconnected tables:
- 
-**Project Data**
-- **Projects** - Name, path, description, dates, metrics (lines of code, word count, file count, size), project type, collaboration type, importance score, languages/frameworks/skills/tags (JSON), resume bullets, thumbnail path, success evidence, user customizations
-- **Files** - File path, name, type, size, dates, lines of code, hash (for incremental uploads), duplicate detection, owner/editors
-- **Contributors** - Name, identifier, commit count, lines added/deleted, contribution percentage
-- **Keywords** - Keyword text, relevance score, category
- 
-**User Data**
-- **Users** - First/last name, email, hashed password, portfolio (JSON), resume (JSON)
-- **Education** - Institution, degree type, field of study, start/end dates (linked to user)
-- **Work History** - Company, role, start/end dates (linked to user)
-- **Contact Info** - Address, phone (linked to user)
 
+The system uses a single **SQLite database** (`projects.db`) with interconnected tables:
+
+**Project Data**
+- **Projects** — name, path, description, dates, metrics (LOC, word count, file count, size), project type, importance score, languages/frameworks/skills (JSON), resume bullets, thumbnail path, success evidence, AI description, content hash, user customizations
+- **Files** — file path, name, type, size, dates, LOC, hash (for incremental uploads and duplicate detection)
+- **Contributors** — name, identifier, commit count, lines added/deleted, contribution percentage
+- **Keywords** — keyword text, relevance score, category
+- **Resumes** — named resume records linked to users, storing full resume JSON with section order and labels
+
+**User Data**
+- **Users** — first/last name, email, hashed password, avatar, portfolio (JSON), about/contact fields, portfolio visibility flag
+- **Education** — institution, degree type, field of study, GPA, start/end dates
+- **Work History** — company, role, experience type, start/end dates, bullet points
+- **Configuration** — per-installation privacy settings, analysis preferences, AI settings, consent records
+
+---
+
+## 🚀 Running the Project
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+
+### Backend Setup
+
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start the API server
+uvicorn src.mainAPI:app --reload
+```
+
+The API will be available at `http://127.0.0.1:8000`.  
+Interactive API docs: `http://127.0.0.1:8000/docs`
+
+### Frontend Setup
+
+```bash
+# Navigate to the frontend directory
+cd artifactMining
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`.
+
+---
+
+## 🧪 Testing
+
+### Backend Tests
+
+```bash
+pytest tests/ -v
+```
+
+### Frontend Tests
+
+```bash
+cd artifactMining
+npm run test
+```
+
+### Manual Testing with Sample Data
+
+- `test_data.zip` — contains a collaborative and individual coding project (earlier snapshot)
+- `test_data2.zip` — contains a collaborative project (later snapshot), an individual coding project, a text project, and a visual media project
 
 ---
 
@@ -133,7 +172,7 @@ This is a university capstone project for COSC 499.
 3. Write tests for new features
 4. Run tests: `pytest tests/ -v`
 5. Push to branch: `git push origin feature-name`
-6. Create Pull Request for team review
+6. Create a Pull Request for team review
 7. Merge to main after at least 2 approvals
 
 ---
@@ -155,7 +194,7 @@ For questions or issues, please contact team members via the course management s
 - **Course:** COSC 499 - Capstone Project
 - **Institution:** UBC Okanagan
 - **Supervisor:** Bowen Hui
-- **Libraries Used:** NLTK, Pillow, SQLAlchemy, FastAPI, pytest
+- **Libraries Used:** NLTK, Pillow, SQLAlchemy, FastAPI, React, Vite, Google Gemini, GitPython, pytest, Vitest
 
 ---
 
