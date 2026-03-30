@@ -200,6 +200,8 @@ For questions or issues, please contact team members via the course management s
 
 System Architecture Diagram [linked here](./docs/Proposal/SystemArchitectureDiagram.md)
 
-Data Flow Diagram Level 1 [linked here](./docs/Proposal/DFD1.md)
+Data Flow Diagrams:
+ [DFD Level 0](docs/Proposal/FinalDFDLevel0.md)
+ [DFD Level 1](docs/Proposal/FinalDFDLevel1.md)
 
 WBS [linked here](https://github.com/COSC-499-W2025/capstone-project-team-13/blob/main/docs/Proposal/WBS.md)

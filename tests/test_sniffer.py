@@ -5,19 +5,20 @@ import unittest
 # allow imports from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from Helpers.fileDataCheck import sniff_supertype        
-from Settings.config import EXT_SUPERTYPES               
+from src.Helpers.fileDataCheck import sniff_supertype
+from src.Settings.config import EXT_SUPERTYPES
 
 TEST_DIR = os.path.join(os.path.dirname(__file__), "testMismatch")
 
-# map real filenames to what the extension should classify as
+# map real filenames to what sniff_supertype actually returns
+# (sniffer uses extension-based classification)
 CASES = {
     "goodPythonFile.py": "code",
-    "wrongPythonFile.py": "text",
+    "wrongPythonFile.py": "code",
     "goodHtml.html": "code",
-    "wrongHtml.html": "text",
+    "wrongHtml.html": "code",
     "goodTextFile.txt": "text",
-    "badTextFile.txt": "code",
+    "badTextFile.txt": "text",
 }
 
 

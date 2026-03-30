@@ -18,7 +18,7 @@ from src.Services.auth_service import create_access_token, hash_password
 client = TestClient(app)
 
 # Create a fake Project object
-FakeProject = namedtuple("FakeProject", ["id", "name", "skills", "project_type", "file_count"])
+FakeProject = namedtuple("FakeProject", ["id", "name", "skills", "project_type", "file_count", "custom_description"])
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -56,10 +56,10 @@ def teardown_function():
 # ── Monkeypatch fixture ────────────────────────────────────────────────────────
 
 FAKE_PROJECTS = [
-    FakeProject(id=1, name="Project A", skills=["Python", "FastAPI", "SQL"], project_type="code", file_count=10),
-    FakeProject(id=2, name="Project B", skills=["Python", "Django"], project_type="code", file_count=5),
-    FakeProject(id=3, name="Project C", skills=["Java", "Spring"], project_type="code", file_count=8),
-    FakeProject(id=4, name="Project D", skills=["Python", "FastAPI"], project_type="code", file_count=3),
+    FakeProject(id=1, name="Project A", skills=["Python", "FastAPI", "SQL"], project_type="code", file_count=10, custom_description=None),
+    FakeProject(id=2, name="Project B", skills=["Python", "Django"], project_type="code", file_count=5, custom_description=None),
+    FakeProject(id=3, name="Project C", skills=["Java", "Spring"], project_type="code", file_count=8, custom_description=None),
+    FakeProject(id=4, name="Project D", skills=["Python", "FastAPI"], project_type="code", file_count=3, custom_description=None),
 ]
 
 @pytest.fixture

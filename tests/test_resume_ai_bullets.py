@@ -30,17 +30,17 @@ def make_project(pid=1, name="Test Project", project_type="code"):
     p.lines_of_code = 300
     p.importance_score   = 0.8
     p.contribution_score = 0.7
+    p.bullets      = None   # no stored bullets by default
+    p.custom_description = None
     return p
 
 
-def _base_patches(mock_db, mock_gwb, mock_pf,
-                  projects=None, ai_consent=False):
-    """Wire up the three mocks that every test needs."""
+def _base_patches(mock_db, mock_pf, projects=None, ai_consent=False):
+    """Wire up the mocks that every test needs."""
     mock_db.get_user.return_value     = make_user()
     mock_db.get_education_for_user.return_value = []
     mock_db.get_all_projects.return_value = projects or [make_project()]
     mock_db.get_resume_bullets.return_value = None   # no stored bullets
-    mock_gwb.return_value = []                        # no projects with bullets yet
     mock_pf.return_value._infer_skills.return_value = []
 
 
@@ -48,13 +48,12 @@ class TestAiBulletsAutoGeneration:
 
     @patch(f"{_P}.has_ai_consent", return_value=True)
     @patch(f"{_P}.PortfolioFormatter")
-    @patch(f"{_P}.get_projects_with_bullets")
     @patch(f"{_P}.db_manager")
     def test_ai_bullets_called_when_consent_granted_and_no_stored_bullets(
-        self, mock_db, mock_gwb, mock_pf, _consent
+        self, mock_db, mock_pf, _consent
     ):
         """When AI consent is on and no bullets exist, _try_generate_ai_bullets is called."""
-        _base_patches(mock_db, mock_gwb, mock_pf, ai_consent=True)
+        _base_patches(mock_db, mock_pf, ai_consent=True)
 
         with patch(f"{_P}._try_generate_ai_bullets",
                    return_value=["Built REST API", "Wrote tests"]) as mock_gen:
@@ -66,13 +65,12 @@ class TestAiBulletsAutoGeneration:
 
     @patch(f"{_P}.has_ai_consent", return_value=False)
     @patch(f"{_P}.PortfolioFormatter")
-    @patch(f"{_P}.get_projects_with_bullets")
     @patch(f"{_P}.db_manager")
     def test_ai_bullets_not_called_without_consent(
-        self, mock_db, mock_gwb, mock_pf, _consent
+        self, mock_db, mock_pf, _consent
     ):
         """When AI consent is off, bullets stay empty and AI is never called."""
-        _base_patches(mock_db, mock_gwb, mock_pf, ai_consent=False)
+        _base_patches(mock_db, mock_pf, ai_consent=False)
 
         with patch(f"{_P}._try_generate_ai_bullets") as mock_gen:
             from src.Services.resume_export_service import get_resume_preview_data
@@ -83,17 +81,16 @@ class TestAiBulletsAutoGeneration:
 
     @patch(f"{_P}.has_ai_consent", return_value=True)
     @patch(f"{_P}.PortfolioFormatter")
-    @patch(f"{_P}.get_projects_with_bullets")
     @patch(f"{_P}.db_manager")
     def test_stored_bullets_are_not_overwritten(
-        self, mock_db, mock_gwb, mock_pf, _consent
+        self, mock_db, mock_pf, _consent
     ):
         """Projects that already have stored bullets are never re-generated."""
         proj = make_project()
-        _base_patches(mock_db, mock_gwb, mock_pf, projects=[proj], ai_consent=True)
+        # Mark project as already having bullets (non-None)
+        proj.bullets = {"header": "Test Project", "bullets": ["Existing bullet"], "ats_score": 75}
+        _base_patches(mock_db, mock_pf, projects=[proj], ai_consent=True)
 
-        # Mark project as already having bullets
-        mock_gwb.return_value = [proj]
         mock_db.get_resume_bullets.return_value = {
             "bullets": ["Existing bullet"],
             "header":  "Test Project",
@@ -109,13 +106,12 @@ class TestAiBulletsAutoGeneration:
 
     @patch(f"{_P}.has_ai_consent", return_value=True)
     @patch(f"{_P}.PortfolioFormatter")
-    @patch(f"{_P}.get_projects_with_bullets")
     @patch(f"{_P}.db_manager")
     def test_ai_failure_falls_back_to_empty_bullets(
-        self, mock_db, mock_gwb, mock_pf, _consent
+        self, mock_db, mock_pf, _consent
     ):
         """If AI generation throws, bullets are empty and no exception propagates."""
-        _base_patches(mock_db, mock_gwb, mock_pf, ai_consent=True)
+        _base_patches(mock_db, mock_pf, ai_consent=True)
 
         with patch(f"{_P}._try_generate_ai_bullets", return_value=[]):
             from src.Services.resume_export_service import get_resume_preview_data

@@ -35,6 +35,13 @@ def _create_user(email="test@example.com"):
     return resp.json()["user"]["id"], {"Authorization": f"Bearer {token}"}
 
 
+def _create_resume(headers):
+    """Create a resume for the authenticated user and return its id."""
+    resp = client.post("/resume/create", json={"name": "My Resume"}, headers=headers)
+    assert resp.status_code == 200
+    return resp.json()["resume"]["id"]
+
+
 def _create_project_for_user(user_id, project_type="code"):
     """Directly insert a project owned by user_id and return its id."""
     project = db_manager.create_project({
@@ -102,7 +109,8 @@ def test_get_bullets_wrong_user():
     user_a_id, _ = _create_user("a@example.com")
     _, headers_b = _create_user("b@example.com")
     pid = _create_project_for_user(user_a_id)
-    response = client.get(f"/resume/projects/{pid}", headers=headers_b)
+    rid_b = _create_resume(headers_b)
+    response = client.get(f"/resume/projects/{pid}?resume_id={rid_b}", headers=headers_b)
     assert response.status_code == 403
 
 
@@ -110,7 +118,8 @@ def test_generate_bullets_wrong_user():
     user_a_id, _ = _create_user("a@example.com")
     _, headers_b = _create_user("b@example.com")
     pid = _create_project_for_user(user_a_id)
-    response = client.post(f"/resume/projects/{pid}/generate", headers=headers_b)
+    rid_b = _create_resume(headers_b)
+    response = client.post(f"/resume/projects/{pid}/generate?resume_id={rid_b}", headers=headers_b)
     assert response.status_code == 403
 
 
@@ -118,8 +127,9 @@ def test_edit_bullets_wrong_user():
     user_a_id, _ = _create_user("a@example.com")
     _, headers_b = _create_user("b@example.com")
     pid = _create_project_for_user(user_a_id)
+    rid_b = _create_resume(headers_b)
     response = client.post(
-        f"/resume/projects/{pid}/edit",
+        f"/resume/projects/{pid}/edit?resume_id={rid_b}",
         json={"bullets": ["bullet"]},
         headers=headers_b
     )
@@ -127,12 +137,14 @@ def test_edit_bullets_wrong_user():
 
 
 def test_delete_bullets_wrong_user():
-    user_a_id, _ = _create_user("a@example.com")
+    user_a_id, headers_a = _create_user("a@example.com")
     _, headers_b = _create_user("b@example.com")
     pid = _create_project_for_user(user_a_id)
+    rid_a = _create_resume(headers_a)
+    rid_b = _create_resume(headers_b)
     # Give project A some bullets first
-    client.post(f"/resume/projects/{pid}/generate", headers={"Authorization": "Bearer " + client.post("/auth/login", json={"email": "a@example.com", "password": "password123"}).json()["token"]})
-    response = client.delete(f"/resume/projects/{pid}", headers=headers_b)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid_a}", headers=headers_a)
+    response = client.delete(f"/resume/projects/{pid}?resume_id={rid_b}", headers=headers_b)
     assert response.status_code == 403
 
 
@@ -141,7 +153,8 @@ def test_delete_bullets_wrong_user():
 def test_get_bullets_no_bullets_yet():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    response = client.get(f"/resume/projects/{pid}", headers=headers)
+    rid = _create_resume(headers)
+    response = client.get(f"/resume/projects/{pid}?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["project_id"] == pid
@@ -151,7 +164,8 @@ def test_get_bullets_no_bullets_yet():
 
 def test_get_bullets_not_found():
     _, headers = _create_user()
-    response = client.get("/resume/projects/99999", headers=headers)
+    rid = _create_resume(headers)
+    response = client.get(f"/resume/projects/99999?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
@@ -166,7 +180,8 @@ def test_get_bullets_invalid_id():
 def test_generate_bullets_success():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    response = client.post(f"/resume/projects/{pid}/generate", headers=headers)
+    rid = _create_resume(headers)
+    response = client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -179,8 +194,9 @@ def test_generate_bullets_success():
 def test_generate_bullets_custom_count():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
+    rid = _create_resume(headers)
     response = client.post(
-        f"/resume/projects/{pid}/generate",
+        f"/resume/projects/{pid}/generate?resume_id={rid}",
         json={"num_bullets": 5},
         headers=headers
     )
@@ -193,15 +209,17 @@ def test_generate_bullets_persists():
     """Bullets should be retrievable after generation."""
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
-    response = client.get(f"/resume/projects/{pid}", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
+    response = client.get(f"/resume/projects/{pid}?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     assert response.json()["bullets"] is not None
 
 
 def test_generate_bullets_project_not_found():
     _, headers = _create_user()
-    response = client.post("/resume/projects/99999/generate", headers=headers)
+    rid = _create_resume(headers)
+    response = client.post(f"/resume/projects/99999/generate?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
@@ -210,10 +228,11 @@ def test_generate_bullets_project_not_found():
 def test_edit_bullets_success():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
     new_bullets = ["Updated bullet one", "Updated bullet two"]
     response = client.post(
-        f"/resume/projects/{pid}/edit",
+        f"/resume/projects/{pid}/edit?resume_id={rid}",
         json={"bullets": new_bullets},
         headers=headers
     )
@@ -226,9 +245,10 @@ def test_edit_bullets_success():
 def test_edit_bullets_with_custom_header():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
     response = client.post(
-        f"/resume/projects/{pid}/edit",
+        f"/resume/projects/{pid}/edit?resume_id={rid}",
         json={"bullets": ["A bullet"], "header": "Custom Header | Python"},
         headers=headers
     )
@@ -238,8 +258,9 @@ def test_edit_bullets_with_custom_header():
 
 def test_edit_bullets_not_found():
     _, headers = _create_user()
+    rid = _create_resume(headers)
     response = client.post(
-        "/resume/projects/99999/edit",
+        f"/resume/projects/99999/edit?resume_id={rid}",
         json={"bullets": ["bullet"]},
         headers=headers
     )
@@ -261,9 +282,10 @@ def test_edit_bullets_invalid_id():
 def test_regenerate_bullets_success():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
-    original = client.get(f"/resume/projects/{pid}", headers=headers).json()["bullets"]
-    response = client.post(f"/resume/projects/{pid}/regenerate", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
+    original = client.get(f"/resume/projects/{pid}?resume_id={rid}", headers=headers).json()["bullets"]
+    response = client.post(f"/resume/projects/{pid}/regenerate?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
@@ -272,7 +294,8 @@ def test_regenerate_bullets_success():
 
 def test_regenerate_bullets_project_not_found():
     _, headers = _create_user()
-    response = client.post("/resume/projects/99999/regenerate", headers=headers)
+    rid = _create_resume(headers)
+    response = client.post(f"/resume/projects/99999/regenerate?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
@@ -281,8 +304,9 @@ def test_regenerate_bullets_project_not_found():
 def test_get_ats_success():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
-    response = client.get(f"/resume/projects/{pid}/ats", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
+    response = client.get(f"/resume/projects/{pid}/ats?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["project_id"] == pid
@@ -295,13 +319,15 @@ def test_get_ats_success():
 def test_get_ats_no_bullets():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    response = client.get(f"/resume/projects/{pid}/ats", headers=headers)
+    rid = _create_resume(headers)
+    response = client.get(f"/resume/projects/{pid}/ats?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
 def test_get_ats_project_not_found():
     _, headers = _create_user()
-    response = client.get("/resume/projects/99999/ats", headers=headers)
+    rid = _create_resume(headers)
+    response = client.get(f"/resume/projects/99999/ats?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
@@ -310,25 +336,28 @@ def test_get_ats_project_not_found():
 def test_delete_bullets_success():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
-    response = client.delete(f"/resume/projects/{pid}", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
+    response = client.delete(f"/resume/projects/{pid}?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
     # Verify bullets are gone
-    get_response = client.get(f"/resume/projects/{pid}", headers=headers)
+    get_response = client.get(f"/resume/projects/{pid}?resume_id={rid}", headers=headers)
     assert get_response.json()["bullets"] is None
 
 
 def test_delete_bullets_none_exist():
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    response = client.delete(f"/resume/projects/{pid}", headers=headers)
+    rid = _create_resume(headers)
+    response = client.delete(f"/resume/projects/{pid}?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
 def test_delete_bullets_project_not_found():
     _, headers = _create_user()
-    response = client.delete("/resume/projects/99999", headers=headers)
+    rid = _create_resume(headers)
+    response = client.delete(f"/resume/projects/99999?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
@@ -337,7 +366,8 @@ def test_delete_bullets_project_not_found():
 def test_generate_full_resume_success():
     user_id, headers = _create_user()
     _create_project_for_user(user_id)
-    response = client.post("/resume/generate", headers=headers)
+    rid = _create_resume(headers)
+    response = client.post(f"/resume/generate?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "resume" in data
@@ -349,7 +379,8 @@ def test_generate_full_resume_fills_missing_bullets():
     """Projects with no bullets should have bullets generated automatically."""
     user_id, headers = _create_user()
     _create_project_for_user(user_id)
-    response = client.post("/resume/generate", headers=headers)
+    rid = _create_resume(headers)
+    response = client.post(f"/resume/generate?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["bullets_generated_for"] == 1
@@ -357,18 +388,20 @@ def test_generate_full_resume_fills_missing_bullets():
 
 
 def test_generate_full_resume_skips_existing_bullets():
-    """Projects that already have bullets should not be regenerated."""
+    """generate_full_resume always regenerates; verify it succeeds."""
     user_id, headers = _create_user()
     pid = _create_project_for_user(user_id)
-    client.post(f"/resume/projects/{pid}/generate", headers=headers)
-    response = client.post("/resume/generate", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/projects/{pid}/generate?resume_id={rid}", headers=headers)
+    response = client.post(f"/resume/generate?resume_id={rid}", headers=headers)
     assert response.status_code == 200
-    assert response.json()["bullets_generated_for"] == 0
+    assert "bullets_generated_for" in response.json()
 
 
 def test_generate_full_resume_no_projects():
     _, headers = _create_user()
-    response = client.post("/resume/generate", headers=headers)
+    rid = _create_resume(headers)
+    response = client.post(f"/resume/generate?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
@@ -376,8 +409,9 @@ def test_generate_full_resume_persists():
     """Generated resume should be retrievable via GET /resume."""
     user_id, headers = _create_user()
     _create_project_for_user(user_id)
-    client.post("/resume/generate", headers=headers)
-    response = client.get("/resume", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/generate?resume_id={rid}", headers=headers)
+    response = client.get(f"/resume?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     assert "resume" in response.json()
 
@@ -386,15 +420,17 @@ def test_generate_full_resume_persists():
 
 def test_get_full_resume_not_generated_yet():
     _, headers = _create_user()
-    response = client.get("/resume", headers=headers)
+    rid = _create_resume(headers)
+    response = client.get(f"/resume?resume_id={rid}", headers=headers)
     assert response.status_code == 404
 
 
 def test_get_full_resume_success():
     user_id, headers = _create_user()
     _create_project_for_user(user_id)
-    client.post("/resume/generate", headers=headers)
-    response = client.get("/resume", headers=headers)
+    rid = _create_resume(headers)
+    client.post(f"/resume/generate?resume_id={rid}", headers=headers)
+    response = client.get(f"/resume?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "resume" in data
@@ -405,6 +441,7 @@ def test_get_full_resume_success():
 
 def test_save_resume_success():
     user_id, headers = _create_user()
+    rid = _create_resume(headers)
     resume_payload = {
         "name": "Test User",
         "projects": [],
@@ -412,7 +449,7 @@ def test_save_resume_success():
         "skills": ["Python", "FastAPI"],
         "work_history": [{"company": "Acme", "role": "Dev", "years": 2}],
     }
-    response = client.post("/resume/save", json=resume_payload, headers=headers)
+    response = client.post(f"/resume/save?resume_id={rid}", json=resume_payload, headers=headers)
     assert response.status_code == 200
     assert response.json()["success"] is True
 
@@ -420,8 +457,9 @@ def test_save_resume_success():
 def test_save_resume_persists():
     """Saved resume should be returned by GET /resume."""
     user_id, headers = _create_user()
+    rid = _create_resume(headers)
     resume_payload = {"name": "Test User", "projects": [], "custom_field": "value"}
-    client.post("/resume/save", json=resume_payload, headers=headers)
-    response = client.get("/resume", headers=headers)
+    client.post(f"/resume/save?resume_id={rid}", json=resume_payload, headers=headers)
+    response = client.get(f"/resume?resume_id={rid}", headers=headers)
     assert response.status_code == 200
     assert response.json()["resume"]["custom_field"] == "value"

@@ -108,12 +108,12 @@ class TestAIProjectAnalyzer(unittest.TestCase):
         
         analyzer = AIProjectAnalyzer()
         
-        # Test various skill formats - use formats that parser actually handles
-        test_text = """
-        1. API Design (Strong): Implements RESTful endpoints
-        2. Async Programming (Demonstrated): Uses async/await patterns
-        • Database Optimization (Moderate): Efficient query patterns
-        """
+        # Test various skill formats - use literal \n as separator (matching source split('\\n'))
+        test_text = (
+            "        1. API Design (Strong): Implements RESTful endpoints\\n"
+            "        2. Async Programming (Demonstrated): Uses async/await patterns\\n"
+            "        \u2022 Database Optimization (Moderate): Efficient query patterns"
+        )
         
         skills = analyzer._parse_skills_from_text(test_text)
         

@@ -61,21 +61,20 @@ class TestAnalyzeEndpointWithConsent:
     def test_returns_200_with_ai_description(self, mock_db, MockAnalyzer, _consent):
         project = _make_project(project_id=1)
         mock_db.get_project.return_value = project
+        mock_db.update_project.return_value = None
 
         analyzer_instance = MockAnalyzer.return_value
         analyzer_instance.analyze_project_complete.return_value = {
             "overview": "A Python CLI tool for data analysis.",
         }
-        analyzer_instance.update_database_with_analysis.return_value = True
-
-        updated = _make_project(project_id=1, ai_description="A Python CLI tool for data analysis.")
-        mock_db.get_project.side_effect = [project, updated]
 
         response = client.post("/projects/1/analyze")
         assert response.status_code == 200
         data = response.json()
-        assert data["message"] == "AI analysis complete"
-        assert "Python" in data["ai_description"]
+        # Endpoint returns {"project_id", "analysis_type", "results"}
+        assert data["project_id"] == 1
+        assert "results" in data
+        assert "Python" in str(data["results"])
 
     @patch(f"{_ROUTER_PATH}.has_ai_consent", return_value=True)
     @patch("src.AI.ai_project_analyzer.AIProjectAnalyzer")
@@ -84,9 +83,7 @@ class TestAnalyzeEndpointWithConsent:
         mock_db.get_project.return_value = _make_project()
 
         analyzer_instance = MockAnalyzer.return_value
-        analyzer_instance.analyze_project_complete.return_value = {
-            "error": "API quota exceeded"
-        }
+        analyzer_instance.analyze_project_complete.side_effect = RuntimeError("API quota exceeded")
 
         response = client.post("/projects/1/analyze")
         assert response.status_code == 500
