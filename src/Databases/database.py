@@ -5,9 +5,11 @@ import json
 import os
 from typing import List, Optional, Dict, Any
 
+
 # ============================================
 # DATABASE MODELS
 # ============================================
+
 
 Base = declarative_base()
 
@@ -210,6 +212,22 @@ class Project(Base):
                 pass
         
         return result
+    
+class UploadStat(Base):
+    """Store upload size and duration"""
+    __tablename__ = 'upload_stats'
+    id = Column(Integer, primary_key=True)
+    size_bytes = Column(Integer, nullable=False)
+    duration_seconds = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'size_bytes': self.size_bytes,
+            'duration_seconds': self.duration_seconds,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
 
 class File(Base):
     """Store detailed file information"""
@@ -397,6 +415,11 @@ class User(Base):
     github_username = Column(String(255), nullable=True, unique=False)
     portfolio_public = Column(Boolean, default=False, nullable=False)
 
+    # About Me
+    about_name = Column(Text, nullable=True)
+    about_subtitle = Column(Text, nullable=True)
+    about_bio = Column(Text, nullable=True)
+
     # Relationships
     education = relationship('Education', back_populates='user', cascade='all, delete-orphan', lazy='select')
     work_history = relationship('WorkHistory', back_populates='user', cascade='all, delete-orphan', lazy='select')
@@ -503,6 +526,7 @@ class WorkHistory(Base):
     # Work info
     company = Column(String(255), nullable=False)
     role = Column(String(255), nullable=False)
+    experience_type = Column(String(50), nullable=False, default='work')
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=True)  # NULL means "present"
     location = Column(String(255), nullable=True) # e.g. "Vancouver, BC"
@@ -530,6 +554,7 @@ class WorkHistory(Base):
             'user_id': self.user_id,
             'company': self.company,
             'role': self.role,
+            'experience_type': self.experience_type or 'work',
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else 'Present',
             'location': self.location,
@@ -569,6 +594,25 @@ class ContactInfo(Base):
 # ============================================
 
 class DatabaseManager:
+
+    # ============ UPLOAD STAT OPERATIONS ============
+    def add_upload_stat(self, size_bytes: int, duration_seconds: float) -> 'UploadStat':
+        session = self.get_session()
+        try:
+            stat = UploadStat(size_bytes=size_bytes, duration_seconds=duration_seconds)
+            session.add(stat)
+            session.commit()
+            session.refresh(stat)
+            return stat
+        finally:
+            session.close()
+
+    def get_upload_stats(self, limit: int = 100):
+        session = self.get_session()
+        try:
+            return session.query(UploadStat).order_by(UploadStat.created_at.desc()).limit(limit).all()
+        finally:
+            session.close()
     """Manages database operations with proper connection handling"""
     
     def __init__(self, db_path: str = 'data/projects.db'):
@@ -714,6 +758,18 @@ class DatabaseManager:
                         print("✅ Added file_hash column")
                     except Exception as e:
                         print(f"⚠️  Could not add file_hash: {e}")
+
+        if 'work_history' in inspector.get_table_names():
+            existing_work_columns = [col['name'] for col in inspector.get_columns('work_history')]
+            with self.engine.connect() as conn:
+                if 'experience_type' not in existing_work_columns:
+                    try:
+                        conn.execute(text("ALTER TABLE work_history ADD COLUMN experience_type VARCHAR(50) DEFAULT 'work';"))
+                        conn.execute(text("UPDATE work_history SET experience_type = 'work' WHERE experience_type IS NULL;"))
+                        conn.commit()
+                        print("✅ Added experience_type column to work_history")
+                    except Exception as e:
+                        print(f"⚠️  Could not add experience_type: {e}")
     
     def get_session(self):
         return self.Session()
@@ -1432,3 +1488,4 @@ class DatabaseManager:
 # Global database manager instance
 db_manager = DatabaseManager()
 db_manager.User = User
+db_manager.UploadStat = UploadStat

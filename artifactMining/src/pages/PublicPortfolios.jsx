@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import "./PublicPortfolios.css";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -50,19 +51,10 @@ export function PublicPortfoliosList() {
 
   return (
     <div className="page-wrap">
-      <div className="card" style={{
-        background: "linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(163,73,255,0.14) 100%)",
-        borderColor: "rgba(163,73,255,0.3)",
-        marginBottom: 24,
-        display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16,
-      }}>
+      <div className="card pp-hero-card">
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.9rem", fontWeight: 800, color: "#eef1ff" }}>
-            Public Portfolios
-          </h1>
-          <p style={{ margin: "4px 0 0", color: "#9aa6de", fontSize: "0.88rem" }}>
-            Browse portfolios shared by other users
-          </p>
+          <h1 className="pp-hero-title">Public Portfolios</h1>
+          <p className="pp-hero-sub">Browse portfolios shared by other users</p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {!localStorage.getItem("token") && (
@@ -101,11 +93,11 @@ export function PublicPortfoliosList() {
         />
       </div>
 
-      {loading && <div style={{ textAlign: "center", color: "#818cf8", padding: 40 }}>Loading…</div>}
+      {loading && <div className="pp-loading">Loading…</div>}
       {error && <div className="alert error">{error}</div>}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="card" style={{ textAlign: "center", padding: 48, color: "#9aa6de" }}>
+        <div className="card pp-empty">
           {search ? "No portfolios match your search." : "No public portfolios available yet."}
         </div>
       )}
@@ -122,37 +114,20 @@ export function PublicPortfoliosList() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#eef1ff" }}>
-                  {p.display_name}
-                </h3>
-                <span style={{ fontSize: "0.78rem", color: "#9aa6de" }}>
+                <h3 className="pp-card-name">{p.display_name}</h3>
+                <span className="pp-card-count">
                   {p.project_count} project{p.project_count !== 1 ? "s" : ""}
                 </span>
               </div>
-              <span style={{
-                fontSize: "0.72rem", padding: "3px 8px", borderRadius: 20,
-                background: "rgba(99,102,241,0.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.3)",
-              }}>
-                Public
-              </span>
+              <span className="pp-public-badge">Public</span>
             </div>
 
-            {p.summary && (
-              <p style={{ fontSize: "0.83rem", color: "#c4cbf5", lineHeight: 1.6, margin: "0 0 12px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                {p.summary}
-              </p>
-            )}
+            {p.summary && <p className="pp-card-summary">{p.summary}</p>}
 
             {p.top_skills.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {p.top_skills.map(s => (
-                  <span key={s} style={{
-                    fontSize: "0.72rem", padding: "2px 8px", borderRadius: 12,
-                    background: "rgba(99,102,241,0.12)", color: "#c4b5fd",
-                    border: "1px solid rgba(99,102,241,0.25)",
-                  }}>
-                    {s}
-                  </span>
+                  <span key={s} className="pp-skill-chip">{s}</span>
                 ))}
               </div>
             )}
@@ -182,13 +157,13 @@ export function PublicPortfolioView() {
       .finally(() => setLoading(false));
   }, [userId]);
 
-  if (loading) return <div className="page-wrap" style={{ textAlign: "center", color: "#818cf8", paddingTop: 80 }}>Loading…</div>;
+  if (loading) return <div className="page-wrap pp-loading" style={{ paddingTop: 80 }}>Loading…</div>;
   if (error) return (
     <div className="page-wrap">
-      <div className="card" style={{ textAlign: "center", padding: 48 }}>
+      <div className="card pp-empty">
         <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>🔒</div>
         <h2 style={{ margin: "0 0 8px" }}>Portfolio Not Available</h2>
-        <p style={{ color: "#9aa6de", marginBottom: 24 }}>{error}</p>
+        <p className="pp-hero-sub" style={{ marginBottom: 24 }}>{error}</p>
         <button className="btn-primary" onClick={() => nav("/public-portfolios")}>← Browse Portfolios</button>
       </div>
     </div>
@@ -213,23 +188,11 @@ export function PublicPortfolioView() {
   return (
     <div className="page-wrap">
       {/* Hero */}
-      <div className="card" style={{
-        background: "linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(163,73,255,0.14) 100%)",
-        borderColor: "rgba(163,73,255,0.3)",
-        marginBottom: 24,
-        display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16,
-      }}>
+      <div className="card pp-hero-view-card">
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.9rem", fontWeight: 800, color: "#eef1ff" }}>
-            {data.display_name}'s Portfolio
-          </h1>
+          <h1 className="pp-view-title">{data.display_name}'s Portfolio</h1>
           {data.summary_text && (
-            <p style={{
-              margin: "8px 0 0", color: "#c4cbf5", fontSize: "0.9rem", lineHeight: 1.7, maxWidth: 600,
-              borderLeft: "3px solid rgba(163,73,255,0.5)", paddingLeft: 12,
-            }}>
-              {data.summary_text}
-            </p>
+            <p className="pp-view-summary">{data.summary_text}</p>
           )}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -313,9 +276,7 @@ export function PublicPortfolioView() {
 
       {/* Project cards */}
       {filtered.length === 0 && (
-        <div className="card" style={{ textAlign: "center", padding: 40, color: "#9aa6de" }}>
-          No projects match your search.
-        </div>
+        <div className="card pp-empty">No projects match your search.</div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -342,52 +303,32 @@ export function PublicPortfolioView() {
                   }}>
                     {(p.name || "?")[0].toUpperCase()}
                   </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-                    <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#eef1ff" }}>
-                      {p.name}
-                    </h3>
-                    {p.is_featured && (
-                      <span style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: 12, background: "rgba(245,158,11,0.15)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.3)" }}>
-                        Featured
-                      </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+                      <h3 className="pp-proj-name">{p.name}</h3>
+                      {p.is_featured && <span className="pp-featured-chip">Featured</span>}
+                      {(p.type || p.project_type) && (
+                        <span style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: 12, background: `${color}22`, color, border: `1px solid ${color}44` }}>
+                          {p.type || p.project_type}
+                        </span>
+                      )}
+                    </div>
+                    {p.description && <p className="pp-proj-desc">{p.description}</p>}
+                    {p.user_role && (
+                      <p className="pp-proj-role">
+                        Role: <span className="pp-proj-role-val">{p.user_role}</span>
+                      </p>
                     )}
-                    {(p.type || p.project_type) && (
-                      <span style={{ fontSize: "0.7rem", padding: "2px 8px", borderRadius: 12, background: `${color}22`, color, border: `1px solid ${color}44` }}>
-                        {p.type || p.project_type}
-                      </span>
-                    )}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {langs.slice(0, 5).map(l => <span key={l} className="pp-lang-chip">{l}</span>)}
+                      {skills.slice(0, 5).map(s => <span key={s} className="pp-tag-chip">{s}</span>)}
+                    </div>
                   </div>
-                  {p.description && (
-                    <p style={{ margin: "0 0 10px", fontSize: "0.85rem", color: "#c4cbf5", lineHeight: 1.6 }}>
-                      {p.description}
-                    </p>
-                  )}
-                  {p.user_role && (
-                    <p style={{ margin: "0 0 8px", fontSize: "0.78rem", color: "#9aa6de" }}>
-                      Role: <span style={{ color: "#c4b5fd" }}>{p.user_role}</span>
-                    </p>
-                  )}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                    {langs.slice(0, 5).map(l => (
-                      <span key={l} style={{ fontSize: "0.7rem", padding: "2px 7px", borderRadius: 10, background: "rgba(59,130,246,0.12)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.25)" }}>
-                        {l}
-                      </span>
-                    ))}
-                    {skills.slice(0, 5).map(s => (
-                      <span key={s} style={{ fontSize: "0.7rem", padding: "2px 7px", borderRadius: 10, background: "rgba(99,102,241,0.12)", color: "#c4b5fd", border: "1px solid rgba(99,102,241,0.25)" }}>
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
                 </div>
                 {p.importance_score != null && (
                   <div style={{ textAlign: "center", minWidth: 52 }}>
-                    <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#c4b5fd" }}>
-                      {Math.round(p.importance_score)}
-                    </div>
-                    <div style={{ fontSize: "0.65rem", color: "#9aa6de", textTransform: "uppercase", letterSpacing: "0.05em" }}>Score</div>
+                    <div className="pp-proj-score-val">{Math.round(p.importance_score)}</div>
+                    <div className="pp-proj-score-label">Score</div>
                   </div>
                 )}
               </div>

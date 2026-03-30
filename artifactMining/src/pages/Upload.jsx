@@ -56,6 +56,30 @@ export default function Upload() {
   const [incDragging, setIncDragging] = useState(false);
   const fileRef = useRef();
   const incFileRef = useRef();
+  const [uploadEstimate, setUploadEstimate] = useState(null);
+  const [uploadEstimateError, setUploadEstimateError] = useState(null);
+  // Elapsed time for upload
+  const [elapsed, setElapsed] = useState(0);
+  const elapsedRef = useRef();
+  // Fetch upload time estimate when file changes
+  useEffect(() => {
+    async function fetchEstimate() {
+      if (file && file.size > 0) {
+        setUploadEstimate(null);
+        setUploadEstimateError(null);
+        try {
+          const resp = await apiFetch(`/projects/estimate-upload-time?size_bytes=${file.size}`);
+          setUploadEstimate(resp);
+        } catch (e) {
+          setUploadEstimateError("Could not estimate upload time.");
+        }
+      } else {
+        setUploadEstimate(null);
+        setUploadEstimateError(null);
+      }
+    }
+    fetchEstimate();
+  }, [file]);
 
   useEffect(() => { loadConsent(); }, []);
 
@@ -81,6 +105,8 @@ export default function Upload() {
     if (!basicConsent) { setStatus({ type: "error", text: "File access consent is required. Grant it using the button below." }); return; }
     if (!file) { setStatus({ type: "error", text: "Select a file first." }); return; }
     setLoading(true); setStatus(null); setResult(null);
+    setElapsed(0);
+    elapsedRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
     const fd = new FormData(); fd.append("file", file);
     try {
       const d = await apiUpload("/projects/upload", fd);
@@ -93,7 +119,11 @@ export default function Upload() {
         setFile(null);
       }
     } catch (e) { setStatus({ type: "error", text: e.message }); }
-    finally { setLoading(false); }
+    finally {
+      setLoading(false);
+      clearInterval(elapsedRef.current);
+      setElapsed(0);
+    }
   }
 
   async function loadProjects() {
@@ -208,6 +238,28 @@ export default function Upload() {
               title={!basicConsent ? "Grant file access consent first" : ""}>
               {loading ? <><div className="spinner" /> Uploading…</> : "Upload & Analyze"}
             </button>
+            {file && (
+              <div style={{ marginTop: 12, fontSize: "0.97em", color: "#6a7bb7", wordBreak: "break-word" }}>
+                <b>Estimated upload time:</b><br />
+                {uploadEstimateError && <span style={{ color: '#c00' }}>{uploadEstimateError}</span>}
+                {!uploadEstimateError && uploadEstimate && typeof uploadEstimate.estimated_seconds === 'number' && (
+                  <span>
+                    ~{Math.round(uploadEstimate.estimated_seconds * 0.8)}–{Math.ceil(uploadEstimate.estimated_seconds * 1.2)} seconds
+                  </span>
+                )}
+                {!uploadEstimateError && uploadEstimate && typeof uploadEstimate.estimated_seconds !== 'number' && (
+                  <pre style={{ background: '#f6f8fa', padding: 8, borderRadius: 4, margin: 0 }}>
+                    {JSON.stringify(uploadEstimate, null, 2)}
+                  </pre>
+                )}
+                {!uploadEstimateError && !uploadEstimate && <span>Loading…</span>}
+                {loading && (
+                  <div style={{ marginTop: 6, color: '#6a7bb7', fontSize: '0.96em' }}>
+                    Elapsed time: {elapsed} second{elapsed === 1 ? '' : 's'}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="card upload-main">

@@ -1,0 +1,77 @@
+.pp-hero-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(163,73,255,0.14) 100%);
+  border-color: rgba(163,73,255,0.3);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.pp-hero-title { margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--text); }
+.pp-hero-sub   { margin: 4px 0 0; color: var(--text-muted); font-size: 0.88rem; }
+
+.pp-hero-view-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(163,73,255,0.14) 100%);
+  border-color: rgba(163,73,255,0.3);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.pp-view-title  { margin: 0; font-size: 1.9rem; font-weight: 800; color: var(--text); }
+.pp-view-summary {
+  margin: 8px 0 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.7; max-width: 600px;
+  border-left: 3px solid rgba(163,73,255,0.5); padding-left: 12px;
+}
+
+.pp-card-name    { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.pp-card-count   { font-size: 0.78rem; color: var(--text-muted); }
+.pp-card-summary { font-size: 0.83rem; color: var(--text); line-height: 1.6; margin: 0 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.pp-proj-name    { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text); }
+.pp-proj-desc    { margin: 0 0 10px; font-size: 0.85rem; color: var(--text); line-height: 1.6; }
+.pp-proj-role    { margin: 0 0 8px; font-size: 0.78rem; color: var(--text-muted); }
+.pp-proj-role-val { color: #c4b5fd; }
+.pp-proj-score-val   { font-size: 1.3rem; font-weight: 700; color: #c4b5fd; }
+.pp-proj-score-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.pp-empty  { text-align: center; padding: 48px; color: var(--text-muted); }
+.pp-loading { text-align: center; color: #818cf8; padding: 40px; }
+
+.pp-skill-chip {
+  font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;
+  background: rgba(99,102,241,0.12); color: #c4b5fd; border: 1px solid rgba(99,102,241,0.25);
+}
+.pp-lang-chip {
+  font-size: 0.7rem; padding: 2px 7px; border-radius: 10px;
+  background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25);
+}
+.pp-tag-chip {
+  font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+  background: rgba(99,102,241,0.12); color: #c4b5fd; border: 1px solid rgba(99,102,241,0.25);
+}
+.pp-featured-chip {
+  font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+  background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3);
+}
+.pp-public-badge {
+  font-size: 0.72rem; padding: 3px 8px; border-radius: 20px;
+  background: rgba(99,102,241,0.18); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3);
+}
+
+/* Light mode */
+body[data-theme="light"] .pp-hero-card,
+body[data-theme="light"] .pp-hero-view-card {
+  background: linear-gradient(135deg, rgba(79,70,229,0.07) 0%, rgba(139,92,246,0.06) 100%);
+  border-color: rgba(139,92,246,0.25);
+}
+body[data-theme="light"] .pp-view-summary { color: #3b3f70; border-left-color: rgba(139,92,246,0.4); }
+body[data-theme="light"] .pp-skill-chip   { background: rgba(79,70,229,0.08); color: #4f46e5; border-color: rgba(79,70,229,0.25); }
+body[data-theme="light"] .pp-lang-chip    { background: rgba(37,99,235,0.08); color: #1d4ed8; border-color: rgba(37,99,235,0.25); }
+body[data-theme="light"] .pp-tag-chip     { background: rgba(79,70,229,0.08); color: #4f46e5; border-color: rgba(79,70,229,0.25); }
+body[data-theme="light"] .pp-proj-role-val  { color: #4f46e5; }
+body[data-theme="light"] .pp-proj-score-val { color: #4f46e5; }
+body[data-theme="light"] .pp-public-badge   { background: rgba(79,70,229,0.1); color: #3730a3; border-color: rgba(79,70,229,0.3); }
