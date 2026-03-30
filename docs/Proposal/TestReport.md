@@ -1,4 +1,4 @@
-# 🧪 Test Report – Digital Artifact Mining System
+# Test Report – Digital Artifact Mining System
 
 ## 1. Overview
 This report outlines the testing strategies, tools, and procedures used to ensure the Digital Artifact Mining System functions correctly across both backend and frontend components. Testing was conducted to validate core features such as file processing, data extraction, API endpoints, and user interface behavior.
@@ -119,7 +119,8 @@ All tests were executed successfully using pytest, confirming that:
 - Data extraction and processing are accurate  
 
 A screenshot of the successful test run (showing all tests passing) is included below:
-C:\Users\Owner\OneDrive\Pictures\Screenshots\Screenshot 2026-03-29 204929.png
+
+<img width="704" height="40" alt="Screenshot 2026-03-29 204929" src="https://github.com/user-attachments/assets/76522ae0-336a-49bc-b871-b147005e4cb6" />
 
 ---
 
