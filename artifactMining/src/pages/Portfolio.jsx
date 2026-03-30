@@ -35,11 +35,11 @@ const walkthroughSteps = [
 ];
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { apiFetch } from "../apiClient";
+import { apiFetch, projectName } from "../apiClient";
 import SkillsTimeline from "./SkillsTimeline";
 import ActivityHeatmap from "./ActivityHeatmap";
 import {
-  typeColor, educationEntryTypeOf, experienceTypeOf,
+  typeColor, thumbUrl, educationEntryTypeOf, experienceTypeOf,
 } from "./PortfolioShared";
 import "./Portfolio.css";
 
