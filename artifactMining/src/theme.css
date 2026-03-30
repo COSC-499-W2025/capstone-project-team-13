@@ -693,3 +693,7 @@ body[data-theme="light"] .settings-avatar-row { background: rgba(79,70,229,0.04)
 body[data-theme="light"] .settings-avatar-pick { border-color: rgba(79,70,229,0.35); background: rgba(79,70,229,0.06); }
 body[data-theme="light"] .settings-avatar-info p:first-child { color: #1a1d3a; }
 body[data-theme="light"] .settings-avatar-hint { color: #6366f1; }
+
+/* ── NotFound page – light mode ── */
+body[data-theme="light"] .nf-title { color: #1a1d3a; }
+body[data-theme="light"] .nf-desc  { color: #5a6080; }
